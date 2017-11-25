@@ -31,7 +31,7 @@ rsbx has forward error correction, osbx does not.
 ## Acknowledgement
 I would like to thank [Marco](https://github.com/MarcoPon) (official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx.
 
-I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of this project. And also his help on testing the building and installation of osbx on macOS.
+I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of the osbx project, of which most of the designs are carried over to rsbx.
 
 ## License
 
