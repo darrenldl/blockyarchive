@@ -1,4 +1,4 @@
-# rsbx
+# rust-SeqBox
 Enhanced implementation of SeqBox in Rust
 
 SeqBox is a single-file archive format designed by [Marco Pontello](https://github.com/MarcoPon) that facilitates sector level data recovery when file system metadata is corrupted/missing, and data is fragmented and not in order, while the archive itself still exists as a normal file on file system.
