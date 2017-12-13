@@ -1,3 +1,5 @@
+mod mpmc_rb;
+
 fn main() {
-    println!("Hello, world!");
+
 }
