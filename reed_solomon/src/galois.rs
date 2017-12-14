@@ -19,19 +19,19 @@
  */
 include!(concat!(env!("OUT_DIR"), "/table.rs"));
 
-fn add(a : u8, b : u8) -> u8 {
+pub fn add(a : u8, b : u8) -> u8 {
     a ^ b
 }
 
-fn sub(a : u8, b : u8) -> u8 {
+pub fn sub(a : u8, b : u8) -> u8 {
     a ^ b
 }
 
-fn mul(a : u8, b : u8) -> u8 {
+pub fn mul(a : u8, b : u8) -> u8 {
     MULT_TABLE[a as usize][b as usize]
 }
 
-fn div(a : u8, b : u8) -> u8 {
+pub fn div(a : u8, b : u8) -> u8 {
     if a == 0 {
         0
     }
@@ -49,7 +49,7 @@ fn div(a : u8, b : u8) -> u8 {
     }
 }
 
-fn exp(a : u8, n : usize) -> u8 {
+pub fn exp(a : u8, n : usize) -> u8 {
     if n == 0 {
         1
     }
