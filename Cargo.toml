@@ -3,4 +3,8 @@ name = "rsbx"
 version = "0.1.0"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 
+[lib]
+name = "mpmc_rb"
+path = "src/mpmc_rb/lib.rs"
+
 [dependencies]

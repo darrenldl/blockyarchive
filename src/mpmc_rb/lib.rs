@@ -126,13 +126,10 @@ macro_rules! finish_run {
 impl<T> Sender<T> {
     pub fn send(&self, item : T) -> Result<(), T> {
         loop {
-            
-        }
-        while match res { None => true, _ => false } {
             let receiver_count = &self.queue.receiver_count;
 
             if receiver_count.load(Ordering::Relaxed) == 0 {
-                finish_run!(res <= Err (item));
+                break Err (item);
             }
             else {
                 let mut stats = self.queue.stats.lock().unwrap();
@@ -140,22 +137,20 @@ impl<T> Sender<T> {
                     true  => run_again!(send =>
                                         stats, self.queue),
                     false => { stats.data.push_front(item);
-                               return Ok(()) },
+                               break Ok(()) },
                 }
             }
-        };
-        res.unwrap()
+        }
     }
 }
 
 impl <T> Receiver<T> {
     pub fn recv(&self) -> Result<T, ()> {
-        let mut res = None;
-        while match res { None => true, _ => false } {
+        loop {
             let sender_count = &self.queue.sender_count;
 
             if sender_count.load(Ordering::Relaxed) == 0 {
-                finish_run!(res <= Err(()))
+                break Err(());
             }
             else {
                 let mut stats = self.queue.stats.lock().unwrap();
@@ -164,15 +159,14 @@ impl <T> Receiver<T> {
                                         stats, self.queue),
                     false => {
                         match stats.data.pop_back() {
-                            Some (x) => finish_run!(res <= Ok (x)),
+                            Some (x) => break Ok (x),
                             None     => run_again!(recv =>
                                                    stats, self.queue),
                         }
                     }
                 }
             }
-        };
-        res.unwrap()
+        }
     }
 }
 
