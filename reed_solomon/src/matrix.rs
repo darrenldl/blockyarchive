@@ -106,4 +106,77 @@ impl Matrix {
     pub fn get_row(&self, row : usize) -> Vec<u8> {
         self.data[row].clone()
     }
+
+    pub fn swap_rows(&mut self, r1 : usize, r2 : usize) {
+        self.data.swap(r1, r2);
+    }
+
+    pub fn is_square(&self) -> bool {
+        self.row_count() == self.column_count()
+    }
+
+    pub fn gaussian_elim(&mut self) {
+        for r in 0..self.row_count() {
+            if self.data[r][r] == 0 {
+                for r_below in r+1..self.row_count() {
+                    if self.data[r_below][r] != 0 {
+                        self.swap_rows(r, r_below);
+                        break;
+                    }
+                }
+            }
+            // If we couldn't find one, the matrix is singular.
+            if self.data[r][r] == 0 {
+                panic!("Matrix is singular")
+            }
+            // Scale to 1.
+            if self.data[r][r] != 1 {
+                let scale = galois::div(1, self.data[r][r]);
+                for c in 0..self.column_count() {
+                    self.data[r][c] = galois::mul(self.data[r][c], scale);
+                }
+            }
+            // Make everything below the 1 be a 0 by subtracting
+            // a multiple of it.  (Subtraction and addition are
+            // both exclusive or in the Galois field.)
+            for r_below in r+1..self.row_count() {
+                if self.data[r_below][r] != 0 {
+                    let scale = self.data[r_below][r];
+                    for c in 0..self.column_count() {
+                        self.data[r_below][c] ^= galois::mul(scale,
+                                                             self.data[r][c]);
+                    }
+                }
+            }
+        }
+
+        // Now clear the part above the main diagonal.
+        for d in 0..self.row_count() {
+            for r_above in 0..d {
+                if self.data[r_above][d] != 0 {
+                    let scale = self.data[r_above][d];
+                    for c in 0..self.column_count() {
+                        self.data[r_above][c] ^= galois::mul(scale,
+                                                             self.data[d][c]);
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn invert(&self) -> Matrix {
+        if !self.is_square() {
+            panic!("Trying to invert a non-square matrix")
+        }
+
+        let size = self.row_count();
+        let mut work = self.augment(&Self::identity(size));
+
+        work.gaussian_elim();
+
+        work.sub_matrix(0,
+                        self.row_count(),
+                        self.column_count(),
+                        self.column_count() * 2)
+    }
 }
