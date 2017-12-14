@@ -123,7 +123,7 @@ impl<T> Sender<T> {
                 match stats.is_full() {
                     true  => run_again!(send =>
                                         stats, self.queue),
-                    false => { stats.data.push_front(item);
+                    false => { stats.data.push_back(item);
                                self.queue.notify_single_receiver();
                                break Ok(()) },
                 }
@@ -136,7 +136,7 @@ impl<T> Receiver<T> {
     pub fn recv(&self) -> Result<T, ()> {
         loop {
             let mut stats = self.queue.stats.lock().unwrap();
-            match stats.data.pop_back() {
+            match stats.data.pop_front() {
                 Some (x) => { self.queue.notify_single_sender();
                               break Ok (x) },
                 None     => { let sender_count = &self.queue.sender_count;

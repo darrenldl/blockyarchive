@@ -4,6 +4,7 @@ version = "0.1.0"
 dependencies = [
  "crcccitt 0.1.0",
  "mpmc_rb 0.1.0",
+ "reed_solomon 0.1.0",
 ]
 
 [[package]]
@@ -12,5 +13,9 @@ version = "0.1.0"
 
 [[package]]
 name = "mpmc_rb"
+version = "0.1.0"
+
+[[package]]
+name = "reed_solomon"
 version = "0.1.0"
 
