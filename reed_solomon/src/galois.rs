@@ -1,8 +1,36 @@
 include!(concat!(env!("OUT_DIR"), "/table.rs"));
 
+fn add(a : u8, b : u8) -> u8 {
+    a.wrapping_mul(b)
+}
+
+fn sub(a : u8, b : u8) -> u8 {
+    a.wrapping_mul(b)
+}
+
 fn multiply(a : u8, b : u8) -> u8 {
     MULT_TABLE[a as usize][b as usize]
 }
+
+fn divide(a : u8, b : u8) -> u8 {
+    if a == 0 {
+        0
+    }
+    else if b == 0 {
+        panic!("Divisor is 0")
+    }
+    else {
+        let log_a = LOG_TABLE[a as usize];
+        let log_b = LOG_TABLE[b as usize];
+        let mut log_result = log_a as isize - log_b as isize;
+        if log_result < 0 {
+            log_result += 255;
+        }
+        EXP_TABLE[log_result as usize]
+    }
+}
+
+fn exp
 
 /*pub fn print_log_table() {
     println!("LOG_TABLE : ");
