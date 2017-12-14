@@ -7,9 +7,9 @@ pub fn crc_ccitt_generic (input : &[u8], start_val : u16) -> u16 {
         let c_u16 :u16 = *c as u16;
 
         crc =
-            (!crc << 8)
+            (crc << 8)
             ^
-            CRCCCITT_TABLE[ (((!crc >> 8) ^ c_u16) & 0x00FFu16) as usize ];
+            CRCCCITT_TABLE[ (((crc >> 8) ^ c_u16) & 0x00FFu16) as usize ];
     }
 
     crc
