@@ -39,7 +39,7 @@ I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the
 
 ## License
 
-The crcccitt code is translated from the C implementation in [libcrc](https://github.com/lammertb/libcrc) and are under the same MIT License as used by libcrc and as stated in libcrc source code, the license text of the crcccitt.c is copied over to **PLACE HOLDER** as well
+The crcccitt code is translated from the C implementation in [libcrc](https://github.com/lammertb/libcrc) and are under the same MIT License as used by libcrc and as stated in libcrc source code, the license text of the crcccitt.c is copied over to ```crcccitt/build.rs``` and ```crcccitt/src/lib.rs``` as well
 
 The files in tests folder copied from official SeqBox are under its license, which is MIT as of time of writing
   - tests/SeqBox/*
