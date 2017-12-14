@@ -179,4 +179,15 @@ impl Matrix {
                         self.column_count(),
                         self.column_count() * 2)
     }
+
+    pub fn vandermonde(rows : usize, cols : usize) -> Matrix {
+        let mut result = Self::new(rows, cols);
+
+        for r in 0..rows {
+            for c in 0..cols {
+                result.data[r][c] = galois::exp(r as u8, c);
+            }
+        }
+        result
+    }
 }
