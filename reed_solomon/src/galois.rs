@@ -181,4 +181,15 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_galois() {
+        assert_eq!(mul(3, 4), 12);
+        assert_eq!(mul(7, 7), 21);
+        assert_eq!(mul(23, 45), 41);
+
+        assert_eq!(exp(2, 2), 4);
+        assert_eq!(exp(5, 20), 235);
+        assert_eq!(exp(13, 7), 43);
+    }
 }
