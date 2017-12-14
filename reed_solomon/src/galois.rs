@@ -30,23 +30,22 @@ fn divide(a : u8, b : u8) -> u8 {
     }
 }
 
-fn exp
-
-/*pub fn print_log_table() {
-    println!("LOG_TABLE : ");
-    for v in LOG_TABLE.iter() {
-        print!("{}, ", v);
+fn exp(a : u8, n : u8) -> u8 {
+    if n == 0 {
+        1
     }
-    println!("");
+    else if a == 0 {
+        0
+    }
+    else {
+        let log_a = LOG_TABLE[a as usize];
+        let mut log_result = log_a as usize * n as usize;
+        while 255 <= log_result {
+            log_result -= 255;
+        }
+        EXP_TABLE[log_result]
+    }
 }
-
-pub fn print_exp_table() {
-    println!("EXP_TABLE : ");
-    for v in EXP_TABLE.iter() {
-        print!("{}, ", v);
-    }
-    println!("");
-}*/
 
 #[cfg(test)]
 mod tests {
