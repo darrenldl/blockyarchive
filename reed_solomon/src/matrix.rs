@@ -92,4 +92,14 @@ impl Matrix {
 
         result
     }
+
+    pub fn sub_matrix(&self, rmin : usize, cmin : usize, rmax : usize, cmax : usize) -> Matrix {
+        let mut result = Self::new(rmax - rmin, cmax - cmin);
+        for r in rmin..rmax {
+            for c in cmin..cmax {
+                result.data[r - rmin][c - cmin] = self.data[r][c];
+            }
+        }
+        result
+    }
 }
