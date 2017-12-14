@@ -100,7 +100,7 @@ impl<T> Sender<T> {
         loop {
             let receiver_count = &self.queue.receiver_count;
 
-            if receiver_count.load(Ordering::Relaxed) == 0 {
+            if receiver_count.load(Ordering::SeqCst) == 0 {
                 break Err (item);
             }
             else {
@@ -121,7 +121,7 @@ impl<T> Receiver<T> {
         loop {
             let sender_count = &self.queue.sender_count;
 
-            if sender_count.load(Ordering::Relaxed) == 0 {
+            if sender_count.load(Ordering::SeqCst) == 0 {
                 break Err(());
             }
             else {
@@ -142,10 +142,42 @@ impl<T> Receiver<T> {
     }
 }
 
+impl<T> Clone for Sender<T> {
+    fn clone (&self) -> Sender<T> {
+        let new_arc = Arc::clone(&self.queue);
+
+        self.queue.sender_count.fetch_add(1, Ordering::SeqCst);
+
+        Sender { queue : new_arc }
+    }
+}
+
+impl<T> Clone for Receiver<T> {
+    fn clone (&self) -> Receiver<T> {
+        let new_arc = Arc::clone(&self.queue);
+
+        self.queue.receiver_count.fetch_add(1, Ordering::SeqCst);
+
+        Receiver { queue : new_arc }
+    }
+}
+
+impl<T> Drop for Sender<T> {
+    fn drop (&mut self) {
+        self.queue.sender_count.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
+impl<T> Drop for Receiver<T> {
+    fn drop (&mut self) {
+        self.queue.receiver_count.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
 pub fn channel<T>(size : usize) -> (Sender<T>, Receiver<T>){
     let queue = Queue::new(size);
-    queue.receiver_count.fetch_add(1, Ordering::Relaxed);
-    queue.sender_count.fetch_add(1, Ordering::Relaxed);
+    queue.receiver_count.fetch_add(1, Ordering::SeqCst);
+    queue.sender_count.fetch_add(1, Ordering::SeqCst);
     let queue_arc1 = Arc::new(queue);
     let queue_arc2 = Arc::clone(&queue_arc1);
 
