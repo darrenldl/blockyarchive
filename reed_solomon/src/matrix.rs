@@ -102,4 +102,8 @@ impl Matrix {
         }
         result
     }
+
+    pub fn get_row(&self, row : usize) -> Vec<u8> {
+        self.data[row].clone()
+    }
 }
