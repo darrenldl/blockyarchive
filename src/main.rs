@@ -1,11 +1,9 @@
-extern crate mpmc_rb;
-
-use mpmc_rb::channel;
+use std::sync::mpsc;
 use std::{thread, time};
 use std::time::SystemTime;
 
 fn main() {
-    let (tx, rx) = channel::<String>(1000);
+    let (tx, rx) = mpsc::sync_channel::<String>(1000);
 
     let mut v = vec![];
 
@@ -22,15 +20,12 @@ fn main() {
         v.push(handle);
     }
 
-    for i in 1..1000 {
-        let rx = rx.clone();
-        let handle = thread::spawn(move || {
-            loop {
-                println!("Receiver {}, received {:?}", i, rx.recv());
-            }
-        });
-        v.push(handle);
-    }
+    let handle = thread::spawn(move || {
+        loop {
+            println!("Receiver received {:?}", rx.recv());
+        }
+    });
+    v.push(handle);
 
     for i in v.into_iter() {
         i.join().unwrap();
