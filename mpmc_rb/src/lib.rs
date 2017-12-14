@@ -195,7 +195,7 @@ pub fn channel<T>(size : usize) -> (Sender<T>, Receiver<T>){
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use std::thread;
 
