@@ -220,6 +220,17 @@ mod test {
     }
 
     #[test]
+    fn receive_without_senders_not_empty() {
+        let (tx, rx) = channel::<isize>(0);
+
+        tx.send(100).unwrap();
+
+        drop(tx);
+
+        rx.recv().unwrap();
+    }
+
+    #[test]
     fn sequential() {
         let (tx, rx) = channel::<String>(0);
 
