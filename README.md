@@ -28,6 +28,10 @@ rsbx has forward error correction, osbx does not.
   - ...
 - Diagrams for the actor model used
 
+## Done
+- ```crcccitt``` crate
+- ```mpmc_rb``` crate (multi-producer multi-consumer ring buffer)
+
 ## Acknowledgement
 I would like to thank [Marco](https://github.com/MarcoPon) (official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx.
 
