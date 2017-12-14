@@ -1,12 +1,9 @@
 use std::sync::{Arc, Mutex, Condvar};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc;
-//use std::cell::RefCell;
 use std::collections::VecDeque;
 
 struct Stats<T> {
-    // read_pos    : usize,
-    // write_pos   : usize,
     data        : VecDeque<T>,
     capacity    : usize,
 }
@@ -23,12 +20,10 @@ struct Queue<T> {
 
 pub type SendError<T> = mpsc::SendError<T>;
 
-//pub type Sender<T> = Arc<Queue<T>>;
 pub struct Sender<T> {
     queue : Arc<Queue<T>>,
 }
 
-//pub type Receiver<T> = Arc<Queue<T>>;
 pub struct Receiver<T> {
     queue          : Arc<Queue<T>>,
 }
@@ -38,8 +33,6 @@ impl<T> Stats<T> {
         let actual_size = requested_size + 1;
 
         Stats {
-            // read_pos   : 0,
-            // write_pos  : 0,
             data       : VecDeque::with_capacity(actual_size),
             capacity   : actual_size,
         }
@@ -50,21 +43,6 @@ impl<T> Stats<T> {
     }
 
     fn member_count(&self) -> usize {
-        //let capacity   = self.capacity;
-        /* Since |write_pos - read_pos| < size, we denote this as (1)
-                                          * if write_pos - read_pos >= 0 then
-         *     (write_pos - read_pos + size) mod size
-         *   = (write_pos - read_pos)        mod size
-         * else write_pos - read_pos < 0
-                                       *   from (1), we have write_pos - read_pos > - size
-         *   then, we have write_pos - read_pos + size > 0,
-         *   which is well suited for mod(as it's not modulo arithmetic,
-                                          *   and thus falls apart with negative value in this use case)
-         *     (write_pos - read_pos + size) mod size
-         *   = (write_pos - read_pos)        mod size
-         */
-
-        //(self.write_pos - self.read_pos + capacity) % capacity
         self.data.len()
     }
 
@@ -117,12 +95,6 @@ macro_rules! run_again {
     }}
 }
 
-macro_rules! finish_run {
-    ($res:ident <= $ret:expr) => {{
-        $res = Some ($ret);
-    }}
-}
-
 impl<T> Sender<T> {
     pub fn send(&self, item : T) -> Result<(), T> {
         loop {
@@ -144,7 +116,7 @@ impl<T> Sender<T> {
     }
 }
 
-impl <T> Receiver<T> {
+impl<T> Receiver<T> {
     pub fn recv(&self) -> Result<T, ()> {
         loop {
             let sender_count = &self.queue.sender_count;
