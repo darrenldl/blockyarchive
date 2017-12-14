@@ -1,4 +1,11 @@
 [root]
 name = "rsbx"
 version = "0.1.0"
+dependencies = [
+ "mpmc_rb 0.1.0",
+]
+
+[[package]]
+name = "mpmc_rb"
+version = "0.1.0"
 

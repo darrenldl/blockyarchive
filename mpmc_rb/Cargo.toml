@@ -1,7 +1,10 @@
 [package]
-name = "rsbx"
+name = "mpmc_rb"
 version = "0.1.0"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 
 [dependencies]
-mpmc_rb = { path = "mpmc_rb" }
+
+[lib]
+name = "mpmc_rb"
+path = "lib.rs"
