@@ -1,0 +1,4 @@
+[root]
+name = "mpmc_rb"
+version = "0.1.0"
+

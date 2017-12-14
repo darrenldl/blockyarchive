@@ -1,10 +1,6 @@
 [package]
-name = "mpmc_rb"
+name = "crcccitt"
 version = "0.1.0"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 
 [dependencies]
-
-[lib]
-name = "mpmc_rb"
-path = "src/lib.rs"
