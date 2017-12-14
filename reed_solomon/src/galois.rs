@@ -1,5 +1,9 @@
 include!(concat!(env!("OUT_DIR"), "/table.rs"));
 
+fn multiply(a : u8, b : u8) -> u8 {
+    MULT_TABLE[a as usize][b as usize]
+}
+
 /*pub fn print_log_table() {
     println!("LOG_TABLE : ");
     for v in LOG_TABLE.iter() {

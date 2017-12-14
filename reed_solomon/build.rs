@@ -48,8 +48,8 @@ fn multiply(log_table : &[u8; FIELD_SIZE],
     else {
         let log_a = log_table[a as usize];
         let log_b = log_table[b as usize];
-        let log_result = log_a + log_b;
-        exp_table[log_result as usize]
+        let log_result = log_a as usize + log_b as usize;
+        exp_table[log_result]
     }
 }
 
@@ -68,7 +68,7 @@ fn gen_mult_table(log_table : &[u8; FIELD_SIZE],
 }
 
 macro_rules! write_table {
-    ($file:ident, $table:ident, $name:expr, $type:expr) => {{
+    (1D => $file:ident, $table:ident, $name:expr, $type:expr) => {{
         let len = $table.len();
         let mut table_str =
             String::from(format!("static {} : [{}; {}] = [", $name, $type, len));
@@ -81,17 +81,42 @@ macro_rules! write_table {
         table_str.push_str("];\n");
 
         $file.write_all(table_str.as_bytes()).unwrap();
+    }};
+    (2D => $file:ident, $table:ident, $name:expr, $type:expr) => {{
+        let len1 = $table.len();
+        let len2 = $table[0].len();
+        let mut table_str =
+            String::from(format!("static {} : [[{}; {}]; {}] = [",
+                                 $name,
+                                 $type,
+                                 len1,
+                                 len2));
+
+        for a in $table.iter() {
+            table_str.push_str("[");
+            for b in a.iter() {
+                let str = format!("{}, ", b);
+                table_str.push_str(&str);
+            }
+            table_str.push_str("],\n");
+        }
+
+        table_str.push_str("];\n");
+
+        $file.write_all(table_str.as_bytes()).unwrap();
     }}
 }
 
 fn main() {
     let log_table = gen_log_table(GENERATING_POLYNOMIAL);
     let exp_table = gen_exp_table(&log_table);
+    let mult_table = gen_mult_table(&log_table, &exp_table);
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("table.rs");
     let mut f = File::create(&dest_path).unwrap();
 
-    write_table!(f, log_table, "LOG_TABLE", "u8");
-    write_table!(f, exp_table, "EXP_TABLE", "u8");
+    write_table!(1D => f, log_table, "LOG_TABLE", "u8");
+    write_table!(1D => f, exp_table, "EXP_TABLE", "u8");
+    write_table!(2D => f, mult_table, "MULT_TABLE", "u8");
 }
