@@ -210,6 +210,16 @@ mod test {
     }
 
     #[test]
+    #[should_panic]
+    fn receive_without_senders_empty() {
+        let (tx, rx) = channel::<isize>(0);
+
+        drop(tx);
+
+        rx.recv().unwrap();
+    }
+
+    #[test]
     fn sequential() {
         let (tx, rx) = channel::<String>(0);
 
@@ -225,18 +235,14 @@ mod test {
 
         let (tx, rx) = channel::<String>(0);
 
-        let handle = thread::spawn(move || {
+        v.push(thread::spawn(move || {
             tx.send(String::from("abcd")).unwrap();
-        });
+        }));
 
-        v.push(handle);
-
-        let handle = thread::spawn(move || {
+        v.push(thread::spawn(move || {
             let r = rx.recv().unwrap();
             assert!(r == "abcd");
-        });
-
-        v.push(handle);
+        }));
 
         for i in v.into_iter() {
             i.join().unwrap();
@@ -249,18 +255,14 @@ mod test {
 
         let (tx, rx) = channel::<isize>(0);
 
-        let handle = thread::spawn(move || {
+        v.push(thread::spawn(move || {
             tx.send(100).unwrap();
-        });
+        }));
 
-        v.push(handle);
-
-        let handle = thread::spawn(move || {
+        v.push(thread::spawn(move || {
             let r = rx.recv().unwrap();
             assert!(r == 100);
-        });
-
-        v.push(handle);
+        }));
 
         for i in v.into_iter() {
             i.join().unwrap();
