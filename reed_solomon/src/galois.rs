@@ -49,6 +49,8 @@ fn exp(a : u8, n : u8) -> u8 {
 
 #[cfg(test)]
 mod tests {
+    use super::{LOG_TABLE, add, sub, multiply, exp};
+
     static BACKBLAZE_LOG_TABLE : [u8; 256] = [
         //-1,    0,    1,   25,    2,   50,   26,  198,
         // first value is changed from -1 to 0
@@ -88,7 +90,26 @@ mod tests {
     #[test]
     fn log_table_same_as_backblaze () {
         for i in 1..256 { // ignore first value
-            assert_eq!(super::LOG_TABLE[i], BACKBLAZE_LOG_TABLE[i]);
+            assert_eq!(LOG_TABLE[i], BACKBLAZE_LOG_TABLE[i]);
+        }
+    }
+
+    #[test]
+    fn test_associativity() {
+        for i in 0..256 {
+            let a = i as u8;
+            for j in 0..256 {
+                let b = j as u8;
+                for k in 0..256 {
+                    let c = k as u8;
+                    let x = add(a, add(b, c));
+                    let y = add(add(a, b), c);
+                    assert_eq!(x, y);
+                    let x = multiply(a, multiply(b, c));
+                    let y = multiply(multiply(a, b), c);
+                    assert_eq!(x, y);
+                }
+            }
         }
     }
 }
