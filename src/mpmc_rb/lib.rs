@@ -52,9 +52,9 @@ impl<T> Stats<T> {
         self.member_count() == self.max_member()
     }
 
-    fn is_empty(&self) -> bool {
+    /*fn is_empty(&self) -> bool {
         self.member_count() == 0
-    }
+    }*/
 }
 
 fn wait_for(cond : &Condvar, lock : &Mutex<bool>) {
@@ -115,7 +115,7 @@ impl<T> Sender<T> {
         loop {
             let receiver_count = &self.queue.receiver_count;
 
-            if receiver_count.load(Ordering::SeqCst) == 0 {
+            if receiver_count.load(Ordering::Relaxed) == 0 {
                 break Err (item);
             }
             else {
@@ -135,25 +135,18 @@ impl<T> Sender<T> {
 impl<T> Receiver<T> {
     pub fn recv(&self) -> Result<T, ()> {
         loop {
-            let sender_count = &self.queue.sender_count;
-
-            if sender_count.load(Ordering::SeqCst) == 0 {
-                break Err(());
-            }
-            else {
-                let mut stats = self.queue.stats.lock().unwrap();
-                match stats.is_empty() {
-                    true  => run_again!(recv =>
-                                        stats, self.queue),
-                    false => {
-                        match stats.data.pop_back() {
-                            Some (x) => { self.queue.notify_single_sender();
-                                          break Ok (x) },
-                            None     => run_again!(recv =>
-                                                   stats, self.queue),
-                        }
-                    }
-                }
+            let mut stats = self.queue.stats.lock().unwrap();
+            match stats.data.pop_back() {
+                Some (x) => { self.queue.notify_single_sender();
+                              break Ok (x) },
+                None     => { let sender_count = &self.queue.sender_count;
+                              if sender_count.load(Ordering::Relaxed) == 0 {
+                                  break Err(())
+                              }
+                              else {
+                                  run_again!(recv =>
+                                             stats, self.queue)
+                              } }
             }
         }
     }
@@ -199,4 +192,78 @@ pub fn channel<T>(size : usize) -> (Sender<T>, Receiver<T>){
     let queue_arc2 = Arc::clone(&queue_arc1);
 
     (Sender {queue : queue_arc1}, Receiver {queue : queue_arc2})
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::thread;
+
+    #[test]
+    #[should_panic]
+    fn send_without_receivers() {
+        let (tx, rx) = channel::<isize>(0);
+
+        drop(rx);
+
+        tx.send(100).unwrap();
+    }
+
+    #[test]
+    fn sequential() {
+        let (tx, rx) = channel::<String>(0);
+
+        tx.send(String::from("abcd")).unwrap();
+
+        let r = rx.recv().unwrap();
+        assert!(r == "abcd");
+    }
+
+    #[test]
+    fn spsc_string() {
+        let mut v = vec![];
+
+        let (tx, rx) = channel::<String>(0);
+
+        let handle = thread::spawn(move || {
+            tx.send(String::from("abcd")).unwrap();
+        });
+
+        v.push(handle);
+
+        let handle = thread::spawn(move || {
+            let r = rx.recv().unwrap();
+            assert!(r == "abcd");
+        });
+
+        v.push(handle);
+
+        for i in v.into_iter() {
+            i.join().unwrap();
+        }
+    }
+
+    #[test]
+    fn spsc_isize() {
+        let mut v = vec![];
+
+        let (tx, rx) = channel::<isize>(0);
+
+        let handle = thread::spawn(move || {
+            tx.send(100).unwrap();
+        });
+
+        v.push(handle);
+
+        let handle = thread::spawn(move || {
+            let r = rx.recv().unwrap();
+            assert!(r == 100);
+        });
+
+        v.push(handle);
+
+        for i in v.into_iter() {
+            i.join().unwrap();
+        }
+    }
 }
