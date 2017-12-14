@@ -279,4 +279,63 @@ mod tests {
             i.join().unwrap();
         }
     }
+
+    extern crate time;
+    use self::time::PreciseTime;
+    use std::sync::mpsc;
+
+    #[test]
+    fn bench_self_vs_mpsc_isize() {
+        let item_count = 1_000_000;
+
+        {
+            let (tx, rx) = mpsc::sync_channel::<isize>(10_000);
+
+            let mut v = Vec::new();
+
+            let start = PreciseTime::now();
+            v.push(thread::spawn(move || {
+                for _ in 0..item_count {
+                    tx.send(0).unwrap();
+                }
+            }));
+
+            v.push(thread::spawn(move || {
+                for _ in 0..item_count {
+                    rx.recv().unwrap();
+                }
+            }));
+
+            for i in v.into_iter() {
+                i.join().unwrap();
+            }
+            let end = PreciseTime::now();
+            println!("Time for mpsc : {}", start.to(end));
+        }
+
+        {
+            let (tx, rx) = channel::<isize>(10_000);
+
+            let mut v = Vec::new();
+
+            let start = PreciseTime::now();
+            v.push(thread::spawn(move || {
+                for _ in 0..item_count {
+                    tx.send(0).unwrap();
+                }
+            }));
+
+            v.push(thread::spawn(move || {
+                for _ in 0..item_count {
+                    rx.recv().unwrap();
+                }
+            }));
+
+            for i in v.into_iter() {
+                i.join().unwrap();
+            }
+            let end = PreciseTime::now();
+            println!("Time for mpmc_rb : {}", start.to(end));
+        }
+    }
 }
