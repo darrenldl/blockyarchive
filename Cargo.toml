@@ -4,5 +4,6 @@ version = "0.1.0"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 
 [dependencies]
-mpmc_rb = { path = "mpmc_rb" }
-crcccitt = { path = "crcccitt" }
+mpmc_rb      = { path = "mpmc_rb" }
+crcccitt     = { path = "crcccitt" }
+reed_solomon = { path = "reed_solomon" }

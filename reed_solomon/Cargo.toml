@@ -1,0 +1,6 @@
+[package]
+name = "reed_solomon"
+version = "0.1.0"
+authors = ["Darren Ldl <darrenldldev@gmail.com>"]
+
+[dependencies]
