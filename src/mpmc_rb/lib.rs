@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex, Condvar};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc;
 use std::collections::VecDeque;
+use std::cmp::max;
 
 struct Stats<T> {
     data        : VecDeque<T>,
@@ -30,7 +31,8 @@ pub struct Receiver<T> {
 
 impl<T> Stats<T> {
     fn new(requested_size : usize) -> Stats<T> {
-        let actual_size = requested_size + 1;
+        let requested_size = max(1, requested_size);
+        let actual_size    = requested_size + 1;
 
         Stats {
             data       : VecDeque::with_capacity(actual_size),
