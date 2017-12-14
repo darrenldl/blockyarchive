@@ -49,7 +49,7 @@ fn div(a : u8, b : u8) -> u8 {
     }
 }
 
-fn exp(a : u8, n : u8) -> u8 {
+fn exp(a : u8, n : usize) -> u8 {
     if n == 0 {
         1
     }
@@ -58,7 +58,7 @@ fn exp(a : u8, n : u8) -> u8 {
     }
     else {
         let log_a = LOG_TABLE[a as usize];
-        let mut log_result = log_a as usize * n as usize;
+        let mut log_result = log_a as usize * n;
         while 255 <= log_result {
             log_result -= 255;
         }
@@ -172,5 +172,13 @@ mod tests {
 
     #[test]
     fn test_exp() {
+        for a in 0u8..256 {
+            let mut power = 1u8;
+            for j in 0..256 {
+                let x = exp(a, j);
+                assert_eq!(x, power);
+                power = mul(power, a);
+            }
+        }
     }
 }
