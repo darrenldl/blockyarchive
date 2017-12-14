@@ -1,11 +1,13 @@
 use std::sync::{Arc, Mutex, Condvar};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc;
+//use std::cell::RefCell;
+use std::collections::VecDeque;
 
 struct Stats<T> {
-    read_pos    : usize,
-    write_pos   : usize,
-    data        : Vec<T>,
+    // read_pos    : usize,
+    // write_pos   : usize,
+    data        : VecDeque<T>,
     capacity    : usize,
 }
 
@@ -36,9 +38,9 @@ impl<T> Stats<T> {
         let actual_size = requested_size + 1;
 
         Stats {
-            read_pos   : 0,
-            write_pos  : 0,
-            data       : Vec::with_capacity(actual_size),
+            // read_pos   : 0,
+            // write_pos  : 0,
+            data       : VecDeque::with_capacity(actual_size),
             capacity   : actual_size,
         }
     }
@@ -48,7 +50,7 @@ impl<T> Stats<T> {
     }
 
     fn member_count(&self) -> usize {
-        let capacity   = self.capacity;
+        //let capacity   = self.capacity;
         /* Since |write_pos - read_pos| < size, we denote this as (1)
                                           * if write_pos - read_pos >= 0 then
          *     (write_pos - read_pos + size) mod size
@@ -62,7 +64,8 @@ impl<T> Stats<T> {
          *   = (write_pos - read_pos)        mod size
          */
 
-        (self.write_pos - self.read_pos + capacity) % capacity
+        //(self.write_pos - self.read_pos + capacity) % capacity
+        self.data.len()
     }
 
     fn is_full(&self) -> bool {
@@ -70,7 +73,7 @@ impl<T> Stats<T> {
     }
 
     fn is_empty(&self) -> bool {
-        !self.is_full()
+        self.member_count() == 0
     }
 }
 
@@ -103,29 +106,82 @@ impl<T> Queue<T> {
     }
 }
 
+macro_rules! run_again {
+    (recv => $lock:expr, $queue:expr) => {{
+        drop($lock);
+        $queue.wait_for_recv();
+    }};
+    (send => $lock:expr, $queue:expr) => {{
+        drop($lock);
+        $queue.wait_for_send();
+    }}
+}
+
+macro_rules! finish_run {
+    ($res:ident <= $ret:expr) => {{
+        $res = Some ($ret);
+    }}
+}
+
 impl<T> Sender<T> {
     pub fn send(&self, item : T) -> Result<(), T> {
-        let receiver_count = &self.queue.receiver_count;
+        loop {
+            
+        }
+        while match res { None => true, _ => false } {
+            let receiver_count = &self.queue.receiver_count;
 
-        if receiver_count.load(Ordering::Relaxed) == 0 {
-            Err (item)
-        }
-        else {
-            let mut stats = self.queue.stats.lock().unwrap();
-            match stats.is_full() {
-                true  => { drop(stats);
-                           self.queue.wait_for_send();
-                           self.send(item) },
-                false => { stats.data.push(item);
-                           Ok(()) },
+            if receiver_count.load(Ordering::Relaxed) == 0 {
+                finish_run!(res <= Err (item));
             }
-        }
+            else {
+                let mut stats = self.queue.stats.lock().unwrap();
+                match stats.is_full() {
+                    true  => run_again!(send =>
+                                        stats, self.queue),
+                    false => { stats.data.push_front(item);
+                               return Ok(()) },
+                }
+            }
+        };
+        res.unwrap()
+    }
+}
+
+impl <T> Receiver<T> {
+    pub fn recv(&self) -> Result<T, ()> {
+        let mut res = None;
+        while match res { None => true, _ => false } {
+            let sender_count = &self.queue.sender_count;
+
+            if sender_count.load(Ordering::Relaxed) == 0 {
+                finish_run!(res <= Err(()))
+            }
+            else {
+                let mut stats = self.queue.stats.lock().unwrap();
+                match stats.is_empty() {
+                    true  => run_again!(recv =>
+                                        stats, self.queue),
+                    false => {
+                        match stats.data.pop_back() {
+                            Some (x) => finish_run!(res <= Ok (x)),
+                            None     => run_again!(recv =>
+                                                   stats, self.queue),
+                        }
+                    }
+                }
+            }
+        };
+        res.unwrap()
     }
 }
 
 pub fn channel<T>(size : usize) -> (Sender<T>, Receiver<T>){
-    let queue1 = Arc::new(Queue::new(size));
-    let queue2 = Arc::clone(&queue1);
+    let queue = Queue::new(size);
+    queue.receiver_count.fetch_add(1, Ordering::Relaxed);
+    queue.sender_count.fetch_add(1, Ordering::Relaxed);
+    let queue_arc1 = Arc::new(queue);
+    let queue_arc2 = Arc::clone(&queue_arc1);
 
-    (Sender {queue : queue1}, Receiver {queue : queue2})
+    (Sender {queue : queue_arc1}, Receiver {queue : queue_arc2})
 }
