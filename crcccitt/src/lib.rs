@@ -17,8 +17,21 @@ pub fn crc_ccitt_generic (input : &[u8], start_val : u16) -> u16 {
 
 #[cfg(test)]
 mod tests {
+    use super::crc_ccitt_generic;
+
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn basic_value_tests_0xffff() {
+        assert_eq!(crc_ccitt_generic(b"a", 0xFFFF), 0x9D77);
+        assert_eq!(crc_ccitt_generic(b"abcd", 0xFFFF), 0x2CF6);
+        assert_eq!(crc_ccitt_generic(b"0", 0xFFFF), 0xD7A3);
+        assert_eq!(crc_ccitt_generic(b"0123", 0xFFFF), 0x3F7B);
+    }
+
+    #[test]
+    fn basic_value_tests_0x1d0f() {
+        assert_eq!(crc_ccitt_generic(b"a", 0x1D0f), 0xB01B);
+        assert_eq!(crc_ccitt_generic(b"abcd", 0x1D0f), 0xA626);
+        assert_eq!(crc_ccitt_generic(b"0", 0x1D0F), 0xFACF);
+        assert_eq!(crc_ccitt_generic(b"0123", 0x1D0F), 0xB5AB);
     }
 }
