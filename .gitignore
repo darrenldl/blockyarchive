@@ -2,3 +2,5 @@
 **/*.rs.bk
 /mpmc_rb/target/*
 /mpmc_rb/target/*
+/crcccitt/target/*
+/crcccitt/target/*

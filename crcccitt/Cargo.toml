@@ -2,5 +2,6 @@
 name = "crcccitt"
 version = "0.1.0"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
+build = "build.rs"
 
 [dependencies]
