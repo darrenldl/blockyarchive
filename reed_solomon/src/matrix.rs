@@ -39,11 +39,11 @@ impl Matrix {
         Self::new(size, size)
     }
 
-    pub fn columns_count(&self) -> usize {
+    pub fn column_count(&self) -> usize {
         self.data[0].len()
     }
 
-    pub fn rows_count(&self) -> usize {
+    pub fn row_count(&self) -> usize {
         self.data.len()
     }
 
@@ -53,5 +53,23 @@ impl Matrix {
 
     pub fn set(&mut self, r : usize, c : usize, val : u8) {
         self.data[r][c] = val;
+    }
+
+    pub fn mul(&self, right : &Matrix) -> Matrix {
+        if self.column_count() != right.row_count() {
+            panic!("colomn count on left is different from row count on right")
+        }
+        let mut result = Self::new(self.row_count(), right.column_count());
+        for r in 0..self.row_count() {
+            for c in 0..right.column_count() {
+                let mut val = 0;
+                for i in 0..self.column_count() {
+                    val ^= galois::mul(self.get(r, i),
+                                       right.get(i, c));
+                }
+                result.set(r, c, val);
+            }
+        }
+        result
     }
 }
