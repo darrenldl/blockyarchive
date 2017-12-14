@@ -1,5 +1,6 @@
 use galois;
 
+#[derive(PartialEq)]
 pub struct Matrix {
     data : Vec<Vec<u8>>
 }
@@ -55,21 +56,40 @@ impl Matrix {
         self.data[r][c] = val;
     }
 
-    pub fn mul(&self, right : &Matrix) -> Matrix {
-        if self.column_count() != right.row_count() {
+    pub fn multiply(&self, rhs : &Matrix) -> Matrix {
+        if self.column_count() != rhs.row_count() {
             panic!("colomn count on left is different from row count on right")
         }
-        let mut result = Self::new(self.row_count(), right.column_count());
+        let mut result = Self::new(self.row_count(), rhs.column_count());
         for r in 0..self.row_count() {
-            for c in 0..right.column_count() {
+            for c in 0..rhs.column_count() {
                 let mut val = 0;
                 for i in 0..self.column_count() {
                     val ^= galois::mul(self.get(r, i),
-                                       right.get(i, c));
+                                       rhs.get(i, c));
                 }
                 result.set(r, c, val);
             }
         }
+        result
+    }
+
+    pub fn augment(&self, rhs : &Matrix) -> Matrix {
+        if self.row_count() == self.column_count() {
+            panic!("Matrices do not have the same row count")
+        }
+        let mut result = Self::new(self.row_count(),
+                                   self.column_count() + rhs.column_count());
+        for r in 0..self.row_count() {
+            for c in 0..self.column_count() {
+                result.data[r][c] = self.data[r][c];
+            }
+            let self_column_count = self.column_count();
+            for c in 0..rhs.column_count() {
+                result.data[r][self_column_count + c] = rhs.data[r][c];
+            }
+        }
+
         result
     }
 }
