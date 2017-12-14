@@ -62,6 +62,7 @@ fn wait_for(cond : &Condvar, lock : &Mutex<bool>) {
     while !*okay {
         okay = cond.wait(okay).unwrap();
     }
+    *okay = false;
 }
 
 impl<T> Queue<T> {
@@ -75,6 +76,18 @@ impl<T> Queue<T> {
             receiver_count : AtomicUsize::new(0),
             stats          : Mutex::new(Stats::new(requested_size)),
         }
+    }
+
+    fn notify_single_sender(&self) {
+        let mut okay = self.send_cond_lock.lock().unwrap();
+        *okay = true;
+        self.send_cond.notify_one();
+    }
+
+    fn notify_single_receiver(&self) {
+        let mut okay = self.recv_cond_lock.lock().unwrap();
+        *okay = true;
+        self.recv_cond.notify_one();
     }
 
     fn wait_for_send(&self) {
@@ -111,6 +124,7 @@ impl<T> Sender<T> {
                     true  => run_again!(send =>
                                         stats, self.queue),
                     false => { stats.data.push_front(item);
+                               self.queue.notify_single_receiver();
                                break Ok(()) },
                 }
             }
@@ -133,7 +147,8 @@ impl<T> Receiver<T> {
                                         stats, self.queue),
                     false => {
                         match stats.data.pop_back() {
-                            Some (x) => break Ok (x),
+                            Some (x) => { self.queue.notify_single_sender();
+                                          break Ok (x) },
                             None     => run_again!(recv =>
                                                    stats, self.queue),
                         }
