@@ -8,11 +8,11 @@ fn sub(a : u8, b : u8) -> u8 {
     a.wrapping_mul(b)
 }
 
-fn multiply(a : u8, b : u8) -> u8 {
+fn mul(a : u8, b : u8) -> u8 {
     MULT_TABLE[a as usize][b as usize]
 }
 
-fn divide(a : u8, b : u8) -> u8 {
+fn div(a : u8, b : u8) -> u8 {
     if a == 0 {
         0
     }
@@ -49,7 +49,7 @@ fn exp(a : u8, n : u8) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use super::{LOG_TABLE, add, sub, multiply, exp};
+    use super::{LOG_TABLE, add, sub, mul, div, exp};
 
     static BACKBLAZE_LOG_TABLE : [u8; 256] = [
         //-1,    0,    1,   25,    2,   50,   26,  198,
@@ -105,10 +105,41 @@ mod tests {
                     let x = add(a, add(b, c));
                     let y = add(add(a, b), c);
                     assert_eq!(x, y);
-                    let x = multiply(a, multiply(b, c));
-                    let y = multiply(multiply(a, b), c);
+                    let x = mul(a, mul(b, c));
+                    let y = mul(mul(a, b), c);
                     assert_eq!(x, y);
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn test_identity() {
+        for i in 0..256 {
+            let a = i as u8;
+            let b = sub(0, a);
+            let c = sub(a, b);
+            assert_eq!(c, 0);
+            if a != 0 {
+                let b = div(1, a);
+                let c = mul(a, b);
+                assert_eq!(c, 1);
+            }
+        }
+    }
+
+    #[test]
+    fn test_commutativity() {
+        for i in 0..256 {
+            let a = i as u8;
+            for j in 0..256 {
+                let b = j as u8;
+                let x = add(a, b);
+                let y = add(b, a);
+                assert_eq!(x, y);
+                let x = mul(a, b);
+                let y = mul(b, a);
+                assert_eq!(x, y);
             }
         }
     }
