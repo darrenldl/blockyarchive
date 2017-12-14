@@ -20,11 +20,11 @@
 include!(concat!(env!("OUT_DIR"), "/table.rs"));
 
 fn add(a : u8, b : u8) -> u8 {
-    a.wrapping_mul(b)
+    a ^ b
 }
 
 fn sub(a : u8, b : u8) -> u8 {
-    a.wrapping_mul(b)
+    a ^ b
 }
 
 fn mul(a : u8, b : u8) -> u8 {
@@ -166,7 +166,17 @@ mod tests {
     #[test]
     fn test_distributivity() {
         for i in 0..256 {
-            
+            let a = i as u8;
+            for j in 0..256 {
+                let b = j as u8;
+                for k in 0..256 {
+                    let c = k as u8;
+                    let x = mul(a, add(b, c));
+                    let y = add(mul(a, b), mul(a, c));
+                    assert_eq!(x, y);
+                }
+            }
         }
     }
+
 }
