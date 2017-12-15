@@ -1,5 +1,10 @@
 use galois;
 
+#[derive(Debug)]
+pub enum Error {
+    SingularMatrix,
+}
+
 #[derive(PartialEq, Debug)]
 pub struct Matrix {
     data : Vec<Box<[u8]>>
@@ -119,7 +124,7 @@ impl Matrix {
         self.row_count() == self.column_count()
     }
 
-    pub fn gaussian_elim(&mut self) {
+    pub fn gaussian_elim(&mut self) -> Result<(), Error> {
         for r in 0..self.row_count() {
             if self.data[r][r] == 0 {
                 for r_below in r+1..self.row_count() {
@@ -131,7 +136,7 @@ impl Matrix {
             }
             // If we couldn't find one, the matrix is singular.
             if self.data[r][r] == 0 {
-                panic!("Matrix is singular")
+                return Err(Error::SingularMatrix)
             }
             // Scale to 1.
             if self.data[r][r] != 1 {
@@ -166,9 +171,10 @@ impl Matrix {
                 }
             }
         }
+        Ok(())
     }
 
-    pub fn invert(&self) -> Matrix {
+    pub fn invert(&self) -> Result<Matrix, Error> {
         if !self.is_square() {
             panic!("Trying to invert a non-square matrix")
         }
@@ -178,12 +184,12 @@ impl Matrix {
 
         let mut work = self.augment(&Self::identity(row_count));
 
-        work.gaussian_elim();
+        work.gaussian_elim()?;
 
-        work.sub_matrix(0,
-                        row_count,
-                        col_count,
-                        col_count * 2)
+        Ok(work.sub_matrix(0,
+                           row_count,
+                           col_count,
+                           col_count * 2))
     }
 
     pub fn vandermonde(rows : usize, cols : usize) -> Matrix {

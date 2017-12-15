@@ -4,6 +4,11 @@ mod matrix;
 
 use matrix::Matrix;
 
+#[derive(Debug)]
+pub enum Error {
+    NotEnoughShards
+}
+
 struct ReedSolomon {
     data_shard_count   : usize,
     parity_shard_count : usize,
@@ -18,7 +23,7 @@ impl ReedSolomon {
 
         let top = vandermonde.sub_matrix(0, 0, data_shards, data_shards);
 
-        vandermonde.multiply(&top.invert())
+        vandermonde.multiply(&top.invert().unwrap())
     }
 
     pub fn new(data_shards : usize, parity_shards : usize) -> ReedSolomon {
@@ -159,7 +164,7 @@ impl ReedSolomon {
                           shards        : &mut Vec<Box<[u8]>>,
                           shard_present : &Vec<bool>,
                           offset : usize,
-                          byte_count : usize) -> Result<(), &str>{
+                          byte_count : usize) -> Result<(), Error>{
         self.check_buffer_and_sizes(shards, offset, byte_count);
 
         // Quick check: are all of the shards present?  If so, there's
@@ -176,7 +181,7 @@ impl ReedSolomon {
 
         // More complete sanity check
         if number_present < self.data_shard_count {
-            return Err("Not enough shards present")
+            return Err(Error::NotEnoughShards)
         }
 
         // Pull out the rows of the matrix that correspond to the
@@ -215,7 +220,7 @@ impl ReedSolomon {
         // generates the shard that we want to decode.  Note that
         // since this matrix maps back to the orginal data, it can
         // be used to create a data shard, but not a parity shard.
-        let data_decode_matrix = sub_matrix.invert();
+        let data_decode_matrix = sub_matrix.invert().unwrap();
 
         // Re-create any data shards that were missing.
         //
@@ -264,7 +269,7 @@ impl ReedSolomon {
 
 #[cfg(test)]
 mod tests {
-    fn is_increasing_and_contains_data_row(indices : Vec<usize>) -> bool {
+    fn is_increasing_and_contains_data_row(indices : &Vec<usize>) -> bool {
         let cols = indices.len();
         for i in 0..cols-1 {
             if indices[i] >= indices[i+1] {
@@ -274,4 +279,55 @@ mod tests {
         return indices[0] < cols
     }
 
+    fn increment_indices(indices : &mut Vec<usize>,
+                         index_bound : usize) -> bool {
+        for i in 0..indices.len().rev() {
+            indices[i] += 1;
+            if indices[i] < index_bound {
+                break;
+            }
+
+            if i == 0 {
+                return false
+            }
+
+            indices[i] = 0
+        }
+
+        return true
+    }
+
+    fn increment_indices_until_increasing_and_contains_data_row(indices : &Vec<usize>, max_index : usize) -> bool {
+        for i in indices.iter() {
+            let valid = increment_indices(i, max_index);
+            if !valid {
+                return false
+            }
+
+            if is_increasing_and_contains_data_row(i) {
+                return true
+            }
+        }
+    }
+
+    fn find_singular_sub_matrix(m : Matrix) -> Matrix {
+        let rows = m.row_count();
+        let cols = m.column_count();
+        let row_indices = Vec::with_capacity(cols);
+        for i in row_indices.iter() {
+            let mut sub_matrix = Matrix::new(cols, cols);
+            for i in 0..row_indices.len() {
+                for c in 0..cols {
+                    sub_matrix.set(i, c, m.get(r, c));
+                }
+            }
+
+            sub_matrix.invert()
+        }
+    }
+
+    #[test]
+    fn test_build_matrix_PAR1_singular() {
+        
+    }
 }
