@@ -71,8 +71,7 @@ impl ReedSolomon {
         }
     }
 
-    fn code_some_shards(&self,
-                        matrix_rows : &Vec<Box<[u8]>>,
+    fn code_some_shards(matrix_rows : &Vec<Box<[u8]>>,
                         inputs  : &[Box<[u8]>],
                         outputs : &mut [Box<[u8]>],
                         offset : usize,
@@ -110,14 +109,13 @@ impl ReedSolomon {
 
         let (inputs, outputs) = shards.split_at_mut(self.data_shard_count);
 
-        self.code_some_shards(&self.parity_rows,
-                              inputs,
-                              outputs,
-                              offset, byte_count);
+        Self::code_some_shards(&self.parity_rows,
+                               inputs,
+                               outputs,
+                               offset, byte_count);
     }
 
-    fn check_some_shards(&self,
-                         matrix_rows : &Vec<Box<[u8]>>,
+    fn check_some_shards(matrix_rows : &Vec<Box<[u8]>>,
                          inputs      : &[Box<[u8]>],
                          to_check    : &[Box<[u8]>],
                          offset      : usize,
@@ -141,6 +139,126 @@ impl ReedSolomon {
             }
         }
         true
+    }
+
+    pub fn is_parity_correct(&self,
+                             shards : &mut Vec<Box<[u8]>>,
+                             offset     : usize,
+                             byte_count : usize) -> bool {
+        self.check_buffer_and_sizes(shards, offset, byte_count);
+
+        let (data_shards, to_check) = shards.split_at(self.data_shard_count);
+
+        Self::check_some_shards(&self.parity_rows,
+                                data_shards,
+                                to_check,
+                                offset, byte_count)
+    }
+
+    pub fn decode_missing(&self,
+                          shards        : &mut Vec<Box<[u8]>>,
+                          shard_present : &Vec<bool>,
+                          offset : usize,
+                          byte_count : usize) -> Result<(), &str>{
+        self.check_buffer_and_sizes(shards, offset, byte_count);
+
+        // Quick check: are all of the shards present?  If so, there's
+        // nothing to do.
+        let mut number_present = 0;
+        for v in shard_present.iter() {
+            if *v { number_present += 1; }
+        }
+        if number_present == self.total_shard_count {
+            // Cool.  All of the shards data data.  We don't
+            // need to do anything.
+            return Ok(())
+        }
+
+        // More complete sanity check
+        if number_present < self.data_shard_count {
+            return Err("Not enough shards present")
+        }
+
+        // Pull out the rows of the matrix that correspond to the
+        // shards that we have and build a square matrix.  This
+        // matrix could be used to generate the shards that we have
+        // from the original data.
+        //
+        // Also, pull out an array holding just the shards that
+        // correspond to the rows of the submatrix.  These shards
+        // will be the input to the decoding process that re-creates
+        // the missing data shards.
+        let mut sub_matrix =
+            Matrix::new(self.data_shard_count, self.data_shard_count);
+        let mut sub_shards = Vec::with_capacity(self.data_shard_count);
+        {
+            let mut sub_matrix_row = 0;
+            let mut matrix_row = 0;
+            while  matrix_row     < self.total_shard_count
+                && sub_matrix_row < self.data_shard_count
+            {
+                if shard_present[matrix_row] {
+                    for c in 0..self.data_shard_count {
+                        sub_matrix.set(sub_matrix_row, c,
+                                       self.matrix.get(matrix_row, c));
+                    }
+                    sub_shards[sub_matrix_row] = shards[matrix_row].clone();
+                    sub_matrix_row += 1;
+                }
+
+                matrix_row += 1;
+            }
+        }
+
+        // Invert the matrix, so we can go from the encoded shards
+        // back to the original data.  Then pull out the row that
+        // generates the shard that we want to decode.  Note that
+        // since this matrix maps back to the orginal data, it can
+        // be used to create a data shard, but not a parity shard.
+        let data_decode_matrix = sub_matrix.invert();
+
+        // Re-create any data shards that were missing.
+        //
+        // The input to the coding is all of the shards we actually
+        // have, and the output is the missing data shards.  The computation
+        // is done using the special decode matrix we just built.
+        let mut outputs = Vec::with_capacity(self.parity_shard_count);
+        let mut matrix_rows  = Vec::with_capacity(self.parity_shard_count);
+        let mut output_count = 0;
+        for i_shard in 0..self.data_shard_count {
+            if !shard_present[i_shard] {
+                outputs[output_count]     = shards[i_shard].clone();
+                matrix_rows[output_count] = data_decode_matrix.get_row(i_shard);
+                output_count += 1;
+            }
+        }
+        Self::code_some_shards(&matrix_rows,
+                               &sub_shards,
+                               outputs.as_mut_slice(),
+                               offset, byte_count);
+
+        // Now that we have all of the data shards intact, we can
+        // compute any of the parity that is missing.
+        //
+        // The input to the coding is ALL of the data shards, including
+        // any that we just calculated.  The output is whichever of the
+        // data shards were missing.
+        let mut output_count = 0;
+        for i_shard in self.data_shard_count..self.total_shard_count {
+            if !shard_present[i_shard] {
+                outputs[output_count]     = shards[i_shard].clone();
+                matrix_rows[output_count] =
+                    self.parity_rows[i_shard
+                                     - self.data_shard_count].clone();
+                output_count += 1;
+            }
+        }
+        Self::code_some_shards(&matrix_rows,
+                               shards,
+                               outputs.as_mut_slice(),
+                               offset, byte_count);
+
+        Ok (())
     }
 }
 
