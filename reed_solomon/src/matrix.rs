@@ -236,8 +236,9 @@ mod tests {
     }
 
     #[test]
-    fn test_matrix_inverse() {
+    fn test_matrix_inverse_pass_cases() {
         {
+		        // Test case validating inverse of the input Matrix.
             let m = matrix!([56, 23, 98],
                             [3, 100, 200],
                             [45, 201, 123]).invert();
@@ -246,5 +247,37 @@ mod tests {
                                  [112, 35, 126]);
             assert_eq!(m, expect);
         }
+        {
+		        // Test case validating inverse of the input Matrix.
+            let m = matrix!([1, 0, 0, 0, 0],
+                            [0, 1, 0, 0 ,0],
+                            [0, 0, 0, 1, 0],
+                            [0, 0, 0, 0, 1],
+                            [7, 7, 6, 6, 1]).invert();
+            let expect = matrix!([1, 0, 0, 0, 0],
+                                 [0, 1, 0, 0, 0],
+                                 [123, 123, 1, 122, 122],
+                                 [0, 0, 1, 0, 0],
+                                 [0, 0, 0, 1, 0]);
+            assert_eq!(m, expect);
+        }
+        {
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_matrix_inverse_non_square() {
+        // Test case with a non-square matrix.
+        matrix!([56, 23],
+                [3, 100],
+                [45, 201]).invert();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_matrix_inverse_singular() {
+        matrix!([4, 2],
+                [12, 6]).invert();
     }
 }
