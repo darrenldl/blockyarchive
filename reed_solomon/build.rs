@@ -71,7 +71,7 @@ macro_rules! write_table {
     (1D => $file:ident, $table:ident, $name:expr, $type:expr) => {{
         let len = $table.len();
         let mut table_str =
-            String::from(format!("static {} : [{}; {}] = [", $name, $type, len));
+            String::from(format!("pub static {} : [{}; {}] = [", $name, $type, len));
 
         for v in $table.iter() {
             let str = format!("{}, ", v);
@@ -86,7 +86,7 @@ macro_rules! write_table {
         let len1 = $table.len();
         let len2 = $table[0].len();
         let mut table_str =
-            String::from(format!("static {} : [[{}; {}]; {}] = [",
+            String::from(format!("pub static {} : [[{}; {}]; {}] = [",
                                  $name,
                                  $type,
                                  len1,
