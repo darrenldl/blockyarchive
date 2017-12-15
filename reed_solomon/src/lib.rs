@@ -74,9 +74,7 @@ impl ReedSolomon {
     fn code_some_shards(&self,
                         matrix_rows : &Vec<Box<[u8]>>,
                         inputs  : &[Box<[u8]>],
-                        input_count : usize,
                         outputs : &mut [Box<[u8]>],
-                        output_count : usize,
                         offset : usize,
                         byte_count : usize) {
         let table = &galois::MULT_TABLE;
@@ -84,7 +82,7 @@ impl ReedSolomon {
         {
             let i_input = 0;
             let input_shard = &inputs[i_input];
-            for i_output in 0..output_count {
+            for i_output in 0..outputs.len() {
                 let output_shard   = &mut outputs[i_output];
                 let matrix_row     = &matrix_rows[i_output];
                 let mult_table_row = table[matrix_row[i_input] as usize];
@@ -94,9 +92,9 @@ impl ReedSolomon {
             }
         }
 
-        for i_input in 1..input_count {
+        for i_input in 1..inputs.len() {
             let input_shard = &inputs[i_input];
-            for i_output in 0..output_count {
+            for i_output in 0..outputs.len() {
                 let output_shard = &mut outputs[i_output];
                 let matrix_row   = &matrix_rows[i_output];
                 let mult_table_row = &table[matrix_row[i_input] as usize];
@@ -113,11 +111,14 @@ impl ReedSolomon {
         let (inputs, outputs) = shards.split_at_mut(self.data_shard_count);
 
         self.code_some_shards(&self.parity_rows,
-                              inputs,  self.data_shard_count,
-                              outputs, self.parity_shard_count,
-                              offset,  byte_count);
+                              inputs,
+                              outputs,
+                              offset, byte_count);
     }
 
+    //fn check_some_shards(&self,
+    //                     matrix_rows : &Vec<Box<[u8]>>,
+    //inputs : &)
 }
 
 #[cfg(test)]
