@@ -350,8 +350,7 @@ mod tests {
 
         let mut shards = Vec::with_capacity(13);
         for _ in 0..13 {
-            let shard = Vec::with_capacity(per_shard);
-            shards.push(shard.into_boxed_slice());
+            shards.push(vec![0; per_shard].into_boxed_slice());
         }
 
         for s in shards.iter_mut() {
