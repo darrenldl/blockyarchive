@@ -2,7 +2,7 @@ use galois;
 
 #[derive(PartialEq, Debug)]
 pub struct Matrix {
-    data : Vec<Vec<u8>>
+    data : Vec<Box<[u8]>>
 }
 
 impl Matrix {
@@ -14,13 +14,13 @@ impl Matrix {
             for _ in 0..cols {
                 row.push(0);
             }
-            data.push(row);
+            data.push(row.into_boxed_slice());
         }
 
         Matrix { data }
     }
 
-    pub fn new_with_data(init_data : Vec<Vec<u8>>) -> Matrix {
+    pub fn new_with_data(init_data : Vec<Box<[u8]>>) -> Matrix {
         let rows = init_data.len();
         let cols = init_data[0].len();
 
@@ -107,7 +107,7 @@ impl Matrix {
         result
     }
 
-    pub fn get_row(&self, row : usize) -> Vec<u8> {
+    pub fn get_row(&self, row : usize) -> Box<[u8]> {
         self.data[row].clone()
     }
 
@@ -205,7 +205,7 @@ macro_rules! matrix {
             [ $( $x:expr ),+ ]
         ),*
     ) => (
-        Matrix::new_with_data(vec![ $( vec![$( $x ),*] ),* ])
+        Matrix::new_with_data(vec![ $( vec![$( $x ),*].into_boxed_slice() ),* ])
     );
     ($rows:expr, $cols:expr) => (Matrix::new($rows, $cols));
 }

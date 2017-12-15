@@ -9,7 +9,7 @@ struct ReedSolomon {
     parity_shard_count : usize,
     total_shard_count  : usize,
     matrix             : Matrix,
-    parity_rows        : Vec<Vec<u8>>,
+    parity_rows        : Vec<Box<[u8]>>,
 }
 
 impl ReedSolomon {
@@ -41,6 +41,24 @@ impl ReedSolomon {
             parity_rows
         }
     }
+
+    pub fn data_shard_count(&self) -> usize {
+        self.data_shard_count
+    }
+
+    pub fn parity_shard_count(&self) -> usize {
+        self.parity_shard_count
+    }
+
+    pub fn total_shard_count(&self) -> usize {
+        self.total_shard_count
+    }
+
+    fn check_buffer_and_sizes(&self, shards : Vec<Box<[u8]>>) {
+        
+    }
+
+    //pub fn encode_parity(&self, )
 }
 
 #[cfg(test)]
