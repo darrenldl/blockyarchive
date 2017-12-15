@@ -548,5 +548,16 @@ mod tests {
         }
 
         // Try to decode with 7 data and 1 parity shards
+        shards[0] = None;
+        shards[1] = None;
+        shards[9] = None;
+        shards[10] = None;
+        shards[11] = None;
+        shards[12] = None;
+        match r.decode_missing(&mut shards,
+                               None, None) {
+            Err(Error::NotEnoughShards) => {},
+            Ok(()) => panic!("Should fail due to not enough shards"),
+        }
     }
 }
