@@ -54,8 +54,21 @@ impl ReedSolomon {
         self.total_shard_count
     }
 
-    fn check_buffer_and_sizes(&self, shards : Vec<Box<[u8]>>) {
-        
+    fn check_buffer_and_sizes(&self, shards : Vec<Box<[u8]>>, offset : usize, byte_count : usize) {
+        if shards.len() != self.total_shard_count {
+            panic!("Incorrect number of shards : {}", shards.len())
+        }
+
+        let shard_length = shards[0].len();
+        for shard in shards.iter() {
+            if shard.len() != shard_length {
+                panic!("Shards are of different sizes");
+            }
+        }
+
+        if shard_length < offset + byte_count {
+            panic!("Buffers too small : {}", byte_count + offset);
+        }
     }
 
     //pub fn encode_parity(&self, )
