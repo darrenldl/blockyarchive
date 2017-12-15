@@ -198,7 +198,6 @@ impl Matrix {
 
 #[macro_export]
 macro_rules! matrix {
-    ($rows:expr, $cols:expr) => (Matrix::new($rows, $cols));
     (
         $(
             [ $( $x:expr ),+ ]
@@ -206,6 +205,7 @@ macro_rules! matrix {
     ) => (
         Matrix::new_with_data(vec![ $( vec![$( $x ),*] ),* ])
     );
+    ($rows:expr, $cols:expr) => (Matrix::new($rows, $cols));
 }
 
 #[cfg(test)]
@@ -215,21 +215,21 @@ mod tests {
     #[test]
     fn test_matrix_identity() {
         let m1 = Matrix::identity(3);
-        let m2 = Matrix::new_with_data(vec![vec![1, 0, 0],
-                                            vec![0, 1, 0],
-                                            vec![0, 0, 1]]);
+        let m2 = matrix!([1, 0, 0],
+                         [0, 1, 0],
+                         [0, 0, 1]);
         assert_eq!(m1, m2);
     }
 
     #[test]
     fn test_matrix_multiply() {
-        let m1 = Matrix::new_with_data(vec![vec![1, 2],
-                                            vec![3, 4]]);
-        let m2 = Matrix::new_with_data(vec![vec![5, 6],
-                                            vec![7, 8]]);
+        let m1 = matrix!([1, 2],
+                         [3, 4]);
+        let m2 = matrix!([5, 6],
+                         [7, 8]);
         let actual = m1.multiply(&m2);
-        let expect = Matrix::new_with_data(vec![vec![11, 22],
-                                                vec![19, 42]]);
+        let expect = matrix!([11, 22],
+                             [19, 42]);
         assert_eq!(actual, expect);
     }
 
