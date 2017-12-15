@@ -208,4 +208,16 @@ mod tests {
                                             vec![0, 0, 1]]);
         assert_eq!(m1, m2);
     }
+
+    #[test]
+    fn test_matrix_multiply() {
+        let m1 = Matrix::new_with_data(vec![vec![1, 2],
+                                            vec![3, 4]]);
+        let m2 = Matrix::new_with_data(vec![vec![5, 6],
+                                            vec![7, 8]]);
+        let actual = m1.multiply(&m2);
+        let expect = Matrix::new_with_data(vec![vec![11, 22],
+                                                vec![19, 42]]);
+        assert_eq!(actual, expect);
+    }
 }
