@@ -1,6 +1,6 @@
 use galois;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub struct Matrix {
     data : Vec<Vec<u8>>
 }
@@ -37,7 +37,11 @@ impl Matrix {
     }
 
     pub fn identity(size : usize) -> Matrix {
-        Self::new(size, size)
+        let mut result = Self::new(size, size);
+        for i in 0..size {
+            result.data[i][i] = 1;
+        }
+        result
     }
 
     pub fn column_count(&self) -> usize {
@@ -189,5 +193,19 @@ impl Matrix {
             }
         }
         result
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Matrix;
+
+    #[test]
+    fn test_matrix_identity() {
+        let m1 = Matrix::identity(3);
+        let m2 = Matrix::new_with_data(vec![vec![1, 0, 0],
+                                            vec![0, 1, 0],
+                                            vec![0, 0, 1]]);
+        assert_eq!(m1, m2);
     }
 }
