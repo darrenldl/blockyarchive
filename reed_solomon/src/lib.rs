@@ -421,6 +421,16 @@ mod tests {
         }}
     }
 
+    macro_rules! shards {
+        (
+            $( [ $( $x:expr ),* ] ),*
+        ) => {{
+            let shards : Vec<Box<[u8]>> =
+                vec![ $( Box::new([ $( $x ),* ]) ),* ];
+            shards
+        }}
+    }
+
     fn is_increasing_and_contains_data_row(indices : &Vec<usize>) -> bool {
         let cols = indices.len();
         for i in 0..cols-1 {
@@ -580,6 +590,39 @@ mod tests {
         // Re-encode
         r.encode_parity(&mut shards, None, None);
         fill_random(&mut shards[1]);
+        assert!(!r.is_parity_correct(&shards, None, None));
+    }
+
+    #[test]
+    fn test_one_encode() {
+        let r = ReedSolomon::new(5, 5);
+
+        let mut shards = shards!([0, 1],
+                                 [4, 5],
+                                 [2, 3],
+                                 [6, 7],
+                                 [8, 9],
+                                 [0, 0],
+                                 [0, 0],
+                                 [0, 0],
+                                 [0, 0],
+                                 [0, 0]);
+
+        r.encode_parity(&mut shards, None, None);
+        { assert_eq!(shards[5][0], 12);
+          assert_eq!(shards[5][1], 13); }
+        { assert_eq!(shards[6][0], 10);
+          assert_eq!(shards[6][1], 11); }
+        { assert_eq!(shards[7][0], 14);
+          assert_eq!(shards[7][1], 15); }
+        { assert_eq!(shards[8][0], 90);
+          assert_eq!(shards[8][1], 91); }
+        { assert_eq!(shards[9][0], 94);
+          assert_eq!(shards[9][1], 95); }
+
+        assert!(r.is_parity_correct(&shards, None, None));
+
+        shards[8][0] += 1;
         assert!(!r.is_parity_correct(&shards, None, None));
     }
 }
