@@ -116,9 +116,32 @@ impl ReedSolomon {
                               offset, byte_count);
     }
 
-    //fn check_some_shards(&self,
-    //                     matrix_rows : &Vec<Box<[u8]>>,
-    //inputs : &)
+    fn check_some_shards(&self,
+                         matrix_rows : &Vec<Box<[u8]>>,
+                         inputs      : &[Box<[u8]>],
+                         to_check    : &[Box<[u8]>],
+                         offset      : usize,
+                         byte_count  : usize)
+                         -> bool {
+        let table = &galois::MULT_TABLE;
+
+        for i_byte in offset..(offset + byte_count) {
+            for i_output in 0..to_check.len() {
+                let matrix_row = &matrix_rows[i_output as usize];
+                let mut value = 0;
+                for i_input in 0..inputs.len() {
+                    value ^=
+                        table
+                        [matrix_row[i_input]     as usize]
+                        [inputs[i_input][i_byte] as usize];
+                }
+                if to_check[i_output][i_byte] != value {
+                    return false
+                }
+            }
+        }
+        true
+    }
 }
 
 #[cfg(test)]
