@@ -262,6 +262,20 @@ impl ReedSolomon {
         result
     }
 
+    fn patch_missing_shards(patched   : &mut Vec<Option<Box<[u8]>>>,
+                            start     : usize,
+                            end_exc   : usize,
+                            materials : Vec<Box<[u8]>>) {
+        let mut material_getter = materials.into_iter();
+        for i_shard in start..end_exc {
+            if let None = patched[i_shard] {
+                patched[i_shard] =
+                    Some(material_getter.next()
+                         .expect("Ran out of materials for patching"));
+            }
+        }
+    }
+
     pub fn decode_missing(&self,
                           shards        : &mut Vec<Option<Box<[u8]>>>,
                           offset        : Option<usize>,
@@ -334,30 +348,30 @@ impl ReedSolomon {
         // The input to the coding is all of the shards we actually
         // have, and the output is the missing data shards.  The computation
         // is done using the special decode matrix we just built.
-        let mut outputs : Vec<Box<[u8]>> =
-            vec![vec![0; byte_count].into_boxed_slice();
-                 self.parity_shard_count];
         let mut matrix_rows  : Vec<Box<[u8]>> =
             vec![Box::new([]); self.parity_shard_count];
-        let mut output_count = 0;
-        for i_shard in 0..self.data_shard_count {
-            if let None = shards[i_shard] {
-                matrix_rows[output_count] = data_decode_matrix.get_row(i_shard);
-                output_count += 1;
+        {
+            let mut outputs : Vec<Box<[u8]>> =
+                vec![vec![0; byte_count].into_boxed_slice();
+                     self.parity_shard_count];
+            let mut output_count = 0;
+            for i_shard in 0..self.data_shard_count {
+                if let None = shards[i_shard] {
+                    matrix_rows[output_count] =
+                        data_decode_matrix.get_row(i_shard);
+                    output_count += 1;
+                }
             }
-        }
-        Self::code_some_shards(&matrix_rows,
-                               &sub_shards,  self.data_shard_count,
-                               &mut outputs, output_count,
-                               offset, byte_count);
+            Self::code_some_shards(&matrix_rows,
+                                   &sub_shards,  self.data_shard_count,
+                                   &mut outputs, output_count,
+                                   offset, byte_count);
 
-        // copy outputs to slots with missing shards
-        let mut output_count = 0;
-        for i_shard in 0..self.data_shard_count {
-            if let None = shards[i_shard] {
-                shards[i_shard] = Some(outputs[output_count].clone());
-                output_count += 1;
-            }
+            // patch slots slots with missing shards using outputs
+            Self::patch_missing_shards(shards,
+                                       0,
+                                       self.data_shard_count,
+                                       outputs);
         }
 
         // Now that we have all of the data shards intact, we can
