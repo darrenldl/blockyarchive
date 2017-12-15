@@ -79,8 +79,8 @@ impl Matrix {
     }
 
     pub fn augment(&self, rhs : &Matrix) -> Matrix {
-        if self.row_count() == self.column_count() {
-            panic!("Matrices do not have the same row count")
+        if self.row_count() != self.column_count() {
+            panic!(format!("Matrices do not have the same row count, lhs : {}, rhs : {}", self.row_count(), rhs.row_count()))
         }
         let mut result = Self::new(self.row_count(),
                                    self.column_count() + rhs.column_count());
@@ -173,15 +173,17 @@ impl Matrix {
             panic!("Trying to invert a non-square matrix")
         }
 
-        let size = self.row_count();
-        let mut work = self.augment(&Self::identity(size));
+        let row_count = self.row_count();
+        let col_count = self.column_count();
+
+        let mut work = self.augment(&Self::identity(row_count));
 
         work.gaussian_elim();
 
         work.sub_matrix(0,
-                        self.row_count(),
-                        self.column_count(),
-                        self.column_count() * 2)
+                        row_count,
+                        col_count,
+                        col_count * 2)
     }
 
     pub fn vandermonde(rows : usize, cols : usize) -> Matrix {
