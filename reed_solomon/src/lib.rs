@@ -85,7 +85,7 @@ impl ReedSolomon {
                 let output_shard   = &mut outputs[i_output];
                 let matrix_row     = &matrix_rows[i_output];
                 let mult_table_row = table[matrix_row[i_input] as usize];
-                for i_byte in offset..(offset + byte_count) {
+                for i_byte in offset..offset + byte_count {
                     output_shard[i_byte] = mult_table_row[input_shard[i_byte] as usize];
                 }
             }
@@ -97,7 +97,7 @@ impl ReedSolomon {
                 let output_shard = &mut outputs[i_output];
                 let matrix_row   = &matrix_rows[i_output];
                 let mult_table_row = &table[matrix_row[i_input] as usize];
-                for i_byte in offset..(offset + byte_count) {
+                for i_byte in offset..offset + byte_count {
                     output_shard[i_byte] ^= mult_table_row[input_shard[i_byte] as usize];
                 }
             }
@@ -123,7 +123,7 @@ impl ReedSolomon {
                          -> bool {
         let table = &galois::MULT_TABLE;
 
-        for i_byte in offset..(offset + byte_count) {
+        for i_byte in offset..offset + byte_count {
             for i_output in 0..to_check.len() {
                 let matrix_row = &matrix_rows[i_output as usize];
                 let mut value = 0;
@@ -264,4 +264,14 @@ impl ReedSolomon {
 
 #[cfg(test)]
 mod tests {
+    fn is_increasing_and_contains_data_row(indices : Vec<usize>) -> bool {
+        let cols = indices.len();
+        for i in 0..cols-1 {
+            if indices[i] >= indices[i+1] {
+                return false
+            }
+        }
+        return indices[0] < cols
+    }
+
 }
