@@ -54,20 +54,20 @@ impl ReedSolomon {
         }
     }
 
-    /*fn calc_byte_count(shards : &[Box<[u8]>], byte_count : Option<usize>) -> usize {
+    fn calc_byte_count(shards : &[Box<[u8]>], byte_count : Option<usize>) -> usize {
         match byte_count {
             Some(x) => x,
             None    => shards[0].len()
         }
-    }*/
+    }
 
     fn calc_byte_count_option_shards(shards : &[Option<Box<[u8]>>], byte_count : Option<usize>) -> usize {
         match byte_count {
             Some(x) => x,
             None    => {
                 for v in shards.iter() {
-                    match v {
-                        Some(x) => return x.len(),
+                    match *v {
+                        Some(ref x) => return x.len(),
                         None    => {},
                     }
                 };
@@ -102,6 +102,34 @@ impl ReedSolomon {
 
         if shard_length < offset + byte_count {
             panic!("Buffers too small, shard_length : {}, offset + byte_count : {}", shard_length, offset + byte_count);
+        }
+    }
+
+    fn check_buffer_and_sizes_option_shards(&self,
+                                            shards : &Vec<Option<Box<[u8]>>>,
+                                            offset : usize, byte_count : usize) {
+        if shards.len() != self.total_shard_count {
+            panic!("Incorrect number of shards : {}", shards.len())
+        }
+
+        let mut shard_length = None;
+        for shard in shards.iter() {
+            if let Some(ref s) = *shard {
+                match shard_length {
+                    None    => shard_length = Some(s.len()),
+                    Some(x) => {
+                        if s.len() != x {
+                            panic!("Shards are of different sizes");
+                        }
+                    }
+                }
+            }
+        }
+
+        if let Some(x) = shard_length {
+            if x < offset + byte_count {
+                panic!("Buffers too small, shard_length : Some({}), offset + byte_count : {}", x, offset + byte_count);
+            }
         }
     }
 
@@ -202,27 +230,28 @@ impl ReedSolomon {
                                 offset, byte_count)
     }
 
-    pub fn shards_to_option_shards(shards : Vec<Box<[u8]>>)
+    pub fn shards_to_option_shards(shards : &Vec<Box<[u8]>>)
                                    -> Vec<Option<Box<[u8]>>> {
-        let result = Vec::with_capacity(shards.len());
+        let mut result = Vec::with_capacity(shards.len());
 
-        for v in shards.into_iter() {
-            result.push(Some(v))
+        for v in shards.iter() {
+            result.push(Some(v.clone()));
         }
         result
     }
 
-    pub fn option_shards_to_shards(shards : Vec<Option<Box<[u8]>>>)
+    pub fn option_shards_to_shards(shards : &Vec<Option<Box<[u8]>>>,
+                                   offset : usize,
+                                   count : usize)
                                    -> Vec<Box<[u8]>> {
-        let byte_count = Self::calc_byte_count_option_shards(shards, None);
-        let result = Vec::with_capacity(shards.len());
+        let mut result = Vec::with_capacity(shards.len());
 
-        for v in shards.into_iter() {
-            let shard = match v {
-                Some(x) => x,
-                None    => Box::new([0]),
+        for i in offset..offset+count {
+            let shard = match shards[i] {
+                Some(ref x) => x,
+                None        => panic!("Missing shards"),
             };
-            result.push(shard);
+            result.push(shard.clone());
         }
         result
     }
@@ -231,17 +260,17 @@ impl ReedSolomon {
                           shards        : &mut Vec<Option<Box<[u8]>>>,
                           offset        : Option<usize>,
                           byte_count    : Option<usize>)
-                          -> Result<Vec<>, Error>{
+                          -> Result<(), Error> {
         let offset     = Self::calc_offset(offset);
         let byte_count = Self::calc_byte_count_option_shards(shards, byte_count);
 
-        self.check_buffer_and_sizes(shards, offset, byte_count);
+        self.check_buffer_and_sizes_option_shards(shards, offset, byte_count);
 
         // Quick check: are all of the shards present?  If so, there's
         // nothing to do.
         let mut number_present = 0;
         for v in shards.iter() {
-            if let Some(_) = v { number_present += 1; }
+            if let Some(_) = *v { number_present += 1; }
         }
         if number_present == self.total_shard_count {
             // Cool.  All of the shards data data.  We don't
@@ -278,7 +307,8 @@ impl ReedSolomon {
                         sub_matrix.set(sub_matrix_row, c,
                                        self.matrix.get(matrix_row, c));
                     }
-                    sub_shards[sub_matrix_row] = shards[matrix_row].clone();
+                    sub_shards[sub_matrix_row] =
+                        shards[matrix_row].clone().unwrap();
                     sub_matrix_row += 1;
                 }
 
@@ -299,13 +329,13 @@ impl ReedSolomon {
         // have, and the output is the missing data shards.  The computation
         // is done using the special decode matrix we just built.
         let mut outputs : Vec<Box<[u8]>> =
-            vec![Box::new([0]); self.parity_shard_count];
+            vec![vec![0; byte_count].into_boxed_slice();
+                 self.parity_shard_count];
         let mut matrix_rows  : Vec<Box<[u8]>> =
-            vec![Box::new([0]); self.parity_shard_count];
+            vec![Box::new([]); self.parity_shard_count];
         let mut output_count = 0;
         for i_shard in 0..self.data_shard_count {
             if let None = shards[i_shard] {
-                outputs[output_count]     = shards[i_shard].clone();
                 matrix_rows[output_count] = data_decode_matrix.get_row(i_shard);
                 output_count += 1;
             }
@@ -315,27 +345,48 @@ impl ReedSolomon {
                                &mut outputs, output_count,
                                offset, byte_count);
 
+        // copy outputs to slots with missing shards
+        let mut output_count = 0;
+        for i_shard in 0..self.data_shard_count {
+            if let None = shards[i_shard] {
+                shards[i_shard] = Some(outputs[output_count].clone());
+                output_count += 1;
+            }
+        }
+
         // Now that we have all of the data shards intact, we can
         // compute any of the parity that is missing.
         //
         // The input to the coding is ALL of the data shards, including
         // any that we just calculated.  The output is whichever of the
         // data shards were missing.
+        let mut outputs : Vec<Box<[u8]>> =
+            vec![vec![0u8; byte_count].into_boxed_slice();
+                 self.parity_shard_count];
         let mut output_count = 0;
         for i_shard in self.data_shard_count..self.total_shard_count {
             if let None = shards[i_shard] {
-                outputs[output_count]     = shards[i_shard].clone();
                 matrix_rows[output_count] =
                     self.parity_rows[i_shard
                                      - self.data_shard_count].clone();
                 output_count += 1;
             }
         }
-        let shards = Self::option_shards_to_shards(shards);
+        let complete_data_shards =
+            Self::option_shards_to_shards(shards, 0, self.data_shard_count);
         Self::code_some_shards(&matrix_rows,
-                               &shards, self.data_shard_count,
+                               &complete_data_shards, self.data_shard_count,
                                outputs.as_mut_slice(), output_count,
                                offset, byte_count);
+
+        // copy outputs to parity shards slots
+        let mut output_count = 0;
+        for i_shard in self.data_shard_count..self.total_shard_count {
+            if let None = shards[i_shard] {
+                shards[i_shard] = Some(outputs[output_count].clone());
+                output_count += 1;
+            }
+        }
 
         Ok (())
     }
@@ -449,7 +500,7 @@ mod tests {
             fill_random(s);
         }
 
-        let shards = ReedSolomon::shards_to_option_shards(shards);
+        let shards = ReedSolomon::shards_to_option_shards(&shards);
 
         /*r.encode_parity(&mut shards, None, None);
 
