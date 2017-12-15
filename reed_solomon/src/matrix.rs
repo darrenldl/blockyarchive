@@ -196,6 +196,18 @@ impl Matrix {
     }
 }
 
+#[macro_export]
+macro_rules! matrix {
+    ($rows:expr, $cols:expr) => (Matrix::new($rows, $cols));
+    (
+        $(
+            [ $( $x:expr ),+ ]
+        ),*
+    ) => (
+        Matrix::new_with_data(vec![ $( vec![$( $x ),*] ),* ])
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::Matrix;
@@ -219,5 +231,18 @@ mod tests {
         let expect = Matrix::new_with_data(vec![vec![11, 22],
                                                 vec![19, 42]]);
         assert_eq!(actual, expect);
+    }
+
+    #[test]
+    fn test_matrix_inverse() {
+        {
+            let m = matrix!([56, 23, 98],
+                            [3, 100, 200],
+                            [45, 201, 123]).invert();
+            let expect = matrix!([175, 133, 33],
+                                 [130, 13, 245],
+                                 [112, 35, 126]);
+            assert_eq!(m, expect);
+        }
     }
 }
