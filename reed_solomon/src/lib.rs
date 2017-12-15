@@ -47,6 +47,20 @@ impl ReedSolomon {
         }
     }
 
+    fn calc_offset(offset : Option<usize>) -> usize {
+        match offset {
+            Some(x) => x,
+            None    => 0
+        }
+    }
+
+    fn calc_byte_count(shards : &[Box<[u8]>], byte_count : Option<usize>) -> usize {
+        match byte_count {
+            Some(x) => x,
+            None    => shards[0].len()
+        }
+    }
+
     pub fn data_shard_count(&self) -> usize {
         self.data_shard_count
     }
@@ -76,17 +90,19 @@ impl ReedSolomon {
         }
     }
 
-    fn code_some_shards(matrix_rows : &Vec<Box<[u8]>>,
-                        inputs  : &[Box<[u8]>],
-                        outputs : &mut [Box<[u8]>],
-                        offset : usize,
-                        byte_count : usize) {
+    fn code_some_shards(matrix_rows  : &Vec<Box<[u8]>>,
+                        inputs       : &[Box<[u8]>],
+                        input_count  : usize,
+                        outputs      : &mut [Box<[u8]>],
+                        output_count : usize,
+                        offset       : usize,
+                        byte_count   : usize) {
         let table = &galois::MULT_TABLE;
 
         {
             let i_input = 0;
             let input_shard = &inputs[i_input];
-            for i_output in 0..outputs.len() {
+            for i_output in 0..output_count {
                 let output_shard   = &mut outputs[i_output];
                 let matrix_row     = &matrix_rows[i_output];
                 let mult_table_row = table[matrix_row[i_input] as usize];
@@ -96,9 +112,9 @@ impl ReedSolomon {
             }
         }
 
-        for i_input in 1..inputs.len() {
+        for i_input in 1..input_count {
             let input_shard = &inputs[i_input];
-            for i_output in 0..outputs.len() {
+            for i_output in 0..output_count {
                 let output_shard = &mut outputs[i_output];
                 let matrix_row   = &matrix_rows[i_output];
                 let mult_table_row = &table[matrix_row[i_input] as usize];
@@ -109,30 +125,38 @@ impl ReedSolomon {
         }
     }
 
-    pub fn encode_parity(&self, shards : &mut Vec<Box<[u8]>>, offset : usize, byte_count : usize) {
+    pub fn encode_parity(&self,
+                         shards     : &mut Vec<Box<[u8]>>,
+                         offset     : Option<usize>,
+                         byte_count : Option<usize>) {
+        let offset     = Self::calc_offset(offset);
+        let byte_count = Self::calc_byte_count(shards, byte_count);
+
         self.check_buffer_and_sizes(shards, offset, byte_count);
 
         let (inputs, outputs) = shards.split_at_mut(self.data_shard_count);
 
         Self::code_some_shards(&self.parity_rows,
-                               inputs,
-                               outputs,
+                               inputs,  self.data_shard_count,
+                               outputs, self.parity_shard_count,
                                offset, byte_count);
     }
 
     fn check_some_shards(matrix_rows : &Vec<Box<[u8]>>,
                          inputs      : &[Box<[u8]>],
+                         input_count : usize,
                          to_check    : &[Box<[u8]>],
+                         check_count : usize,
                          offset      : usize,
                          byte_count  : usize)
                          -> bool {
         let table = &galois::MULT_TABLE;
 
         for i_byte in offset..offset + byte_count {
-            for i_output in 0..to_check.len() {
+            for i_output in 0..check_count {
                 let matrix_row = &matrix_rows[i_output as usize];
                 let mut value = 0;
-                for i_input in 0..inputs.len() {
+                for i_input in 0..input_count {
                     value ^=
                         table
                         [matrix_row[i_input]     as usize]
@@ -147,25 +171,35 @@ impl ReedSolomon {
     }
 
     pub fn is_parity_correct(&self,
-                             shards : &mut Vec<Box<[u8]>>,
-                             offset     : usize,
-                             byte_count : usize) -> bool {
+                             shards     : &Vec<Box<[u8]>>,
+                             offset     : Option<usize>,
+                             byte_count : Option<usize>) -> bool {
+        let offset     = Self::calc_offset(offset);
+        let byte_count = Self::calc_byte_count(shards, byte_count);
+
         self.check_buffer_and_sizes(shards, offset, byte_count);
 
         let (data_shards, to_check) = shards.split_at(self.data_shard_count);
 
         Self::check_some_shards(&self.parity_rows,
-                                data_shards,
-                                to_check,
+                                data_shards, self.data_shard_count,
+                                to_check,    self.parity_shard_count,
                                 offset, byte_count)
     }
 
     pub fn decode_missing(&self,
                           shards        : &mut Vec<Box<[u8]>>,
                           shard_present : &Vec<bool>,
-                          offset : usize,
-                          byte_count : usize) -> Result<(), Error>{
+                          offset        : Option<usize>,
+                          byte_count    : Option<usize>) -> Result<(), Error>{
+        let offset     = Self::calc_offset(offset);
+        let byte_count = Self::calc_byte_count(shards, byte_count);
+
         self.check_buffer_and_sizes(shards, offset, byte_count);
+
+        if shard_present.len() != shards.len() {
+            panic!("Flags vector length does not match number of shards, shards : {}, shard_present : {}", shards.len(), shard_present.len());
+        }
 
         // Quick check: are all of the shards present?  If so, there's
         // nothing to do.
@@ -195,7 +229,8 @@ impl ReedSolomon {
         // the missing data shards.
         let mut sub_matrix =
             Matrix::new(self.data_shard_count, self.data_shard_count);
-        let mut sub_shards = Vec::with_capacity(self.data_shard_count);
+        let mut sub_shards : Vec<Box<[u8]>> =
+            vec![Box::new([0]); self.data_shard_count];
         {
             let mut sub_matrix_row = 0;
             let mut matrix_row = 0;
@@ -227,8 +262,10 @@ impl ReedSolomon {
         // The input to the coding is all of the shards we actually
         // have, and the output is the missing data shards.  The computation
         // is done using the special decode matrix we just built.
-        let mut outputs = Vec::with_capacity(self.parity_shard_count);
-        let mut matrix_rows  = Vec::with_capacity(self.parity_shard_count);
+        let mut outputs : Vec<Box<[u8]>> =
+            vec![Box::new([0]); self.parity_shard_count];
+        let mut matrix_rows  : Vec<Box<[u8]>> =
+            vec![Box::new([0]); self.parity_shard_count];
         let mut output_count = 0;
         for i_shard in 0..self.data_shard_count {
             if !shard_present[i_shard] {
@@ -238,8 +275,8 @@ impl ReedSolomon {
             }
         }
         Self::code_some_shards(&matrix_rows,
-                               &sub_shards,
-                               outputs.as_mut_slice(),
+                               &sub_shards,  self.data_shard_count,
+                               &mut outputs, output_count,
                                offset, byte_count);
 
         // Now that we have all of the data shards intact, we can
@@ -259,8 +296,8 @@ impl ReedSolomon {
             }
         }
         Self::code_some_shards(&matrix_rows,
-                               shards,
-                               outputs.as_mut_slice(),
+                               &shards, self.data_shard_count,
+                               outputs.as_mut_slice(), output_count,
                                offset, byte_count);
 
         Ok (())
@@ -344,7 +381,6 @@ mod tests {
     #[test]
     fn test_encoding() {
         let per_shard = 50_000;
-        //let rng = rand::thread_rng();
 
         let r = ReedSolomon::new(10, 3);
 
@@ -357,7 +393,33 @@ mod tests {
             fill_random(s);
         }
 
-        r.encode_parity(&mut shards, 0, per_shard);
-        assert!(r.is_parity_correct(&mut shards, 0, per_shard));
+        r.encode_parity(&mut shards, None, None);
+        assert!(r.is_parity_correct(&shards, None, None));
+    }
+
+    #[test]
+    fn test_decode_missing() {
+        let per_shard = 50_000;
+
+        let r = ReedSolomon::new(10, 3);
+
+        let mut shards = Vec::with_capacity(13);
+        for _ in 0..13 {
+            shards.push(vec![0; per_shard].into_boxed_slice());
+        }
+
+        for s in shards.iter_mut() {
+            fill_random(s);
+        }
+
+        r.encode_parity(&mut shards, None, None);
+
+        // Try to decode with 10 shards
+        r.decode_missing(&mut shards,
+                         &vec![true, true, true, true, true,
+                               true, true, true, true, true,
+                               false, false, false],
+                         None, None).unwrap();
+        assert!(r.is_parity_correct(&shards, None, None));
     }
 }
