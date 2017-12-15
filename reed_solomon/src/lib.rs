@@ -244,12 +244,15 @@ impl ReedSolomon {
                                    offset : Option<usize>,
                                    byte_count  : Option<usize>)
                                    -> Vec<Box<[u8]>> {
-        let offset     = Self::calc_offset(offset);
-        let byte_count = Self::calc_byte_count_option_shards(shards, byte_count);
+        let offset = Self::calc_offset(offset);
+        let count  = match byte_count {
+            None    => shards.len(),
+            Some(x) => x
+        };
 
         let mut result = Vec::with_capacity(shards.len());
 
-        for i in offset..offset + byte_count {
+        for i in offset..offset + count {
             let shard = match shards[i] {
                 Some(ref x) => x,
                 None        => panic!("Missing shards"),
