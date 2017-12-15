@@ -269,6 +269,10 @@ impl ReedSolomon {
 
 #[cfg(test)]
 mod tests {
+    extern crate rand;
+
+    use super::*;
+
     fn is_increasing_and_contains_data_row(indices : &Vec<usize>) -> bool {
         let cols = indices.len();
         for i in 0..cols-1 {
@@ -281,7 +285,7 @@ mod tests {
 
     fn increment_indices(indices : &mut Vec<usize>,
                          index_bound : usize) -> bool {
-        for i in 0..indices.len().rev() {
+        for i in (0..indices.len()).rev() {
             indices[i] += 1;
             if indices[i] < index_bound {
                 break;
@@ -297,37 +301,64 @@ mod tests {
         return true
     }
 
-    fn increment_indices_until_increasing_and_contains_data_row(indices : &Vec<usize>, max_index : usize) -> bool {
-        for i in indices.iter() {
-            let valid = increment_indices(i, max_index);
+    fn increment_indices_until_increasing_and_contains_data_row(indices : &mut Vec<usize>, max_index : usize) -> bool {
+        loop {
+            let valid = increment_indices(indices, max_index);
             if !valid {
                 return false
             }
 
-            if is_increasing_and_contains_data_row(i) {
+            if is_increasing_and_contains_data_row(indices) {
                 return true
             }
         }
     }
 
-    fn find_singular_sub_matrix(m : Matrix) -> Matrix {
+    fn find_singular_sub_matrix(m : Matrix) -> Option<Matrix> {
         let rows = m.row_count();
         let cols = m.column_count();
-        let row_indices = Vec::with_capacity(cols);
-        for i in row_indices.iter() {
+        let mut row_indices = Vec::with_capacity(cols);
+        while increment_indices_until_increasing_and_contains_data_row(&mut row_indices, rows) {
             let mut sub_matrix = Matrix::new(cols, cols);
             for i in 0..row_indices.len() {
+                let r = row_indices[i];
                 for c in 0..cols {
                     sub_matrix.set(i, c, m.get(r, c));
                 }
             }
 
-            sub_matrix.invert()
+            match sub_matrix.invert() {
+                Err(matrix::Error::SingularMatrix) => return Some(sub_matrix),
+                whatever => whatever.unwrap()
+            };
+        }
+        None
+    }
+
+    fn fill_random(arr : &mut Box<[u8]>) {
+        for a in arr.iter_mut() {
+            *a = rand::random::<u8>();
         }
     }
 
     #[test]
-    fn test_build_matrix_PAR1_singular() {
-        
+    fn test_encoding() {
+        let per_shard = 50_000;
+        //let rng = rand::thread_rng();
+
+        let r = ReedSolomon::new(10, 3);
+
+        let mut shards = Vec::with_capacity(13);
+        for _ in 0..13 {
+            let shard = Vec::with_capacity(per_shard);
+            shards.push(shard.into_boxed_slice());
+        }
+
+        for s in shards.iter_mut() {
+            fill_random(s);
+        }
+
+        r.encode_parity(&mut shards, 0, per_shard);
+        assert!(r.is_parity_correct(&mut shards, 0, per_shard));
     }
 }

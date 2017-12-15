@@ -67,7 +67,7 @@ impl Matrix {
 
     pub fn multiply(&self, rhs : &Matrix) -> Matrix {
         if self.column_count() != rhs.row_count() {
-            panic!("colomn count on left is different from row count on right")
+            panic!("Colomn count on left is different from row count on right")
         }
         let mut result = Self::new(self.row_count(), rhs.column_count());
         for r in 0..self.row_count() {
@@ -247,7 +247,7 @@ mod tests {
 		        // Test case validating inverse of the input Matrix.
             let m = matrix!([56, 23, 98],
                             [3, 100, 200],
-                            [45, 201, 123]).invert();
+                            [45, 201, 123]).invert().unwrap();
             let expect = matrix!([175, 133, 33],
                                  [130, 13, 245],
                                  [112, 35, 126]);
@@ -259,7 +259,7 @@ mod tests {
                             [0, 1, 0, 0 ,0],
                             [0, 0, 0, 1, 0],
                             [0, 0, 0, 0, 1],
-                            [7, 7, 6, 6, 1]).invert();
+                            [7, 7, 6, 6, 1]).invert().unwrap();
             let expect = matrix!([1, 0, 0, 0, 0],
                                  [0, 1, 0, 0, 0],
                                  [123, 123, 1, 122, 122],
@@ -277,13 +277,13 @@ mod tests {
         // Test case with a non-square matrix.
         matrix!([56, 23],
                 [3, 100],
-                [45, 201]).invert();
+                [45, 201]).invert().unwrap();
     }
 
     #[test]
     #[should_panic]
     fn test_matrix_inverse_singular() {
         matrix!([4, 2],
-                [12, 6]).invert();
+                [12, 6]).invert().unwrap();
     }
 }

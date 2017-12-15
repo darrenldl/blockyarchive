@@ -5,3 +5,4 @@ authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 build   = "build.rs"
 
 [dependencies]
+rand = "0.3"
