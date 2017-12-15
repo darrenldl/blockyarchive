@@ -67,7 +67,7 @@ impl Matrix {
 
     pub fn multiply(&self, rhs : &Matrix) -> Matrix {
         if self.column_count() != rhs.row_count() {
-            panic!("Colomn count on left is different from row count on right")
+            panic!("Colomn count on left is different from row count on right, lhs : {}, rhs : {}", self.column_count(), rhs.row_count())
         }
         let mut result = Self::new(self.row_count(), rhs.column_count());
         for r in 0..self.row_count() {

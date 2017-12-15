@@ -19,7 +19,7 @@ struct ReedSolomon {
 
 impl ReedSolomon {
     fn build_matrix(data_shards : usize, total_shards : usize) -> Matrix {
-        let vandermonde = Matrix::vandermonde(data_shards, total_shards);
+        let vandermonde = Matrix::vandermonde(total_shards, data_shards);
 
         let top = vandermonde.sub_matrix(0, 0, data_shards, data_shards);
 
