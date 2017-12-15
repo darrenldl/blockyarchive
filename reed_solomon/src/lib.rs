@@ -404,7 +404,8 @@ impl ReedSolomon {
 
             // copy outputs to parity shards slots
             Self::patch_missing_shards(shards,
-                                       self.data_shard_count, self.total_shard_count,
+                                       self.data_shard_count,
+                                       self.total_shard_count,
                                        outputs);
         }
 
