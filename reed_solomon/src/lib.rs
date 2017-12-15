@@ -380,34 +380,32 @@ impl ReedSolomon {
         // The input to the coding is ALL of the data shards, including
         // any that we just calculated.  The output is whichever of the
         // data shards were missing.
-        let mut outputs : Vec<Box<[u8]>> =
-            vec![vec![0; byte_count].into_boxed_slice();
-                 self.parity_shard_count];
-        let mut output_count = 0;
-        for i_shard in self.data_shard_count..self.total_shard_count {
-            if let None = shards[i_shard] {
-                matrix_rows[output_count] =
-                    self.parity_rows[i_shard
-                                     - self.data_shard_count].clone();
-                output_count += 1;
+        {
+            let mut outputs : Vec<Box<[u8]>> =
+                vec![vec![0; byte_count].into_boxed_slice();
+                     self.parity_shard_count];
+            let mut output_count = 0;
+            for i_shard in self.data_shard_count..self.total_shard_count {
+                if let None = shards[i_shard] {
+                    matrix_rows[output_count] =
+                        self.parity_rows[i_shard
+                                         - self.data_shard_count].clone();
+                    output_count += 1;
+                }
             }
-        }
-        let complete_data_shards =
-            Self::option_shards_to_shards(shards,
-                                          Some(0),
-                                          Some(self.data_shard_count));
-        Self::code_some_shards(&matrix_rows,
-                               &complete_data_shards, self.data_shard_count,
-                               outputs.as_mut_slice(), output_count,
-                               offset, byte_count);
+            let complete_data_shards =
+                Self::option_shards_to_shards(shards,
+                                              Some(0),
+                                              Some(self.data_shard_count));
+            Self::code_some_shards(&matrix_rows,
+                                   &complete_data_shards, self.data_shard_count,
+                                   outputs.as_mut_slice(), output_count,
+                                   offset, byte_count);
 
-        // copy outputs to parity shards slots
-        let mut output_count = 0;
-        for i_shard in self.data_shard_count..self.total_shard_count {
-            if let None = shards[i_shard] {
-                shards[i_shard] = Some(outputs[output_count].clone());
-                output_count += 1;
-            }
+            // copy outputs to parity shards slots
+            Self::patch_missing_shards(shards,
+                                       self.data_shard_count, self.total_shard_count,
+                                       outputs);
         }
 
         Ok (())
