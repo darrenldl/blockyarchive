@@ -301,7 +301,7 @@ impl ReedSolomon {
         let mut sub_matrix =
             Matrix::new(self.data_shard_count, self.data_shard_count);
         let mut sub_shards : Vec<Box<[u8]>> =
-            vec![Box::new([0]); self.data_shard_count];
+            vec![Box::new([]); self.data_shard_count];
         {
             let mut sub_matrix_row = 0;
             let mut matrix_row = 0;
@@ -367,7 +367,7 @@ impl ReedSolomon {
         // any that we just calculated.  The output is whichever of the
         // data shards were missing.
         let mut outputs : Vec<Box<[u8]>> =
-            vec![vec![0u8; byte_count].into_boxed_slice();
+            vec![vec![0; byte_count].into_boxed_slice();
                  self.parity_shard_count];
         let mut output_count = 0;
         for i_shard in self.data_shard_count..self.total_shard_count {
@@ -510,6 +510,8 @@ mod tests {
 
         r.encode_parity(&mut shards, None, None);
 
+        let master_copy = shards.clone();
+
         let mut shards = ReedSolomon::shards_to_option_shards(&shards);
 
         // Try to decode with all shards present
@@ -518,6 +520,7 @@ mod tests {
         {
             let shards = ReedSolomon::option_shards_to_shards(&shards, None, None);
             assert!(r.is_parity_correct(&shards, None, None));
+            assert_eq!(shards, master_copy);
         }
 
         // Try to decode with 10 shards
@@ -529,6 +532,7 @@ mod tests {
         {
             let shards = ReedSolomon::option_shards_to_shards(&shards, None, None);
             assert!(r.is_parity_correct(&shards, None, None));
+            assert_eq!(shards, master_copy);
         }
 
 	      // Try to deocde with 6 data and 4 parity shards
@@ -540,6 +544,9 @@ mod tests {
         {
             let shards = ReedSolomon::option_shards_to_shards(&shards, None, None);
             assert!(r.is_parity_correct(&shards, None, None));
+            assert_eq!(shards, master_copy);
         }
+
+        // Try to decode with 7 data and 1 parity shards
     }
 }
