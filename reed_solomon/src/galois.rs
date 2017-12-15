@@ -115,9 +115,12 @@ mod tests {
 
     #[test]
     fn test_associativity() {
-        for a in 0u8..256 {
-            for b in 0u8..256 {
-                for c in 0u8..256 {
+        for a in 0..256 {
+            let a = a as u8;
+            for b in 0..256 {
+                let b = b as u8;
+                for c in 0..256 {
+                    let c = c as u8;
                     let x = add(a, add(b, c));
                     let y = add(add(a, b), c);
                     assert_eq!(x, y);
@@ -131,7 +134,8 @@ mod tests {
 
     #[test]
     fn test_identity() {
-        for a in 0u8..256 {
+        for a in 0..256 {
+            let a = a as u8;
             let b = sub(0, a);
             let c = sub(a, b);
             assert_eq!(c, 0);
@@ -145,8 +149,10 @@ mod tests {
 
     #[test]
     fn test_commutativity() {
-        for a in 0u8..256 {
-            for b in 0u8..256 {
+        for a in 0..256 {
+            let a = a as u8;
+            for b in 0..256 {
+                let b = b as u8;
                 let x = add(a, b);
                 let y = add(b, a);
                 assert_eq!(x, y);
@@ -159,9 +165,12 @@ mod tests {
 
     #[test]
     fn test_distributivity() {
-        for a in 0u8..256 {
-            for b in 0u8..256 {
-                for c in 0u8..256 {
+        for a in 0..256 {
+            let a = a as u8;
+            for b in 0..256 {
+                let b = b as u8;
+                for c in 0..256 {
+                    let c = c as u8;
                     let x = mul(a, add(b, c));
                     let y = add(mul(a, b), mul(a, c));
                     assert_eq!(x, y);
@@ -172,7 +181,8 @@ mod tests {
 
     #[test]
     fn test_exp() {
-        for a in 0u8..256 {
+        for a in 0..256 {
+            let a = a as u8;
             let mut power = 1u8;
             for j in 0..256 {
                 let x = exp(a, j);
