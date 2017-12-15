@@ -72,7 +72,7 @@ impl ReedSolomon {
         }
 
         if shard_length < offset + byte_count {
-            panic!("Buffers too small : {}", byte_count + offset);
+            panic!("Buffers too small, shard_length : {}, offset + byte_count : {}", shard_length, offset + byte_count);
         }
     }
 
