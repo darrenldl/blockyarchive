@@ -241,12 +241,15 @@ impl ReedSolomon {
     }
 
     pub fn option_shards_to_shards(shards : &Vec<Option<Box<[u8]>>>,
-                                   offset : usize,
-                                   count : usize)
+                                   offset : Option<usize>,
+                                   byte_count  : Option<usize>)
                                    -> Vec<Box<[u8]>> {
+        let offset     = Self::calc_offset(offset);
+        let byte_count = Self::calc_byte_count_option_shards(shards, byte_count);
+
         let mut result = Vec::with_capacity(shards.len());
 
-        for i in offset..offset+count {
+        for i in offset..offset + byte_count {
             let shard = match shards[i] {
                 Some(ref x) => x,
                 None        => panic!("Missing shards"),
@@ -373,7 +376,9 @@ impl ReedSolomon {
             }
         }
         let complete_data_shards =
-            Self::option_shards_to_shards(shards, 0, self.data_shard_count);
+            Self::option_shards_to_shards(shards,
+                                          Some(0),
+                                          Some(self.data_shard_count));
         Self::code_some_shards(&matrix_rows,
                                &complete_data_shards, self.data_shard_count,
                                outputs.as_mut_slice(), output_count,
@@ -489,7 +494,7 @@ mod tests {
     fn test_decode_missing() {
         let per_shard = 50_000;
 
-        let r = ReedSolomon::new(10, 3);
+        let r = ReedSolomon::new(8, 5);
 
         let mut shards = Vec::with_capacity(13);
         for _ in 0..13 {
@@ -500,23 +505,38 @@ mod tests {
             fill_random(s);
         }
 
-        let shards = ReedSolomon::shards_to_option_shards(&shards);
+        r.encode_parity(&mut shards, None, None);
 
-        /*r.encode_parity(&mut shards, None, None);
+        let mut shards = ReedSolomon::shards_to_option_shards(&shards);
 
         // Try to decode with all shards present
         r.decode_missing(&mut shards,
                          None, None).unwrap();
-        assert!(r.is_parity_correct(&shards, None, None));
+        {
+            let shards = ReedSolomon::option_shards_to_shards(&shards, None, None);
+            assert!(r.is_parity_correct(&shards, None, None));
+        }
 
         // Try to decode with 10 shards
+        shards[0] = None;
+        shards[2] = None;
+        shards[4] = None;
         r.decode_missing(&mut shards,
                          None, None).unwrap();
-        assert!(r.is_parity_correct(&shards, None, None));
+        {
+            let shards = ReedSolomon::option_shards_to_shards(&shards, None, None);
+            assert!(r.is_parity_correct(&shards, None, None));
+        }
 
 	      // Try to deocde with 6 data and 4 parity shards
+        shards[0] = None;
+        shards[2] = None;
+        shards[12] = None;
         r.decode_missing(&mut shards,
                          None, None).unwrap();
-        assert!(r.is_parity_correct(&shards, None, None));*/
+        {
+            let shards = ReedSolomon::option_shards_to_shards(&shards, None, None);
+            assert!(r.is_parity_correct(&shards, None, None));
+        }
     }
 }
