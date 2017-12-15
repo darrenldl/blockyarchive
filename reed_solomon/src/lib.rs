@@ -54,7 +54,7 @@ impl ReedSolomon {
         self.total_shard_count
     }
 
-    fn check_buffer_and_sizes(&self, shards : Vec<Box<[u8]>>, offset : usize, byte_count : usize) {
+    fn check_buffer_and_sizes(&self, shards : &Vec<Box<[u8]>>, offset : usize, byte_count : usize) {
         if shards.len() != self.total_shard_count {
             panic!("Incorrect number of shards : {}", shards.len())
         }
@@ -71,7 +71,53 @@ impl ReedSolomon {
         }
     }
 
-    //pub fn encode_parity(&self, )
+    fn code_some_shards(&self,
+                        matrix_rows : &Vec<Box<[u8]>>,
+                        inputs  : &[Box<[u8]>],
+                        input_count : usize,
+                        outputs : &mut [Box<[u8]>],
+                        output_count : usize,
+                        offset : usize,
+                        byte_count : usize) {
+        let table = &galois::MULT_TABLE;
+
+        {
+            let i_input = 0;
+            let input_shard = &inputs[i_input];
+            for i_output in 0..output_count {
+                let output_shard   = &mut outputs[i_output];
+                let matrix_row     = &matrix_rows[i_output];
+                let mult_table_row = table[matrix_row[i_input] as usize];
+                for i_byte in offset..(offset + byte_count) {
+                    output_shard[i_byte] = mult_table_row[input_shard[i_byte] as usize];
+                }
+            }
+        }
+
+        for i_input in 1..input_count {
+            let input_shard = &inputs[i_input];
+            for i_output in 0..output_count {
+                let output_shard = &mut outputs[i_output];
+                let matrix_row   = &matrix_rows[i_output];
+                let mult_table_row = &table[matrix_row[i_input] as usize];
+                for i_byte in offset..(offset + byte_count) {
+                    output_shard[i_byte] ^= mult_table_row[input_shard[i_byte] as usize];
+                }
+            }
+        }
+    }
+
+    pub fn encode_parity(&self, shards : &mut Vec<Box<[u8]>>, offset : usize, byte_count : usize) {
+        self.check_buffer_and_sizes(shards, offset, byte_count);
+
+        let (inputs, outputs) = shards.split_at_mut(self.data_shard_count);
+
+        self.code_some_shards(&self.parity_rows,
+                              inputs,  self.data_shard_count,
+                              outputs, self.parity_shard_count,
+                              offset,  byte_count);
+    }
+
 }
 
 #[cfg(test)]
