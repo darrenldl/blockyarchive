@@ -406,6 +406,21 @@ mod tests {
 
     use super::*;
 
+    macro_rules! make_random_shards {
+        ($size:expr, $per_shard:expr) => {{
+            let mut shards = Vec::with_capacity(13);
+            for _ in 0..$size {
+                shards.push(vec![0; $per_shard].into_boxed_slice());
+            }
+
+            for s in shards.iter_mut() {
+                fill_random(s);
+            }
+
+            shards
+        }}
+    }
+
     fn is_increasing_and_contains_data_row(indices : &Vec<usize>) -> bool {
         let cols = indices.len();
         for i in 0..cols-1 {
@@ -480,14 +495,7 @@ mod tests {
 
         let r = ReedSolomon::new(10, 3);
 
-        let mut shards = Vec::with_capacity(13);
-        for _ in 0..13 {
-            shards.push(vec![0; per_shard].into_boxed_slice());
-        }
-
-        for s in shards.iter_mut() {
-            fill_random(s);
-        }
+        let mut shards = make_random_shards!(13, per_shard);
 
         r.encode_parity(&mut shards, None, None);
         assert!(r.is_parity_correct(&shards, None, None));
@@ -495,18 +503,11 @@ mod tests {
 
     #[test]
     fn test_decode_missing() {
-        let per_shard = 50_000;
+        let per_shard = 100_000;
 
         let r = ReedSolomon::new(8, 5);
 
-        let mut shards = Vec::with_capacity(13);
-        for _ in 0..13 {
-            shards.push(vec![0; per_shard].into_boxed_slice());
-        }
-
-        for s in shards.iter_mut() {
-            fill_random(s);
-        }
+        let mut shards = make_random_shards!(13, per_shard);
 
         r.encode_parity(&mut shards, None, None);
 
@@ -559,5 +560,26 @@ mod tests {
             Err(Error::NotEnoughShards) => {},
             Ok(()) => panic!("Should fail due to not enough shards"),
         }
+    }
+
+    #[test]
+    fn test_is_parity_correct() {
+        let per_shard = 33_333;
+
+        let r = ReedSolomon::new(10, 4);
+
+        let mut shards = make_random_shards!(14, per_shard);
+
+        r.encode_parity(&mut shards, None, None);
+        assert!(r.is_parity_correct(&shards, None, None));
+
+        // corrupt shards
+        fill_random(&mut shards[5]);
+        assert!(!r.is_parity_correct(&shards, None, None));
+
+        // Re-encode
+        r.encode_parity(&mut shards, None, None);
+        fill_random(&mut shards[1]);
+        assert!(!r.is_parity_correct(&shards, None, None));
     }
 }
