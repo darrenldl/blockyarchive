@@ -66,6 +66,25 @@ mod hex_tests {
     use super::*;
 
     #[test]
+    fn hex_to_bytes_test_cases() {
+        {
+            let hex = "010203";
+            assert_eq!(&[1u8, 2, 3],
+                       hex_string_to_bytes(hex).unwrap().as_ref());
+        }
+        {
+            let hex = "abcdef";
+            assert_eq!(&[0xABu8, 0xCD, 0xEF],
+                       hex_string_to_bytes(hex).unwrap().as_ref());
+        }
+        {
+            let hex = "ABCDEF";
+            assert_eq!(&[0xABu8, 0xCD, 0xEF],
+                       hex_string_to_bytes(hex).unwrap().as_ref());
+        }
+    }
+
+    #[test]
     fn hex_to_bytes_to_hex() {
         {
             let hex = "1234567890";
