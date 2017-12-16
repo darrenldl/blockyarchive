@@ -1,4 +1,5 @@
 #[allow(non_camel_case_types)]
+#[derive(Clone, Copy)]
 pub enum HashType {
     SHA1,
     SHA2_256,     SHA256,
@@ -29,9 +30,9 @@ pub mod specs {
         }
     }
 
-    pub fn hash_type_to_param (hash_type : &HashType) -> Param {
+    pub fn hash_type_to_param (hash_type : HashType) -> Param {
         use super::HashType::*;
-        match *hash_type {
+        match hash_type {
             SHA1                  => param!([0x11      ]; 0x14),
             SHA2_256     | SHA256 => param!([0x12      ]; 0x20),
             SHA2_512_256          => param!([0x13      ]; 0x20),
@@ -145,7 +146,7 @@ mod hash {
 
         fn finish_into_hash_bytes(self) -> HashBytes {
             let hash_type   = self.hash_type();
-            let param       = specs::hash_type_to_param(&hash_type);
+            let param       = specs::hash_type_to_param(hash_type);
             let digest_len  = param.digest_length;
             let mut hashval = vec![0; digest_len].into_boxed_slice();
             self.finish(&mut hashval);
