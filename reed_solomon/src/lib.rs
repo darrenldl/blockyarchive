@@ -652,7 +652,7 @@ mod tests {
 
     #[test]
     fn test_decode_missing() {
-        let per_shard = 10;
+        let per_shard = 100_000;
 
         let r = ReedSolomon::new(8, 5);
 
