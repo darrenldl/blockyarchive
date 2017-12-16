@@ -6,18 +6,18 @@ pub enum Error {
 
 fn is_valid_hex_char(chr : u8) -> bool {
     (0x30 <= chr && chr <= 0x39)
-        || (0x41 <= chr && chr <= 0x5A)
-        || (0x61 <= chr && chr <= 0x7A)
+        || (0x41 <= chr && chr <= 0x46)
+        || (0x61 <= chr && chr <= 0x66)
 }
 
 fn hex_char_to_value(chr : u8) -> u8 {
     if 0x30 <= chr && chr <= 0x39 {
         chr - 0x30
     }
-    else if 0x41 <= chr && chr <= 0x5A {
+    else if 0x41 <= chr && chr <= 0x46 {
         chr - 0x41 + 0x0A
     }
-    else if 0x61 <= chr && chr <= 0x7A {
+    else if 0x61 <= chr && chr <= 0x66 {
         chr - 0x61 + 0x0A
     }
     else { panic!() }
@@ -37,6 +37,7 @@ pub fn hex_string_to_bytes(string : &str) -> Result<Box<[u8]>, Error> {
             let l_chr_val = hex_char_to_value(string[i]);
             let r_chr_val = hex_char_to_value(string[i+1]);
 
+            println!("{}, {}", l_chr_val, r_chr_val);
             result.push(l_chr_val * 0x10 + r_chr_val);
         }
         Ok(result.into_boxed_slice())
@@ -46,9 +47,49 @@ pub fn hex_string_to_bytes(string : &str) -> Result<Box<[u8]>, Error> {
     }
 }
 
-pub fn bytes_to_hex_string(bytes : &[u8]) -> String {
+pub fn bytes_to_lower_hex_string(bytes : &[u8]) -> String {
+    let strs: Vec<String> = bytes.iter()
+        .map(|b| format!("{:02x}", b))
+        .collect();
+    strs.join("")
+}
+
+pub fn bytes_to_upper_hex_string(bytes : &[u8]) -> String {
     let strs: Vec<String> = bytes.iter()
         .map(|b| format!("{:02X}", b))
         .collect();
     strs.join("")
+}
+
+#[cfg(test)]
+mod hex_tests {
+    use super::*;
+
+    #[test]
+    fn hex_to_bytes_to_hex() {
+        {
+            let hex = "1234567890";
+            assert_eq!(hex,
+                       bytes_to_lower_hex_string(
+                           hex_string_to_bytes(hex).unwrap().as_ref()));
+        }
+        {
+            let hex = "abcdef0123";
+            assert_eq!(hex,
+                       bytes_to_lower_hex_string(
+                           hex_string_to_bytes(hex).unwrap().as_ref()));
+        }
+        {
+            let hex = "1234567890";
+            assert_eq!(hex,
+                       bytes_to_upper_hex_string(
+                           hex_string_to_bytes(hex).unwrap().as_ref()));
+        }
+        {
+            let hex = "ABCDEF0123";
+            assert_eq!(hex,
+                       bytes_to_upper_hex_string(
+                           hex_string_to_bytes(hex).unwrap().as_ref()));
+        }
+    }
 }
