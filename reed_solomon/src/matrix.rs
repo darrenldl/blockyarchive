@@ -5,7 +5,7 @@ pub enum Error {
     SingularMatrix,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Matrix {
     data : Vec<Box<[u8]>>
 }
