@@ -92,5 +92,12 @@ mod hash {
                 None      => Err(())
             }
         }
+
+        fn hash_type_is_supported(hash_type : HashType) -> bool {
+            match Self::new(hash_type) {
+                Ok(_)  => true,
+                Err(_) => false
+            }
+        }
     }
 }
