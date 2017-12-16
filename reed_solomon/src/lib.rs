@@ -440,15 +440,6 @@ impl ReedSolomon {
         if number_present < self.data_shard_count {
             return Err(Error::NotEnoughShards)
         }
-        println!("before doing anything :");
-        for shard in shards.iter() {
-            let strong_count = match *shard {
-                Some (ref x) => Rc::strong_count(x),
-                None         => 0
-            };
-            println!("strong_count : {}", strong_count);
-        }
-        println!();
 
         // Pull out the rows of the matrix that correspond to the
         // shards that we have and build a square matrix.  This
@@ -479,22 +470,6 @@ impl ReedSolomon {
             }
         }
 
-        println!("after setting up sub_matrix and sub_shards :");
-        for shard in shards.iter() {
-            let strong_count = match *shard {
-                Some (ref x) => Rc::strong_count(x),
-                None         => 0
-            };
-            println!("strong_count : {}", strong_count);
-        }
-        println!();
-
-        println!("sub_shards :");
-        for shard in sub_shards.iter() {
-            println!("{:?}", *shard);
-        }
-        println!();
-
         // Invert the matrix, so we can go from the encoded shards
         // back to the original data.  Then pull out the row that
         // generates the shard that we want to decode.  Note that
@@ -516,7 +491,6 @@ impl ReedSolomon {
             let mut output_count = 0;
             for i_shard in 0..self.data_shard_count {
                 if let None = shards[i_shard] {
-                    println!("i_shard : {}", i_shard);
                     // link slot in outputs to the missing slot in shards
                     shards[i_shard] =
                         Some(Rc::clone(&outputs[output_count]));
@@ -526,29 +500,11 @@ impl ReedSolomon {
                     output_count += 1;
                 }
             }
-            println!("after linking missing shards to output : ");
-            for shard in shards.iter() {
-                let strong_count = match *shard {
-                    Some (ref x) => Rc::strong_count(x),
-                    None         => 0
-                };
-                println!("strong_count : {}", strong_count);
-            }
-            println!();
             Self::code_some_shards(&matrix_rows,
                                    &sub_shards,  self.data_shard_count,
                                    &mut outputs, output_count,
                                    offset, byte_count);
         }
-        println!("after re-encoding data shards : ");
-        for shard in shards.iter() {
-            let strong_count = match *shard {
-                Some (ref x) => Rc::strong_count(x),
-                None         => 0
-            };
-            println!("strong_count : {}", strong_count);
-        }
-        println!();
 
         // Now that we have all of the data shards intact, we can
         // compute any of the parity that is missing.
@@ -725,15 +681,6 @@ mod tests {
                          None, None).unwrap();
         {
             let shards = ReedSolomon::option_shards_to_shards(&shards, None, None);
-            println!("master copy : ");
-            for shard in master_copy.iter() {
-                println!("{:?}", *shard);
-            }
-            println!("");
-            println!("result : ");
-            for shard in shards.iter() {
-                println!("{:?}", *shard);
-            }
             assert!(r.is_parity_correct(&shards, None, None));
             assert_eq!(shards, master_copy);
         }
