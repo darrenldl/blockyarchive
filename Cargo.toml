@@ -6,3 +6,5 @@ authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 [dependencies]
 crcccitt     = { path = "crcccitt" }
 reed_solomon = { path = "reed_solomon" }
+ring         = "0.12.1"
+blake        = "2.0.0"
