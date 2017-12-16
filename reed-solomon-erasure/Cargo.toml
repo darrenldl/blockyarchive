@@ -1,5 +1,5 @@
 [package]
-name = "reed_solomon"
+name = "reed-solomon-erasure"
 version = "0.1.0"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 build   = "build.rs"
