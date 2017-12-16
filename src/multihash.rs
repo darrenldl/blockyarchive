@@ -15,10 +15,6 @@ pub type HashBytes = (HashType, Box<[u8]>);
 pub mod specs {
     use super::*;
 
-    struct Test<'a> {
-        a : &'a [u8]
-    }
-
     pub struct Param {
         pub hash_func_type : Box<[u8]>,
         pub digest_length  : usize
