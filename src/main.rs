@@ -1,10 +1,13 @@
-use std::sync::mpsc;
-use std::{thread, time};
-use std::time::SystemTime;
+#![allow(dead_code)]
+//use std::sync::mpsc;
+//use std::{thread, time};
+//use std::time::SystemTime;
 
 extern crate reed_solomon;
 
-use reed_solomon::ReedSolomon;
+mod multihash;
+
+//use reed_solomon::ReedSolomon;
 
 fn main() {
 }
