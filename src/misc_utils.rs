@@ -85,6 +85,30 @@ mod hex_tests {
     }
 
     #[test]
+    fn bytes_to_hex_test_cases() {
+        {
+            let bytes = [0u8, 1, 2];
+            assert_eq!("000102",
+                       bytes_to_lower_hex_string(&bytes));
+        }
+        {
+            let bytes = [0u8, 1, 2];
+            assert_eq!("000102",
+                       bytes_to_upper_hex_string(&bytes));
+        }
+        {
+            let bytes = [0xABu8, 0xCD, 0xEF];
+            assert_eq!("abcdef",
+                       bytes_to_lower_hex_string(&bytes));
+        }
+        {
+            let bytes = [0xABu8, 0xCD, 0xEF];
+            assert_eq!("ABCDEF",
+                       bytes_to_upper_hex_string(&bytes));
+        }
+    }
+
+    #[test]
     fn hex_to_bytes_to_hex() {
         {
             let hex = "1234567890";
