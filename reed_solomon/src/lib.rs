@@ -42,6 +42,12 @@ pub struct ReedSolomon {
     parity_rows        : Vec<Shard>,
 }
 
+/*impl Clone for ReedSolomon {
+    fn clone(&self) -> ReedSolomon {
+
+    }
+}*/
+
 impl ReedSolomon {
     fn build_matrix(data_shards : usize, total_shards : usize) -> Matrix {
         let vandermonde = Matrix::vandermonde(total_shards, data_shards);
@@ -204,6 +210,7 @@ impl ReedSolomon {
         }
     }
 
+    // Translated from InputOutputByteTableCodingLoop.java
     fn code_some_shards(matrix_rows  : &Vec<Shard>,
                         inputs       : &[Shard],
                         input_count  : usize,
@@ -277,6 +284,7 @@ impl ReedSolomon {
                                offset, byte_count);
     }
 
+    // Translated from CodingLoopBase.java
     fn check_some_shards(matrix_rows : &Vec<Shard>,
                          inputs      : &[Shard],
                          input_count : usize,
@@ -453,6 +461,11 @@ impl ReedSolomon {
             }
         }
 
+        println!("sub_shards :");
+        for shard in sub_shards.iter() {
+            println!("{:?}", *shard);
+        }
+
         // Invert the matrix, so we can go from the encoded shards
         // back to the original data.  Then pull out the row that
         // generates the shard that we want to decode.  Note that
@@ -469,7 +482,8 @@ impl ReedSolomon {
             make_zero_len_shards(self.parity_shard_count);
         {
             let mut outputs : Vec<Shard> =
-                make_blank_shards(byte_count, self.parity_shard_count);
+                make_blank_shards(offset + byte_count,
+                                  self.parity_shard_count);
             let mut output_count = 0;
             for i_shard in 0..self.data_shard_count {
                 if let None = shards[i_shard] {
@@ -488,6 +502,7 @@ impl ReedSolomon {
                                    &mut outputs, output_count,
                                    offset, byte_count);
         }
+        return Ok(());
 
         // Now that we have all of the data shards intact, we can
         // compute any of the parity that is missing.
@@ -497,7 +512,8 @@ impl ReedSolomon {
         // data shards were missing.
         {
             let mut outputs : Vec<Shard> =
-                make_blank_shards(byte_count, self.parity_shard_count);
+                make_blank_shards(offset + byte_count,
+                                  self.parity_shard_count);
             let mut output_count = 0;
             for i_shard in self.data_shard_count..self.total_shard_count {
                 if let None = shards[i_shard] {
@@ -663,11 +679,13 @@ mod tests {
                          None, None).unwrap();
         {
             let shards = ReedSolomon::option_shards_to_shards(&shards, None, None);
-            for shard in shards.iter() {
+            println!("master copy : ");
+            for shard in master_copy.iter() {
                 println!("{:?}", *shard);
             }
             println!("");
-            for shard in master_copy.iter() {
+            println!("result : ");
+            for shard in shards.iter() {
                 println!("{:?}", *shard);
             }
             assert!(r.is_parity_correct(&shards, None, None));
