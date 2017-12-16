@@ -1,13 +1,3 @@
-[root]
-name = "rsbx"
-version = "0.1.0"
-dependencies = [
- "blake 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "crcccitt 0.1.0",
- "reed_solomon 0.1.0",
- "ring 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
 [[package]]
 name = "bitflags"
 version = "0.7.0"
@@ -125,6 +115,16 @@ dependencies = [
  "libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
  "rayon 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "untrusted 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "rsbx"
+version = "0.1.0"
+dependencies = [
+ "blake 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crcccitt 0.1.0",
+ "reed_solomon 0.1.0",
+ "ring 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

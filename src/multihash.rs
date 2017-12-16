@@ -124,7 +124,7 @@ pub mod hash {
             }
         }
 
-        pub fn finish(self, hashval : &mut [u8]) {
+        pub fn finish_to_bytes(self, hashval : &mut [u8]) {
             match self.ctx {
                 _Ctx::SHA1(ctx)            =>
                     hashval.copy_from_slice(ctx.finish().as_ref()),
@@ -139,18 +139,22 @@ pub mod hash {
             }
         }
 
-        pub fn finish_to_hash_bytes(self, hash_bytes : &mut HashBytes) {
-            hash_bytes.0  = self.hash_type();
-            self.finish(&mut hash_bytes.1);
-        }
-
-        pub fn finish_into_hash_bytes(self) -> HashBytes {
+        pub fn finish_into_bytes(self) -> Box<[u8]> {
             let hash_type   = self.hash_type();
             let param       = specs::hash_type_to_param(hash_type);
             let digest_len  = param.digest_length;
             let mut hashval = vec![0; digest_len].into_boxed_slice();
-            self.finish(&mut hashval);
-            (hash_type, hashval)
+            self.finish_to_bytes(&mut hashval);
+            hashval
+        }
+
+        pub fn finish_to_hash_bytes(self, hash_bytes : &mut HashBytes) {
+            hash_bytes.0  = self.hash_type();
+            self.finish_to_bytes(&mut hash_bytes.1);
+        }
+
+        pub fn finish_into_hash_bytes(self) -> HashBytes {
+            (self.hash_type(), self.finish_into_bytes())
         }
     }
 }
