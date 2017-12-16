@@ -11,10 +11,6 @@ fn is_valid_hex_char(chr : u8) -> bool {
 }
 
 fn hex_char_to_value(chr : u8) -> u8 {
-    if !is_valid_hex_char(chr) { panic!(); }
-
-    println!("{}", chr);
-
     if 0x30 <= chr && chr <= 0x39 {
         chr - 0x30
     }
@@ -41,7 +37,6 @@ pub fn hex_string_to_bytes(string : &str) -> Result<Box<[u8]>, Error> {
             let l_chr_val = hex_char_to_value(string[i]);
             let r_chr_val = hex_char_to_value(string[i+1]);
 
-            println!("{}, {}", l_chr_val, r_chr_val);
             result.push(l_chr_val * 0x10 + r_chr_val);
         }
         Ok(result.into_boxed_slice())
