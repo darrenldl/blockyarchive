@@ -99,5 +99,20 @@ mod hash {
                 Err(_) => false
             }
         }
+
+        fn update(&mut self, data : &[u8]) {
+            match self.ctx {
+                _Ctx::SHA1(ref mut ctx)        =>
+                    ctx.update(data),
+                _Ctx::SHA256(ref mut ctx)      =>
+                    ctx.update(data),
+                _Ctx::SHA512(ref mut ctx)      =>
+                    ctx.update(data),
+                _Ctx::BLAKE2B_256(ref mut ctx) =>
+                    ctx.update(data),
+                _Ctx::BLAKE2B_512(ref mut ctx) =>
+                    ctx.update(data)
+            }
+        }
     }
 }
