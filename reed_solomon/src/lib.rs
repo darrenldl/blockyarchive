@@ -89,14 +89,15 @@ impl ReedSolomon {
         }
     }
 
-    fn calc_byte_count_option_shards(shards : &[Option<Shard>],
+    fn calc_byte_count_option_shards(shards     : &[Option<Shard>],
+                                     offset     : usize,
                                      byte_count : Option<usize>) -> usize {
         match byte_count {
             Some(x) => x,
             None    => {
                 for v in shards.iter() {
                     match *v {
-                        Some(ref x) => return x.borrow().len(),
+                        Some(ref x) => return x.borrow().len() - offset,
                         None    => {},
                     }
                 };
@@ -397,7 +398,9 @@ impl ReedSolomon {
                           byte_count : Option<usize>)
                           -> Result<(), Error> {
         let offset     = Self::calc_offset(offset);
-        let byte_count = Self::calc_byte_count_option_shards(shards, byte_count);
+        let byte_count = Self::calc_byte_count_option_shards(shards,
+                                                             offset,
+                                                             byte_count);
 
         self.check_buffer_and_sizes_option_shards(shards, offset, byte_count);
 
@@ -470,6 +473,7 @@ impl ReedSolomon {
             let mut output_count = 0;
             for i_shard in 0..self.data_shard_count {
                 if let None = shards[i_shard] {
+                    println!("i_shard : {}", i_shard);
                     // link slot in outputs to the missing slot in shards
                     shards[i_shard] =
                         Some(Rc::clone(&outputs[output_count]));
@@ -497,23 +501,20 @@ impl ReedSolomon {
             let mut output_count = 0;
             for i_shard in self.data_shard_count..self.total_shard_count {
                 if let None = shards[i_shard] {
+                    // link slot in outputs to the missing slot in shards
                     shards[i_shard] =
                         Some(Rc::clone(&outputs[output_count]));
                     matrix_rows[output_count] =
-                        Rc::clone(&self.parity_rows[i_shard
-                                                   - self.data_shard_count]);
+                        Rc::clone(
+                            &self.parity_rows[i_shard
+                                              - self.data_shard_count]);
                     output_count += 1;
                 }
             }
-            /*let complete_data_shards =
-                Self::option_shards_to_shards(shards,
-                                              Some(0),
-                                              Some(self.data_shard_count));*/
             Self::code_some_option_shards(&matrix_rows,
                                           &shards, self.data_shard_count,
                                           &mut outputs, output_count,
                                           offset, byte_count);
-
         }
 
         Ok (())
