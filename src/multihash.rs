@@ -115,7 +115,7 @@ mod hash {
             }
         }
 
-        fn finish(self, hashval : &mut [u8; 100]) {
+        fn finish(self, hashval : &mut [u8]) {
             match self.ctx {
                 _Ctx::SHA1(ctx)            =>
                     hashval.copy_from_slice(ctx.finish().as_ref()),
