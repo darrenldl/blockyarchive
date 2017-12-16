@@ -45,7 +45,7 @@ pub mod specs {
     }
 }
 
-mod hash {
+pub mod hash {
     extern crate ring;
     extern crate blake;
 
@@ -65,7 +65,7 @@ mod hash {
     }
 
     impl Ctx {
-        fn new(hash_type : HashType) -> Result<Ctx, ()> {
+        pub fn new(hash_type : HashType) -> Result<Ctx, ()> {
             let ctx = match hash_type {
                 HashType::SHA1                            =>
                     Some(_Ctx::SHA1(
@@ -92,7 +92,7 @@ mod hash {
             }
         }
 
-        fn hash_type(&self) -> HashType {
+        pub fn hash_type(&self) -> HashType {
             match self.ctx {
                 _Ctx::SHA1(_)        => HashType::SHA1,
                 _Ctx::SHA256(_)      => HashType::SHA256,
@@ -102,14 +102,14 @@ mod hash {
             }
         }
 
-        fn hash_type_is_supported(hash_type : HashType) -> bool {
+        pub fn hash_type_is_supported(hash_type : HashType) -> bool {
             match Self::new(hash_type) {
                 Ok(_)  => true,
                 Err(_) => false
             }
         }
 
-        fn update(&mut self, data : &[u8]) {
+        pub fn update(&mut self, data : &[u8]) {
             match self.ctx {
                 _Ctx::SHA1(ref mut ctx)        =>
                     ctx.update(data),
@@ -124,7 +124,7 @@ mod hash {
             }
         }
 
-        fn finish(self, hashval : &mut [u8]) {
+        pub fn finish(self, hashval : &mut [u8]) {
             match self.ctx {
                 _Ctx::SHA1(ctx)            =>
                     hashval.copy_from_slice(ctx.finish().as_ref()),
@@ -139,12 +139,12 @@ mod hash {
             }
         }
 
-        fn finish_to_hash_bytes(self, hash_bytes : &mut HashBytes) {
+        pub fn finish_to_hash_bytes(self, hash_bytes : &mut HashBytes) {
             hash_bytes.0  = self.hash_type();
             self.finish(&mut hash_bytes.1);
         }
 
-        fn finish_into_hash_bytes(self) -> HashBytes {
+        pub fn finish_into_hash_bytes(self) -> HashBytes {
             let hash_type   = self.hash_type();
             let param       = specs::hash_type_to_param(hash_type);
             let digest_len  = param.digest_length;
