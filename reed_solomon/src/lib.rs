@@ -144,8 +144,8 @@ impl ReedSolomon {
         }
     }
 
-    fn code_some_shards(matrix_rows  : &Vec<Box<[u8]>>,
-                        inputs       : &[Box<[u8]>],
+    fn code_some_shards(matrix_rows  : &Vec<Shard>,
+                        inputs       : &[Shard],
                         input_count  : usize,
                         outputs      : &mut [Shard],
                         output_count : usize,
@@ -155,11 +155,11 @@ impl ReedSolomon {
 
         {
             let i_input = 0;
-            let input_shard = &inputs[i_input];
+            let input_shard = inputs[i_input].borrow();
             for i_output in 0..output_count {
-                let output_shard   = &mut outputs[i_output].borrow_mut();
-                let matrix_row     = &matrix_rows[i_output];
-                let mult_table_row = table[matrix_row[i_input] as usize];
+                let mut output_shard = outputs[i_output].borrow_mut();
+                let matrix_row       = matrix_rows[i_output].borrow();
+                let mult_table_row   = table[matrix_row[i_input] as usize];
                 for i_byte in offset..offset + byte_count {
                     output_shard[i_byte] =
                         mult_table_row[input_shard[i_byte] as usize];
@@ -168,11 +168,11 @@ impl ReedSolomon {
         }
 
         for i_input in 1..input_count {
-            let input_shard = &inputs[i_input];
+            let input_shard = inputs[i_input].borrow();
             for i_output in 0..output_count {
-                let output_shard = &mut outputs[i_output].borrow_mut();
-                let matrix_row   = &matrix_rows[i_output];
-                let mult_table_row = &table[matrix_row[i_input] as usize];
+                let mut output_shard = outputs[i_output].borrow_mut();
+                let matrix_row       = matrix_rows[i_output].borrow();
+                let mult_table_row   = &table[matrix_row[i_input] as usize];
                 for i_byte in offset..offset + byte_count {
                     output_shard[i_byte] ^= mult_table_row[input_shard[i_byte] as usize];
                 }
@@ -180,9 +180,8 @@ impl ReedSolomon {
         }
     }
 
-    /*
     pub fn encode_parity(&self,
-                         shards     : &mut Vec<Box<[u8]>>,
+                         shards     : &mut Vec<Shard>,
                          offset     : Option<usize>,
                          byte_count : Option<usize>) {
         let offset     = Self::calc_offset(offset);
@@ -198,10 +197,10 @@ impl ReedSolomon {
                                offset, byte_count);
     }
 
-    fn check_some_shards(matrix_rows : &Vec<Box<[u8]>>,
-                         inputs      : &[Box<[u8]>],
+    fn check_some_shards(matrix_rows : &Vec<Shard>,
+                         inputs      : &[Shard],
                          input_count : usize,
-                         to_check    : &[Box<[u8]>],
+                         to_check    : &[Shard],
                          check_count : usize,
                          offset      : usize,
                          byte_count  : usize)
@@ -210,21 +209,22 @@ impl ReedSolomon {
 
         for i_byte in offset..offset + byte_count {
             for i_output in 0..check_count {
-                let matrix_row = &matrix_rows[i_output as usize];
+                let matrix_row = matrix_rows[i_output as usize].borrow();
                 let mut value = 0;
                 for i_input in 0..input_count {
                     value ^=
                         table
                         [matrix_row[i_input]     as usize]
-                        [inputs[i_input][i_byte] as usize];
+                        [inputs[i_input].borrow()[i_byte] as usize];
                 }
-                if to_check[i_output][i_byte] != value {
+                if to_check[i_output].borrow()[i_byte] != value {
                     return false
                 }
             }
         }
         true
     }
+    /*
 
     pub fn is_parity_correct(&self,
                              shards     : &Vec<Box<[u8]>>,
