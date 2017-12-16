@@ -412,20 +412,6 @@ impl ReedSolomon {
         result
     }
 
-    /*fn patch_missing_shards(patched   : &mut Vec<Option<Shard>>,
-                            start     : usize,
-                            end_exc   : usize,
-                            materials : Vec<Shard>) {
-        let mut material_getter = materials.into_iter();
-        for i_shard in start..end_exc {
-            if let None = patched[i_shard] {
-                patched[i_shard] =
-                    Some(material_getter.next()
-                         .expect("Ran out of materials for patching"));
-            }
-        }
-    }*/
-
     pub fn decode_missing(&self,
                           shards     : &mut Vec<Option<Shard>>,
                           offset     : Option<usize>,
