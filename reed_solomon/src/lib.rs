@@ -14,12 +14,16 @@ pub enum Error {
 
 pub type Shard = Rc<RefCell<Box<[u8]>>>;
 
-fn boxed_u8_to_shard(b : Box<[u8]>) -> Shard {
+pub fn boxed_u8_into_shard(b : Box<[u8]>) -> Shard {
     Rc::new(RefCell::new(b))
 }
 
-fn make_empty_shard() -> Shard {
-    boxed_u8_to_shard(Box::new([]))
+pub fn make_zero_len_shard() -> Shard {
+    boxed_u8_into_shard(Box::new([]))
+}
+
+pub fn make_blank_shard(size : usize) -> Shard {
+    boxed_u8_into_shard(vec![0; size].into_boxed_slice())
 }
 
 pub struct ReedSolomon {
@@ -359,7 +363,7 @@ impl ReedSolomon {
         let mut sub_matrix =
             Matrix::new(self.data_shard_count, self.data_shard_count);
         let mut sub_shards : Vec<Shard> =
-            vec![make_empty_shard(); self.data_shard_count];
+            vec![make_zero_len_shard(); self.data_shard_count];
         {
             let mut sub_matrix_row = 0;
             let mut matrix_row = 0;
@@ -393,16 +397,16 @@ impl ReedSolomon {
         // have, and the output is the missing data shards.  The computation
         // is done using the special decode matrix we just built.
         let mut matrix_rows  : Vec<Shard> =
-            vec![make_empty_shard(); self.parity_shard_count];
+            vec![make_zero_len_shard(); self.parity_shard_count];
         {
             let mut outputs : Vec<Shard> =
-                vec![boxed_u8_to_shard(vec![0; byte_count].into_boxed_slice());
+                vec![boxed_u8_into_shard(vec![0; byte_count].into_boxed_slice());
                      self.parity_shard_count];
             let mut output_count = 0;
             for i_shard in 0..self.data_shard_count {
                 if let None = shards[i_shard] {
                     matrix_rows[output_count] =
-                        boxed_u8_to_shard(data_decode_matrix.get_row(i_shard));
+                        boxed_u8_into_shard(data_decode_matrix.get_row(i_shard));
                     output_count += 1;
                 }
             }
@@ -426,7 +430,7 @@ impl ReedSolomon {
         // data shards were missing.
         {
             let mut outputs : Vec<Shard> =
-                vec![boxed_u8_to_shard(vec![0; byte_count].into_boxed_slice());
+                vec![boxed_u8_into_shard(vec![0; byte_count].into_boxed_slice());
                      self.parity_shard_count];
             let mut output_count = 0;
             for i_shard in self.data_shard_count..self.total_shard_count {
@@ -457,7 +461,6 @@ impl ReedSolomon {
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
     extern crate rand;
@@ -468,7 +471,7 @@ mod tests {
         ($size:expr, $per_shard:expr) => {{
             let mut shards = Vec::with_capacity(13);
             for _ in 0..$size {
-                shards.push(vec![0; $per_shard].into_boxed_slice());
+                shards.push(make_blank_shard($per_shard));
             }
 
             for s in shards.iter_mut() {
@@ -483,8 +486,8 @@ mod tests {
         (
             $( [ $( $x:expr ),* ] ),*
         ) => {{
-            let shards : Vec<Box<[u8]>> =
-                vec![ $( Box::new([ $( $x ),* ]) ),* ];
+            let shards : Vec<Shard> =
+                vec![ $( boxed_u8_into_shard(Box::new([ $( $x ),* ])) ),* ];
             shards
         }}
     }
@@ -551,8 +554,8 @@ mod tests {
         None
     }
 
-    fn fill_random(arr : &mut Box<[u8]>) {
-        for a in arr.iter_mut() {
+    fn fill_random(arr : &mut Shard) {
+        for a in arr.borrow_mut().iter_mut() {
             *a = rand::random::<u8>();
         }
     }
@@ -667,21 +670,20 @@ mod tests {
                                  [0, 0]);
 
         r.encode_parity(&mut shards, None, None);
-        { assert_eq!(shards[5][0], 12);
-          assert_eq!(shards[5][1], 13); }
-        { assert_eq!(shards[6][0], 10);
-          assert_eq!(shards[6][1], 11); }
-        { assert_eq!(shards[7][0], 14);
-          assert_eq!(shards[7][1], 15); }
-        { assert_eq!(shards[8][0], 90);
-          assert_eq!(shards[8][1], 91); }
-        { assert_eq!(shards[9][0], 94);
-          assert_eq!(shards[9][1], 95); }
+        { assert_eq!(shards[5].borrow()[0], 12);
+          assert_eq!(shards[5].borrow()[1], 13); }
+        { assert_eq!(shards[6].borrow()[0], 10);
+          assert_eq!(shards[6].borrow()[1], 11); }
+        { assert_eq!(shards[7].borrow()[0], 14);
+          assert_eq!(shards[7].borrow()[1], 15); }
+        { assert_eq!(shards[8].borrow()[0], 90);
+          assert_eq!(shards[8].borrow()[1], 91); }
+        { assert_eq!(shards[9].borrow()[0], 94);
+          assert_eq!(shards[9].borrow()[1], 95); }
 
         assert!(r.is_parity_correct(&shards, None, None));
 
-        shards[8][0] += 1;
+        shards[8].borrow_mut()[0] += 1;
         assert!(!r.is_parity_correct(&shards, None, None));
     }
 }
-*/
