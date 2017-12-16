@@ -24,7 +24,11 @@ pub fn make_zero_len_shard() -> Shard {
 }
 
 pub fn make_zero_len_shards(count : usize) -> Vec<Shard> {
-    vec![make_zero_len_shard(); count]
+    let mut result = Vec::with_capacity(count);
+    for _ in 0..count {
+        result.push(make_zero_len_shard());
+    }
+    result
 }
 
 pub fn make_blank_shard(size : usize) -> Shard {
@@ -32,7 +36,11 @@ pub fn make_blank_shard(size : usize) -> Shard {
 }
 
 pub fn make_blank_shards(size : usize, count : usize) -> Vec<Shard> {
-    vec![make_blank_shard(size); count]
+    let mut result = Vec::with_capacity(count);
+    for _ in 0..count {
+        result.push(make_blank_shard(size));
+    }
+    result
 }
 
 pub struct ReedSolomon {
@@ -368,7 +376,7 @@ impl ReedSolomon {
         for i in offset..offset + count {
             let shard = match shards[i] {
                 Some(ref x) => x,
-                None        => panic!("Missing shards"),
+                None        => panic!("Missing shards, index : {}", i),
             };
             let inner : RefCell<Box<[u8]>> = shard.deref().clone();
             result.push(Rc::new(inner));
@@ -432,6 +440,7 @@ impl ReedSolomon {
         if number_present < self.data_shard_count {
             return Err(Error::NotEnoughShards)
         }
+        println!("before doing anything :");
         for shard in shards.iter() {
             let strong_count = match *shard {
                 Some (ref x) => Rc::strong_count(x),
@@ -439,6 +448,7 @@ impl ReedSolomon {
             };
             println!("strong_count : {}", strong_count);
         }
+        println!();
 
         // Pull out the rows of the matrix that correspond to the
         // shards that we have and build a square matrix.  This
@@ -469,6 +479,7 @@ impl ReedSolomon {
             }
         }
 
+        println!("after setting up sub_matrix and sub_shards :");
         for shard in shards.iter() {
             let strong_count = match *shard {
                 Some (ref x) => Rc::strong_count(x),
@@ -476,11 +487,13 @@ impl ReedSolomon {
             };
             println!("strong_count : {}", strong_count);
         }
+        println!();
 
         println!("sub_shards :");
         for shard in sub_shards.iter() {
             println!("{:?}", *shard);
         }
+        println!();
 
         // Invert the matrix, so we can go from the encoded shards
         // back to the original data.  Then pull out the row that
@@ -513,11 +526,21 @@ impl ReedSolomon {
                     output_count += 1;
                 }
             }
+            println!("after linking missing shards to output : ");
+            for shard in shards.iter() {
+                let strong_count = match *shard {
+                    Some (ref x) => Rc::strong_count(x),
+                    None         => 0
+                };
+                println!("strong_count : {}", strong_count);
+            }
+            println!();
             Self::code_some_shards(&matrix_rows,
                                    &sub_shards,  self.data_shard_count,
                                    &mut outputs, output_count,
                                    offset, byte_count);
         }
+        println!("after re-encoding data shards : ");
         for shard in shards.iter() {
             let strong_count = match *shard {
                 Some (ref x) => Rc::strong_count(x),
@@ -525,7 +548,7 @@ impl ReedSolomon {
             };
             println!("strong_count : {}", strong_count);
         }
-        return Ok(());
+        println!();
 
         // Now that we have all of the data shards intact, we can
         // compute any of the parity that is missing.
