@@ -160,9 +160,25 @@ pub mod hash {
 }
 
 #[cfg(test)]
-mod tests {
+mod test_vectors {
+    // test vectors copied from :
+    // https://www.di-mgt.com.au/sha_testvectors.html
+
+    use super::super::misc_utils;
+    use super::*;
+
     #[test]
-    fn sha1_test_cases() {
-        
+    fn sha1_test_vectors() {
+        {
+            let input  =
+                "abc".as_bytes();
+            let expect =
+                misc_utils::hex_string_to_bytes("a9993e364706816aba3e25717850c26c9cd0d89d").unwrap();
+            let mut ctx = hash::Ctx::new(HashType::SHA1).unwrap();
+            ctx.update(input.as_ref());
+            let result = ctx.finish_into_bytes();
+
+            assert_eq!(expect, result);
+        }
     }
 }

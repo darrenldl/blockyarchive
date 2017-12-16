@@ -23,6 +23,6 @@ fn main() {
 
     let result = ctx.finish_into_bytes();
 
-    println!("{}", misc_utils::bytes_to_hex_string(&result));
-    println!("{:?}", misc_utils::hex_string_to_bytes("abcd").unwrap())
+    println!("{}", misc_utils::bytes_to_upper_hex_string(&result));
+    println!("{:?}", misc_utils::hex_string_to_bytes("0102").unwrap())
 }
