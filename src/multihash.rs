@@ -142,6 +142,11 @@ mod hash {
             }
         }
 
+        fn finish_to_hash_bytes(self, hash_bytes : &mut HashBytes) {
+            hash_bytes.0  = self.hash_type();
+            self.finish(&mut hash_bytes.1);
+        }
+
         fn finish_into_hash_bytes(self) -> HashBytes {
             let hash_type   = self.hash_type();
             let param       = specs::hash_type_to_param(&hash_type);
