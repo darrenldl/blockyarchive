@@ -2,6 +2,9 @@
 mod galois;
 mod matrix;
 
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use matrix::Matrix;
 
 #[derive(Debug)]
@@ -9,12 +12,14 @@ pub enum Error {
     NotEnoughShards
 }
 
+type Shard = Rc<RefCell<Box<[u8]>>>;
+
 struct ReedSolomon {
     data_shard_count   : usize,
     parity_shard_count : usize,
     total_shard_count  : usize,
     matrix             : Matrix,
-    parity_rows        : Vec<Box<[u8]>>,
+    parity_rows        : Vec<Shard>,
 }
 
 impl ReedSolomon {
@@ -35,7 +40,9 @@ impl ReedSolomon {
         let matrix       = Self::build_matrix(data_shards, total_shards);
         let mut parity_rows  = Vec::with_capacity(parity_shards);
         for i in 0..parity_shards {
-            parity_rows.push(matrix.get_row(data_shards + i));
+            parity_rows.push(
+                Rc::new(
+                    RefCell::new(matrix.get_row(data_shards + i))));
         }
 
         ReedSolomon {
@@ -54,20 +61,22 @@ impl ReedSolomon {
         }
     }
 
-    fn calc_byte_count(shards : &[Box<[u8]>], byte_count : Option<usize>) -> usize {
+    fn calc_byte_count(shards     : &[Shard],
+                       byte_count : Option<usize>) -> usize {
         match byte_count {
             Some(x) => x,
-            None    => shards[0].len()
+            None    => shards[0].borrow().len()
         }
     }
 
-    fn calc_byte_count_option_shards(shards : &[Option<Box<[u8]>>], byte_count : Option<usize>) -> usize {
+    fn calc_byte_count_option_shards(shards : &[Option<Shard>],
+                                     byte_count : Option<usize>) -> usize {
         match byte_count {
             Some(x) => x,
             None    => {
                 for v in shards.iter() {
                     match *v {
-                        Some(ref x) => return x.len(),
+                        Some(ref x) => return x.borrow().len(),
                         None    => {},
                     }
                 };
@@ -88,14 +97,16 @@ impl ReedSolomon {
         self.total_shard_count
     }
 
-    fn check_buffer_and_sizes(&self, shards : &Vec<Box<[u8]>>, offset : usize, byte_count : usize) {
+    fn check_buffer_and_sizes(&self,
+                              shards : &Vec<Shard>,
+                              offset : usize, byte_count : usize) {
         if shards.len() != self.total_shard_count {
             panic!("Incorrect number of shards : {}", shards.len())
         }
 
-        let shard_length = shards[0].len();
+        let shard_length = shards[0].borrow().len();
         for shard in shards.iter() {
-            if shard.len() != shard_length {
+            if shard.borrow().len() != shard_length {
                 panic!("Shards are of different sizes");
             }
         }
@@ -106,7 +117,7 @@ impl ReedSolomon {
     }
 
     fn check_buffer_and_sizes_option_shards(&self,
-                                            shards : &Vec<Option<Box<[u8]>>>,
+                                            shards : &Vec<Option<Shard>>,
                                             offset : usize, byte_count : usize) {
         if shards.len() != self.total_shard_count {
             panic!("Incorrect number of shards : {}", shards.len())
@@ -116,9 +127,9 @@ impl ReedSolomon {
         for shard in shards.iter() {
             if let Some(ref s) = *shard {
                 match shard_length {
-                    None    => shard_length = Some(s.len()),
+                    None    => shard_length = Some(s.borrow().len()),
                     Some(x) => {
-                        if s.len() != x {
+                        if s.borrow().len() != x {
                             panic!("Shards are of different sizes");
                         }
                     }
@@ -136,7 +147,7 @@ impl ReedSolomon {
     fn code_some_shards(matrix_rows  : &Vec<Box<[u8]>>,
                         inputs       : &[Box<[u8]>],
                         input_count  : usize,
-                        outputs      : &mut [Box<[u8]>],
+                        outputs      : &mut [Shard],
                         output_count : usize,
                         offset       : usize,
                         byte_count   : usize) {
@@ -146,11 +157,12 @@ impl ReedSolomon {
             let i_input = 0;
             let input_shard = &inputs[i_input];
             for i_output in 0..output_count {
-                let output_shard   = &mut outputs[i_output];
+                let output_shard   = &mut outputs[i_output].borrow_mut();
                 let matrix_row     = &matrix_rows[i_output];
                 let mult_table_row = table[matrix_row[i_input] as usize];
                 for i_byte in offset..offset + byte_count {
-                    output_shard[i_byte] = mult_table_row[input_shard[i_byte] as usize];
+                    output_shard[i_byte] =
+                        mult_table_row[input_shard[i_byte] as usize];
                 }
             }
         }
@@ -158,7 +170,7 @@ impl ReedSolomon {
         for i_input in 1..input_count {
             let input_shard = &inputs[i_input];
             for i_output in 0..output_count {
-                let output_shard = &mut outputs[i_output];
+                let output_shard = &mut outputs[i_output].borrow_mut();
                 let matrix_row   = &matrix_rows[i_output];
                 let mult_table_row = &table[matrix_row[i_input] as usize];
                 for i_byte in offset..offset + byte_count {
@@ -168,6 +180,7 @@ impl ReedSolomon {
         }
     }
 
+    /*
     pub fn encode_parity(&self,
                          shards     : &mut Vec<Box<[u8]>>,
                          offset     : Option<usize>,
@@ -277,10 +290,11 @@ impl ReedSolomon {
     }
 
     pub fn decode_missing(&self,
-                          shards        : &mut Vec<Option<Box<[u8]>>>,
+                          shards        : Vec<Option<Box<[u8]>>>,
                           offset        : Option<usize>,
                           byte_count    : Option<usize>)
-                          -> Result<(), Error> {
+                          -> Result<Vec<Option<Box<[u8]>>>,
+                                    (Error, Vec<Option<Box<[u8]>>>)> {
         let offset     = Self::calc_offset(offset);
         let byte_count = Self::calc_byte_count_option_shards(shards, byte_count);
 
@@ -411,8 +425,10 @@ impl ReedSolomon {
 
         Ok (())
     }
+    */
 }
 
+/*
 #[cfg(test)]
 mod tests {
     extern crate rand;
@@ -639,3 +655,4 @@ mod tests {
         assert!(!r.is_parity_correct(&shards, None, None));
     }
 }
+*/
