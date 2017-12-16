@@ -114,5 +114,20 @@ mod hash {
                     ctx.update(data)
             }
         }
+
+        fn finish(self, hashval : &mut [u8; 100]) {
+            match self.ctx {
+                _Ctx::SHA1(ctx)            =>
+                    hashval.copy_from_slice(ctx.finish().as_ref()),
+                _Ctx::SHA256(ctx)          =>
+                    hashval.copy_from_slice(ctx.finish().as_ref()),
+                _Ctx::SHA512(ctx)          =>
+                    hashval.copy_from_slice(ctx.finish().as_ref()),
+                _Ctx::BLAKE2B_256(mut ctx) =>
+                    ctx.finalise(hashval),
+                _Ctx::BLAKE2B_512(mut ctx) =>
+                    ctx.finalise(hashval)
+            }
+        }
     }
 }
