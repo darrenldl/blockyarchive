@@ -156,6 +156,45 @@ impl ReedSolomon {
         }
     }
 
+    fn code_first_input_shard(matrix_rows  : &Vec<Shard>,
+                              outputs      : &mut [Shard],
+                              output_count : usize,
+                              offset       : usize,
+                              byte_count   : usize,
+                              i_input      : usize,
+                              input_shard  : &Box<[u8]>) {
+        let table = &galois::MULT_TABLE;
+
+        for i_output in 0..output_count {
+            let mut output_shard = outputs[i_output].borrow_mut();
+            let matrix_row       = matrix_rows[i_output].borrow();
+            let mult_table_row   = table[matrix_row[i_input] as usize];
+            for i_byte in offset..offset + byte_count {
+                output_shard[i_byte] =
+                    mult_table_row[input_shard[i_byte] as usize];
+            }
+        }
+    }
+
+    fn code_other_input_shard(matrix_rows  : &Vec<Shard>,
+                              outputs      : &mut [Shard],
+                              output_count : usize,
+                              offset       : usize,
+                              byte_count   : usize,
+                              i_input      : usize,
+                              input_shard  : &Box<[u8]>) {
+        let table = &galois::MULT_TABLE;
+
+        for i_output in 0..output_count {
+            let mut output_shard = outputs[i_output].borrow_mut();
+            let matrix_row       = matrix_rows[i_output].borrow();
+            let mult_table_row   = &table[matrix_row[i_input] as usize];
+            for i_byte in offset..offset + byte_count {
+                output_shard[i_byte] ^= mult_table_row[input_shard[i_byte] as usize];
+            }
+        }
+    }
+
     fn code_some_shards(matrix_rows  : &Vec<Shard>,
                         inputs       : &[Shard],
                         input_count  : usize,
@@ -163,32 +202,52 @@ impl ReedSolomon {
                         output_count : usize,
                         offset       : usize,
                         byte_count   : usize) {
-        let table = &galois::MULT_TABLE;
-
         {
             let i_input = 0;
             let input_shard = inputs[i_input].borrow();
-            for i_output in 0..output_count {
-                let mut output_shard = outputs[i_output].borrow_mut();
-                let matrix_row       = matrix_rows[i_output].borrow();
-                let mult_table_row   = table[matrix_row[i_input] as usize];
-                for i_byte in offset..offset + byte_count {
-                    output_shard[i_byte] =
-                        mult_table_row[input_shard[i_byte] as usize];
-                }
-            }
+            Self::code_first_input_shard(matrix_rows,
+                                         outputs, output_count,
+                                         offset,  byte_count,
+                                         i_input, &input_shard);
         }
 
         for i_input in 1..input_count {
             let input_shard = inputs[i_input].borrow();
-            for i_output in 0..output_count {
-                let mut output_shard = outputs[i_output].borrow_mut();
-                let matrix_row       = matrix_rows[i_output].borrow();
-                let mult_table_row   = &table[matrix_row[i_input] as usize];
-                for i_byte in offset..offset + byte_count {
-                    output_shard[i_byte] ^= mult_table_row[input_shard[i_byte] as usize];
-                }
-            }
+            Self::code_other_input_shard(matrix_rows,
+                                         outputs, output_count,
+                                         offset, byte_count,
+                                         i_input, &input_shard);
+        }
+    }
+
+    fn code_some_option_shards(matrix_rows  : &Vec<Shard>,
+                               inputs       : &[Option<Shard>],
+                               input_count  : usize,
+                               outputs      : &mut [Shard],
+                               output_count : usize,
+                               offset       : usize,
+                               byte_count   : usize) {
+        {
+            let i_input = 0;
+            let input_shard = match inputs[i_input] {
+                Some(ref x) => x.borrow(),
+                None        => panic!()
+            };
+            Self::code_first_input_shard(matrix_rows,
+                                         outputs, output_count,
+                                         offset,  byte_count,
+                                         i_input, &input_shard);
+        }
+
+        for i_input in 1..input_count {
+            let input_shard = match inputs[i_input] {
+                Some(ref x) => x.borrow(),
+                None        => panic!()
+            };
+            Self::code_other_input_shard(matrix_rows,
+                                         outputs, output_count,
+                                         offset, byte_count,
+                                         i_input, &input_shard);
         }
     }
 
@@ -310,7 +369,7 @@ impl ReedSolomon {
         result
     }
 
-    fn patch_missing_shards(patched   : &mut Vec<Option<Shard>>,
+    /*fn patch_missing_shards(patched   : &mut Vec<Option<Shard>>,
                             start     : usize,
                             end_exc   : usize,
                             materials : Vec<Shard>) {
@@ -322,7 +381,7 @@ impl ReedSolomon {
                          .expect("Ran out of materials for patching"));
             }
         }
-    }
+    }*/
 
     pub fn decode_missing(&self,
                           shards     : &mut Vec<Option<Shard>>,
@@ -370,13 +429,12 @@ impl ReedSolomon {
             while  matrix_row     < self.total_shard_count
                 && sub_matrix_row < self.data_shard_count
             {
-                if let Some(_) = shards[matrix_row] {
+                if let Some(ref shard) = shards[matrix_row] {
                     for c in 0..self.data_shard_count {
                         sub_matrix.set(sub_matrix_row, c,
                                        self.matrix.get(matrix_row, c));
                     }
-                    sub_shards[sub_matrix_row] =
-                        shards[matrix_row].clone().unwrap();
+                    sub_shards[sub_matrix_row] = Rc::clone(shard);
                     sub_matrix_row += 1;
                 }
 
@@ -400,11 +458,14 @@ impl ReedSolomon {
             vec![make_zero_len_shard(); self.parity_shard_count];
         {
             let mut outputs : Vec<Shard> =
-                vec![boxed_u8_into_shard(vec![0; byte_count].into_boxed_slice());
+                vec![make_blank_shard(byte_count);
                      self.parity_shard_count];
             let mut output_count = 0;
             for i_shard in 0..self.data_shard_count {
                 if let None = shards[i_shard] {
+                    // link slot in outputs to the missing slot in shards
+                    shards[i_shard] =
+                        Some(Rc::clone(&outputs[output_count]));
                     matrix_rows[output_count] =
                         boxed_u8_into_shard(data_decode_matrix.get_row(i_shard));
                     output_count += 1;
@@ -414,12 +475,6 @@ impl ReedSolomon {
                                    &sub_shards,  self.data_shard_count,
                                    &mut outputs, output_count,
                                    offset, byte_count);
-
-            // patch slots slots with missing shards using outputs
-            Self::patch_missing_shards(shards,
-                                       0,
-                                       self.data_shard_count,
-                                       outputs);
         }
 
         // Now that we have all of the data shards intact, we can
@@ -435,26 +490,23 @@ impl ReedSolomon {
             let mut output_count = 0;
             for i_shard in self.data_shard_count..self.total_shard_count {
                 if let None = shards[i_shard] {
+                    shards[i_shard] =
+                        Some(Rc::clone(&outputs[output_count]));
                     matrix_rows[output_count] =
-                        self.parity_rows[i_shard
-                                         - self.data_shard_count].clone();
+                        Rc::clone(&self.parity_rows[i_shard
+                                                   - self.data_shard_count]);
                     output_count += 1;
                 }
             }
-            let complete_data_shards =
+            /*let complete_data_shards =
                 Self::option_shards_to_shards(shards,
                                               Some(0),
-                                              Some(self.data_shard_count));
-            Self::code_some_shards(&matrix_rows,
-                                   &complete_data_shards, self.data_shard_count,
-                                   outputs.as_mut_slice(), output_count,
-                                   offset, byte_count);
+                                              Some(self.data_shard_count));*/
+            Self::code_some_option_shards(&matrix_rows,
+                                          &shards, self.data_shard_count,
+                                          &mut outputs, output_count,
+                                          offset, byte_count);
 
-            // copy outputs to parity shards slots
-            Self::patch_missing_shards(shards,
-                                       self.data_shard_count,
-                                       self.total_shard_count,
-                                       outputs);
         }
 
         Ok (())
@@ -574,7 +626,7 @@ mod tests {
 
     #[test]
     fn test_decode_missing() {
-        let per_shard = 100_000;
+        let per_shard = 10;
 
         let r = ReedSolomon::new(8, 5);
 
@@ -598,11 +650,18 @@ mod tests {
         // Try to decode with 10 shards
         shards[0] = None;
         shards[2] = None;
-        shards[4] = None;
+        //shards[4] = None;
         r.decode_missing(&mut shards,
                          None, None).unwrap();
         {
             let shards = ReedSolomon::option_shards_to_shards(&shards, None, None);
+            for shard in shards.iter() {
+                println!("{:?}", *shard);
+            }
+            println!("");
+            for shard in master_copy.iter() {
+                println!("{:?}", *shard);
+            }
             assert!(r.is_parity_correct(&shards, None, None));
             assert_eq!(shards, master_copy);
         }
