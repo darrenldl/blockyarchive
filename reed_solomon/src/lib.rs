@@ -224,10 +224,9 @@ impl ReedSolomon {
         }
         true
     }
-    /*
 
     pub fn is_parity_correct(&self,
-                             shards     : &Vec<Box<[u8]>>,
+                             shards     : &Vec<Shard>,
                              offset     : Option<usize>,
                              byte_count : Option<usize>) -> bool {
         let offset     = Self::calc_offset(offset);
@@ -243,8 +242,8 @@ impl ReedSolomon {
                                 offset, byte_count)
     }
 
-    pub fn shards_to_option_shards(shards : &Vec<Box<[u8]>>)
-                                   -> Vec<Option<Box<[u8]>>> {
+    pub fn shards_to_option_shards(shards : &Vec<Shard>)
+                                   -> Vec<Option<Shard>> {
         let mut result = Vec::with_capacity(shards.len());
 
         for v in shards.iter() {
@@ -253,12 +252,22 @@ impl ReedSolomon {
         result
     }
 
-    pub fn option_shards_to_shards(shards : &Vec<Option<Box<[u8]>>>,
+    pub fn shards_into_option_shards(shards : Vec<Shard>)
+                                     -> Vec<Option<Shard>> {
+        let mut result = Vec::with_capacity(shards.len());
+
+        for v in shards.into_iter() {
+            result.push(Some(v));
+        }
+        result
+    }
+
+    pub fn option_shards_to_shards(shards : &Vec<Option<Shard>>,
                                    offset : Option<usize>,
-                                   byte_count  : Option<usize>)
-                                   -> Vec<Box<[u8]>> {
+                                   count  : Option<usize>)
+                                   -> Vec<Shard> {
         let offset = Self::calc_offset(offset);
-        let count  = match byte_count {
+        let count  = match count {
             None    => shards.len(),
             Some(x) => x
         };
@@ -274,6 +283,21 @@ impl ReedSolomon {
         }
         result
     }
+
+    pub fn option_shards_into_shards(shards : Vec<Option<Shard>>)
+                                     -> Vec<Shard> {
+        let mut result = Vec::with_capacity(shards.len());
+
+        for shard in shards.into_iter() {
+            let shard = match shard {
+                Some(x) => x,
+                None    => panic!("Missing shards"),
+            };
+            result.push(shard);
+        }
+        result
+    }
+    /*
 
     fn patch_missing_shards(patched   : &mut Vec<Option<Box<[u8]>>>,
                             start     : usize,
