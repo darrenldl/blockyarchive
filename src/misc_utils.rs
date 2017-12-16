@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     InvalidHexString,
     InvalidLen
@@ -91,5 +91,13 @@ mod hex_tests {
                        bytes_to_upper_hex_string(
                            hex_string_to_bytes(hex).unwrap().as_ref()));
         }
+    }
+
+    #[test]
+    fn error_handling() {
+        assert_eq!(hex_string_to_bytes("abc").unwrap_err(),
+                   Error::InvalidLen);
+        assert_eq!(hex_string_to_bytes("LL").unwrap_err(),
+                   Error::InvalidHexString);
     }
 }
