@@ -12,9 +12,9 @@ pub enum Error {
     NotEnoughShards
 }
 
-type Shard = Rc<RefCell<Box<[u8]>>>;
+pub type Shard = Rc<RefCell<Box<[u8]>>>;
 
-struct ReedSolomon {
+pub struct ReedSolomon {
     data_shard_count   : usize,
     parity_shard_count : usize,
     total_shard_count  : usize,
