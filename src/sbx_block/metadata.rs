@@ -1,3 +1,5 @@
+use super::super::multihash;
+
 pub enum Metadata {
     FNM(Box<[u8]>),
     SNM(Box<[u8]>),

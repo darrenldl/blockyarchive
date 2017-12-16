@@ -3,11 +3,12 @@ mod header;
 mod metadata;
 
 use super::sbx_specs;
+use super::reed_solomon_erasure;
 
 pub enum Data {
     Raw(Box<[u8]>),
-    Shard(reed_solomon::Shard),
+    Shard(reed_solomon_erasure::Shard),
     Meta(Vec<metadata::Metadata>)
 }
 
-pub type Block = (Header, Data)
+pub type Block = (header::Header, Data);
