@@ -158,3 +158,11 @@ pub mod hash {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn sha1_test_cases() {
+        
+    }
+}
