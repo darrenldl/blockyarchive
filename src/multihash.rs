@@ -20,8 +20,8 @@ pub mod specs {
     }
 
     pub struct Param {
-        hash_func_type : Box<[u8]>,
-        digest_length  : usize
+        pub hash_func_type : Box<[u8]>,
+        pub digest_length  : usize
     }
 
     macro_rules! param {
@@ -70,26 +70,38 @@ mod hash {
     impl Ctx {
         fn new(hash_type : HashType) -> Result<Ctx, ()> {
             let ctx = match hash_type {
-                HashType::SHA1        =>
+                HashType::SHA1                            =>
                     Some(_Ctx::SHA1(
                         ring::digest::Context::new(&ring::digest::SHA1))),
-                HashType::SHA256      =>
+                HashType::SHA2_256     | HashType::SHA256 =>
                     Some(_Ctx::SHA256(
                         ring::digest::Context::new(&ring::digest::SHA256))),
-                HashType::SHA512      =>
+                HashType::SHA2_512_256                    => None,
+                HashType::SHA2_512_512 | HashType::SHA512 =>
                     Some(_Ctx::SHA512(
                         ring::digest::Context::new(&ring::digest::SHA512))),
-                HashType::BLAKE2B_256 =>
+                HashType::BLAKE2B_256                     =>
                     Some(_Ctx::BLAKE2B_256(
                         blake::Blake::new(256).unwrap())),
-                HashType::BLAKE2B_512 =>
+                HashType::BLAKE2B_512                     =>
                     Some(_Ctx::BLAKE2B_512(
                         blake::Blake::new(512).unwrap())),
-                _                     => None
+                HashType::BLAKE2S_128                     => None,
+                HashType::BLAKE2S_256                     => None,
             };
             match ctx {
                 Some(ctx) => Ok(Ctx { ctx }),
                 None      => Err(())
+            }
+        }
+
+        fn hash_type(&self) -> HashType {
+            match self.ctx {
+                _Ctx::SHA1(_)        => HashType::SHA1,
+                _Ctx::SHA256(_)      => HashType::SHA256,
+                _Ctx::SHA512(_)      => HashType::SHA512,
+                _Ctx::BLAKE2B_256(_) => HashType::BLAKE2B_256,
+                _Ctx::BLAKE2B_512(_) => HashType::BLAKE2B_512
             }
         }
 
@@ -128,6 +140,15 @@ mod hash {
                 _Ctx::BLAKE2B_512(mut ctx) =>
                     ctx.finalise(hashval)
             }
+        }
+
+        fn finish_into_hash_bytes(self) -> HashBytes {
+            let hash_type   = self.hash_type();
+            let param       = specs::hash_type_to_param(&hash_type);
+            let digest_len  = param.digest_length;
+            let mut hashval = vec![0; digest_len].into_boxed_slice();
+            self.finish(&mut hashval);
+            (hash_type, hashval)
         }
     }
 }
