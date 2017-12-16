@@ -474,7 +474,8 @@ impl ReedSolomon {
                     shards[i_shard] =
                         Some(Rc::clone(&outputs[output_count]));
                     matrix_rows[output_count] =
-                        boxed_u8_into_shard(data_decode_matrix.get_row(i_shard));
+                        boxed_u8_into_shard(
+                            data_decode_matrix.get_row(i_shard));
                     output_count += 1;
                 }
             }
@@ -492,8 +493,7 @@ impl ReedSolomon {
         // data shards were missing.
         {
             let mut outputs : Vec<Shard> =
-                vec![boxed_u8_into_shard(vec![0; byte_count].into_boxed_slice());
-                     self.parity_shard_count];
+                make_blank_shards(byte_count, self.parity_shard_count);
             let mut output_count = 0;
             for i_shard in self.data_shard_count..self.total_shard_count {
                 if let None = shards[i_shard] {
