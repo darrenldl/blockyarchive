@@ -14,6 +14,14 @@ pub enum Error {
 
 pub type Shard = Rc<RefCell<Box<[u8]>>>;
 
+fn boxed_u8_to_shard(b : Box<[u8]>) -> Shard {
+    Rc::new(RefCell::new(b))
+}
+
+fn make_empty_shard() -> Shard {
+    boxed_u8_to_shard(Box::new([]))
+}
+
 pub struct ReedSolomon {
     data_shard_count   : usize,
     parity_shard_count : usize,
@@ -301,26 +309,22 @@ impl ReedSolomon {
     fn patch_missing_shards(patched   : &mut Vec<Option<Shard>>,
                             start     : usize,
                             end_exc   : usize,
-                            materials : Vec<Box<[u8]>>) {
+                            materials : Vec<Shard>) {
         let mut material_getter = materials.into_iter();
         for i_shard in start..end_exc {
             if let None = patched[i_shard] {
                 patched[i_shard] =
-                    Some(
-                        Rc::new(RefCell::new(
-                            material_getter.next()
-                                .expect("Ran out of materials for patching"))));
+                    Some(material_getter.next()
+                         .expect("Ran out of materials for patching"));
             }
         }
     }
-    /*
 
     pub fn decode_missing(&self,
-                          shards        : Vec<Option<Box<[u8]>>>,
-                          offset        : Option<usize>,
-                          byte_count    : Option<usize>)
-                          -> Result<Vec<Option<Box<[u8]>>>,
-                                    (Error, Vec<Option<Box<[u8]>>>)> {
+                          shards     : &mut Vec<Option<Shard>>,
+                          offset     : Option<usize>,
+                          byte_count : Option<usize>)
+                          -> Result<(), Error> {
         let offset     = Self::calc_offset(offset);
         let byte_count = Self::calc_byte_count_option_shards(shards, byte_count);
 
@@ -354,8 +358,8 @@ impl ReedSolomon {
         // the missing data shards.
         let mut sub_matrix =
             Matrix::new(self.data_shard_count, self.data_shard_count);
-        let mut sub_shards : Vec<Box<[u8]>> =
-            vec![Box::new([]); self.data_shard_count];
+        let mut sub_shards : Vec<Shard> =
+            vec![make_empty_shard(); self.data_shard_count];
         {
             let mut sub_matrix_row = 0;
             let mut matrix_row = 0;
@@ -388,17 +392,17 @@ impl ReedSolomon {
         // The input to the coding is all of the shards we actually
         // have, and the output is the missing data shards.  The computation
         // is done using the special decode matrix we just built.
-        let mut matrix_rows  : Vec<Box<[u8]>> =
-            vec![Box::new([]); self.parity_shard_count];
+        let mut matrix_rows  : Vec<Shard> =
+            vec![make_empty_shard(); self.parity_shard_count];
         {
-            let mut outputs : Vec<Box<[u8]>> =
-                vec![vec![0; byte_count].into_boxed_slice();
+            let mut outputs : Vec<Shard> =
+                vec![boxed_u8_to_shard(vec![0; byte_count].into_boxed_slice());
                      self.parity_shard_count];
             let mut output_count = 0;
             for i_shard in 0..self.data_shard_count {
                 if let None = shards[i_shard] {
                     matrix_rows[output_count] =
-                        data_decode_matrix.get_row(i_shard);
+                        boxed_u8_to_shard(data_decode_matrix.get_row(i_shard));
                     output_count += 1;
                 }
             }
@@ -421,8 +425,8 @@ impl ReedSolomon {
         // any that we just calculated.  The output is whichever of the
         // data shards were missing.
         {
-            let mut outputs : Vec<Box<[u8]>> =
-                vec![vec![0; byte_count].into_boxed_slice();
+            let mut outputs : Vec<Shard> =
+                vec![boxed_u8_to_shard(vec![0; byte_count].into_boxed_slice());
                      self.parity_shard_count];
             let mut output_count = 0;
             for i_shard in self.data_shard_count..self.total_shard_count {
@@ -451,7 +455,6 @@ impl ReedSolomon {
 
         Ok (())
     }
-    */
 }
 
 /*
