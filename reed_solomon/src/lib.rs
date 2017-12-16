@@ -51,11 +51,25 @@ pub struct ReedSolomon {
     parity_rows        : Vec<Shard>,
 }
 
-/*impl Clone for ReedSolomon {
+impl Clone for ReedSolomon {
     fn clone(&self) -> ReedSolomon {
+        let mut parity_rows =
+            Vec::with_capacity(self.parity_rows.len());
 
+        for shard in self.parity_rows.iter() {
+            let inner : RefCell<Box<[u8]>> = shard.deref().clone();
+            parity_rows.push(Rc::new(inner));
+        }
+
+        ReedSolomon {
+            data_shard_count   : self.data_shard_count,
+            parity_shard_count : self.parity_shard_count,
+            total_shard_count  : self.total_shard_count,
+            matrix             : Matrix::clone(&self.matrix),
+            parity_rows
+        }
     }
-}*/
+}
 
 impl ReedSolomon {
     fn build_matrix(data_shards : usize, total_shards : usize) -> Matrix {
