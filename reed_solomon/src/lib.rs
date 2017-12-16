@@ -22,8 +22,16 @@ pub fn make_zero_len_shard() -> Shard {
     boxed_u8_into_shard(Box::new([]))
 }
 
+pub fn make_zero_len_shards(count : usize) -> Vec<Shard> {
+    vec![make_zero_len_shard(); count]
+}
+
 pub fn make_blank_shard(size : usize) -> Shard {
     boxed_u8_into_shard(vec![0; size].into_boxed_slice())
+}
+
+pub fn make_blank_shards(size : usize, count : usize) -> Vec<Shard> {
+    vec![make_blank_shard(size); count]
 }
 
 pub struct ReedSolomon {
@@ -454,12 +462,11 @@ impl ReedSolomon {
         // The input to the coding is all of the shards we actually
         // have, and the output is the missing data shards.  The computation
         // is done using the special decode matrix we just built.
-        let mut matrix_rows  : Vec<Shard> =
-            vec![make_zero_len_shard(); self.parity_shard_count];
+        let mut matrix_rows : Vec<Shard> =
+            make_zero_len_shards(self.parity_shard_count);
         {
             let mut outputs : Vec<Shard> =
-                vec![make_blank_shard(byte_count);
-                     self.parity_shard_count];
+                make_blank_shards(byte_count, self.parity_shard_count);
             let mut output_count = 0;
             for i_shard in 0..self.data_shard_count {
                 if let None = shards[i_shard] {
