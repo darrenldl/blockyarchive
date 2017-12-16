@@ -181,7 +181,8 @@ impl ReedSolomon {
         let table = &galois::MULT_TABLE;
 
         for i_output in 0..output_count {
-            let mut output_shard = outputs[i_output].borrow_mut();
+            let mut output_shard =
+                outputs[i_output].borrow_mut();
             let matrix_row       = matrix_rows[i_output].borrow();
             let mult_table_row   = table[matrix_row[i_input] as usize];
             for i_byte in offset..offset + byte_count {
@@ -441,23 +442,20 @@ impl ReedSolomon {
         let mut sub_matrix =
             Matrix::new(self.data_shard_count, self.data_shard_count);
         let mut sub_shards : Vec<Shard> =
-            vec![make_zero_len_shard(); self.data_shard_count];
+            Vec::with_capacity(self.data_shard_count);
         {
-            let mut sub_matrix_row = 0;
-            let mut matrix_row = 0;
-            while  matrix_row     < self.total_shard_count
-                && sub_matrix_row < self.data_shard_count
-            {
+            for matrix_row in 0..self.total_shard_count {
+                let sub_matrix_row = sub_shards.len();
+
+                if sub_matrix_row >= self.data_shard_count { break; }
+
                 if let Some(ref shard) = shards[matrix_row] {
                     for c in 0..self.data_shard_count {
                         sub_matrix.set(sub_matrix_row, c,
                                        self.matrix.get(matrix_row, c));
                     }
-                    sub_shards[sub_matrix_row] = Rc::clone(shard);
-                    sub_matrix_row += 1;
+                    sub_shards.push(Rc::clone(shard));
                 }
-
-                matrix_row += 1;
             }
         }
 
