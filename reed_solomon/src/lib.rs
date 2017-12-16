@@ -4,6 +4,7 @@ mod matrix;
 
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::ops::Deref;
 
 use matrix::Matrix;
 
@@ -336,7 +337,8 @@ impl ReedSolomon {
         let mut result = Vec::with_capacity(shards.len());
 
         for v in shards.iter() {
-            result.push(Some(v.clone()));
+            let inner : RefCell<Box<[u8]>> = v.deref().clone();
+            result.push(Some(Rc::new(inner)));
         }
         result
     }
@@ -368,7 +370,8 @@ impl ReedSolomon {
                 Some(ref x) => x,
                 None        => panic!("Missing shards"),
             };
-            result.push(shard.clone());
+            let inner : RefCell<Box<[u8]>> = shard.deref().clone();
+            result.push(Rc::new(inner));
         }
         result
     }
@@ -429,6 +432,13 @@ impl ReedSolomon {
         if number_present < self.data_shard_count {
             return Err(Error::NotEnoughShards)
         }
+        for shard in shards.iter() {
+            let strong_count = match *shard {
+                Some (ref x) => Rc::strong_count(x),
+                None         => 0
+            };
+            println!("strong_count : {}", strong_count);
+        }
 
         // Pull out the rows of the matrix that correspond to the
         // shards that we have and build a square matrix.  This
@@ -457,6 +467,14 @@ impl ReedSolomon {
                     sub_shards.push(Rc::clone(shard));
                 }
             }
+        }
+
+        for shard in shards.iter() {
+            let strong_count = match *shard {
+                Some (ref x) => Rc::strong_count(x),
+                None         => 0
+            };
+            println!("strong_count : {}", strong_count);
         }
 
         println!("sub_shards :");
@@ -499,6 +517,13 @@ impl ReedSolomon {
                                    &sub_shards,  self.data_shard_count,
                                    &mut outputs, output_count,
                                    offset, byte_count);
+        }
+        for shard in shards.iter() {
+            let strong_count = match *shard {
+                Some (ref x) => Rc::strong_count(x),
+                None         => 0
+            };
+            println!("strong_count : {}", strong_count);
         }
         return Ok(());
 
