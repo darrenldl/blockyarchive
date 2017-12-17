@@ -3,7 +3,6 @@
 //use std::{thread, time};
 //use std::time::SystemTime;
 
-extern crate crcccitt;
 #[macro_use(shards)]
 extern crate reed_solomon_erasure;
 

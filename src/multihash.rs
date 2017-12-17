@@ -13,6 +13,20 @@ pub enum HashType {
 
 pub type HashBytes = (HashType, Box<[u8]>);
 
+fn hash_bytes_to_bytes(hash_bytes : &HashBytes, buffer : &mut [u8]) {
+    let param        = specs::Param::new(hash_bytes.0);
+    let digest_bytes = &hash_bytes.1;
+    for i in 0..param.hash_func_type.len() {
+        buffer[i] = param.hash_func_type[i];
+    }
+
+    let offset = param.hash_func_type.len();
+
+    for i in 0..param.digest_length {
+        buffer[i + offset] = digest_bytes[i];
+    }
+}
+
 pub mod specs {
     use super::*;
 
@@ -28,7 +42,7 @@ pub mod specs {
         ) => {
             Param { hash_func_type : Box::new([ $( $val ),* ]),
                     digest_length  : $len,
-                    total_length   : $len + [ $( $val ),* ].len() }
+                    total_length   : [ $( $val ),* ].len() + $len }
         }
     }
 

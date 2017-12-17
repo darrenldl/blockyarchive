@@ -3,7 +3,7 @@ mod header;
 mod metadata;
 
 use super::sbx_specs;
-use super::reed_solomon_erasure;
+extern crate reed_solomon_erasure;
 
 pub enum Data {
     Raw(Box<[u8]>),
@@ -12,3 +12,4 @@ pub enum Data {
 }
 
 pub type Block = (header::Header, Data);
+

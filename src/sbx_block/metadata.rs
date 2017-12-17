@@ -6,5 +6,5 @@ pub enum Metadata {
     FSZ(u64),
     FDT(u64),
     SDT(u64),
-    HSH()
+    HSH(multihash::HashBytes)
 }
