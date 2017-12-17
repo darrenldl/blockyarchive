@@ -64,6 +64,7 @@ pub fn bytes_to_upper_hex_string(bytes : &[u8]) -> String {
 #[cfg(test)]
 mod hex_tests {
     use super::*;
+    use super::super::rand_utils;
 
     #[test]
     fn hex_to_bytes_test_cases() {
@@ -133,6 +134,20 @@ mod hex_tests {
             assert_eq!(hex,
                        bytes_to_upper_hex_string(
                            hex_string_to_bytes(hex).unwrap().as_ref()));
+        }
+        {
+            let mut bytes : [u8; 100] = [0; 100];
+            for _ in 0..1000 {
+                rand_utils::fill_random_bytes(&mut bytes);
+                let hex = bytes_to_lower_hex_string(&bytes);
+                assert_eq!(hex,
+                           bytes_to_lower_hex_string(
+                               hex_string_to_bytes(&hex).unwrap().as_ref()));
+                let hex = bytes_to_upper_hex_string(&bytes);
+                assert_eq!(hex,
+                           bytes_to_upper_hex_string(
+                               hex_string_to_bytes(&hex).unwrap().as_ref()));
+            }
         }
     }
 

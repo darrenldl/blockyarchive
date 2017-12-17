@@ -8,6 +8,7 @@ extern crate reed_solomon_erasure;
 
 mod multihash;
 mod misc_utils;
+mod rand_utils;
 mod sbx_block;
 mod sbx_specs;
 
