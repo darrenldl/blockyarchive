@@ -5,8 +5,7 @@ authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 
 [dependencies]
 crcccitt     = { path = "crcccitt" }
-reed-solomon-erasure = "0.9.0"
+reed-solomon-erasure = "0.9.1"
 ring         = "0.12.1"
-blake-rfc    = "2.0.0"
 hex-slice    = "0.1.2"
 rand = "0.3"
