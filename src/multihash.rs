@@ -31,33 +31,41 @@ pub mod specs {
     use super::*;
 
     pub struct Param {
-        pub hash_func_type : Box<[u8]>,
+        pub hash_func_type : &'static [u8],
         pub digest_length  : usize,
         pub total_length   : usize
     }
 
     macro_rules! param {
         (
-            [ $( $val:expr ),* ]; $len:expr
+            $func_type:ident; $len:expr
         ) => {
-            Param { hash_func_type : Box::new([ $( $val ),* ]),
+            Param { hash_func_type : &$func_type,
                     digest_length  : $len,
-                    total_length   : [ $( $val ),* ].len() + $len }
+                    total_length   : $func_type.len() + $len }
         }
     }
+
+    static SHA1_HFT        : [u8; 1] = [0x11      ];
+    static SHA256_HFT      : [u8; 1] = [0x12      ];
+    static SHA512_HFT      : [u8; 1] = [0x13      ];
+    static BLAKE2B_256_HFT : [u8; 2] = [0xb2, 0x20];
+    static BLAKE2B_512_HFT : [u8; 2] = [0xb2, 0x40];
+    static BLAKE2S_128_HFT : [u8; 2] = [0xb2, 0x50];
+    static BLAKE2S_256_HFT : [u8; 2] = [0xb2, 0x60];
 
     impl Param {
         pub fn new(hash_type : HashType) -> Param {
             use super::HashType::*;
             match hash_type {
-                SHA1                  => param!([0x11      ]; 0x14),
-                SHA2_256     | SHA256 => param!([0x12      ]; 0x20),
-                SHA2_512_256          => param!([0x13      ]; 0x20),
-                SHA2_512_512 | SHA512 => param!([0x13      ]; 0x40),
-                BLAKE2B_256           => param!([0xb2, 0x20]; 0x20),
-                BLAKE2B_512           => param!([0xb2, 0x40]; 0x40),
-                BLAKE2S_128           => param!([0xb2, 0x50]; 0x10),
-                BLAKE2S_256           => param!([0xb2, 0x60]; 0x20),
+                SHA1                  => param!(SHA1_HFT;        0x14),
+                SHA2_256     | SHA256 => param!(SHA256_HFT;      0x20),
+                SHA2_512_256          => param!(SHA512_HFT;      0x20),
+                SHA2_512_512 | SHA512 => param!(SHA512_HFT;      0x40),
+                BLAKE2B_256           => param!(BLAKE2B_256_HFT; 0x20),
+                BLAKE2B_512           => param!(BLAKE2B_512_HFT; 0x40),
+                BLAKE2S_128           => param!(BLAKE2S_128_HFT; 0x10),
+                BLAKE2S_256           => param!(BLAKE2S_256_HFT; 0x20),
             }
         }
     }
