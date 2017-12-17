@@ -13,7 +13,7 @@ pub enum HashType {
 
 pub type HashBytes = (HashType, Box<[u8]>);
 
-fn hash_bytes_to_bytes(hash_bytes : &HashBytes, buffer : &mut [u8]) {
+pub fn hash_bytes_to_bytes(hash_bytes : &HashBytes, buffer : &mut [u8]) {
     let param        = specs::Param::new(hash_bytes.0);
     let digest_bytes = &hash_bytes.1;
     for i in 0..param.hash_func_type.len() {
@@ -25,6 +25,14 @@ fn hash_bytes_to_bytes(hash_bytes : &HashBytes, buffer : &mut [u8]) {
     for i in 0..param.digest_length {
         buffer[i + offset] = digest_bytes[i];
     }
+}
+
+pub fn hash_bytes_into_bytes(hash_bytes : &HashBytes) -> Box<[u8]> {
+    let param      = specs::Param::new(hash_bytes.0);
+    let mut buffer = vec![0; param.total_length].into_boxed_slice();
+
+    hash_bytes_to_bytes(hash_bytes, &mut buffer);
+    buffer
 }
 
 pub mod specs {
@@ -233,7 +241,7 @@ mod test_vectors {
         let mut ctx = hash::Ctx::new(hash_type).unwrap();
         ctx.update(input.as_ref());
         let result_bytes =
-            hash_bytes_to_bytes(ctx.finish_into_hash_bytes());
+            hash_bytes_into_bytes(&ctx.finish_into_hash_bytes());
 
         assert_eq!(expect, result_bytes);
     }
@@ -260,7 +268,7 @@ mod test_vectors {
     fn multihash_sha1_bytes() {
         test_single_multihash(HashType::SHA1,
                               Raw(""),
-                              Hex("da39a3ee5e6b4b0d3255bfef95601890afd80709"));
+                              Hex("1114da39a3ee5e6b4b0d3255bfef95601890afd80709"));
     }
 
     #[test]
