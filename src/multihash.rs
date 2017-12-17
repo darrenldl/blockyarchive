@@ -47,7 +47,9 @@ pub mod specs {
 
 pub mod hash {
     extern crate ring;
-    extern crate blake;
+    extern crate blake2_c;
+
+    use self::blake2_c::blake2b;
 
     use super::*;
 
@@ -60,8 +62,8 @@ pub mod hash {
         SHA1(ring::digest::Context),
         SHA256(ring::digest::Context),
         SHA512(ring::digest::Context),
-        BLAKE2B_256(blake::Blake),
-        BLAKE2B_512(blake::Blake)
+        BLAKE2B_256(blake2b::State),
+        BLAKE2B_512(blake2b::State)
     }
 
     impl Ctx {
@@ -79,10 +81,10 @@ pub mod hash {
                         ring::digest::Context::new(&ring::digest::SHA512))),
                 HashType::BLAKE2B_256                     =>
                     Some(_Ctx::BLAKE2B_256(
-                        blake::Blake::new(256).unwrap())),
+                        blake2b::State::new(256))),
                 HashType::BLAKE2B_512                     =>
                     Some(_Ctx::BLAKE2B_512(
-                        blake::Blake::new(512).unwrap())),
+                        blake2b::State::new(512))),
                 HashType::BLAKE2S_128                     => None,
                 HashType::BLAKE2S_256                     => None,
             };
@@ -117,10 +119,10 @@ pub mod hash {
                     ctx.update(data),
                 _Ctx::SHA512(ref mut ctx)      =>
                     ctx.update(data),
-                _Ctx::BLAKE2B_256(ref mut ctx) =>
-                    ctx.update(data),
-                _Ctx::BLAKE2B_512(ref mut ctx) =>
-                    ctx.update(data)
+                _Ctx::BLAKE2B_256(ref mut ctx) => {
+                    ctx.update(data); },
+                _Ctx::BLAKE2B_512(ref mut ctx) => {
+                    ctx.update(data); },
             }
         }
 
@@ -133,9 +135,9 @@ pub mod hash {
                 _Ctx::SHA512(ctx)          =>
                     hashval.copy_from_slice(ctx.finish().as_ref()),
                 _Ctx::BLAKE2B_256(mut ctx) =>
-                    ctx.finalise(hashval),
+                    hashval.copy_from_slice(ctx.finalize().bytes.into_inner().unwrap().as_ref()),
                 _Ctx::BLAKE2B_512(mut ctx) =>
-                    ctx.finalise(hashval)
+                    hashval.copy_from_slice(ctx.finalize().bytes.into_inner().unwrap().as_ref()),
             }
         }
 

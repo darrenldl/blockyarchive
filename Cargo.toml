@@ -8,4 +8,5 @@ crcccitt     = { path = "crcccitt" }
 reed-solomon-erasure = "0.9.1"
 ring         = "0.12.1"
 hex-slice    = "0.1.2"
+blake2_c     = "0.2.0"
 rand = "0.3"
