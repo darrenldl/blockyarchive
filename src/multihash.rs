@@ -20,9 +20,11 @@ pub fn hash_bytes_to_bytes(hash_bytes : &HashBytes, buffer : &mut [u8]) {
         buffer[i] = param.hash_func_type[i];
     }
 
-    let offset = param.hash_func_type.len();
+    buffer[param.hash_func_type.len()] = param.digest_length;
 
-    for i in 0..param.digest_length {
+    let offset = param.hash_func_type.len() + 1;
+
+    for i in 0..param.digest_length as usize {
         buffer[i + offset] = digest_bytes[i];
     }
 }
@@ -40,7 +42,7 @@ pub mod specs {
 
     pub struct Param {
         pub hash_func_type : &'static [u8],
-        pub digest_length  : usize,
+        pub digest_length  : u8,
         pub total_length   : usize
     }
 
@@ -50,7 +52,7 @@ pub mod specs {
         ) => {
             Param { hash_func_type : &$func_type,
                     digest_length  : $len,
-                    total_length   : $func_type.len() + $len }
+                    total_length   : $func_type.len() + 1 + $len }
         }
     }
 
@@ -115,10 +117,10 @@ pub mod hash {
                         ring::digest::Context::new(&ring::digest::SHA512))),
                 HashType::BLAKE2B_256                     =>
                     Some(_Ctx::BLAKE2B_256(
-                        blake2b::State::new(specs::Param::new(hash_type).digest_length))),
+                        blake2b::State::new(specs::Param::new(hash_type).digest_length as usize))),
                 HashType::BLAKE2B_512                     =>
                     Some(_Ctx::BLAKE2B_512(
-                        blake2b::State::new(specs::Param::new(hash_type).digest_length))),
+                        blake2b::State::new(specs::Param::new(hash_type).digest_length as usize))),
                 HashType::BLAKE2S_128                     => None,
                 HashType::BLAKE2S_256                     => None,
             };
@@ -179,7 +181,9 @@ pub mod hash {
             let hash_type   = self.hash_type();
             let param       = specs::Param::new(hash_type);
             let digest_len  = param.digest_length;
-            let mut hashval = vec![0; digest_len].into_boxed_slice();
+            let mut hashval =
+                vec![0; digest_len as usize]
+                .into_boxed_slice();
             self.finish_to_bytes(&mut hashval);
             hashval
         }
