@@ -219,6 +219,25 @@ mod test_vectors {
         assert_eq!(expect, result);
     }
 
+    fn test_single_multihash(hash_type : HashType,
+                             input     : Data,
+                             expect    : Data) {
+        let input  : Box<[u8]> = match input {
+            Raw(x) => x.to_string().into_bytes().into_boxed_slice(),
+            Hex(x) => misc_utils::hex_string_to_bytes(x).unwrap()
+        };
+        let expect : Box<[u8]> = match expect {
+            Raw(x) => x.to_string().into_bytes().into_boxed_slice(),
+            Hex(x) => misc_utils::hex_string_to_bytes(x).unwrap()
+        };
+        let mut ctx = hash::Ctx::new(hash_type).unwrap();
+        ctx.update(input.as_ref());
+        let result_bytes =
+            hash_bytes_to_bytes(ctx.finish_into_hash_bytes());
+
+        assert_eq!(expect, result_bytes);
+    }
+
     fn test_repetition(hash_type : HashType, input : Data, repeat : usize, expect : Data) {
         let input  = match input {
             Raw(x) => x.to_string().into_bytes().into_boxed_slice(),
@@ -235,6 +254,13 @@ mod test_vectors {
         let result = ctx.finish_into_bytes();
 
         assert_eq!(expect, result);
+    }
+
+    #[test]
+    fn multihash_sha1_bytes() {
+        test_single_multihash(HashType::SHA1,
+                              Raw(""),
+                              Hex("da39a3ee5e6b4b0d3255bfef95601890afd80709"));
     }
 
     #[test]
