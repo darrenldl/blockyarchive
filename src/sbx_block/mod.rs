@@ -11,5 +11,12 @@ pub enum Data {
     Meta(Vec<metadata::Metadata>)
 }
 
-pub type Block = (header::Header, Data);
+pub struct Block {
+    header : header::Header,
+    data   : Data
+}
 
+impl Block {
+    /*pub fn new(version : Version,
+               crc_ccitt : u16)*/
+}
