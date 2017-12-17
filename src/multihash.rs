@@ -32,17 +32,19 @@ pub mod specs {
         }
     }
 
-    pub fn hash_type_to_param (hash_type : HashType) -> Param {
-        use super::HashType::*;
-        match hash_type {
-            SHA1                  => param!([0x11      ]; 0x14),
-            SHA2_256     | SHA256 => param!([0x12      ]; 0x20),
-            SHA2_512_256          => param!([0x13      ]; 0x20),
-            SHA2_512_512 | SHA512 => param!([0x13      ]; 0x40),
-            BLAKE2B_256           => param!([0xb2, 0x20]; 0x20),
-            BLAKE2B_512           => param!([0xb2, 0x40]; 0x40),
-            BLAKE2S_128           => param!([0xb2, 0x50]; 0x10),
-            BLAKE2S_256           => param!([0xb2, 0x60]; 0x20),
+    impl Param {
+        pub fn new(hash_type : HashType) -> Param {
+            use super::HashType::*;
+            match hash_type {
+                SHA1                  => param!([0x11      ]; 0x14),
+                SHA2_256     | SHA256 => param!([0x12      ]; 0x20),
+                SHA2_512_256          => param!([0x13      ]; 0x20),
+                SHA2_512_512 | SHA512 => param!([0x13      ]; 0x40),
+                BLAKE2B_256           => param!([0xb2, 0x20]; 0x20),
+                BLAKE2B_512           => param!([0xb2, 0x40]; 0x40),
+                BLAKE2S_128           => param!([0xb2, 0x50]; 0x10),
+                BLAKE2S_256           => param!([0xb2, 0x60]; 0x20),
+            }
         }
     }
 }
@@ -83,10 +85,10 @@ pub mod hash {
                         ring::digest::Context::new(&ring::digest::SHA512))),
                 HashType::BLAKE2B_256                     =>
                     Some(_Ctx::BLAKE2B_256(
-                        blake2b::State::new(256))),
+                        blake2b::State::new(specs::Param::new(hash_type).digest_length))),
                 HashType::BLAKE2B_512                     =>
                     Some(_Ctx::BLAKE2B_512(
-                        blake2b::State::new(512))),
+                        blake2b::State::new(specs::Param::new(hash_type).digest_length))),
                 HashType::BLAKE2S_128                     => None,
                 HashType::BLAKE2S_256                     => None,
             };
@@ -137,15 +139,15 @@ pub mod hash {
                 _Ctx::SHA512(ctx)          =>
                     hashval.copy_from_slice(ctx.finish().as_ref()),
                 _Ctx::BLAKE2B_256(mut ctx) =>
-                    hashval.copy_from_slice(ctx.finalize().bytes.into_inner().unwrap().as_ref()),
+                    hashval.copy_from_slice(ctx.finalize().bytes.as_slice()),
                 _Ctx::BLAKE2B_512(mut ctx) =>
-                    hashval.copy_from_slice(ctx.finalize().bytes.into_inner().unwrap().as_ref()),
+                    hashval.copy_from_slice(ctx.finalize().bytes.as_slice()),
             }
         }
 
         pub fn finish_into_bytes(self) -> Box<[u8]> {
             let hash_type   = self.hash_type();
-            let param       = specs::hash_type_to_param(hash_type);
+            let param       = specs::Param::new(hash_type);
             let digest_len  = param.digest_length;
             let mut hashval = vec![0; digest_len].into_boxed_slice();
             self.finish_to_bytes(&mut hashval);
@@ -279,5 +281,12 @@ mod test_vectors {
         test_single_vector(HashType::BLAKE2B_256,
                            Raw("The lazy fox jumps over the lazy dog."),
                            Hex("0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8"));
+    }
+
+    #[test]
+    fn blake2b_512_test_vectors() {
+        test_single_vector(HashType::BLAKE2B_512,
+                           Raw("The lazy fox jumps over the lazy dog."),
+                           Hex("5c700515ca018fe7ec9b60a57c33245c36794469f55012e8b15c26f3d6ea2b53191e05683eed19292ef5c0a969a0cf991e0411bf09d3486758af3a62fd1208ef"));
     }
 }
