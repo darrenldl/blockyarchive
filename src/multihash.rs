@@ -286,7 +286,22 @@ mod test_vectors {
     #[test]
     fn blake2b_512_test_vectors() {
         test_single_vector(HashType::BLAKE2B_512,
-                           Raw("The lazy fox jumps over the lazy dog."),
-                           Hex("5c700515ca018fe7ec9b60a57c33245c36794469f55012e8b15c26f3d6ea2b53191e05683eed19292ef5c0a969a0cf991e0411bf09d3486758af3a62fd1208ef"));
+                           Hex(""),
+                           Hex("10ebb67700b1868efb4417987acf4690ae9d972fb7a590c2f02871799aaa4786b5e996e8f0f4eb981fc214b005f42d2ff4233499391653df7aefcbc13fc51568"));
+        test_single_vector(HashType::BLAKE2B_512,
+                           Hex("00"),
+                           Hex("961f6dd1e4dd30f63901690c512e78e4b45e4742ed197c3c5e45c549fd25f2e4187b0bc9fe30492b16b0d0bc4ef9b0f34c7003fac09a5ef1532e69430234cebd"));
+        test_single_vector(HashType::BLAKE2B_512,
+                           Hex("0001"),
+                           Hex("da2cfbe2d8409a0f38026113884f84b50156371ae304c4430173d08a99d9fb1b983164a3770706d537f49e0c916d9f32b95cc37a95b99d857436f0232c88a965"));
+        test_single_vector(HashType::BLAKE2B_512,
+                           Hex("000102"),
+                           Hex("33d0825dddf7ada99b0e7e307104ad07ca9cfd9692214f1561356315e784f3e5a17e364ae9dbb14cb2036df932b77f4b292761365fb328de7afdc6d8998f5fc1"));
+        test_single_vector(HashType::BLAKE2B_512,
+                           Hex("00010203"),
+                           Hex("beaa5a3d08f3807143cf621d95cd690514d0b49efff9c91d24b59241ec0eefa5f60196d407048bba8d2146828ebcb0488d8842fd56bb4f6df8e19c4b4daab8ac"));
+        test_single_vector(HashType::BLAKE2B_512,
+                           Hex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfe"),
+                           Hex("142709d62e28fcccd0af97fad0f8465b971e82201dc51070faa0372aa43e92484be1c1e73ba10906d5d1853db6a4106e0a7bf9800d373d6dee2d46d62ef2a461"));
     }
 }
