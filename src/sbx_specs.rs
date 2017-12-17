@@ -1,3 +1,4 @@
+#[derive(Clone, Copy)]
 pub enum Version {
     V1,
     V2,
