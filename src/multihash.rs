@@ -18,7 +18,8 @@ pub mod specs {
 
     pub struct Param {
         pub hash_func_type : Box<[u8]>,
-        pub digest_length  : usize
+        pub digest_length  : usize,
+        pub total_length   : usize
     }
 
     macro_rules! param {
@@ -26,7 +27,8 @@ pub mod specs {
             [ $( $val:expr ),* ]; $len:expr
         ) => {
             Param { hash_func_type : Box::new([ $( $val ),* ]),
-                    digest_length  : $len }
+                    digest_length  : $len,
+                    total_length   : $len + [ $( $val ),* ].len() }
         }
     }
 
