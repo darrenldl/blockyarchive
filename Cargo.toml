@@ -9,3 +9,4 @@ reed-solomon-erasure = { path = "reed-solomon-erasure" }
 ring         = "0.12.1"
 blake        = "2.0.0"
 hex-slice    = "0.1.2"
+rand = "0.3"
