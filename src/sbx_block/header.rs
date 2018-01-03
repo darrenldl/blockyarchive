@@ -1,4 +1,11 @@
-use super::super::sbx_specs::{Version, SBX_HEADER_SIZE};
+use std;
+use super::super::sbx_specs::{Version, SBX_HEADER_SIZE, SBX_SIGNATURE};
+use super::super::sbx_specs;
+
+use super::crc::crc_ccitt;
+
+extern crate crc_ccitt;
+use crc_ccitt::crc_ccitt_generic;
 
 #[derive(Debug, Clone)]
 pub struct Header {
@@ -21,5 +28,29 @@ impl Header {
 
     pub fn set_seq_num(&mut self, seq : u32) {
         self.seq_num = seq;
+    }
+
+    pub fn write_to_bytes(&self, buffer : &mut [u8]) {
+        { // signature
+            buffer[0..3].copy_from_slice(SBX_SIGNATURE); }
+        { // version byte
+            buffer[3] = sbx_specs::ver_to_usize(self.version) as u8; }
+        { // crc ccitt
+            let crc : [u8; 2] =
+                unsafe { std::mem::transmute::<u16, [u8; 2]>(self.crc) };
+            buffer[4..6].copy_from_slice(&crc); }
+        { // file uid
+            buffer[6..12].copy_from_slice(&self.file_uid); }
+        { // seq num
+            let seq_num : [u8; 4] =
+                unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num) };
+            buffer[12..16].copy_from_slice(&seq_num); }
+    }
+
+    pub fn crc_ccitt(&self) -> u16 {
+        let crc = crc_ccitt(self.version, &self.file_uid);
+        let seq_num : [u8; 4] =
+            unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num) };
+        let crc = crc_ccitt_generic(&seq_num, crc);
     }
 }

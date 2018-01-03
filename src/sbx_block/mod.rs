@@ -109,6 +109,8 @@ impl<'a> Block<'a> {
                 if let Err(x) = metadata::write_to_bytes(meta, buf) {
                     return Err(Error::Metadata(x));
                 }
+                let crc = crc_ccitt(self.header.version, buf);
+                let crc = crc_ccitt()
             },
             Data::Data(buf) => {
                 self.header.crc = crc_ccitt(self.header.version, buf);
