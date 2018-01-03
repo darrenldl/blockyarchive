@@ -11,7 +11,7 @@ extern crate reed_solomon_erasure;
 extern crate smallvec;
 use self::smallvec::SmallVec;
 
-use self::crc::crc_ccitt;
+use self::crc::*;
 
 #[derive(Clone, Copy, Debug)]
 pub enum BlockType {
@@ -43,6 +43,7 @@ impl<'a> Block<'a> {
                block_type : BlockType,
                buffer     : &'a mut [u8])
                -> Block {
+        if 
         match block_type {
             BlockType::Data => {
                 let (header_buf, data_buf) = buffer.split_at_mut(16);
@@ -104,18 +105,24 @@ impl<'a> Block<'a> {
     }
 
     pub fn sync_everything(&mut self) -> Result<(), Error> {
-        match self.data {
+        let crc = match self.data {
             Data::Meta(ref meta, ref mut buf) => {
+                // transform metadata to bytes
                 if let Err(x) = metadata::write_to_bytes(meta, buf) {
                     return Err(Error::Metadata(x));
                 }
-                let crc = crc_ccitt(self.header.version, buf);
-                let crc = crc_ccitt()
+                let crc = self.header.crc_ccitt();
+                crc_ccitt_generic(crc, buf)
             },
             Data::Data(buf) => {
-                self.header.crc = crc_ccitt(self.header.version, buf);
+                let crc = self.header.crc_ccitt();
+                crc_ccitt_generic(crc, buf)
             }
-        }
+        };
+
+        self.header.crc = crc;
+
+        self.header.write_to_bytes(&mut self.header_buf);
 
         Ok(())
     }

@@ -69,3 +69,5 @@ pub fn ver_to_usize (ver : Version) -> usize {
         Version::V3 => 3,
     }
 }
+
+pub fn ver_to_block_size

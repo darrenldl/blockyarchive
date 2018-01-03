@@ -2,10 +2,7 @@ use std;
 use super::super::sbx_specs::{Version, SBX_HEADER_SIZE, SBX_SIGNATURE};
 use super::super::sbx_specs;
 
-use super::crc::crc_ccitt;
-
-extern crate crc_ccitt;
-use crc_ccitt::crc_ccitt_generic;
+use super::crc::*;
 
 #[derive(Debug, Clone)]
 pub struct Header {
@@ -26,10 +23,6 @@ impl Header {
         }
     }
 
-    pub fn set_seq_num(&mut self, seq : u32) {
-        self.seq_num = seq;
-    }
-
     pub fn write_to_bytes(&self, buffer : &mut [u8]) {
         { // signature
             buffer[0..3].copy_from_slice(SBX_SIGNATURE); }
@@ -48,9 +41,9 @@ impl Header {
     }
 
     pub fn crc_ccitt(&self) -> u16 {
-        let crc = crc_ccitt(self.version, &self.file_uid);
+        let crc = sbx_crc_ccitt(self.version, &self.file_uid);
         let seq_num : [u8; 4] =
             unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num) };
-        let crc = crc_ccitt_generic(&seq_num, crc);
+        crc_ccitt_generic(crc, &seq_num)
     }
 }
