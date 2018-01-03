@@ -20,28 +20,50 @@ pub enum Error {
     WrongBlockType
 }
 
-#[derive(Clone, Debug)]
-pub enum Data {
-    Data(SmallVec<[u8; 4096]>),
+#[derive(Debug)]
+pub enum Data<'a> {
+    Data(&'a [u8]),
     Meta(SmallVec<[Metadata; 16]>)
 }
 
-#[derive(Clone, Debug)]
-pub struct Block {
-    header : Header,
-    data   : Data
+#[derive(Debug)]
+enum DataBuf<'a> {
+    Data(&'a [u8]),
+    Meta(&'a mut [u8])
 }
 
-impl Block {
+#[derive(Debug)]
+pub struct Block<'a> {
+    header     : Header,
+    data       : Data<'a>,
+    header_buf : &'a mut [u8],
+    data_buf   : DataBuf<'a>
+}
+
+impl<'a> Block<'a> {
     pub fn new(version    : Version,
                file_uid   : [u8; SBX_HEADER_SIZE],
-               block_type : BlockType)
+               block_type : BlockType,
+               buffer     : &'a mut [u8])
                -> Block {
-        Block {
-            header : Header::new(version, file_uid),
-            data   : match block_type {
-                BlockType::Data => Data::Data(SmallVec::new()),
-                BlockType::Meta => Data::Meta(SmallVec::new())
+        match block_type {
+            BlockType::Data => {
+                let (header_buf, data_buf) = buffer.split_at_mut(16);
+                Block {
+                    header     : Header::new(version, file_uid),
+                    data       : Data::Data(data_buf),
+                    header_buf : header_buf,
+                    data_buf   : DataBuf::Data(data_buf)
+                }
+            },
+            BlockType::Meta => {
+                let (header_buf, data_buf) = buffer.split_at_mut(16);
+                Block {
+                    header     : Header::new(version, file_uid),
+                    data       : Data::Meta(SmallVec::new()),
+                    header_buf : header_buf,
+                    data_buf   : DataBuf::Meta(data_buf)
+                }
             }
         }
     }
@@ -87,6 +109,8 @@ impl Block {
     }
 
     pub fn sync_everything(&mut self) {
-        
+        if self.is_meta() {
+            // write to the buffer first
+        }
     }
 }
