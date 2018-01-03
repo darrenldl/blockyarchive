@@ -41,7 +41,7 @@
 
 include!(concat!(env!("OUT_DIR"), "/table.rs"));
 
-pub fn crc_ccitt_generic (input : &[u8], start_val : u16) -> u16 {
+pub fn crc_ccitt_generic (start_val : u16, input : &[u8]) -> u16 {
     let mut crc : u16 = start_val;
 
     for c in input {
@@ -62,17 +62,17 @@ mod tests {
 
     #[test]
     fn basic_value_tests_0xffff() {
-        assert_eq!(crc_ccitt_generic(b"a", 0xFFFF), 0x9D77);
-        assert_eq!(crc_ccitt_generic(b"abcd", 0xFFFF), 0x2CF6);
-        assert_eq!(crc_ccitt_generic(b"0", 0xFFFF), 0xD7A3);
-        assert_eq!(crc_ccitt_generic(b"0123", 0xFFFF), 0x3F7B);
+        assert_eq!(crc_ccitt_generic(0xFFFF, b"a"), 0x9D77);
+        assert_eq!(crc_ccitt_generic(0xFFFF, b"abcd"), 0x2CF6);
+        assert_eq!(crc_ccitt_generic(0xFFFF, b"0"), 0xD7A3);
+        assert_eq!(crc_ccitt_generic(0xFFFF, b"0123"), 0x3F7B);
     }
 
     #[test]
     fn basic_value_tests_0x1d0f() {
-        assert_eq!(crc_ccitt_generic(b"a", 0x1D0f), 0xB01B);
-        assert_eq!(crc_ccitt_generic(b"abcd", 0x1D0f), 0xA626);
-        assert_eq!(crc_ccitt_generic(b"0", 0x1D0F), 0xFACF);
-        assert_eq!(crc_ccitt_generic(b"0123", 0x1D0F), 0xB5AB);
+        assert_eq!(crc_ccitt_generic(0x1D0f, b"a", ), 0xB01B);
+        assert_eq!(crc_ccitt_generic(0x1D0f, b"abcd"), 0xA626);
+        assert_eq!(crc_ccitt_generic(0x1D0f, b"0"), 0xFACF);
+        assert_eq!(crc_ccitt_generic(0x1D0f, b"0123"), 0xB5AB);
     }
 }
