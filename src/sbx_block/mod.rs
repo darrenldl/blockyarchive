@@ -1,6 +1,7 @@
 mod helper;
 mod header;
 mod metadata;
+mod crc;
 
 use self::header::Header;
 use self::metadata::Metadata;
@@ -10,6 +11,8 @@ extern crate reed_solomon_erasure;
 extern crate smallvec;
 use self::smallvec::SmallVec;
 
+use self::crc::crc_ccitt;
+
 #[derive(Clone, Copy, Debug)]
 pub enum BlockType {
     Data, Meta
@@ -17,19 +20,14 @@ pub enum BlockType {
 
 #[derive(Clone, Copy, Debug)]
 pub enum Error {
-    WrongBlockType
+    WrongBlockType,
+    Metadata(metadata::Error)
 }
 
 #[derive(Debug)]
 pub enum Data<'a> {
     Data(&'a [u8]),
-    Meta(SmallVec<[Metadata; 16]>)
-}
-
-#[derive(Debug)]
-enum DataBuf<'a> {
-    Data(&'a [u8]),
-    Meta(&'a mut [u8])
+    Meta(SmallVec<[Metadata; 16]>, &'a mut [u8])
 }
 
 #[derive(Debug)]
@@ -37,7 +35,6 @@ pub struct Block<'a> {
     header     : Header,
     data       : Data<'a>,
     header_buf : &'a mut [u8],
-    data_buf   : DataBuf<'a>
 }
 
 impl<'a> Block<'a> {
@@ -53,16 +50,14 @@ impl<'a> Block<'a> {
                     header     : Header::new(version, file_uid),
                     data       : Data::Data(data_buf),
                     header_buf : header_buf,
-                    data_buf   : DataBuf::Data(data_buf)
                 }
             },
             BlockType::Meta => {
                 let (header_buf, data_buf) = buffer.split_at_mut(16);
                 Block {
                     header     : Header::new(version, file_uid),
-                    data       : Data::Meta(SmallVec::new()),
+                    data       : Data::Meta(SmallVec::new(), data_buf),
                     header_buf : header_buf,
-                    data_buf   : DataBuf::Meta(data_buf)
                 }
             }
         }
@@ -70,8 +65,8 @@ impl<'a> Block<'a> {
 
     pub fn block_type(&self) -> BlockType {
         match self.data {
-            Data::Data(_) => BlockType::Data,
-            Data::Meta(_) => BlockType::Meta
+            Data::Data(_)    => BlockType::Data,
+            Data::Meta(_, _) => BlockType::Meta
         }
     }
 
@@ -101,16 +96,25 @@ impl<'a> Block<'a> {
                      meta : Metadata) -> Result<(), Error> {
         match self.data {
             Data::Data(_) => Err(Error::WrongBlockType),
-            Data::Meta(ref mut x) => {
+            Data::Meta(ref mut x, _) => {
                 x.push(meta);
                 Ok(())
             }
         }
     }
 
-    pub fn sync_everything(&mut self) {
-        if self.is_meta() {
-            // write to the buffer first
+    pub fn sync_everything(&mut self) -> Result<(), Error> {
+        match self.data {
+            Data::Meta(ref meta, ref mut buf) => {
+                if let Err(x) = metadata::write_to_bytes(meta, buf) {
+                    return Err(Error::Metadata(x));
+                }
+            },
+            Data::Data(buf) => {
+                self.header.crc = crc_ccitt(self.header.version, buf);
+            }
         }
+
+        Ok(())
     }
 }
