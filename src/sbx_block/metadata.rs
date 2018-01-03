@@ -1,5 +1,6 @@
 use super::super::multihash;
 
+#[derive(Clone, Debug)]
 pub enum Metadata {
     FNM(Box<[u8]>),
     SNM(Box<[u8]>),
