@@ -5,8 +5,9 @@ authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 
 [dependencies]
 crc-ccitt            = { path = "crc-ccitt" }
-reed-solomon-erasure = "0.9.1"
+reed-solomon-erasure = "2.1"
 ring                 = "0.12.1"
 hex-slice            = "0.1.2"
 blake2_c             = "0.2.0"
-rand                 = "0.3"
+rand                 = "0.4"
+smallvec             = "0.6"
