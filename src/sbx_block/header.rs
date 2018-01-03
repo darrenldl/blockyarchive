@@ -16,7 +16,7 @@ impl Header {
         Header {
             version,
             crc_ccitt : 0,
-            file_uid  : [0; SBX_HEADER_SIZE],
+            file_uid,
             seq_num   : 0
         }
     }

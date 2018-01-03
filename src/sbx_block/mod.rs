@@ -75,7 +75,7 @@ impl Block {
         &mut self.header
     }
 
-    pub fn push_meta(&mut self,
+    pub fn add_meta(&mut self,
                      meta : Metadata) -> Result<(), Error> {
         match self.data {
             Data::Data(_) => Err(Error::WrongBlockType),
