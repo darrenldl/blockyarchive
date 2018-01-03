@@ -85,4 +85,8 @@ impl Block {
             }
         }
     }
+
+    pub fn sync_everything(&mut self) {
+        
+    }
 }
