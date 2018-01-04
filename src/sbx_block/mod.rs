@@ -22,7 +22,7 @@ pub enum BlockType {
 
 #[derive(Clone, Copy, Debug)]
 pub enum Error {
-    WrongBlockType,
+    IncorrectBlockType,
     Metadata(metadata::Error)
 }
 
@@ -101,7 +101,7 @@ impl<'a> Block<'a> {
     pub fn add_meta(&mut self,
                      meta : Metadata) -> Result<(), Error> {
         match self.data {
-            Data::Data(_) => Err(Error::WrongBlockType),
+            Data::Data(_) => Err(Error::IncorrectBlockType),
             Data::Meta(ref mut x, _) => {
                 x.push(meta);
                 Ok(())
