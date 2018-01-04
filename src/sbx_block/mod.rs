@@ -2,6 +2,7 @@ mod helper;
 mod header;
 mod metadata;
 mod crc;
+mod test;
 
 use self::header::Header;
 use self::metadata::Metadata;
@@ -42,7 +43,7 @@ pub struct Block<'a> {
 
 impl<'a> Block<'a> {
     pub fn new(version    : Version,
-               file_uid   : [u8; SBX_HEADER_SIZE],
+               file_uid   : &[u8; SBX_HEADER_SIZE],
                block_type : BlockType,
                buffer     : &'a mut [u8])
                -> Result<Block, Error> {
@@ -54,7 +55,7 @@ impl<'a> Block<'a> {
             BlockType::Data => {
                 let (header_buf, data_buf) = buffer.split_at_mut(16);
                 Block {
-                    header     : Header::new(version, file_uid),
+                    header     : Header::new(version, file_uid.clone()),
                     data       : Data::Data(data_buf),
                     header_buf : header_buf,
                 }
