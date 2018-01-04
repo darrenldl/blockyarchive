@@ -43,7 +43,6 @@ impl<'a> Block<'a> {
                block_type : BlockType,
                buffer     : &'a mut [u8])
                -> Block {
-        if 
         match block_type {
             BlockType::Data => {
                 let (header_buf, data_buf) = buffer.split_at_mut(16);

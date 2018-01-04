@@ -2,7 +2,10 @@
 pub enum Version {
     V1,
     V2,
-    V3
+    V3,
+    V11,
+    V12,
+    V13,
 }
 
 mod common_params {
@@ -62,12 +65,26 @@ pub const SBX_SIGNATURE    : &[u8] = common_params::SIGNATURE;
 
 pub const SBX_HEADER_SIZE  : usize = common_params::HEADER_SIZE;
 
-pub fn ver_to_usize (ver : Version) -> usize {
-    match ver {
-        Version::V1 => 1,
-        Version::V2 => 2,
-        Version::V3 => 3,
+pub fn ver_to_usize (version : Version) -> usize {
+    use self::Version::*;
+    match version {
+        V1  => 1,
+        V2  => 2,
+        V3  => 3,
+        V11 => 11,
+        V12 => 12,
+        V13 => 13,
     }
 }
 
-pub fn ver_to_block_size
+pub fn ver_to_block_size (version : Version) -> usize {
+    use self::Version::*;
+    match version {
+        V1  => params_for_v1::BLOCK_SIZE,
+        V2  => params_for_v2::BLOCK_SIZE,
+        V3  => params_for_v3::BLOCK_SIZE,
+        V11 => params_for_v11::BLOCK_SIZE,
+        V12 => params_for_v12::BLOCK_SIZE,
+        V13 => params_for_v13::BLOCK_SIZE,
+    }
+}
