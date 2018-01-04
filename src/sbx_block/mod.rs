@@ -23,7 +23,8 @@ pub enum BlockType {
 #[derive(Clone, Copy, Debug)]
 pub enum Error {
     IncorrectBlockType,
-    Metadata(metadata::Error)
+    Metadata(metadata::Error),
+    IncorrectBufferSize,
 }
 
 #[derive(Debug)]
@@ -44,12 +45,12 @@ impl<'a> Block<'a> {
                file_uid   : [u8; SBX_HEADER_SIZE],
                block_type : BlockType,
                buffer     : &'a mut [u8])
-               -> Block {
+               -> Result<Block, Error> {
         if buffer.len() != sbx_specs::ver_to_block_size(version) {
-            panic!();
+            return Err(Error::IncorrectBufferSize);
         }
 
-        match block_type {
+        Ok(match block_type {
             BlockType::Data => {
                 let (header_buf, data_buf) = buffer.split_at_mut(16);
                 Block {
@@ -66,7 +67,7 @@ impl<'a> Block<'a> {
                     header_buf : header_buf,
                 }
             }
-        }
+        })
     }
 
     pub fn block_type(&self) -> BlockType {
@@ -109,13 +110,9 @@ impl<'a> Block<'a> {
         }
     }
 
-    pub fn sync_everything(&mut self) -> Result<(), Error> {
-        let crc = match self.data {
-            Data::Meta(ref meta, ref mut buf) => {
-                // transform metadata to bytes
-                if let Err(x) = metadata::write_to_bytes(meta, buf) {
-                    return Err(Error::Metadata(x));
-                }
+    pub fn crc_ccitt(&self) -> u16 {
+        match self.data {
+            Data::Meta(_, ref buf) => {
                 let crc = self.header.crc_ccitt();
                 crc_ccitt_generic(crc, buf)
             },
@@ -123,12 +120,30 @@ impl<'a> Block<'a> {
                 let crc = self.header.crc_ccitt();
                 crc_ccitt_generic(crc, buf)
             }
-        };
+        }
+    }
 
-        self.header.crc = crc;
+    pub fn sync_everything(&mut self) -> Result<(), Error> {
+        match self.data {
+            Data::Meta(ref meta, ref mut buf) => {
+                // transform metadata to bytes
+                if let Err(x) = metadata::write_to_bytes(meta, buf) {
+                    return Err(Error::Metadata(x));
+                }
+            },
+            Data::Data(_) => {}
+        }
+
+        self.header.crc = self.crc_ccitt();
 
         self.header.write_to_bytes(&mut self.header_buf);
 
         Ok(())
+    }
+
+    pub fn verify_crc(&self) -> bool {
+        let crc = self.crc_ccitt();
+
+        self.header.crc == crc
     }
 }
