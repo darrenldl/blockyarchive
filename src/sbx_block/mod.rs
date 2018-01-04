@@ -13,6 +13,8 @@ use self::smallvec::SmallVec;
 
 use self::crc::*;
 
+use super::sbx_specs;
+
 #[derive(Clone, Copy, Debug)]
 pub enum BlockType {
     Data, Meta
@@ -43,6 +45,10 @@ impl<'a> Block<'a> {
                block_type : BlockType,
                buffer     : &'a mut [u8])
                -> Block {
+        if buffer.len() != sbx_specs::ver_to_block_size(version) {
+            panic!();
+        }
+
         match block_type {
             BlockType::Data => {
                 let (header_buf, data_buf) = buffer.split_at_mut(16);
