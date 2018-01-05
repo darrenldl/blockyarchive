@@ -30,13 +30,13 @@ impl Header {
             buffer[3] = sbx_specs::ver_to_usize(self.version) as u8; }
         { // crc ccitt
             let crc : [u8; 2] =
-                unsafe { std::mem::transmute::<u16, [u8; 2]>(self.crc) };
+                unsafe { std::mem::transmute::<u16, [u8; 2]>(self.crc.to_be()) };
             buffer[4..6].copy_from_slice(&crc); }
         { // file uid
             buffer[6..12].copy_from_slice(&self.file_uid); }
         { // seq num
             let seq_num : [u8; 4] =
-                unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num) };
+                unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num.to_be()) };
             buffer[12..16].copy_from_slice(&seq_num); }
     }
 
