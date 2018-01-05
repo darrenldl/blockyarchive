@@ -46,7 +46,7 @@ impl<'a> Block<'a> {
                file_uid   : &[u8; SBX_HEADER_SIZE],
                block_type : BlockType,
                buffer     : &'a mut [u8])
-               -> Result<Block, Error> {
+               -> Result<Block<'a>, Error> {
         if buffer.len() != sbx_specs::ver_to_block_size(version) {
             return Err(Error::IncorrectBufferSize);
         }
@@ -63,7 +63,7 @@ impl<'a> Block<'a> {
             BlockType::Meta => {
                 let (header_buf, data_buf) = buffer.split_at_mut(16);
                 Block {
-                    header     : Header::new(version, file_uid),
+                    header     : Header::new(version, file_uid.clone()),
                     data       : Data::Meta(SmallVec::new(), data_buf),
                     header_buf : header_buf,
                 }
