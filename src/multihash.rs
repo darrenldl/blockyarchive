@@ -213,7 +213,7 @@ mod test_vectors {
     }
 
     use self::Data::{Raw, Hex};
-    use std::string::String;
+    //use std::string::String;
 
     fn test_single_vector(hash_type : HashType, input : Data, expect : Data) {
         let input  : Box<[u8]> = match input {

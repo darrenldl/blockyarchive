@@ -1,5 +1,5 @@
 use std;
-use super::super::sbx_specs::{Version, SBX_HEADER_SIZE, SBX_SIGNATURE};
+use super::super::sbx_specs::{Version, SBX_FILE_UID_LEN, SBX_SIGNATURE};
 use super::super::sbx_specs;
 
 use super::crc::*;
@@ -8,13 +8,13 @@ use super::crc::*;
 pub struct Header {
     pub version  : Version,
     pub crc      : u16,
-    pub file_uid : [u8; SBX_HEADER_SIZE],
+    pub file_uid : [u8; SBX_FILE_UID_LEN],
     pub seq_num  : u32
 }
 
 impl Header {
     pub fn new(version   : Version,
-               file_uid : [u8; SBX_HEADER_SIZE]) -> Header {
+               file_uid : [u8; SBX_FILE_UID_LEN]) -> Header {
         Header {
             version,
             crc       : 0,
