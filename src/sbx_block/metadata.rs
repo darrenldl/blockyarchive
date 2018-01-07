@@ -51,9 +51,9 @@ fn single_write_to_bytes(meta   : &Metadata,
     Ok(size)
 }
 
-pub fn write_to_bytes(meta   : &[Metadata],
-                      buffer : &mut [u8])
-                      -> Result<(), Error> {
+pub fn to_bytes(meta   : &[Metadata],
+                buffer : &mut [u8])
+                -> Result<(), Error> {
     let mut cur_pos = 0;
     for m in meta.iter() {
         let size_written = single_write_to_bytes(m, &mut buffer[cur_pos..])?;
@@ -129,7 +129,8 @@ mod parsers {
     );
 }
 
-pub fn parse(bytes : &[u8]) -> Option<Vec<Metadata>> {
+pub fn from_bytes(bytes : &[u8])
+                  -> Option<Vec<Metadata>> {
     use nom::IResult;
     match parsers::meta_p(bytes) {
         IResult::Done(_, res) => Some(res),

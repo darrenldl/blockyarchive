@@ -128,7 +128,7 @@ impl<'a> Block<'a> {
         match self.data {
             Data::Meta(ref meta, ref mut buf) => {
                 // transform metadata to bytes
-                if let Err(x) = metadata::write_to_bytes(meta, buf) {
+                if let Err(x) = metadata::to_bytes(meta, buf) {
                     return Err(Error::Metadata(x));
                 }
             },
