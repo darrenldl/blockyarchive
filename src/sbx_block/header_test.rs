@@ -108,13 +108,13 @@ fn test_from_bytes() {
     }
 
     {
-        let buffer : &[u8; 16] = b"SBx\x01\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
+        let buffer : &[u8; 16] = b"SBx\x01\xCD\xEF\xBE\x0A\x02\x03\x04\x05\x01\x02\x03\x04";
 
         header.from_bytes(buffer).unwrap();
 
         assert_eq!(header.version, Version::V1);
         assert_eq!(header.crc, 0xCDEF);
-        assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
+        assert_eq!(header.file_uid, *b"\xBE\x0A\x02\x03\x04\x05");
         assert_eq!(header.seq_num, 0x01020304);
     }
     {
