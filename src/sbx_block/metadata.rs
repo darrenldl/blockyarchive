@@ -21,7 +21,7 @@ fn single_meta_size(meta : &Metadata) -> usize {
     match *meta {
         FNM(ref x) | SNM(ref x) => x.len(),
         FSZ(_) | FDT(_) | SDT(_) => 8,
-        HSH(ref x) => multihash::specs::Param::new(x.0).total_length
+        HSH(ref x) => multihash::specs::Param::new(x.0).total_length()
     }
 }
 
@@ -98,11 +98,14 @@ mod parser {
                                          .into_boxed_slice()))
                    )
             );
-        }
+        };
     }
 
     make_meta_parser!(fnm_p, b"FNM", FNM => str);
+    make_meta_parser!(snm_p, b"SNM", SNM => str);
+    make_meta_parser!(fsz_p, b"FSZ", FSZ => num, be_u64);
     make_meta_parser!(fdt_p, b"FDT", FDT => num, be_u64);
+    make_meta_parser!(sdt_p, b"SDT", SDT => num, be_u64);
 
     named!(meta_p <Vec<Metadata>>,
            many0!(
