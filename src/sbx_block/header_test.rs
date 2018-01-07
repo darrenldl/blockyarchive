@@ -181,6 +181,22 @@ fn test_from_bytes_error_handling() {
 }
 
 #[test]
+fn test_to_bytes_error_handling() {
+    let header = Header::new(Version::V1, [0; 6]);
+
+    {
+        let mut buffer : [u8; 15] = [0; 15];
+        assert_eq!(Error::IncorrectBufferSize,
+                   header.to_bytes(&mut buffer).unwrap_err());
+    }
+    {
+        let mut buffer : [u8; 17] = [0; 17];
+        assert_eq!(Error::IncorrectBufferSize,
+                   header.to_bytes(&mut buffer).unwrap_err());
+    }
+}
+
+#[test]
 fn test_from_bytes() {
     let mut header = Header::new(Version::V1, [0; 6]);
 
