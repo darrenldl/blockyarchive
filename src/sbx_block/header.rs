@@ -57,10 +57,7 @@ impl Header {
         }
 
         match parsers::header_p(buffer) {
-            Done(_, header) => { self.version  = header.version;
-                                 self.crc      = header.crc;
-                                 self.file_uid = header.file_uid;
-                                 self.seq_num  = header.seq_num;
+            Done(_, header) => { *self = header;
                                  Ok(()) },
             _               => Err(Error::ParseError)
         }
