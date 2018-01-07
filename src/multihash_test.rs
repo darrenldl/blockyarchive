@@ -1,6 +1,5 @@
 #![cfg(test)]
 
-use super::misc_utils::*;
 use super::multihash::*;
 
 mod test_vectors {
