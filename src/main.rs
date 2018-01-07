@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod multihash;
+mod multihash_test;
 mod misc_utils;
 mod misc_utils_test;
 mod rand_utils;

@@ -1,4 +1,8 @@
 #![cfg(test)]
+
+use super::misc_utils::*;
+use super::multihash::*;
+
 mod test_vectors {
     // SHA1, SHA256, SHA512 test vectors are copied from : https://www.di-mgt.com.au/sha_testvectors.html
     // BLAKE2B_512 test vectors are copied from : https://raw.githubusercontent.com/BLAKE2/BLAKE2/master/testvectors/blake2-kat.json
