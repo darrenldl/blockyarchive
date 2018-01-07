@@ -102,14 +102,17 @@ impl<'a> Block<'a> {
         &mut self.header
     }
 
-    pub fn add_meta(&mut self,
-                     meta : Metadata) -> Result<(), Error> {
+    pub fn get_meta(&self) -> Result<&SmallVec<[Metadata; 16]>, Error> {
         match self.data {
-            Data::Data(_) => Err(Error::IncorrectBlockType),
-            Data::Meta(ref mut x, _) => {
-                x.push(meta);
-                Ok(())
-            }
+            Data::Data(_)        => Err(Error::IncorrectBlockType),
+            Data::Meta(ref x, _) => { Ok(x) }
+        }
+    }
+
+    pub fn get_meta_mut(&mut self) -> Result<&mut SmallVec<[Metadata; 16]>, Error> {
+        match self.data {
+            Data::Data(_)            => Err(Error::IncorrectBlockType),
+            Data::Meta(ref mut x, _) => { Ok(x) }
         }
     }
 
