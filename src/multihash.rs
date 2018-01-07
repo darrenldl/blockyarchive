@@ -232,24 +232,32 @@ pub mod parsers {
         }
     }
 
-    make_hash_parser_w_len!(sha1_p,         HashType::SHA1,         specs::SHA1_PARAM);
-    make_hash_parser_w_len!(sha256_p,       HashType::SHA256,       specs::SHA256_PARAM);
-    make_hash_parser_w_len!(sha2_512_256_p, HashType::SHA2_512_256, specs::SHA2_512_256_PARAM);
-    make_hash_parser_w_len!(sha512_p,       HashType::SHA512,       specs::SHA512_PARAM);
-    make_hash_parser_w_len!(blake2b_256_p,  HashType::BLAKE2B_256,  specs::BLAKE2B_256_PARAM);
-    make_hash_parser_w_len!(blake2b_512_p,  HashType::BLAKE2B_512,  specs::BLAKE2B_512_PARAM);
-    make_hash_parser_w_len!(blake2s_128_p,  HashType::BLAKE2S_128,  specs::BLAKE2S_128_PARAM);
-    make_hash_parser_w_len!(blake2s_256_p,  HashType::BLAKE2S_256,  specs::BLAKE2S_256_PARAM);
+    make_hash_parser_w_len!(sha1_w_len_p,
+                            HashType::SHA1,         specs::SHA1_PARAM);
+    make_hash_parser_w_len!(sha256_w_len_p,
+                            HashType::SHA256,       specs::SHA256_PARAM);
+    make_hash_parser_w_len!(sha2_512_256_w_len_p,
+                            HashType::SHA2_512_256, specs::SHA2_512_256_PARAM);
+    make_hash_parser_w_len!(sha512_w_len_p,
+                            HashType::SHA512,       specs::SHA512_PARAM);
+    make_hash_parser_w_len!(blake2b_256_w_len_p,
+                            HashType::BLAKE2B_256,  specs::BLAKE2B_256_PARAM);
+    make_hash_parser_w_len!(blake2b_512_w_len_p,
+                            HashType::BLAKE2B_512,  specs::BLAKE2B_512_PARAM);
+    make_hash_parser_w_len!(blake2s_128_w_len_p,
+                            HashType::BLAKE2S_128,  specs::BLAKE2S_128_PARAM);
+    make_hash_parser_w_len!(blake2s_256_w_len_p,
+                            HashType::BLAKE2S_256,  specs::BLAKE2S_256_PARAM);
 
-    named!(pub multihash_p <HashBytes>,
-           alt!(sha1_p         |
-                sha256_p       |
-                sha2_512_256_p |
-                sha512_p       |
-                blake2b_256_p  |
-                blake2b_512_p  |
-                blake2s_128_p  |
-                blake2s_256_p
+    named!(pub multihash_w_len_p <HashBytes>,
+           alt!(sha1_w_len_p         |
+                sha256_w_len_p       |
+                sha2_512_256_w_len_p |
+                sha512_w_len_p       |
+                blake2b_256_w_len_p  |
+                blake2b_512_w_len_p  |
+                blake2s_128_w_len_p  |
+                blake2s_256_w_len_p
            )
     );
 }

@@ -68,7 +68,7 @@ mod parsers {
     use super::Metadata;
     use super::Metadata::*;
     use super::super::super::misc_utils;
-    use super::super::super::multihash::parsers::multihash_p;
+    use super::super::super::multihash::parsers::multihash_w_len_p;
 
     use nom::be_u8;
     use nom::be_u64;
@@ -111,7 +111,7 @@ mod parsers {
     named!(hsh_p <Metadata>,
            do_parse!(
                _id : tag!(b"HSH") >>
-                   res : multihash_p >>
+                   res : multihash_w_len_p >>
                    (HSH(res))
            )
     );
