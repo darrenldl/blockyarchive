@@ -22,7 +22,7 @@ pub enum BlockType {
     Data, Meta
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Error {
     IncorrectBlockType,
     IncorrectBufferSize,
