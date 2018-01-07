@@ -84,13 +84,18 @@ fn test_from_bytes_error_handling() {
         assert_eq!(Error::IncorrectBufferSize,
                    header.from_bytes(&buffer).unwrap_err());
     }
+    {
+        let buffer : &[u8; 16] = b"SBx\x00\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
+
+        assert_eq!(Error::ParseError,
+                   header.from_bytes(buffer).unwrap_err());
+    }
 }
 
 #[test]
 fn test_from_bytes() {
     let mut header = Header::new(Version::V1, [0; 6]);
 
-    // test all versions
     {
         let buffer : &[u8; 16] = b"SBx\x0B\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
 
