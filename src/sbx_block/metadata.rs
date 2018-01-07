@@ -110,7 +110,10 @@ mod parser {
     named!(meta_p <Vec<Metadata>>,
            many0!(
                alt!(fnm_p |
-                    fdt_p
+                    snm_p |
+                    fsz_p |
+                    fdt_p |
+                    sdt_p
                )
            )
     );

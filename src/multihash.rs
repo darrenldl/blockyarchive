@@ -63,14 +63,14 @@ pub mod specs {
     static BLAKE2S_128_HFT : [u8; 2] = [0xb2, 0x50];
     static BLAKE2S_256_HFT : [u8; 2] = [0xb2, 0x60];
 
-    static SHA1_PARAM         : Param = param!(SHA1_HFT;        0x14);
-    static SHA256_PARAM       : Param = param!(SHA256_HFT;      0x20);
-    static SHA2_512_256_PARAM : Param = param!(SHA512_HFT;      0x20);
-    static SHA512_PARAM       : Param = param!(SHA512_HFT;      0x40);
-    static BLAKE2B_256_PARAM  : Param = param!(BLAKE2B_256_HFT; 0x20);
-    static BLAKE2B_512_PARAM  : Param = param!(BLAKE2B_512_HFT; 0x40);
-    static BLAKE2S_128_PARAM  : Param = param!(BLAKE2S_128_HFT; 0x10);
-    static BLAKE2S_256_PARAM  : Param = param!(BLAKE2S_256_HFT; 0x20);
+    pub static SHA1_PARAM         : Param = param!(SHA1_HFT;        0x14);
+    pub static SHA256_PARAM       : Param = param!(SHA256_HFT;      0x20);
+    pub static SHA2_512_256_PARAM : Param = param!(SHA512_HFT;      0x20);
+    pub static SHA512_PARAM       : Param = param!(SHA512_HFT;      0x40);
+    pub static BLAKE2B_256_PARAM  : Param = param!(BLAKE2B_256_HFT; 0x20);
+    pub static BLAKE2B_512_PARAM  : Param = param!(BLAKE2B_512_HFT; 0x40);
+    pub static BLAKE2S_128_PARAM  : Param = param!(BLAKE2S_128_HFT; 0x10);
+    pub static BLAKE2S_256_PARAM  : Param = param!(BLAKE2S_256_HFT; 0x20);
 
     impl Param {
         pub fn new(hash_type : HashType) -> Param {
@@ -212,16 +212,45 @@ pub mod hash {
 }
 
 mod parsers {
-    use super::specs::Param;
-    use nom::be_u8;
+    use super::specs;
+    use super::{HashBytes, HashType};
+    use super::super::misc_utils;
 
     macro_rules! make_hash_parser {
         (
-            $name:ident, $id:expr, $ht:path
-        ) => {{
-            let param = Param::new($ht);
-
-            named!()
-        }}
+            $name:ident, $ht:path, $param:path
+        ) => {
+            named!($name <HashBytes>,
+                   do_parse!(
+                       _id : tag!($param.hash_func_type) >>
+                           _n : tag!(&[$param.digest_length]) >>
+                           res : take!($param.digest_length) >>
+                           (($ht, misc_utils::slice_to_vec(res).into_boxed_slice()))
+                   )
+            );
+        }
     }
+
+    make_hash_parser!(sha1_p,         HashType::SHA1,         specs::SHA1_PARAM);
+    make_hash_parser!(sha256_p,       HashType::SHA256,       specs::SHA256_PARAM);
+    make_hash_parser!(sha2_512_256_p, HashType::SHA2_512_256, specs::SHA2_512_256_PARAM);
+    make_hash_parser!(sha512_p,       HashType::SHA512,       specs::SHA512_PARAM);
+    make_hash_parser!(blake2b_256_p,  HashType::BLAKE2B_256,  specs::BLAKE2B_256_PARAM);
+    make_hash_parser!(blake2b_512_p,  HashType::BLAKE2B_512,  specs::BLAKE2B_512_PARAM);
+    make_hash_parser!(blake2s_128_p,  HashType::BLAKE2S_128,  specs::BLAKE2S_128_PARAM);
+    make_hash_parser!(blake2s_256_p,  HashType::BLAKE2S_256,  specs::BLAKE2S_256_PARAM);
+
+    named!(hash_p <Vec<HashBytes>>,
+           many0!(
+               alt!(sha1_p         |
+                    sha256_p       |
+                    sha2_512_256_p |
+                    sha512_p       |
+                    blake2b_256_p  |
+                    blake2b_512_p  |
+                    blake2s_128_p  |
+                    blake2s_256_p
+               )
+           )
+    );
 }
