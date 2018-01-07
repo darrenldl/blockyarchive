@@ -125,6 +125,10 @@ impl<'a> Block<'a> {
         }
     }
 
+    pub fn update_crc(&mut self) {
+        self.header.crc = self.crc();
+    }
+
     pub fn sync_to_buffer(&mut self) -> Result<(), Error> {
         match self.data {
             Data::Meta(ref meta, ref mut buf) => {
@@ -134,11 +138,15 @@ impl<'a> Block<'a> {
             Data::Data(_) => {}
         }
 
-        self.header.crc = self.crc();
+        self.update_crc();
 
         self.header.to_bytes(&mut self.header_buf).unwrap();
 
         Ok(())
+    }
+
+    pub fn sync_from_buffer_header_only(&mut self) -> Result<(), Error> {
+        self.header.from_bytes(self.header_buf)
     }
 
     pub fn sync_from_buffer(&mut self) -> Result<(), Error> {
