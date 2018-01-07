@@ -137,7 +137,7 @@ impl<'a> Block<'a> {
 
         self.header.crc = self.crc_ccitt();
 
-        self.header.write_to_bytes(&mut self.header_buf);
+        self.header.to_bytes(&mut self.header_buf);
 
         Ok(())
     }
