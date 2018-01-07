@@ -26,6 +26,7 @@ pub enum Error {
     IncorrectBlockType,
     Metadata(metadata::Error),
     IncorrectBufferSize,
+    ParseError
 }
 
 #[derive(Debug)]

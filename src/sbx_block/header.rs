@@ -4,6 +4,8 @@ use super::super::sbx_specs;
 
 use super::crc::*;
 
+use super::Error;
+
 #[derive(Debug, Clone)]
 pub struct Header {
     pub version  : Version,
@@ -40,6 +42,19 @@ impl Header {
             buffer[12..16].copy_from_slice(&seq_num); }
     }
 
+    pub fn from_bytes(&mut self, buffer : &[u8]) -> Result<(), Error> {
+        use nom::IResult::*;
+        use super::Error;
+        match parsers::header_p(buffer) {
+            Done(_, header) => { self.version  = header.version;
+                                 self.crc      = header.crc;
+                                 self.file_uid = header.file_uid;
+                                 self.seq_num  = header.seq_num;
+                                 Ok(()) },
+            _               => Err(Error::ParseError)
+        }
+    }
+
     pub fn crc_ccitt(&self) -> u16 {
         let crc = sbx_crc_ccitt(self.version, &self.file_uid);
         let seq_num : [u8; 4] =
@@ -59,9 +74,9 @@ mod parsers {
 
     named!(ver_p <Version>,
            alt!(
-               do_parse!(_v : tag!(&[ 1]) >> (Version::V1)) |
-               do_parse!(_v : tag!(&[ 2]) >> (Version::V2)) |
-               do_parse!(_v : tag!(&[ 3]) >> (Version::V3)) |
+               do_parse!(_v : tag!(&[ 1]) >> (Version::V1))  |
+               do_parse!(_v : tag!(&[ 2]) >> (Version::V2))  |
+               do_parse!(_v : tag!(&[ 3]) >> (Version::V3))  |
                do_parse!(_v : tag!(&[11]) >> (Version::V11)) |
                do_parse!(_v : tag!(&[12]) >> (Version::V12)) |
                do_parse!(_v : tag!(&[13]) >> (Version::V13))
@@ -72,7 +87,7 @@ mod parsers {
            take!(6)
     );
 
-    named!(header_p <Header>,
+    named!(pub header_p <Header>,
            do_parse!(
                _sig : sig_p >>
                    version      : ver_p >>
