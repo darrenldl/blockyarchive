@@ -81,7 +81,80 @@ fn test_to_bytes_versions() {
 
         let mut buffer : [u8; 16] = [0; 16];
 
-        header.to_bytes(&mut buffer);
+        header.to_bytes(&mut buffer).unwrap();
+
+        assert_eq!(*b"SBx\x01\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
+                   buffer);
+    }
+    {
+        let mut header =
+            Header::new(Version::V2,
+                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+        header.crc = 0xCDEF;
+        header.seq_num = 0x01020304;
+
+        let mut buffer : [u8; 16] = [0; 16];
+
+        header.to_bytes(&mut buffer).unwrap();
+
+        assert_eq!(*b"SBx\x02\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
+                   buffer);
+    }
+    {
+        let mut header =
+            Header::new(Version::V3,
+                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+        header.crc = 0xCDEF;
+        header.seq_num = 0x01020304;
+
+        let mut buffer : [u8; 16] = [0; 16];
+
+        header.to_bytes(&mut buffer).unwrap();
+
+        assert_eq!(*b"SBx\x03\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
+                   buffer);
+    }
+    {
+        let mut header =
+            Header::new(Version::V11,
+                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+        header.crc = 0xCDEF;
+        header.seq_num = 0x01020304;
+
+        let mut buffer : [u8; 16] = [0; 16];
+
+        header.to_bytes(&mut buffer).unwrap();
+
+        assert_eq!(*b"SBx\x0B\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
+                   buffer);
+    }
+    {
+        let mut header =
+            Header::new(Version::V12,
+                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+        header.crc = 0xCDEF;
+        header.seq_num = 0x01020304;
+
+        let mut buffer : [u8; 16] = [0; 16];
+
+        header.to_bytes(&mut buffer).unwrap();
+
+        assert_eq!(*b"SBx\x0C\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
+                   buffer);
+    }
+    {
+        let mut header =
+            Header::new(Version::V13,
+                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+        header.crc = 0xCDEF;
+        header.seq_num = 0x01020304;
+
+        let mut buffer : [u8; 16] = [0; 16];
+
+        header.to_bytes(&mut buffer).unwrap();
+
+        assert_eq!(*b"SBx\x0D\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
+                   buffer);
     }
 }
 
