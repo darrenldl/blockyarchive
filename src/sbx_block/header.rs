@@ -61,10 +61,10 @@ mod parsers {
            alt!(
                do_parse!(_v : tag!(&[ 1]) >> (Version::V1)) |
                do_parse!(_v : tag!(&[ 2]) >> (Version::V2)) |
-               do_parse!(_v : tag!(&[ 3]) >> (Version::V2)) |
-               do_parse!(_v : tag!(&[11]) >> (Version::V2)) |
-               do_parse!(_v : tag!(&[12]) >> (Version::V2)) |
-               do_parse!(_v : tag!(&[13]) >> (Version::V2))
+               do_parse!(_v : tag!(&[ 3]) >> (Version::V3)) |
+               do_parse!(_v : tag!(&[11]) >> (Version::V11)) |
+               do_parse!(_v : tag!(&[12]) >> (Version::V12)) |
+               do_parse!(_v : tag!(&[13]) >> (Version::V13))
            )
     );
 
