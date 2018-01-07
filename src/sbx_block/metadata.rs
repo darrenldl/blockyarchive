@@ -1,10 +1,6 @@
 use super::super::multihash;
 use std;
-
-#[derive(Clone, Debug, Copy)]
-pub enum Error {
-    TooMuchMetaData
-}
+use super::Error;
 
 #[derive(Clone, Debug)]
 pub enum Metadata {
@@ -25,7 +21,7 @@ fn single_meta_size(meta : &Metadata) -> usize {
     }
 }
 
-fn single_write_to_bytes(meta   : &Metadata,
+fn single_to_bytes(meta   : &Metadata,
                          buffer : &mut [u8]) -> Result<usize, Error> {
     let size = single_meta_size(meta);
 
@@ -56,7 +52,7 @@ pub fn to_bytes(meta   : &[Metadata],
                 -> Result<(), Error> {
     let mut cur_pos = 0;
     for m in meta.iter() {
-        let size_written = single_write_to_bytes(m, &mut buffer[cur_pos..])?;
+        let size_written = single_to_bytes(m, &mut buffer[cur_pos..])?;
 
         cur_pos += size_written;
     }
@@ -130,10 +126,10 @@ mod parsers {
 }
 
 pub fn from_bytes(bytes : &[u8])
-                  -> Option<Vec<Metadata>> {
+                  -> Result<Vec<Metadata>, Error> {
     use nom::IResult;
     match parsers::meta_p(bytes) {
-        IResult::Done(_, res) => Some(res),
-        _                     => None
+        IResult::Done(_, res) => Ok(res),
+        _                     => Err(Error::ParseError)
     }
 }

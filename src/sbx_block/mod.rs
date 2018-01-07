@@ -24,8 +24,8 @@ pub enum BlockType {
 #[derive(Clone, Copy, Debug)]
 pub enum Error {
     IncorrectBlockType,
-    Metadata(metadata::Error),
     IncorrectBufferSize,
+    TooMuchMetaData,
     ParseError
 }
 
@@ -129,21 +129,32 @@ impl<'a> Block<'a> {
         match self.data {
             Data::Meta(ref meta, ref mut buf) => {
                 // transform metadata to bytes
-                if let Err(x) = metadata::to_bytes(meta, buf) {
-                    return Err(Error::Metadata(x));
-                }
+                metadata::to_bytes(meta, buf)?;
             },
             Data::Data(_) => {}
         }
 
         self.header.crc = self.crc_ccitt();
 
-        self.header.to_bytes(&mut self.header_buf);
+        self.header.to_bytes(&mut self.header_buf).unwrap();
 
         Ok(())
     }
 
     pub fn sync_from_buffer(&mut self) -> Result<(), Error> {
+        match self.data {
+            Data::Meta(ref mut meta, ref buf) => {
+                meta.clear();
+                let res = metadata::from_bytes(buf)?;
+                for r in res.into_iter() {
+                    meta.push(r);
+                }
+            },
+            Data::Data(_) => {}
+        }
+
+        self.header.from_bytes(self.header_buf)?;
+
         Ok(())
     }
 

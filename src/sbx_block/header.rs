@@ -25,7 +25,11 @@ impl Header {
         }
     }
 
-    pub fn to_bytes(&self, buffer : &mut [u8]) {
+    pub fn to_bytes(&self, buffer : &mut [u8]) -> Result<(), Error> {
+        if buffer.len() != 16 {
+            return Err(Error::IncorrectBufferSize);
+        }
+
         { // signature
             buffer[0..3].copy_from_slice(SBX_SIGNATURE); }
         { // version byte
@@ -40,11 +44,18 @@ impl Header {
             let seq_num : [u8; 4] =
                 unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num.to_be()) };
             buffer[12..16].copy_from_slice(&seq_num); }
+
+        Ok(())
     }
 
     pub fn from_bytes(&mut self, buffer : &[u8]) -> Result<(), Error> {
-        use nom::IResult::*;
         use super::Error;
+        use nom::IResult::*;
+
+        if buffer.len() != 16 {
+            return Err(Error::IncorrectBufferSize);
+        }
+
         match parsers::header_p(buffer) {
             Done(_, header) => { self.version  = header.version;
                                  self.crc      = header.crc;
