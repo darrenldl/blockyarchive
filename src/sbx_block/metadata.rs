@@ -63,3 +63,53 @@ pub fn write_to_bytes(meta   : &[Metadata],
 
     Ok(())
 }
+
+mod parser {
+    use super::Metadata;
+    use super::Metadata::*;
+    use super::super::super::nom;
+    use super::super::super::misc_utils;
+
+    use nom::be_u8;
+    use nom::be_u64;
+
+    macro_rules! make_meta_parser {
+        (
+            $name:ident, $id:expr, $constructor:path
+                => num, $res_parser:ident
+        ) => {
+            named!($name <Metadata>,
+                   do_parse!(
+                       _id : tag!($id) >>
+                           n : be_u8 >>
+                           res : $res_parser >>
+                           ($constructor(res))
+                   )
+            );
+        };
+        (
+            $name:ident, $id:expr, $constructor:path => str
+        ) => {
+            named!($name <Metadata>,
+                   do_parse!(
+                       _id : tag!($id) >>
+                           n : be_u8 >>
+                           res : take!(n) >>
+                           ($constructor(misc_utils::slice_to_vec(res)
+                                         .into_boxed_slice()))
+                   )
+            );
+        }
+    }
+
+    make_meta_parser!(fnm_p, b"FNM", FNM => str);
+    make_meta_parser!(fdt_p, b"FDT", FDT => num, be_u64);
+
+    named!(meta_p <Vec<Metadata>>,
+           many0!(
+               alt!(fnm_p |
+                    fdt_p
+               )
+           )
+    );
+}

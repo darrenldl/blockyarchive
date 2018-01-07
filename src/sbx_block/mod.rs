@@ -124,7 +124,7 @@ impl<'a> Block<'a> {
         }
     }
 
-    pub fn sync_everything(&mut self) -> Result<(), Error> {
+    pub fn sync_to_buffer(&mut self) -> Result<(), Error> {
         match self.data {
             Data::Meta(ref meta, ref mut buf) => {
                 // transform metadata to bytes
@@ -139,6 +139,10 @@ impl<'a> Block<'a> {
 
         self.header.write_to_bytes(&mut self.header_buf);
 
+        Ok(())
+    }
+
+    pub fn sync_from_buffer(&mut self) -> Result<(), Error> {
         Ok(())
     }
 
