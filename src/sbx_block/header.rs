@@ -6,7 +6,7 @@ use super::crc::*;
 
 use super::Error;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Header {
     pub version  : Version,
     pub crc      : u16,
