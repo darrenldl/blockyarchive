@@ -71,6 +71,21 @@ fn test_from_bytes_versions() {
 }
 
 #[test]
+fn test_to_bytes_versions() {
+    {
+        let mut header =
+            Header::new(Version::V1,
+                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+        header.crc = 0xCDEF;
+        header.seq_num = 0x01020304;
+
+        let mut buffer : [u8; 16] = [0; 16];
+
+        header.to_bytes(&mut buffer);
+    }
+}
+
+#[test]
 fn test_from_bytes_error_handling() {
     let mut header = Header::new(Version::V1, [0; 6]);
 
