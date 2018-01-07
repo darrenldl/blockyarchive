@@ -1,5 +1,6 @@
 mod helper;
 mod header;
+mod header_test;
 mod metadata;
 mod crc;
 mod test;

@@ -4,7 +4,7 @@ use super::*;
 use super::super::sbx_specs;
 
 #[test]
-fn test_write_to_bytes() {
+fn test_sync_to_buffer() {
     let mut bytes : [u8; 512] = [0; 512];
     let file_uid : [u8; 6] = [3; 6];
 

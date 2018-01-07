@@ -22,7 +22,7 @@ fn single_meta_size(meta : &Metadata) -> usize {
 }
 
 fn single_to_bytes(meta   : &Metadata,
-                         buffer : &mut [u8]) -> Result<usize, Error> {
+                   buffer : &mut [u8]) -> Result<usize, Error> {
     let size = single_meta_size(meta);
 
     if buffer.len() < size {
@@ -36,7 +36,7 @@ fn single_to_bytes(meta   : &Metadata,
         },
         FSZ(x) | FDT(x) | SDT(x) => {
             let be_bytes : [u8; 8] =
-                unsafe { std::mem::transmute::<u64, [u8; 8]>(x) };
+                unsafe { std::mem::transmute::<u64, [u8; 8]>(x.to_be()) };
             &buffer[0..8].copy_from_slice(&be_bytes);
         },
         HSH(ref x) => {
