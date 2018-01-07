@@ -181,6 +181,18 @@ fn test_from_bytes_error_handling() {
         assert_eq!(Error::ParseError,
                    header.from_bytes(buffer).unwrap_err());
     }
+    {
+        let buffer : &[u8; 16] = b"ABx\x00\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
+
+        assert_eq!(Error::ParseError,
+                   header.from_bytes(buffer).unwrap_err());
+    }
+    {
+        let buffer : &[u8; 16] = b"SBx\x0E\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
+
+        assert_eq!(Error::ParseError,
+                   header.from_bytes(buffer).unwrap_err());
+    }
 }
 
 #[test]
