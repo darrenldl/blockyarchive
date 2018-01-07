@@ -64,10 +64,11 @@ pub fn write_to_bytes(meta   : &[Metadata],
     Ok(())
 }
 
-mod parser {
+mod parsers {
     use super::Metadata;
     use super::Metadata::*;
     use super::super::super::misc_utils;
+    use super::super::super::multihash::parsers::multihash_p;
 
     use nom::be_u8;
     use nom::be_u64;
@@ -107,14 +108,31 @@ mod parser {
     make_meta_parser!(fdt_p, b"FDT", FDT => num, be_u64);
     make_meta_parser!(sdt_p, b"SDT", SDT => num, be_u64);
 
-    named!(meta_p <Vec<Metadata>>,
+    named!(hsh_p <Metadata>,
+           do_parse!(
+               _id : tag!(b"HSH") >>
+                   res : multihash_p >>
+                   (HSH(res))
+           )
+    );
+
+    named!(pub meta_p <Vec<Metadata>>,
            many0!(
-               alt!(fnm_p |
-                    snm_p |
-                    fsz_p |
-                    fdt_p |
-                    sdt_p
+               alt!(fnm_p  |
+                    snm_p  |
+                    fsz_p  |
+                    fdt_p  |
+                    sdt_p  |
+                    hsh_p
                )
            )
     );
+}
+
+pub fn parse(bytes : &[u8]) -> Option<Vec<Metadata>> {
+    use nom::IResult;
+    match parsers::meta_p(bytes) {
+        IResult::Done(_, res) => Some(res),
+        _                     => None
+    }
 }

@@ -211,17 +211,18 @@ pub mod hash {
     }
 }
 
-mod parsers {
+pub mod parsers {
     use super::specs;
     use super::{HashBytes, HashType};
     use super::super::misc_utils;
 
-    macro_rules! make_hash_parser {
+    macro_rules! make_hash_parser_w_len {
         (
             $name:ident, $ht:path, $param:path
         ) => {
             named!($name <HashBytes>,
                    do_parse!(
+                       _total_len : tag!(&[$param.total_length() as u8]) >>
                        _id : tag!($param.hash_func_type) >>
                            _n : tag!(&[$param.digest_length]) >>
                            res : take!($param.digest_length) >>
@@ -231,26 +232,24 @@ mod parsers {
         }
     }
 
-    make_hash_parser!(sha1_p,         HashType::SHA1,         specs::SHA1_PARAM);
-    make_hash_parser!(sha256_p,       HashType::SHA256,       specs::SHA256_PARAM);
-    make_hash_parser!(sha2_512_256_p, HashType::SHA2_512_256, specs::SHA2_512_256_PARAM);
-    make_hash_parser!(sha512_p,       HashType::SHA512,       specs::SHA512_PARAM);
-    make_hash_parser!(blake2b_256_p,  HashType::BLAKE2B_256,  specs::BLAKE2B_256_PARAM);
-    make_hash_parser!(blake2b_512_p,  HashType::BLAKE2B_512,  specs::BLAKE2B_512_PARAM);
-    make_hash_parser!(blake2s_128_p,  HashType::BLAKE2S_128,  specs::BLAKE2S_128_PARAM);
-    make_hash_parser!(blake2s_256_p,  HashType::BLAKE2S_256,  specs::BLAKE2S_256_PARAM);
+    make_hash_parser_w_len!(sha1_p,         HashType::SHA1,         specs::SHA1_PARAM);
+    make_hash_parser_w_len!(sha256_p,       HashType::SHA256,       specs::SHA256_PARAM);
+    make_hash_parser_w_len!(sha2_512_256_p, HashType::SHA2_512_256, specs::SHA2_512_256_PARAM);
+    make_hash_parser_w_len!(sha512_p,       HashType::SHA512,       specs::SHA512_PARAM);
+    make_hash_parser_w_len!(blake2b_256_p,  HashType::BLAKE2B_256,  specs::BLAKE2B_256_PARAM);
+    make_hash_parser_w_len!(blake2b_512_p,  HashType::BLAKE2B_512,  specs::BLAKE2B_512_PARAM);
+    make_hash_parser_w_len!(blake2s_128_p,  HashType::BLAKE2S_128,  specs::BLAKE2S_128_PARAM);
+    make_hash_parser_w_len!(blake2s_256_p,  HashType::BLAKE2S_256,  specs::BLAKE2S_256_PARAM);
 
-    named!(hash_p <Vec<HashBytes>>,
-           many0!(
-               alt!(sha1_p         |
-                    sha256_p       |
-                    sha2_512_256_p |
-                    sha512_p       |
-                    blake2b_256_p  |
-                    blake2b_512_p  |
-                    blake2s_128_p  |
-                    blake2s_256_p
-               )
+    named!(pub multihash_p <HashBytes>,
+           alt!(sha1_p         |
+                sha256_p       |
+                sha2_512_256_p |
+                sha512_p       |
+                blake2b_256_p  |
+                blake2b_512_p  |
+                blake2s_128_p  |
+                blake2s_256_p
            )
     );
 }
