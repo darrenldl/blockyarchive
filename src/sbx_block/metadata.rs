@@ -67,7 +67,6 @@ pub fn write_to_bytes(meta   : &[Metadata],
 mod parser {
     use super::Metadata;
     use super::Metadata::*;
-    use super::super::super::nom;
     use super::super::super::misc_utils;
 
     use nom::be_u8;

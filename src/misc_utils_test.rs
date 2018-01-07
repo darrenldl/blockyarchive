@@ -1,5 +1,7 @@
 #![cfg(test)]
 
+use super::misc_utils::*;
+
 mod hex_tests {
     use super::*;
     use super::super::rand_utils;

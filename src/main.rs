@@ -2,6 +2,7 @@
 
 mod multihash;
 mod misc_utils;
+mod misc_utils_test;
 mod rand_utils;
 mod sbx_block;
 mod sbx_specs;
