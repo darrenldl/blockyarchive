@@ -63,7 +63,7 @@ impl Header {
         }
     }
 
-    pub fn crc_ccitt(&self) -> u16 {
+    pub fn crc(&self) -> u16 {
         let crc = sbx_crc_ccitt(self.version, &self.file_uid);
         let seq_num : [u8; 4] =
             unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num) };

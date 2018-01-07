@@ -112,14 +112,14 @@ impl<'a> Block<'a> {
         }
     }
 
-    pub fn crc_ccitt(&self) -> u16 {
+    pub fn crc(&self) -> u16 {
         match self.data {
             Data::Meta(_, ref buf) => {
-                let crc = self.header.crc_ccitt();
+                let crc = self.header.crc();
                 crc_ccitt_generic(crc, buf)
             },
             Data::Data(buf) => {
-                let crc = self.header.crc_ccitt();
+                let crc = self.header.crc();
                 crc_ccitt_generic(crc, buf)
             }
         }
@@ -134,7 +134,7 @@ impl<'a> Block<'a> {
             Data::Data(_) => {}
         }
 
-        self.header.crc = self.crc_ccitt();
+        self.header.crc = self.crc();
 
         self.header.to_bytes(&mut self.header_buf).unwrap();
 
@@ -159,7 +159,7 @@ impl<'a> Block<'a> {
     }
 
     pub fn verify_crc(&self) -> bool {
-        let crc = self.crc_ccitt();
+        let crc = self.crc();
 
         self.header.crc == crc
     }
