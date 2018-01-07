@@ -40,7 +40,7 @@ pub fn hash_bytes_into_bytes(hash_bytes : &HashBytes) -> Box<[u8]> {
 pub mod specs {
     use super::*;
 
-    #[derive(Copy, Clone)]
+    #[derive(Copy, Clone, Debug)]
     pub struct Param {
         pub hash_func_type : &'static [u8],
         pub digest_length  : u8,
