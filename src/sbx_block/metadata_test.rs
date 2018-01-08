@@ -67,3 +67,16 @@ fn test_to_bytes_simple_cases() {
         assert_eq!(*expect, *&buffer[0..expect.len()]);
     }
 }
+
+#[test]
+fn test_from_bytes_simple_cases() {
+    {
+        let input = b"FNM\x0Ahelloworld";
+        let expect = Metadata::FNM(slice_to_boxed(b"helloworld"));
+
+        let metas = metadata::from_bytes(input).unwrap();
+        assert_eq!(1, metas.len());
+
+        assert_eq!(expect, metas[0]);
+    }
+}
