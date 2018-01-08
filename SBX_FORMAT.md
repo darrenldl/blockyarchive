@@ -124,7 +124,7 @@ For **X** continuous blocks, where **X** is the remaining number of data blocks
 
 For **X * ceil(M / (N + M))** continuous blocks
 
-Or equivalently **X * (M + N + M - 1) / (N + M)** continuous blocks
+Or equivalently **X * (M + (N + M - 1)) / (N + M)** continuous blocks
 
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
