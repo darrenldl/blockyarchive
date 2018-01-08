@@ -1,3 +1,5 @@
+pub const SBX_LARGEST_BLOCK_SIZE : usize = 4096;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Version {
     V1,

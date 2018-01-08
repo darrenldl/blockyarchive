@@ -25,6 +25,7 @@ pub enum BlockType {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Error {
     IncorrectBlockType,
+    InconsistentHeaderBlockType,
     IncorrectBufferSize,
     TooMuchMetaData,
     ParseError
@@ -120,7 +121,15 @@ impl<'a> Block<'a> {
         self.header.crc = self.calc_crc();
     }
 
+    fn header_type_matches_self_type(&self) -> bool {
+        self.header.is_meta() == self.is_meta()
+    }
+
     pub fn sync_to_buffer(&mut self) -> Result<(), Error> {
+        if !self.header_type_matches_self_type() {
+            return Err(Error::InconsistentHeaderBlockType);
+        }
+
         match self.data {
             Data::Meta(ref meta) => {
                 // transform metadata to bytes
@@ -146,20 +155,22 @@ impl<'a> Block<'a> {
         }
     }
 
+    fn switch_block_type_to_match_header(&mut self) {
+        if self.header_type_matches_self_type() {
+            self.switch_block_type();
+        }
+    }
+
     pub fn sync_from_buffer_header_only(&mut self) -> Result<(), Error> {
         self.header.from_bytes(self.header_buf)?;
 
-        if (self.header.is_meta() && self.is_data())
-            || (self.header.is_data() && self.is_meta())
-        {
-            self.switch_block_type();
-        }
+        self.switch_block_type_to_match_header();
 
         Ok(())
     }
 
     pub fn sync_from_buffer(&mut self) -> Result<(), Error> {
-        self.header.from_bytes(self.header_buf)?;
+        self.sync_from_buffer_header_only()?;
 
         match self.data {
             Data::Meta(ref mut meta) => {

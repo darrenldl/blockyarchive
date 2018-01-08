@@ -111,6 +111,11 @@ pub fn to_bytes(meta   : &[Metadata],
         cur_pos += size_written;
     }
 
+    // fill the rest with padding 0x1A
+    for i in cur_pos..buffer.len() {
+        buffer[i] = 0x1A;
+    }
+
     Ok(())
 }
 
