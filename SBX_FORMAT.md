@@ -152,8 +152,8 @@ For **ceil(X * M / N)** continuous blocks
 | SDT | sbx date & time (8 bytes) |
 | HSH | crypto hash (using [Multihash](http://multiformats.io) protocol) |
 | PID | parent UID (*not used at the moment*)|
-| RSD | Reed-Solomon data shards part of ratio (ratio = RSD : RSP)
-| RSP | Reed-Solomon parity shards part of ratio (ratio = RSD : RSP)
+| RSD | Reed-Solomon data shards part of ratio (ratio = RSD : RSP) |
+| RSP | Reed-Solomon parity shards part of ratio (ratio = RSD : RSP) |
 
 Supported forward error correction algorithms since 1.0.0 are
   - Reed-Solomon erasure code(no direct error detection)
