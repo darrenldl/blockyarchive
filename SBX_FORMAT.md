@@ -64,11 +64,67 @@ N.B. Current versions differs only by blocksize.
 | ECP | (forward) error correction redundancy percentage |
 | ECA | (forward) error correction algorithm |
 
-Supported crypto hashes since 1.1.0 are
+Supported crypto hashes since 1.0.0 are
   - SHA1
   - SHA256
   - SHA512
   - BLAKE2B\_512
-  
-Supported forward error correction algorithms are
+
+## For versions : 11, 12, 13
+Overall similar to above specs.
+
+Assumes configuration is **N** data shards and **M** parity shards.
+
+### Common blocks header:
+
+| pos | to pos | size | desc                                |
+|---- | ---    | ---- | ----------------------------------- |
+|  0  |      2 |   3  | Recoverable Block signature = 'SBx' |
+|  3  |      3 |   1  | Version byte |
+|  4  |      5 |   2  | CRC-16-CCITT of the rest of the block (Version is used as starting value) |
+|  6  |     11 |   6  | file UID                            |
+| 12  |     15 |   4  | Block sequence number               |
+
+### Block 0
+
+| pos | to pos   | size | desc             |
+|---- | -------- | ---- | ---------------- |
+| 16  | n        | var  | encoded metadata |
+|  n+1| blockend | var  | padding (0x1a)   |
+
+### Block 1-2
+
+| pos | to pos   | size | desc             |
+|---- | -------- | ---- | ---------------- |
+| 16  | blockend | var  | block 0 parity   |
+
+Above gives 200% redundancy for the metadata block
+
+### Blocks > 2 & < K * (N + M), where K is integer:
+
+For **N** continuous blocks
+| pos | to pos   | size | desc             |
+|---- | -------- | ---- | ---------------- |
+| 16  | blockend | var  | data             |
+
+For **M** continuous blocks
+| pos | to pos   | size | desc             |
+|---- | -------- | ---- | ---------------- |
+| 16  | blockend | var  | parity           |
+
+### Last set of blocks
+
+For **X** continuous blocks, where **X** is the remaining number of data blocks
+| pos | to pos   | size | desc             |
+|---- | -------- | ---- | ---------------- |
+| 16  | blockend | var  | data             |
+
+For **X * ceil(M / (N + M))** continuous blocks
+
+Or equivalently **X * (M + N + M - 1) / (N + M)** continuous blocks
+| pos | to pos   | size | desc             |
+|---- | -------- | ---- | ---------------- |
+| 16  | blockend | var  | parity           |
+
+Supported forward error correction algorithms since 1.0.0 are
   - Reed-Solomon erasure code(no direct error detection)
