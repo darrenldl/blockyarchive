@@ -187,3 +187,25 @@ pub fn from_bytes(bytes : &[u8])
         _                     => Err(Error::ParseError)
     }
 }
+
+pub fn get_meta_ref_with_id(id    : MetadataID,
+                            metas : &[Metadata])
+                            -> Option<&Metadata> {
+    for m in metas.iter() {
+        if meta_to_id(m) == id {
+            return Some(m);
+        }
+    }
+    None
+}
+
+pub fn get_meta_ref_mut_with_id(id    : MetadataID,
+                                metas : &mut [Metadata])
+                                -> Option<&mut Metadata> {
+    for m in metas.iter_mut() {
+        if meta_to_id(m) == id {
+            return Some(m);
+        }
+    }
+    None
+}
