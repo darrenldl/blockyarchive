@@ -12,6 +12,16 @@ pub enum Metadata {
     HSH(multihash::HashBytes)
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum MetadataID {
+    FNM,
+    SNM,
+    FSZ,
+    FDT,
+    SDT,
+    HSH
+}
+
 static PREAMBLE_LEN : usize = 3 + 1;
 
 fn single_info_size(meta : &Metadata) -> usize {
@@ -28,15 +38,26 @@ fn single_meta_size(meta : &Metadata) -> usize {
     PREAMBLE_LEN + single_info_size(meta)
 }
 
-pub fn meta_to_id(meta : &Metadata) -> [u8; 3] {
-    use self::Metadata::*;
+pub fn id_to_bytes(id : MetadataID) -> [u8; 3] {
+    use self::MetadataID::*;
+    match id {
+        FNM => [b'F', b'N', b'M'],
+        SNM => [b'S', b'N', b'M'],
+        FSZ => [b'F', b'S', b'Z'],
+        FDT => [b'F', b'D', b'T'],
+        SDT => [b'S', b'D', b'T'],
+        HSH => [b'H', b'S', b'H'],
+    }
+}
+
+pub fn meta_to_id(meta : &Metadata) -> MetadataID {
     match *meta {
-        FNM(_) => [b'F', b'N', b'M'],
-        SNM(_) => [b'S', b'N', b'M'],
-        FSZ(_) => [b'F', b'S', b'Z'],
-        FDT(_) => [b'F', b'D', b'T'],
-        SDT(_) => [b'S', b'D', b'T'],
-        HSH(_) => [b'H', b'S', b'H'],
+        Metadata::FNM(_) => MetadataID::FNM,
+        Metadata::SNM(_) => MetadataID::SNM,
+        Metadata::FSZ(_) => MetadataID::FSZ,
+        Metadata::FDT(_) => MetadataID::FDT,
+        Metadata::SDT(_) => MetadataID::SDT,
+        Metadata::HSH(_) => MetadataID::HSH,
     }
 }
 
@@ -52,7 +73,7 @@ fn single_to_bytes(meta   : &Metadata,
     use self::Metadata::*;
 
     // write id
-    let id = meta_to_id(meta);
+    let id = id_to_bytes(meta_to_id(meta));
     for i in 0..id.len() {
         buffer[i] = id[i];
     }
