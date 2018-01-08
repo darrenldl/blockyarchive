@@ -14,10 +14,11 @@ pub enum Metadata {
 
 fn single_meta_size(meta : &Metadata) -> usize {
     use self::Metadata::*;
+    use std::mem;
     match *meta {
-        FNM(ref x) | SNM(ref x) => x.len(),
-        FSZ(_) | FDT(_) | SDT(_) => 8,
-        HSH(ref x) => multihash::specs::Param::new(x.0).total_length()
+        FNM(ref x) | SNM(ref x)  => x.len(),
+        FSZ(_) | FDT(_) | SDT(_) => mem::size_of::<u64>(),
+        HSH(ref x)               => multihash::specs::Param::new(x.0).total_length()
     }
 }
 
