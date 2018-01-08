@@ -21,11 +21,9 @@ rsbx is expected to have higher performance than osbx.
 rsbx has forward error correction, osbx does not.
 
 ## Notes
-Reed-Solomon implementation closely follows [BackBlaze's Java implementation](https://github.com/Backblaze/JavaReedSolomon), and the test suite mirrors [Klaus Post's Go implementation](https://github.com/klauspost/reedsolomon).
 
-This is currently as an internal crate of rsbx, it will eventually be moved to a separate crate possibly after rsbx's release.
-
-If you would like to use the Reed-Solomon implementation, please open an issue and I will work on moving the files into another crate, or you can copy the files over, but please put the original authors information (BackBlaze for original Java implementation, Klaus Post for Go implementation and test suite, Darren Ldl for Rust translation) in visible place of your project(README, etc). The copied files should retain the MIT License.
+## Specification
+[Sbx format](SBX_FORMAT.md)
 
 ## TODO
 - Things to port from osbx
