@@ -72,3 +72,9 @@ pub fn slice_to_vec<T> (slice : &[T]) -> Vec<T>
 
     v
 }
+
+pub fn slice_to_boxed<T> (slice : &[T]) -> Box<[T]>
+    where T : Clone
+{
+    slice_to_vec(slice).into_boxed_slice()
+}

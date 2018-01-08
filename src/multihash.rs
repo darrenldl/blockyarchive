@@ -226,7 +226,7 @@ pub mod parsers {
                        _id : tag!($param.hash_func_type) >>
                            _n : tag!(&[$param.digest_length]) >>
                            res : take!($param.digest_length) >>
-                           (($ht, misc_utils::slice_to_vec(res).into_boxed_slice()))
+                           (($ht, misc_utils::slice_to_boxed(res)))
                    )
             );
         }
