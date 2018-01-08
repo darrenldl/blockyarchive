@@ -12,7 +12,9 @@ pub enum Metadata {
     HSH(multihash::HashBytes)
 }
 
-fn single_meta_size(meta : &Metadata) -> usize {
+static PREAMBLE_LEN : usize = 3 + 1;
+
+fn single_info_size(meta : &Metadata) -> usize {
     use self::Metadata::*;
     use std::mem;
     match *meta {
@@ -22,30 +24,60 @@ fn single_meta_size(meta : &Metadata) -> usize {
     }
 }
 
+fn single_meta_size(meta : &Metadata) -> usize {
+    PREAMBLE_LEN + single_info_size(meta)
+}
+
+pub fn meta_to_id(meta : &Metadata) -> [u8; 3] {
+    use self::Metadata::*;
+    match *meta {
+        FNM(_) => [b'F', b'N', b'M'],
+        SNM(_) => [b'S', b'N', b'M'],
+        FSZ(_) => [b'F', b'S', b'Z'],
+        FDT(_) => [b'F', b'D', b'T'],
+        SDT(_) => [b'S', b'D', b'T'],
+        HSH(_) => [b'H', b'S', b'H'],
+    }
+}
+
 fn single_to_bytes(meta   : &Metadata,
                    buffer : &mut [u8]) -> Result<usize, Error> {
-    let size = single_meta_size(meta);
+    let total_size = single_meta_size(meta);
+    let info_size  = single_info_size(meta);
 
-    if buffer.len() < size {
+    if buffer.len() < total_size {
         return Err(Error::TooMuchMetaData);
     }
 
     use self::Metadata::*;
+
+    // write id
+    let id = meta_to_id(meta);
+    for i in 0..id.len() {
+        buffer[i] = id[i];
+    }
+
+    // write length
+    buffer[3] = info_size as u8;
+
+    let dst = &mut buffer[PREAMBLE_LEN..PREAMBLE_LEN + info_size];
+
+    // write info
     match *meta {
         FNM(ref x) | SNM(ref x) => {
-            &buffer[0..x.len()].copy_from_slice(x);
+            dst.copy_from_slice(x);
         },
         FSZ(x) | FDT(x) | SDT(x) => {
             let be_bytes : [u8; 8] =
                 unsafe { std::mem::transmute::<u64, [u8; 8]>(x.to_be()) };
-            &buffer[0..8].copy_from_slice(&be_bytes);
+            dst.copy_from_slice(&be_bytes);
         },
         HSH(ref x) => {
-            multihash::hash_bytes_to_bytes(x, &mut buffer[0..size]);
+            multihash::hash_bytes_to_bytes(x, dst);
         }
     }
 
-    Ok(size)
+    Ok(total_size)
 }
 
 pub fn to_bytes(meta   : &[Metadata],
