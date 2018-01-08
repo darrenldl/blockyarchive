@@ -97,4 +97,35 @@ fn test_from_bytes_simple_cases() {
 
         assert_eq!(expect, metas[0]);
     }
+    {
+        let input = b"FDT\x08\x01\x23\x45\x67\x89\xAB\xCD\xEF";
+        let expect = Metadata::FDT(0x01234567_89ABCDEF);
+
+        let metas = metadata::from_bytes(input).unwrap();
+        assert_eq!(1, metas.len());
+
+        assert_eq!(expect, metas[0]);
+    }
+    {
+        let input = b"SDT\x08\x01\x23\x45\x67\x89\xAB\xCD\xEF";
+        let expect = Metadata::SDT(0x01234567_89ABCDEF);
+
+        let metas = metadata::from_bytes(input).unwrap();
+        assert_eq!(1, metas.len());
+
+        assert_eq!(expect, metas[0]);
+    }
+    {
+        let input = b"HSH\x16\x11\x14\xaa\xf4\xc6\x1d\xdc\xc5\xe8\xa2\xda\xbe\xde\x0f\x3b\x48\x2c\xd9\xae\xa9\x43\x4d";
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = Metadata::HSH(hbytes);
+
+        let metas = metadata::from_bytes(input).unwrap();
+        assert_eq!(1, metas.len());
+
+        assert_eq!(expect, metas[0]);
+    }
 }
