@@ -79,4 +79,22 @@ fn test_from_bytes_simple_cases() {
 
         assert_eq!(expect, metas[0]);
     }
+    {
+        let input = b"SNM\x0Ahelloworld";
+        let expect = Metadata::SNM(slice_to_boxed(b"helloworld"));
+
+        let metas = metadata::from_bytes(input).unwrap();
+        assert_eq!(1, metas.len());
+
+        assert_eq!(expect, metas[0]);
+    }
+    {
+        let input = b"FSZ\x08\x01\x23\x45\x67\x89\xAB\xCD\xEF";
+        let expect = Metadata::FSZ(0x01234567_89ABCDEF);
+
+        let metas = metadata::from_bytes(input).unwrap();
+        assert_eq!(1, metas.len());
+
+        assert_eq!(expect, metas[0]);
+    }
 }
