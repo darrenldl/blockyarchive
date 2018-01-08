@@ -1,4 +1,3 @@
-mod helper;
 mod header;
 mod metadata;
 mod crc;
@@ -18,7 +17,7 @@ use self::crc::*;
 
 use super::sbx_specs;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BlockType {
     Data, Meta
 }
@@ -31,15 +30,15 @@ pub enum Error {
     ParseError
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Data<'a> {
     Data(&'a [u8]),
     Meta(SmallVec<[Metadata; 16]>, &'a mut [u8])
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Block<'a> {
-    header     : Header,
+    pub header : Header,
     data       : Data<'a>,
     header_buf : &'a mut [u8],
 }
@@ -64,7 +63,7 @@ impl<'a> Block<'a> {
                 }
             },
             BlockType::Meta => {
-                let (header_buf, data_buf) = buffer.split_at_mut(16);
+                let (header_buf, data_buf) = buffer.split_at_mut(SBX_HEADER_SIZE);
                 Block {
                     header     : Header::new(version, file_uid.clone()),
                     data       : Data::Meta(SmallVec::new(), data_buf),
@@ -93,14 +92,6 @@ impl<'a> Block<'a> {
             BlockType::Data => true,
             BlockType::Meta => false
         }
-    }
-
-    pub fn header(&self) -> &Header {
-        &self.header
-    }
-
-    pub fn header_mut(&mut self) -> &mut Header {
-        &mut self.header
     }
 
     pub fn get_meta_ref(&self) -> Result<&SmallVec<[Metadata; 16]>, Error> {
@@ -155,6 +146,8 @@ impl<'a> Block<'a> {
     }
 
     pub fn sync_from_buffer(&mut self) -> Result<(), Error> {
+        self.header.from_bytes(self.header_buf)?;
+
         match self.data {
             Data::Meta(ref mut meta, ref buf) => {
                 meta.clear();
@@ -165,8 +158,6 @@ impl<'a> Block<'a> {
             },
             Data::Data(_) => {}
         }
-
-        self.header.from_bytes(self.header_buf)?;
 
         Ok(())
     }

@@ -69,6 +69,14 @@ impl Header {
             unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num) };
         crc_ccitt_generic(crc, &seq_num)
     }
+
+    pub fn is_meta(&self) -> bool {
+        self.seq_num == 0
+    }
+
+    pub fn is_data(&self) -> bool {
+        self.seq_num != 0
+    }
 }
 
 mod parsers {
