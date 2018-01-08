@@ -97,7 +97,7 @@ Assumes configuration is **N** data shards and **M** parity shards.
 
 Above gives 200% redundancy for the metadata block
 
-### Blocks > 2 & < K * (N + M), where K is integer:
+### Blocks > 2 & <= 2 + K * (N + M), where K is an integer >= 1:
 
 For **N** continuous blocks
 
