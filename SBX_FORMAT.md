@@ -103,11 +103,13 @@ Above gives 200% redundancy for the metadata block
 ### Blocks > 2 & < K * (N + M), where K is integer:
 
 For **N** continuous blocks
+
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
 | 16  | blockend | var  | data             |
 
 For **M** continuous blocks
+
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
 | 16  | blockend | var  | parity           |
@@ -115,6 +117,7 @@ For **M** continuous blocks
 ### Last set of blocks
 
 For **X** continuous blocks, where **X** is the remaining number of data blocks
+
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
 | 16  | blockend | var  | data             |
@@ -122,6 +125,7 @@ For **X** continuous blocks, where **X** is the remaining number of data blocks
 For **X * ceil(M / (N + M))** continuous blocks
 
 Or equivalently **X * (M + N + M - 1) / (N + M)** continuous blocks
+
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
 | 16  | blockend | var  | parity           |
