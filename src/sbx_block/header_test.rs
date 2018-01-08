@@ -212,6 +212,44 @@ fn test_to_bytes_error_handling() {
 }
 
 #[test]
+fn test_from_to_from_bytes() {
+    for _ in 0..1000 {
+        let mut buffer =
+            [b'S', b'B', b'x', 0x01, 0xCC, 0xCC, 0xDD, 0xDD, 0xDD, 0xDD, 0xDD, 0xDD, 0xEE, 0xEE, 0xEE, 0xEE];
+        fill_random_bytes(&mut buffer[4..16]);
+
+        let mut expect = Header::new(Version::V1, [0; 6]);
+        expect.crc = ((buffer[4] as u16) << 8) + (buffer[5] as u16);
+        for i in 0..6 {
+            expect.file_uid[i] = buffer[6 + i];
+        }
+        expect.seq_num =
+            ((buffer[12] as u32) << 24) +
+            ((buffer[13] as u32) << 16) +
+            ((buffer[14] as u32) <<  8) +
+            (buffer[15] as u32);
+
+        {
+            let mut header = Header::new(Version::V1, [0; 6]);
+
+            header.from_bytes(&buffer).unwrap();
+
+            assert_eq!(expect, header);
+
+            let mut buffer2 : [u8; 16] = [0; 16];
+
+            header.to_bytes(&mut buffer2).unwrap();
+
+            assert_eq!(buffer, buffer2);
+
+            header.from_bytes(&buffer2).unwrap();
+
+            assert_eq!(expect, header);
+        }
+    }
+}
+
+#[test]
 fn test_to_from_to_bytes() {
     for _ in 0..1000 {
         let mut header = Header::new(Version::V1, [0; 6]);
