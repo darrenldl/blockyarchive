@@ -34,7 +34,6 @@ Byte order: Big Endian
 | n+1 | blockend | var  | padding (0x1a)   |
 
 ### Versions:
-N.B. Current versions differs only by blocksize.
 
 | ver | blocksize | note    |
 |---- | --------- | ------- |
@@ -61,8 +60,6 @@ N.B. Current versions differs only by blocksize.
 | SDT | sbx date & time (8 bytes) |
 | HSH | crypto hash (using [Multihash](http://multiformats.io) protocol) |
 | PID | parent UID (*not used at the moment*)|
-| ECP | (forward) error correction redundancy percentage |
-| ECA | (forward) error correction algorithm |
 
 Supported crypto hashes since 1.0.0 are
   - SHA1
@@ -127,6 +124,36 @@ For **ceil(X * M / N)** continuous blocks
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
 | 16  | blockend | var  | parity           |
+
+### Versions:
+
+| ver | blocksize | note    |
+|---- | --------- | ------- |
+| 11  | 512       |         |
+| 12  | 128       |         |
+| 13  | 4096      |         |
+
+### Metadata encoding:
+
+| Bytes | Field | 
+| ----- | ----- |
+|    3  | ID    |
+|    1  | Len   |
+|    n  | Data  |
+
+#### IDs
+
+| ID | Desc |
+| --- | --- |
+| FNM | filename (utf-8) |
+| SNM | sbx filename (utf-8) |
+| FSZ | filesize (8 bytes) |
+| FDT | date & time (8 bytes, seconds since epoch) |
+| SDT | sbx date & time (8 bytes) |
+| HSH | crypto hash (using [Multihash](http://multiformats.io) protocol) |
+| PID | parent UID (*not used at the moment*)|
+| RSD | Reed-Solomon data shards part of ratio (ratio = RSD : RSP)
+| RSP | Reed-Solomon parity shards part of ratio (ratio = RSD : RSP)
 
 Supported forward error correction algorithms since 1.0.0 are
   - Reed-Solomon erasure code(no direct error detection)
