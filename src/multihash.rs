@@ -1,5 +1,5 @@
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum HashType {
     SHA1,
     SHA2_256,     SHA256,
