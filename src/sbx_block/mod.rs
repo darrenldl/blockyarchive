@@ -1,9 +1,10 @@
 mod helper;
 mod header;
-mod header_test;
 mod metadata;
 mod crc;
 mod test;
+mod header_test;
+mod metadata_test;
 
 use self::header::Header;
 use self::metadata::Metadata;
