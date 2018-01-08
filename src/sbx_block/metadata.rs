@@ -2,7 +2,7 @@ use super::super::multihash;
 use std;
 use super::Error;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Metadata {
     FNM(Box<[u8]>),
     SNM(Box<[u8]>),
