@@ -31,16 +31,17 @@ pub enum Error {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Data<'a> {
-    Data(&'a [u8]),
-    Meta(SmallVec<[Metadata; 16]>, &'a mut [u8])
+pub enum Data {
+    Data,
+    Meta(SmallVec<[Metadata; 16]>)
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Block<'a> {
     pub header : Header,
-    data       : Data<'a>,
+    data       : Data,
     header_buf : &'a mut [u8],
+    data_buf   : &'a mut [u8]
 }
 
 impl<'a> Block<'a> {
@@ -58,16 +59,18 @@ impl<'a> Block<'a> {
                 let (header_buf, data_buf) = buffer.split_at_mut(SBX_HEADER_SIZE);
                 Block {
                     header     : Header::new(version, file_uid.clone()),
-                    data       : Data::Data(data_buf),
-                    header_buf : header_buf,
+                    data       : Data::Data,
+                    header_buf,
+                    data_buf
                 }
             },
             BlockType::Meta => {
                 let (header_buf, data_buf) = buffer.split_at_mut(SBX_HEADER_SIZE);
                 Block {
                     header     : Header::new(version, file_uid.clone()),
-                    data       : Data::Meta(SmallVec::new(), data_buf),
-                    header_buf : header_buf,
+                    data       : Data::Meta(SmallVec::new()),
+                    header_buf,
+                    data_buf
                 }
             }
         })
@@ -75,8 +78,8 @@ impl<'a> Block<'a> {
 
     pub fn block_type(&self) -> BlockType {
         match self.data {
-            Data::Data(_)    => BlockType::Data,
-            Data::Meta(_, _) => BlockType::Meta
+            Data::Data    => BlockType::Data,
+            Data::Meta(_) => BlockType::Meta
         }
     }
 
@@ -96,29 +99,21 @@ impl<'a> Block<'a> {
 
     pub fn get_meta_ref(&self) -> Result<&SmallVec<[Metadata; 16]>, Error> {
         match self.data {
-            Data::Data(_)        => Err(Error::IncorrectBlockType),
-            Data::Meta(ref x, _) => { Ok(x) }
+            Data::Data        => Err(Error::IncorrectBlockType),
+            Data::Meta(ref x) => { Ok(x) }
         }
     }
 
     pub fn get_meta_ref_mut(&mut self) -> Result<&mut SmallVec<[Metadata; 16]>, Error> {
         match self.data {
-            Data::Data(_)            => Err(Error::IncorrectBlockType),
-            Data::Meta(ref mut x, _) => { Ok(x) }
+            Data::Data            => Err(Error::IncorrectBlockType),
+            Data::Meta(ref mut x) => { Ok(x) }
         }
     }
 
     pub fn calc_crc(&self) -> u16 {
-        match self.data {
-            Data::Meta(_, ref buf) => {
-                let crc = self.header.calc_crc();
-                crc_ccitt_generic(crc, buf)
-            },
-            Data::Data(buf) => {
-                let crc = self.header.calc_crc();
-                crc_ccitt_generic(crc, buf)
-            }
-        }
+        let crc = self.header.calc_crc();
+        crc_ccitt_generic(crc, self.data_buf)
     }
 
     pub fn update_crc(&mut self) {
@@ -127,11 +122,11 @@ impl<'a> Block<'a> {
 
     pub fn sync_to_buffer(&mut self) -> Result<(), Error> {
         match self.data {
-            Data::Meta(ref meta, ref mut buf) => {
+            Data::Meta(ref meta) => {
                 // transform metadata to bytes
-                metadata::to_bytes(meta, buf)?;
+                metadata::to_bytes(meta, self.data_buf)?;
             },
-            Data::Data(_) => {}
+            Data::Data => {}
         }
 
         self.update_crc();
@@ -141,22 +136,40 @@ impl<'a> Block<'a> {
         Ok(())
     }
 
+    fn switch_block_type(&mut self) {
+        let block_type = self.block_type();
+
+        if block_type == BlockType::Meta {
+            self.data = Data::Data;
+        } else {
+            self.data = Data::Meta(SmallVec::new());
+        }
+    }
+
     pub fn sync_from_buffer_header_only(&mut self) -> Result<(), Error> {
-        self.header.from_bytes(self.header_buf)
+        self.header.from_bytes(self.header_buf)?;
+
+        if (self.header.is_meta() && self.is_data())
+            || (self.header.is_data() && self.is_meta())
+        {
+            self.switch_block_type();
+        }
+
+        Ok(())
     }
 
     pub fn sync_from_buffer(&mut self) -> Result<(), Error> {
         self.header.from_bytes(self.header_buf)?;
 
         match self.data {
-            Data::Meta(ref mut meta, ref buf) => {
+            Data::Meta(ref mut meta) => {
                 meta.clear();
-                let res = metadata::from_bytes(buf)?;
+                let res = metadata::from_bytes(self.data_buf)?;
                 for r in res.into_iter() {
                     meta.push(r);
                 }
             },
-            Data::Data(_) => {}
+            Data::Data => {}
         }
 
         Ok(())
