@@ -22,8 +22,9 @@ extern crate time;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Error {
-    FileOpenFail,
-    FileCreateFail,
+    FileOpenFail(String),
+    FileCreateFail(String),
+    RSCodecCreateFail
 }
 
 fn main () {

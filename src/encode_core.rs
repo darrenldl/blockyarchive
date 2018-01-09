@@ -10,6 +10,8 @@ pub struct Stats {
     data_blocks_written : u64,
     data_bytes_encoded  : u64,
     start_time          : u64,
+    data_shards         : usize,
+    parity_shards       : usize
 }
 
 pub fn encode_file() -> Result<(), Error> {
