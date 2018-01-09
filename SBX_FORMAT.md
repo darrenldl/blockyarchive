@@ -93,9 +93,11 @@ Assumes configuration is **N** data shards and **M** parity shards.
 
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
-| 16  | blockend | var  | block 0 parity   |
+| 16  | blockend | var  | parity           |
 
-Above gives 200% redundancy for the metadata block
+RS arrangement : block 0 (data shard) block 1 (parity shard) block 2 (parity shard).
+
+Above gives 200% redundancy for the metadata block.
 
 ### Blocks >= 3 & < 3 + K * (N + M), where K is an integer >= 1:
 
@@ -111,6 +113,8 @@ For **M** continuous blocks
 |---- | -------- | ---- | ---------------- |
 | 16  | blockend | var  | parity           |
 
+RS arrangement : N blocks (N data shards) M blocks (M parity shards).
+
 ### Last set of blocks
 
 For **X** continuous blocks, where **X** is the remaining number of data blocks
@@ -124,6 +128,8 @@ For **ceil(X * M / N)** continuous blocks
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
 | 16  | blockend | var  | parity           |
+
+RS arrangement : X blocks (X data shards) Y blocks (Y parity shards), where Y = ceil(X * M / N).
 
 ### Versions:
 
