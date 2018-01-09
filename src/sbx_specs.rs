@@ -90,3 +90,15 @@ pub fn ver_to_block_size (version : Version) -> usize {
         V13 => params_for_v13::BLOCK_SIZE,
     }
 }
+
+pub fn ver_to_data_size (version : Version) -> usize {
+    use self::Version::*;
+    match version {
+        V1  => params_for_v1::DATA_SIZE,
+        V2  => params_for_v2::DATA_SIZE,
+        V3  => params_for_v3::DATA_SIZE,
+        V11 => params_for_v11::DATA_SIZE,
+        V12 => params_for_v12::DATA_SIZE,
+        V13 => params_for_v13::DATA_SIZE,
+    }
+}

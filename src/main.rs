@@ -18,5 +18,13 @@ mod sort_core;
 #[macro_use]
 extern crate nom;
 
+extern crate time;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Error {
+    FileOpenFail,
+    FileCreateFail,
+}
+
 fn main () {
 }
