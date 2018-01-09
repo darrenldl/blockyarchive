@@ -162,4 +162,4 @@ RS arrangement : X blocks (X data shards) Y blocks (Y parity shards), where Y = 
 | RSP | Reed-Solomon parity shards part of ratio (ratio = RSD : RSP) |
 
 Supported forward error correction algorithms since 1.0.0 are
-  - Reed-Solomon erasure code(no direct error detection)
+  - Reed-Solomon erasure code - probably the only one for versions 11, 12, 13
