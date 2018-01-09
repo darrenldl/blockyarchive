@@ -112,23 +112,34 @@ impl<'a> Block<'a> {
         }
     }
 
-    pub fn calc_crc(&self) -> u16 {
+    pub fn calc_crc(&self) -> Result<u16, Error> {
+        self.check_header_type_matches_block_type()?;
+
         let crc = self.header.calc_crc();
-        crc_ccitt_generic(crc, self.data_buf)
+
+        Ok(crc_ccitt_generic(crc, self.data_buf))
     }
 
-    pub fn update_crc(&mut self) {
-        self.header.crc = self.calc_crc();
+    pub fn update_crc(&mut self) -> Result<(), Error> {
+        self.header.crc = self.calc_crc()?;
+
+        Ok(())
     }
 
-    fn header_type_matches_self_type(&self) -> bool {
+    fn header_type_matches_block_type(&self) -> bool {
         self.header.is_meta() == self.is_meta()
     }
 
-    pub fn sync_to_buffer(&mut self) -> Result<(), Error> {
-        if !self.header_type_matches_self_type() {
-            return Err(Error::InconsistentHeaderBlockType);
+    fn check_header_type_matches_block_type(&self) -> Result<(), Error> {
+        if self.header_type_matches_block_type() {
+            Ok(())
+        } else {
+            Err(Error::InconsistentHeaderBlockType)
         }
+    }
+
+    pub fn sync_to_buffer(&mut self) -> Result<(), Error> {
+        self.check_header_type_matches_block_type()?;
 
         match self.data {
             Data::Meta(ref meta) => {
@@ -138,7 +149,7 @@ impl<'a> Block<'a> {
             Data::Data => {}
         }
 
-        self.update_crc();
+        self.update_crc()?;
 
         self.header.to_bytes(&mut self.header_buf).unwrap();
 
@@ -155,8 +166,8 @@ impl<'a> Block<'a> {
         }
     }
 
-    fn switch_block_type_to_match_header(&mut self) {
-        if self.header_type_matches_self_type() {
+    pub fn switch_block_type_to_match_header(&mut self) {
+        if self.header_type_matches_block_type() {
             self.switch_block_type();
         }
     }
@@ -186,7 +197,7 @@ impl<'a> Block<'a> {
         Ok(())
     }
 
-    pub fn verify_crc(&self) -> bool {
-        self.header.crc == self.calc_crc()
+    pub fn verify_crc(&self) -> Result<bool, Error> {
+        Ok(self.header.crc == self.calc_crc()?)
     }
 }
