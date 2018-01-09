@@ -167,7 +167,7 @@ impl<'a> Block<'a> {
     }
 
     pub fn switch_block_type_to_match_header(&mut self) {
-        if self.header_type_matches_block_type() {
+        if !self.header_type_matches_block_type() {
             self.switch_block_type();
         }
     }
