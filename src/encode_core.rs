@@ -1,8 +1,11 @@
 use super::Error;
 use super::sbx_specs;
 use super::sbx_specs::Version;
+use std::sync::{Arc, Mutex};
 
 use super::time;
+
+type SharedStats = Arc<Mutex<Stats>>;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
@@ -33,9 +36,28 @@ impl Stats {
     }
 }
 
-fn encoder(version : Version)
-           -> Result<Stats, Error> {
-    Ok(Stats::new(version))
+fn reader(version : Version)
+          -> Result<(), Error> {
+    Ok(())
+}
+
+fn packer(version : Version)
+          -> Result<(), Error> {
+    use self::Version::*;
+    match version {
+        V1  | V2  | V3 => {
+        },
+        V11 | V12 | V13 => {
+            
+        }
+    }
+    Ok(())
+}
+
+fn hasher() {}
+
+fn writer() -> Result<(), Error> {
+    Ok(())
 }
 
 pub fn encode_file(in_filename  : String,
