@@ -81,7 +81,7 @@ Data block is valid if and only if
   2. Metadata of collected list of metadata blocks are displayed
 
 ## Repair workflow
-  1. Load metadata block and the 2 parity blocks, repair metadata block if necessary
+  1. Load metadata block and the 2 parity blocks, repair any of the 3 blocks if necessary
   2. Load up to N + M blocks sequentially, where N is the number of data shards and M is the number of parity shards
   3. Check CRC of all blocks and record invalid blocks
   4. Reconstruct the invalid blocks if possible
@@ -122,7 +122,7 @@ Data block is valid if and only if
   - The container has metadata block(or enough metadata parity blocks to reconstruct if corrupted/missing)
   - The container blocks are sorted by the sequence number in increasing order
   - The container has no duplicate blocks
-  - The container has enough valid parity blocks to correct all occuring errors
+  - The container has enough valid parity blocks to correct all errors
 
 ## To successfully sort your sbx container
   - There is space to store temporary file of same size at the specified destination
