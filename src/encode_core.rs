@@ -1,8 +1,9 @@
+use std::fs::File;
+use std::sync::{Arc, Mutex};
+
 use super::Error;
 use super::sbx_specs;
 use super::sbx_specs::Version;
-use std::sync::{Arc, Mutex};
-
 use super::time;
 
 type SharedStats = Arc<Mutex<Stats>>;
@@ -19,7 +20,7 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(version : Version) -> Self {
+    pub fn new(version : Version) -> Stats {
         Stats {
             sbx_version         : version,
             meta_blocks_written : 0,
@@ -36,7 +37,8 @@ impl Stats {
     }
 }
 
-fn reader(version : Version)
+fn reader(version : Version,
+          in_file : File)
           -> Result<(), Error> {
     Ok(())
 }
@@ -48,7 +50,6 @@ fn packer(version : Version)
         V1  | V2  | V3 => {
         },
         V11 | V12 | V13 => {
-            
         }
     }
     Ok(())

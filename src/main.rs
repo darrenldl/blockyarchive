@@ -1,5 +1,11 @@
 #![allow(dead_code)]
 
+mod file_error;
+use file_error::FileError;
+
+mod general_error;
+use general_error::Error;
+
 mod multihash;
 mod multihash_test;
 mod misc_utils;
@@ -15,17 +21,13 @@ mod repair_core;
 mod show_core;
 mod sort_core;
 
+mod reader;
+mod writer;
+
 #[macro_use]
 extern crate nom;
 
 extern crate time;
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Error {
-    FileOpenFail(String),
-    FileCreateFail(String),
-    RSCodecCreateFail
-}
 
 fn main () {
 }
