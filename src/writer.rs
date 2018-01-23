@@ -18,4 +18,11 @@ impl Writer {
             path
         })
     }
+
+    pub fn write(&mut self, buf : &mut [u8]) -> Result<usize, FileError> {
+        match self.file.write(buf) {
+            Ok(len_wrote) => Ok(len_wrote),
+            Err(e)        => Err(FileError::new(e.kind(), self.path.clone()))
+        }
+    }
 }
