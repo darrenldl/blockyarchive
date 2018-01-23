@@ -16,6 +16,14 @@ impl FileError {
     }
 }
 
+pub fn adapt_to_err<T>(res : Result<T, FileError>) -> Result<T, super::Error> {
+    use super::{Error, ErrorKind};
+    match res {
+        Ok(r) => Ok(r),
+        Err(e) => Err(Error::new(ErrorKind::FileError(e)))
+    }
+}
+
 impl fmt::Display for FileError {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorKind::*;

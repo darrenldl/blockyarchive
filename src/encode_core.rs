@@ -2,6 +2,7 @@ use std::fs::File;
 use std::thread;
 use std::thread::JoinHandle;
 use std::sync::{Arc, Mutex};
+use super::file_error;
 
 use super::{Error, ErrorKind};
 use super::Reader;
@@ -45,10 +46,7 @@ fn make_reader(version : Version,
                in_file : &str,
                stats   : &SharedStats)
                -> Result<JoinHandle<()>, Error> {
-    let mut reader = match Reader::new(in_file) {
-        Ok(r) => r,
-        Err(e) => { return Err(Error::new(ErrorKind::FileError(e))) }
-    };
+    let mut reader = file_error::adapt_to_err(Reader::new(in_file))?;
     let stats = Arc::clone(stats);
     Ok(thread::spawn(move || {
         let mut raw_buf : [u8; 4096] = [0; 4096];
