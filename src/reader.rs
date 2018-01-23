@@ -6,6 +6,7 @@ const READ_RETRIES : usize = 5;
 
 pub struct Reader {
     file : File,
+    path : String,
 }
 
 impl Reader {
@@ -15,7 +16,15 @@ impl Reader {
             Err(e) => { return Err(FileError::new(e.kind(), path)); }
         };
         Ok (Reader {
-            file
+            file,
+            path
         })
+    }
+
+    pub fn read(&mut self, buf : &mut [u8]) -> Result<usize, FileError> {
+        match self.file.read(buf) {
+            Ok(len_read) => Ok(len_read),
+            Err(e)       => Err(FileError::new(e.kind(), self.path.clone()))
+        }
     }
 }
