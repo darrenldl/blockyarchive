@@ -11,7 +11,8 @@ use self::metadata::Metadata;
 use super::sbx_specs::{Version,
                        SBX_HEADER_SIZE,
                        SBX_FILE_UID_LEN,
-                       SBX_LARGEST_BLOCK_SIZE};
+                       SBX_LARGEST_BLOCK_SIZE,
+                       ver_to_block_size};
 extern crate reed_solomon_erasure;
 extern crate smallvec;
 use self::smallvec::SmallVec;
@@ -75,22 +76,37 @@ impl Block {
                file_uid   : &[u8; SBX_FILE_UID_LEN],
                block_type : BlockType)
                -> Result<Block, Error> {
+        let block_size = ver_to_block_size(version);
+
+        let mut buffer : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]> = SmallVec::new();
+        for _ in 0..block_size {
+            buffer.push(0);
+        }
+
         Ok(match block_type {
             BlockType::Data => {
                 Block {
                     header : Header::new(version, file_uid.clone()),
                     data   : Data::Data,
-                    buffer : SmallVec::new()
+                    buffer
                 }
             },
             BlockType::Meta => {
                 Block {
                     header : Header::new(version, file_uid.clone()),
                     data   : Data::Meta(SmallVec::new()),
-                    buffer : SmallVec::new()
+                    buffer
                 }
             }
         })
+    }
+
+    pub fn buf(&self) -> &[u8] {
+        &self.buffer
+    }
+
+    pub fn buf_mut(&mut self) -> &mut [u8] {
+        &mut self.buffer
     }
 
     pub fn header_data_buf(&self) -> (&[u8], &[u8]) {
