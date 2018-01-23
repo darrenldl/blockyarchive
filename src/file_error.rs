@@ -40,7 +40,7 @@ impl fmt::Display for FileError {
             Interrupted       => write!(f, "file : {} operation interrupted", &self.path),
             Other             => write!(f, "file : {} unknown error", &self.path),
             UnexpectedEof     => write!(f, "file : {} unexpected EOF", &self.path),
-            _        => write!(f, "Unknown error")
+            _                 => write!(f, "Unknown error")
         }
     }
 }
