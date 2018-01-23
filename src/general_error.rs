@@ -12,6 +12,14 @@ pub struct Error {
     kind : ErrorKind
 }
 
+impl Error {
+    pub fn new(kind : ErrorKind) -> Error {
+        Error {
+            kind
+        }
+    }
+}
+
 impl fmt::Display for Error {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorKind::*;

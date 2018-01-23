@@ -5,6 +5,7 @@ use file_error::FileError;
 
 mod general_error;
 use general_error::Error;
+use general_error::ErrorKind;
 
 mod multihash;
 mod multihash_test;

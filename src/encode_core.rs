@@ -1,7 +1,9 @@
 use std::fs::File;
+use std::thread;
+use std::thread::JoinHandle;
 use std::sync::{Arc, Mutex};
 
-use super::Error;
+use super::{Error, ErrorKind};
 use super::Reader;
 use super::Writer;
 use super::sbx_specs;
@@ -39,10 +41,18 @@ impl Stats {
     }
 }
 
-fn reader(version : Version,
-          in_file : File)
-          -> Result<(), Error> {
-    Ok(())
+fn make_reader(version : Version,
+               in_file : &str,
+               stats   : &SharedStats)
+               -> Result<JoinHandle<()>, Error> {
+    let mut reader = match Reader::new(in_file) {
+        Ok(r) => r,
+        Err(e) => { return Err(Error::new(ErrorKind::FileError(e))) }
+    };
+    let stats = Arc::clone(stats);
+    Ok(thread::spawn(move || {
+        let mut raw_buf : [u8; 4096] = [0; 4096];
+    }))
 }
 
 fn packer(version : Version)
@@ -57,17 +67,21 @@ fn packer(version : Version)
     Ok(())
 }
 
-fn hasher() {}
+fn hasher() {
+}
 
 fn writer() -> Result<(), Error> {
     Ok(())
 }
 
-pub fn encode_file(in_filename  : &str,
-                   out_filename : &str,
-                   version      : Version)
+pub fn encode_file(in_file  : &str,
+                   out_file : &str,
+                   version  : Version)
                    -> Result<Stats, Error> {
-    let mut reader = Reader::new(in_filename);
-    let mut writer = Writer::new(out_filename);
+    let stats : SharedStats =
+        Arc::new(Mutex::new(Stats::new(version)));
+
+    let reader = make_reader(version, in_file, &stats);
+
     Ok(Stats::new(version))
 }

@@ -16,8 +16,6 @@ impl FileError {
     }
 }
 
-use std::error::Error;
-
 impl fmt::Display for FileError {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorKind::*;
