@@ -22,8 +22,8 @@ impl fmt::Display for FileError {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorKind::*;
         match self.kind {
-            NotFound          => write!(f, "file : {} not found", self.path),
-            PermissionDenied  => write!(f, "file : {} permission denied", self.path),
+            NotFound          => write!(f, "file \"{}\" not found", self.path),
+            PermissionDenied  => write!(f, "file \"{}\" permission denied", self.path),
             ConnectionRefused => panic!("Invalid error"),
             ConnectionReset   => panic!("Invalid error"),
             ConnectionAborted => panic!("Invalid error"),
@@ -35,11 +35,11 @@ impl fmt::Display for FileError {
             WouldBlock        => panic!("Invalid error"),
             InvalidInput      => panic!("Invalid parameters"),
             InvalidData       => panic!("Invalid parameters"),
-            TimedOut          => write!(f, "file : {} operation timed out", &self.path),
-            WriteZero         => write!(f, "file : {} failed write", &self.path),
-            Interrupted       => write!(f, "file : {} operation interrupted", &self.path),
-            Other             => write!(f, "file : {} unknown error", &self.path),
-            UnexpectedEof     => write!(f, "file : {} unexpected EOF", &self.path),
+            TimedOut          => write!(f, "file \"{}\" operation timed out", &self.path),
+            WriteZero         => write!(f, "file \"{}\" failed write", &self.path),
+            Interrupted       => write!(f, "file \"{}\" operation interrupted", &self.path),
+            Other             => write!(f, "file \"{}\" unknown error", &self.path),
+            UnexpectedEof     => write!(f, "file \"{}\" unexpected EOF", &self.path),
             _                 => write!(f, "Unknown error")
         }
     }
