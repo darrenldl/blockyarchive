@@ -10,21 +10,21 @@ pub struct Reader {
 }
 
 impl Reader {
-    pub fn new(path : String) -> Result<Reader, FileError> {
-        let file = match File::open(&path) {
+    pub fn new(path : &str) -> Result<Reader, FileError> {
+        let file = match File::open(path) {
             Ok(f) => f,
             Err(e) => { return Err(FileError::new(e.kind(), path)); }
         };
         Ok (Reader {
             file,
-            path
+            path : String::from(path)
         })
     }
 
     pub fn read(&mut self, buf : &mut [u8]) -> Result<usize, FileError> {
         match self.file.read(buf) {
             Ok(len_read) => Ok(len_read),
-            Err(e)       => Err(FileError::new(e.kind(), self.path.clone()))
+            Err(e)       => Err(FileError::new(e.kind(), &self.path))
         }
     }
 }

@@ -2,6 +2,8 @@ use std::fs::File;
 use std::sync::{Arc, Mutex};
 
 use super::Error;
+use super::Reader;
+use super::Writer;
 use super::sbx_specs;
 use super::sbx_specs::Version;
 use super::time;
@@ -61,10 +63,11 @@ fn writer() -> Result<(), Error> {
     Ok(())
 }
 
-pub fn encode_file(in_filename  : String,
-                   out_filename : String,
+pub fn encode_file(in_filename  : &str,
+                   out_filename : &str,
                    version      : Version)
                    -> Result<Stats, Error> {
-    
+    let mut reader = Reader::new(in_filename);
+    let mut writer = Writer::new(out_filename);
     Ok(Stats::new(version))
 }

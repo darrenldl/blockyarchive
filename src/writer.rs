@@ -8,21 +8,21 @@ pub struct Writer {
 }
 
 impl Writer {
-    pub fn new(path : String) -> Result<Writer, FileError> {
+    pub fn new(path : &str) -> Result<Writer, FileError> {
         let file = match File::create(&path) {
             Ok(f) => f,
             Err(e) => { return Err(FileError::new(e.kind(), path)); }
         };
         Ok (Writer {
             file,
-            path
+            path : String::from(path)
         })
     }
 
-    pub fn write(&mut self, buf : &mut [u8]) -> Result<usize, FileError> {
+    pub fn write(&mut self, buf : &[u8]) -> Result<usize, FileError> {
         match self.file.write(buf) {
             Ok(len_wrote) => Ok(len_wrote),
-            Err(e)        => Err(FileError::new(e.kind(), self.path.clone()))
+            Err(e)        => Err(FileError::new(e.kind(), &self.path))
         }
     }
 }

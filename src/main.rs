@@ -22,7 +22,9 @@ mod show_core;
 mod sort_core;
 
 mod reader;
+use reader::Reader;
 mod writer;
+use writer::Writer;
 
 #[macro_use]
 extern crate nom;

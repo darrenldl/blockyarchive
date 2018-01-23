@@ -8,10 +8,10 @@ pub struct FileError {
 }
 
 impl FileError {
-    pub fn new(kind : ErrorKind, path : String) -> FileError {
+    pub fn new(kind : ErrorKind, path : &str) -> FileError {
         FileError {
             kind,
-            path
+            path : String::from(path)
         }
     }
 }
