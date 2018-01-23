@@ -4,12 +4,16 @@ use std::thread::JoinHandle;
 use std::sync::{Arc, Mutex};
 use super::file_error;
 
+use std::sync::mpsc;
+
 use super::{Error, ErrorKind};
 use super::Reader;
 use super::Writer;
 use super::sbx_specs;
 use super::sbx_specs::Version;
 use super::time;
+
+use super::sbx_block::Block;
 
 type SharedStats = Arc<Mutex<Stats>>;
 
@@ -42,9 +46,10 @@ impl Stats {
     }
 }
 
-fn make_reader(version : Version,
-               in_file : &str,
-               stats   : &SharedStats)
+fn make_reader(version      : Version,
+               in_file      : &str,
+               stats        : &SharedStats,
+               start_notify : mpsc::Receiver<()>)
                -> Result<JoinHandle<()>, Error> {
     let mut reader = file_error::adapt_to_err(Reader::new(in_file))?;
     let stats = Arc::clone(stats);
@@ -79,7 +84,7 @@ pub fn encode_file(in_file  : &str,
     let stats : SharedStats =
         Arc::new(Mutex::new(Stats::new(version)));
 
-    let reader = make_reader(version, in_file, &stats);
+    // let reader = make_reader(version, in_file, &stats);
 
     Ok(Stats::new(version))
 }
