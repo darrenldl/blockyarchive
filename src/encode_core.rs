@@ -117,7 +117,19 @@ fn make_reader(param   : &Param,
             // allocate buffer on heap
             let mut buf : Box<[u8]> = vec![0; block_size].into_boxed_slice();
 
-            let len_read = reader.read(&mut buf);
+            // read into buffer
+            let len_read = match reader.read(&mut buf) {
+                Ok(l) => l,
+                Err(e) => { tx_error.send(file_error::to_err(e));
+                            break; }
+            };
+
+            if len_read == 0 {
+                break;
+            }
+
+            // send bytes over
+            tx_bytes.send(buf);
         }
     }))
 }
