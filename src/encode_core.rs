@@ -4,6 +4,15 @@ use std::thread::JoinHandle;
 use std::sync::{Arc, Mutex};
 use super::file_error;
 
+use std::cell::Cell;
+
+use std::time::Duration;
+
+use std::sync::mpsc::TrySendError::{Full, Disconnected};
+
+use super::misc_utils::{make_channel_for_ctx,
+                        make_sync_channel_for_ctx};
+
 use super::{Error, ErrorKind};
 use super::Reader;
 use super::Writer;
@@ -13,6 +22,7 @@ use super::time;
 
 use super::multihash;
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel,
                       sync_channel,
                       Sender,
@@ -21,6 +31,7 @@ use std::sync::mpsc::{channel,
 
 use super::sbx_block::{Block, BlockType};
 use super::sbx_specs::{SBX_FILE_UID_LEN,
+                       SBX_HEADER_SIZE,
                        ver_to_block_size,
                        ver_to_data_size};
 
@@ -51,11 +62,12 @@ pub struct Param {
 }
 
 pub struct Context {
-    pub err_collect   : (Sender<Error>, Receiver<Error>),
+    pub shutdown      : Arc<AtomicBool>,
+    pub err_collect   : (Sender<Error>, Cell<Option<Receiver<Error>>>),
     pub data_block    : Block,
     pub parity_blocks : Vec<Block>,
-    pub ingress_bytes : (SyncSender<Box<[u8]>>, Receiver<Box<[u8]>>),
-    pub egress_bytes  : (SyncSender<Box<[u8]>>, Receiver<Box<[u8]>>)
+    pub ingress_bytes : (SyncSender<Box<[u8]>>, Cell<Option<Receiver<Box<[u8]>>>>),
+    pub egress_bytes  : (SyncSender<Box<[u8]>>, Cell<Option<Receiver<Box<[u8]>>>>)
 }
 
 impl Context {
@@ -76,11 +88,12 @@ impl Context {
         };
 
         Context {
-            err_collect : channel(),
+            shutdown    : Arc::new(AtomicBool::new(false)),
+            err_collect : make_channel_for_ctx(),
             data_block,
             parity_blocks,
-            ingress_bytes : sync_channel(100),
-            egress_bytes  : sync_channel(100),
+            ingress_bytes : make_sync_channel_for_ctx(100),
+            egress_bytes  : make_sync_channel_for_ctx(100),
         }
     }
 }
@@ -112,13 +125,17 @@ fn make_reader(param   : &Param,
     let tx_bytes = context.ingress_bytes.0.clone();
     let tx_error = context.err_collect.0.clone();
     let block_size = ver_to_block_size(param.version);
+    let shutdown_flag = Arc::clone(&context.shutdown);
     Ok(thread::spawn(move || {
+        let mut buf : Option<Box<[u8]>> = None;
         loop {
+            if shutdown_flag.load(Ordering::Relaxed) { break; }
+
             // allocate buffer on heap
-            let mut buf : Box<[u8]> = vec![0; block_size].into_boxed_slice();
+            buf = Some(vec![0; block_size].into_boxed_slice());
 
             // read into buffer
-            let len_read = match reader.read(&mut buf) {
+            let len_read = match reader.read(&mut buf[SBX_HEADER_SIZE..]) {
                 Ok(l) => l,
                 Err(e) => { tx_error.send(file_error::to_err(e));
                             break; }
@@ -128,8 +145,16 @@ fn make_reader(param   : &Param,
                 break;
             }
 
-            // send bytes over
-            tx_bytes.send(buf);
+            // update stats
+            stats.lock().unwrap().data_bytes_encoded += len_read as u64;
+
+            // send bytes over, timeout if full
+            match tx_bytes.try_send(buf) {
+                Ok(()) => {},
+                Err(Full(b)) => { buf = b;
+                                  thread::sleep(Duration::from_millis(10)); },
+                Err(Disconnected(_)) => panic!()
+            }
         }
     }))
 }
@@ -148,8 +173,18 @@ fn make_packer(param  : &Param,
     Ok(())
 }
 
-fn make_writer() -> Result<(), Error> {
-    Ok(())
+fn make_writer(param   : &Param,
+               stats   : &SharedStats,
+               context : &mut Context) -> Result<JoinHandle<()>, Error> {
+    let mut writer = file_error::adapt_to_err(Writer::new(&param.out_file))?;
+    let stats = Arc::clone(stats);
+    let rx_bytes = context.egress_bytes.1.replace(None).unwrap();
+    let tx_error = context.err_collect.0.clone();
+    Ok(thread::spawn(move || {
+        loop {
+            break;
+        }
+    }))
 }
 
 pub fn encode_file(param    : &Param)
