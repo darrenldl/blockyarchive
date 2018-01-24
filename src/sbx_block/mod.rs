@@ -12,7 +12,8 @@ use super::sbx_specs::{Version,
                        SBX_HEADER_SIZE,
                        SBX_FILE_UID_LEN,
                        SBX_LARGEST_BLOCK_SIZE,
-                       ver_to_block_size};
+                       ver_to_block_size,
+                       ver_to_data_size};
 extern crate reed_solomon_erasure;
 extern crate smallvec;
 use self::smallvec::SmallVec;
@@ -73,6 +74,22 @@ macro_rules! get_buf {
     };
 }
 
+macro_rules! block_size {
+    (
+        $self:ident
+    ) => {
+        ver_to_block_size($self.header.borrow().version)
+    }
+}
+
+macro_rules! data_size {
+    (
+        $self:ident
+    ) => {
+        ver_to_data_size($self.header.borrow().version)
+    }
+}
+
 impl Block {
     pub fn new(version    : Version,
                file_uid   : &[u8; SBX_FILE_UID_LEN],
@@ -81,7 +98,7 @@ impl Block {
         let block_size = ver_to_block_size(version);
 
         let mut buffer : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]> = SmallVec::new();
-        for _ in 0..block_size {
+        for _ in 0..SBX_LARGEST_BLOCK_SIZE {
             buffer.push(0);
         }
 
@@ -112,19 +129,23 @@ impl Block {
     }
 
     pub fn buf(&self) -> &[u8] {
-        &self.buffer
+        &self.buffer[..block_size!(self)]
     }
 
     pub fn buf_mut(&mut self) -> &mut [u8] {
-        &mut self.buffer
+        &mut self.buffer[..block_size!(self)]
     }
 
     pub fn header_data_buf(&self) -> (&[u8], &[u8]) {
-        self.buffer.split_at(SBX_HEADER_SIZE)
+        let (h, d) = self.buffer.split_at(SBX_HEADER_SIZE);
+
+        (h, &d[..data_size!(self)])
     }
 
     pub fn header_data_buf_mut(&mut self) -> (&mut [u8], &mut [u8]) {
-        self.buffer.split_at_mut(SBX_HEADER_SIZE)
+        let (h, d) = self.buffer.split_at_mut(SBX_HEADER_SIZE);
+
+        (h, &mut d[..data_size!(self)])
     }
 
     pub fn header_buf(&self) -> &[u8] {
@@ -186,7 +207,7 @@ impl Block {
         Ok(crc_ccitt_generic(crc, self.data_buf()))
     }
 
-    pub fn update_crc(&mut self) -> Result<(), Error> {
+    pub fn update_crc(&self) -> Result<(), Error> {
         self.header_mut().crc = self.calc_crc()?;
 
         Ok(())
@@ -204,7 +225,7 @@ impl Block {
         }
     }
 
-    pub fn sync_to_buffer(&mut self) -> Result<(), Error> {
+    pub fn sync_to_buffer(&mut self, update_crc : bool) -> Result<(), Error> {
         self.check_header_type_matches_block_type()?;
 
         match self.data {
@@ -215,7 +236,7 @@ impl Block {
             Data::Data => {}
         }
 
-        self.update_crc()?;
+        if update_crc { self.update_crc()?; }
 
         self.header.borrow().to_bytes(get_buf!(header_mut => self)).unwrap();
 
@@ -238,16 +259,16 @@ impl Block {
         }
     }
 
-    pub fn sync_from_buffer_header_only(&mut self) -> Result<(), Error> {
-        self.header.borrow_mut().from_bytes(get_buf!(header_mut => self))?;
-
-        self.switch_block_type_to_match_header();
+    pub fn sync_from_buffer_header_only(&self) -> Result<(), Error> {
+        self.header.borrow_mut().from_bytes(get_buf!(header => self))?;
 
         Ok(())
     }
 
     pub fn sync_from_buffer(&mut self) -> Result<(), Error> {
         self.sync_from_buffer_header_only()?;
+
+        self.switch_block_type_to_match_header();
 
         match self.data {
             Data::Meta(ref mut meta) => {
