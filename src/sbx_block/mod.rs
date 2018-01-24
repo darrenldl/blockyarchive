@@ -225,8 +225,14 @@ impl Block {
         }
     }
 
-    pub fn sync_to_buffer(&mut self, update_crc : bool) -> Result<(), Error> {
+    pub fn sync_to_buffer(&mut self, update_crc : Option<bool>)
+                          -> Result<(), Error> {
         self.check_header_type_matches_block_type()?;
+
+        let update_crc = match update_crc {
+            Some(v) => v,
+            None    => true
+        };
 
         match self.data {
             Data::Meta(ref meta) => {
