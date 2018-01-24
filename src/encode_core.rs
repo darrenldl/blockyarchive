@@ -8,7 +8,8 @@ use std::cell::Cell;
 
 use std::time::Duration;
 
-use std::sync::mpsc::TrySendError::{Full, Disconnected};
+use std::sync::mpsc::RecvTimeoutError;
+use std::sync::mpsc::TrySendError;
 
 use super::misc_utils::{make_channel_for_ctx,
                         make_sync_channel_for_ctx};
@@ -128,6 +129,7 @@ fn make_reader(param   : &Param,
     let shutdown_flag = Arc::clone(&context.shutdown);
     Ok(thread::spawn(move || {
         let mut secondary_buf : Option<Box<[u8]>> = None;
+
         loop {
             if shutdown_flag.load(Ordering::Relaxed) { break; }
 
@@ -155,9 +157,10 @@ fn make_reader(param   : &Param,
             // if full, then put current buffer into secondary buffer and wait
             match tx_bytes.try_send(buf) {
                 Ok(()) => {},
-                Err(Full(b)) => { secondary_buf = Some(b);
-                                  thread::sleep(Duration::from_millis(10)); },
-                Err(Disconnected(_)) => panic!()
+                Err(TrySendError::Full(b)) => {
+                    secondary_buf = Some(b);
+                    thread::sleep(Duration::from_millis(10)); },
+                Err(TrySendError::Disconnected(_)) => panic!()
             }
         }
     }))
@@ -184,9 +187,22 @@ fn make_writer(param   : &Param,
     let stats = Arc::clone(stats);
     let rx_bytes = context.egress_bytes.1.replace(None).unwrap();
     let tx_error = context.err_collect.0.clone();
+    let shutdown_flag = Arc::clone(&context.shutdown);
     Ok(thread::spawn(move || {
         loop {
-            break;
+            if shutdown_flag.load(Ordering::Relaxed) { break; }
+
+            let buf = match rx_bytes.recv_timeout(Duration::from_millis(10)) {
+                Ok(buf)                             => buf,
+                Err(RecvTimeoutError::Timeout)      => { continue; },
+                Err(RecvTimeoutError::Disconnected) => { panic!(); }
+            };
+
+            match writer.write(&buf) {
+                Ok(_) => {},
+                Err(e) => { tx_error.send(file_error::to_err(e));
+                            break; }
+            }
         }
     }))
 }
