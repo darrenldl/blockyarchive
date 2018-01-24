@@ -16,6 +16,11 @@ impl FileError {
     }
 }
 
+pub fn to_err(e : FileError) -> super::Error {
+    use super::{Error, ErrorKind};
+    Error::new(ErrorKind::FileError(e))
+}
+
 pub fn adapt_to_err<T>(res : Result<T, FileError>) -> Result<T, super::Error> {
     use super::{Error, ErrorKind};
     match res {
