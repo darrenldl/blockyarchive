@@ -16,7 +16,6 @@ use super::sbx_specs::{Version,
 extern crate reed_solomon_erasure;
 extern crate smallvec;
 use self::smallvec::SmallVec;
-use std::cell::RefCell;
 
 use self::crc::*;
 
@@ -44,31 +43,31 @@ pub enum Data {
 
 #[derive(Debug, PartialEq)]
 pub struct Block {
-    header : RefCell<Header>,
-    data   : RefCell<Data>,
-    buffer : RefCell<SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>>,
+    pub header : Header,
+    data       : Data,
+    buffer     : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>,
 }
 
 macro_rules! get_buf {
     (
         header => $self:ident
     ) => {
-        &$self.buffer.borrow()[..SBX_HEADER_SIZE]
+        &$self.buffer[..SBX_HEADER_SIZE]
     };
     (
         header_mut => $self:ident
     ) => {
-        &mut $self.buffer.borrow_mut()[..SBX_HEADER_SIZE]
+        &mut $self.buffer[..SBX_HEADER_SIZE]
     };
     (
         data => $self:ident
     ) => {
-        &$self.buffer.borrow()[SBX_HEADER_SIZE..]
+        &$self.buffer[SBX_HEADER_SIZE..]
     };
     (
         data_mut => $self:ident
     ) => {
-        &mut $self.buffer.borrow_mut()[SBX_HEADER_SIZE..]
+        &mut $self.buffer[SBX_HEADER_SIZE..]
     };
 }
 
@@ -87,50 +86,42 @@ impl Block {
         Ok(match block_type {
             BlockType::Data => {
                 Block {
-                    header : RefCell::new(Header::new(version, file_uid.clone())),
-                    data   : RefCell::new(Data::Data),
-                    buffer : RefCell::new(buffer)
+                    header : Header::new(version, file_uid.clone()),
+                    data   : Data::Data,
+                    buffer
                 }
             },
             BlockType::Meta => {
                 Block {
-                    header : RefCell::new(Header::new(version, file_uid.clone())),
-                    data   : RefCell::new(Data::Meta(SmallVec::new())),
-                    buffer : RefCell::new(buffer)
+                    header : Header::new(version, file_uid.clone()),
+                    data   : Data::Meta(SmallVec::new()),
+                    buffer
                 }
             }
         })
     }
 
-    pub fn header(&self) -> &Header {
-        &self.header.borrow()
-    }
-
-    pub fn header_mut(&self) -> &mut Header {
-        &mut self.header.borrow_mut()
-    }
-
     pub fn buf(&self) -> &[u8] {
-        &self.buffer.borrow()
+        &self.buffer
     }
 
-    pub fn buf_mut(&self) -> &mut [u8] {
-        &mut self.buffer.borrow_mut()
+    pub fn buf_mut(&mut self) -> &mut [u8] {
+        &mut self.buffer
     }
 
     pub fn header_data_buf(&self) -> (&[u8], &[u8]) {
-        self.buffer.borrow().split_at(SBX_HEADER_SIZE)
+        self.buffer.split_at(SBX_HEADER_SIZE)
     }
 
-    pub fn header_data_buf_mut(&self) -> (&mut [u8], &mut [u8]) {
-        self.buffer.borrow_mut().split_at_mut(SBX_HEADER_SIZE)
+    pub fn header_data_buf_mut(&mut self) -> (&mut [u8], &mut [u8]) {
+        self.buffer.split_at_mut(SBX_HEADER_SIZE)
     }
 
     pub fn header_buf(&self) -> &[u8] {
         self.header_data_buf().0
     }
 
-    pub fn header_buf_borrow_mut(&self) -> &mut [u8] {
+    pub fn header_buf_mut(&mut self) -> &mut [u8] {
         self.header_data_buf_mut().0
     }
 
@@ -138,12 +129,12 @@ impl Block {
         self.header_data_buf().1
     }
 
-    pub fn data_buf_mut(&self) -> &mut [u8] {
+    pub fn data_buf_mut(&mut self) -> &mut [u8] {
         self.header_data_buf_mut().1
     }
 
     pub fn block_type(&self) -> BlockType {
-        match *self.data.borrow() {
+        match self.data {
             Data::Data    => BlockType::Data,
             Data::Meta(_) => BlockType::Meta
         }
@@ -164,14 +155,14 @@ impl Block {
     }
 
     pub fn meta_ref(&self) -> Result<&SmallVec<[Metadata; 16]>, Error> {
-        match *self.data.borrow() {
+        match self.data {
             Data::Data        => Err(Error::IncorrectBlockType),
             Data::Meta(ref x) => { Ok(x) }
         }
     }
 
-    pub fn meta_ref_mut(&self) -> Result<&mut SmallVec<[Metadata; 16]>, Error> {
-        match *self.data.borrow_mut() {
+    pub fn meta_ref_mut(&mut self) -> Result<&mut SmallVec<[Metadata; 16]>, Error> {
+        match self.data {
             Data::Data            => Err(Error::IncorrectBlockType),
             Data::Meta(ref mut x) => { Ok(x) }
         }
@@ -180,19 +171,19 @@ impl Block {
     pub fn calc_crc(&self) -> Result<u16, Error> {
         self.check_header_type_matches_block_type()?;
 
-        let crc = self.header().calc_crc();
+        let crc = self.header.calc_crc();
 
         Ok(crc_ccitt_generic(crc, self.data_buf()))
     }
 
-    pub fn update_crc(&self) -> Result<(), Error> {
-        self.header().crc = self.calc_crc()?;
+    pub fn update_crc(&mut self) -> Result<(), Error> {
+        self.header.crc = self.calc_crc()?;
 
         Ok(())
     }
 
     fn header_type_matches_block_type(&self) -> bool {
-        self.header().is_meta() == self.is_meta()
+        self.header.is_meta() == self.is_meta()
     }
 
     fn check_header_type_matches_block_type(&self) -> Result<(), Error> {
@@ -203,10 +194,10 @@ impl Block {
         }
     }
 
-    pub fn sync_to_buffer(&self) -> Result<(), Error> {
+    pub fn sync_to_buffer(&mut self) -> Result<(), Error> {
         self.check_header_type_matches_block_type()?;
 
-        match *self.data.borrow_mut() {
+        match self.data {
             Data::Meta(ref meta) => {
                 // transform metadata to bytes
                 metadata::to_bytes(meta, get_buf!(data_mut => self))?;
@@ -216,18 +207,18 @@ impl Block {
 
         self.update_crc()?;
 
-        self.header().to_bytes(get_buf!(header_mut => self)).unwrap();
+        self.header.to_bytes(get_buf!(header_mut => self)).unwrap();
 
         Ok(())
     }
 
-    fn switch_block_type(&self) {
+    fn switch_block_type(&mut self) {
         let block_type = self.block_type();
 
         if block_type == BlockType::Meta {
-            *self.data.borrow_mut() = Data::Data;
+            self.data = Data::Data;
         } else {
-            *self.data.borrow_mut() = Data::Meta(SmallVec::new());
+            self.data = Data::Meta(SmallVec::new());
         }
     }
 
@@ -237,18 +228,18 @@ impl Block {
         }
     }
 
-    pub fn sync_from_buffer_header_only(&self) -> Result<(), Error> {
-        self.header_mut().from_bytes(get_buf!(header_mut => self))?;
+    pub fn sync_from_buffer_header_only(&mut self) -> Result<(), Error> {
+        self.header.from_bytes(get_buf!(header_mut => self))?;
 
         self.switch_block_type_to_match_header();
 
         Ok(())
     }
 
-    pub fn sync_from_buffer(&self) -> Result<(), Error> {
+    pub fn sync_from_buffer(&mut self) -> Result<(), Error> {
         self.sync_from_buffer_header_only()?;
 
-        match *self.data.borrow_mut() {
+        match self.data {
             Data::Meta(ref mut meta) => {
                 meta.clear();
                 let res = metadata::from_bytes(get_buf!(header => self))?;
@@ -263,6 +254,6 @@ impl Block {
     }
 
     pub fn verify_crc(&self) -> Result<bool, Error> {
-        Ok(self.header().crc == self.calc_crc()?)
+        Ok(self.header.crc == self.calc_crc()?)
     }
 }
