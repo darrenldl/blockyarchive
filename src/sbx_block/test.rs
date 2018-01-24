@@ -13,7 +13,7 @@ fn test_sync_to_buffer_simple_cases() {
                                    BlockType::Meta).unwrap();
 
         {
-            block.header.seq_num = 1;
+            block.header_mut().seq_num = 1;
 
             block.switch_block_type_to_match_header();
 
@@ -32,7 +32,7 @@ fn test_sync_to_buffer_simple_cases() {
                                    BlockType::Data).unwrap();
 
         {
-            block.header.seq_num = 0;
+            block.header_mut().seq_num = 0;
 
             block.switch_block_type_to_match_header();
 
