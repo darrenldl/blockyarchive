@@ -94,7 +94,7 @@ impl Block {
     pub fn new(version    : Version,
                file_uid   : &[u8; SBX_FILE_UID_LEN],
                block_type : BlockType)
-               -> Result<Block, Error> {
+               -> Block {
         let block_size = ver_to_block_size(version);
 
         let mut buffer : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]> = SmallVec::new();
@@ -102,7 +102,7 @@ impl Block {
             buffer.push(0);
         }
 
-        Ok(match block_type {
+        match block_type {
             BlockType::Data => {
                 Block {
                     header : RefCell::new(Header::new(version, file_uid.clone())),
@@ -117,7 +117,7 @@ impl Block {
                     buffer
                 }
             }
-        })
+        }
     }
 
     pub fn header(&self) -> Ref<Header> {
