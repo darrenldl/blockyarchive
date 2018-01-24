@@ -48,7 +48,7 @@ pub enum Data {
 pub struct Block {
     header : RefCell<Header>,
     data   : Data,
-    buffer : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>,
+    buffer : Box<[u8]>,
 }
 
 macro_rules! get_buf {
@@ -97,12 +97,21 @@ impl Block {
                -> Block {
         let block_size = ver_to_block_size(version);
 
-        let mut buffer : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]> = SmallVec::new();
-        for _ in 0..SBX_LARGEST_BLOCK_SIZE {
-            buffer.push(0);
+        let buffer = vec![0; block_size].into_boxed_slice();
+
+        Self::new_with_buffer(version, file_uid, block_type, buffer).unwrap()
+    }
+
+    pub fn new_with_buffer(version    : Version,
+                           file_uid   : &[u8; SBX_FILE_UID_LEN],
+                           block_type : BlockType,
+                           buffer : Box<[u8]>)
+                        -> Result<Block, Error> {
+        if buffer.len() < ver_to_block_size(version) {
+            return Err(Error::IncorrectBufferSize);
         }
 
-        match block_type {
+        Ok(match block_type {
             BlockType::Data => {
                 Block {
                     header : RefCell::new(Header::new(version, file_uid.clone())),
@@ -117,7 +126,7 @@ impl Block {
                     buffer
                 }
             }
-        }
+        })
     }
 
     pub fn header(&self) -> Ref<Header> {
@@ -274,8 +283,23 @@ impl Block {
         Ok(())
     }
 
+    pub fn upgrade_buffer_if_needed(&mut self) {
+        let block_size = ver_to_block_size(self.header().version);
+        let buffer_len = self.buffer.len();
+
+        if buffer_len < block_size {
+            let mut new_buffer = vec![0; block_size].into_boxed_slice();
+
+            new_buffer[0..buffer_len].copy_from_slice(&self.buffer);
+
+            self.buffer = new_buffer;
+        }
+    }
+
     pub fn sync_from_buffer(&mut self) -> Result<(), Error> {
         self.sync_from_buffer_header_only()?;
+
+        self.upgrade_buffer_if_needed();
 
         self.switch_block_type_to_match_header();
 
