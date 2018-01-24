@@ -17,6 +17,8 @@ extern crate reed_solomon_erasure;
 extern crate smallvec;
 use self::smallvec::SmallVec;
 
+use std::cell::{RefCell, Ref, RefMut};
+
 use self::crc::*;
 
 use super::sbx_specs;
@@ -43,9 +45,9 @@ pub enum Data {
 
 #[derive(Debug, PartialEq)]
 pub struct Block {
-    pub header : Header,
-    data       : Data,
-    buffer     : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>,
+    header : RefCell<Header>,
+    data   : Data,
+    buffer : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>,
 }
 
 macro_rules! get_buf {
@@ -86,19 +88,27 @@ impl Block {
         Ok(match block_type {
             BlockType::Data => {
                 Block {
-                    header : Header::new(version, file_uid.clone()),
+                    header : RefCell::new(Header::new(version, file_uid.clone())),
                     data   : Data::Data,
                     buffer
                 }
             },
             BlockType::Meta => {
                 Block {
-                    header : Header::new(version, file_uid.clone()),
+                    header : RefCell::new(Header::new(version, file_uid.clone())),
                     data   : Data::Meta(SmallVec::new()),
                     buffer
                 }
             }
         })
+    }
+
+    pub fn header(&self) -> Ref<Header> {
+        self.header.borrow()
+    }
+
+    pub fn header_mut(&self) -> RefMut<Header> {
+        self.header.borrow_mut()
     }
 
     pub fn buf(&self) -> &[u8] {
@@ -171,19 +181,19 @@ impl Block {
     pub fn calc_crc(&self) -> Result<u16, Error> {
         self.check_header_type_matches_block_type()?;
 
-        let crc = self.header.calc_crc();
+        let crc = self.header().calc_crc();
 
         Ok(crc_ccitt_generic(crc, self.data_buf()))
     }
 
     pub fn update_crc(&mut self) -> Result<(), Error> {
-        self.header.crc = self.calc_crc()?;
+        self.header_mut().crc = self.calc_crc()?;
 
         Ok(())
     }
 
     fn header_type_matches_block_type(&self) -> bool {
-        self.header.is_meta() == self.is_meta()
+        self.header().is_meta() == self.is_meta()
     }
 
     fn check_header_type_matches_block_type(&self) -> Result<(), Error> {
@@ -207,7 +217,7 @@ impl Block {
 
         self.update_crc()?;
 
-        self.header.to_bytes(get_buf!(header_mut => self)).unwrap();
+        self.header.borrow().to_bytes(get_buf!(header_mut => self)).unwrap();
 
         Ok(())
     }
@@ -229,7 +239,7 @@ impl Block {
     }
 
     pub fn sync_from_buffer_header_only(&mut self) -> Result<(), Error> {
-        self.header.from_bytes(get_buf!(header_mut => self))?;
+        self.header.borrow_mut().from_bytes(get_buf!(header_mut => self))?;
 
         self.switch_block_type_to_match_header();
 
@@ -254,6 +264,6 @@ impl Block {
     }
 
     pub fn verify_crc(&self) -> Result<bool, Error> {
-        Ok(self.header.crc == self.calc_crc()?)
+        Ok(self.header().crc == self.calc_crc()?)
     }
 }
