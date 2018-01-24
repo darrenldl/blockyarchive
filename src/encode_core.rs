@@ -127,12 +127,15 @@ fn make_reader(param   : &Param,
     let block_size = ver_to_block_size(param.version);
     let shutdown_flag = Arc::clone(&context.shutdown);
     Ok(thread::spawn(move || {
-        let mut buf : Option<Box<[u8]>> = None;
+        let mut secondary_buf : Option<Box<[u8]>> = None;
         loop {
             if shutdown_flag.load(Ordering::Relaxed) { break; }
 
-            // allocate buffer on heap
-            buf = Some(vec![0; block_size].into_boxed_slice());
+            // allocate if secondary_buf is empty
+            let mut buf = match secondary_buf {
+                None    => vec![0; block_size].into_boxed_slice(),
+                Some(b) => { secondary_buf = None; b }
+            };
 
             // read into buffer
             let len_read = match reader.read(&mut buf[SBX_HEADER_SIZE..]) {
@@ -148,10 +151,11 @@ fn make_reader(param   : &Param,
             // update stats
             stats.lock().unwrap().data_bytes_encoded += len_read as u64;
 
-            // send bytes over, timeout if full
+            // send bytes over
+            // if full, then put current buffer into secondary buffer and wait
             match tx_bytes.try_send(buf) {
                 Ok(()) => {},
-                Err(Full(b)) => { buf = b;
+                Err(Full(b)) => { secondary_buf = Some(b);
                                   thread::sleep(Duration::from_millis(10)); },
                 Err(Disconnected(_)) => panic!()
             }
