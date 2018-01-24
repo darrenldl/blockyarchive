@@ -25,4 +25,19 @@ impl Writer {
             Err(e)        => Err(FileError::new(e.kind(), &self.path))
         }
     }
+
+    pub fn seek(&mut self, pos : SeekFrom)
+                -> Result<usize, FileError> {
+        match self.file.seek(pos) {
+            Ok(pos) => Ok(pos),
+            Err(e)  => Err(FileError::new(e.kind()), &self.path)
+        }
+    }
+
+    pub fn cur_pos(&mut self) -> Result<usize, FileError> {
+        match self.file.seek(SeekFrom::Current(0)) {
+            Ok(pos) => Ok(pos),
+            Err(e)  => Err(FileError::new(e.kind()), &self.path)
+        }
+    }
 }
