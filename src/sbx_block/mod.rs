@@ -236,7 +236,10 @@ impl Block {
             Data::Data => {}
         }
 
-        if update_crc { self.update_crc()?; }
+        match self.block_type() {
+            BlockType::Data => if update_crc { self.update_crc()? },
+            BlockType::Meta =>                 self.update_crc()?
+        }
 
         self.header.borrow().to_bytes(get_buf!(header_mut => self)).unwrap();
 
