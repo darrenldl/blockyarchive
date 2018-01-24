@@ -1,10 +1,12 @@
 use super::file_error;
+use super::sbx_block;
 use std::fmt;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ErrorKind {
     RSCodecCreateFail,
-    FileError(file_error::FileError)
+    FileError(file_error::FileError),
+    SbxBlockError(sbx_block::Error)
 }
 
 #[derive(Clone, Debug, PartialEq)]
