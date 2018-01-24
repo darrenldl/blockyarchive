@@ -185,14 +185,14 @@ impl Block {
         }
     }
 
-    pub fn meta_ref(&self) -> Result<&SmallVec<[Metadata; 16]>, Error> {
+    pub fn meta(&self) -> Result<&SmallVec<[Metadata; 16]>, Error> {
         match self.data {
             Data::Data        => Err(Error::IncorrectBlockType),
             Data::Meta(ref x) => { Ok(x) }
         }
     }
 
-    pub fn meta_ref_mut(&mut self) -> Result<&mut SmallVec<[Metadata; 16]>, Error> {
+    pub fn meta_mut(&mut self) -> Result<&mut SmallVec<[Metadata; 16]>, Error> {
         match self.data {
             Data::Data            => Err(Error::IncorrectBlockType),
             Data::Meta(ref mut x) => { Ok(x) }
