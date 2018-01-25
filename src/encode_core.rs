@@ -196,9 +196,11 @@ fn make_packer(param   : &Param,
                                    &file_uid,
                                    BlockType::Data);
             block.header.seq_num = 1;
-            thread_pool.scoped(|scoped| {
-                block.calc_crc(&buf).unwrap();
-            });
+            {
+                thread_pool.scoped(|scoped| {
+                    block.calc_crc(&buf).unwrap();
+                });
+            }
 
             block.sync_to_buffer(Some(false), &mut buf);
 
