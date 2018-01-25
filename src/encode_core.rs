@@ -124,52 +124,17 @@ impl Stats {
 
 fn make_reader(param   : &Param,
                stats   : &SharedStats,
-               context : &mut Context)
+               context : &mut Context,
+               counter : &Arc<Mutex<u64>>)
                -> Result<JoinHandle<()>, Error> {
-    let mut reader    = file_error::adapt_to_err(Reader::new(&param.in_file))?;
-    let stats         = Arc::clone(stats);
-    let tx_bytes      = context.ingress_bytes.0.clone();
-    let tx_error      = context.err_collect.0.clone();
-    let block_size    = ver_to_block_size(param.version);
-    let shutdown_flag = Arc::clone(&context.shutdown);
-    Ok(thread::spawn(move || {
-        let mut secondary_buf : Option<Box<[u8]>> = None;
-
-        loop {
-            if shutdown_flag.load(Ordering::Relaxed) { break; }
-
-            // allocate if secondary_buf is empty
-            let mut buf = match secondary_buf {
-                None    => vec![0; block_size].into_boxed_slice(),
-                Some(b) => { secondary_buf = None; b }
-            };
-
-            // read into buffer
-            let len_read = match reader.read(&mut buf[SBX_HEADER_SIZE..]) {
-                Ok(l) => l,
-                Err(e) => { tx_error.send(file_error::to_err(e));
-                            break; }
-            };
-
-            if len_read == 0 {
-                tx_bytes.send(None);
-                break;
-            }
-
-            // update stats
-            stats.lock().unwrap().data_bytes_encoded += len_read as u64;
-
-            // send bytes over
-            // if full, then put current buffer into secondary buffer and wait
-            match tx_bytes.try_send(Some(buf)) {
-                Ok(()) => {},
-                Err(TrySendError::Full(b)) => {
-                    secondary_buf = b;
-                    thread::sleep(Duration::from_millis(10)); },
-                Err(TrySendError::Disconnected(_)) => panic!()
-            }
-        }
-    }))
+    reader::make_reader(ver_to_block_size(param.version),
+                        Some(SBX_HEADER_SIZE),
+                        None,
+                        counter,
+                        &context.shutdown,
+                        &param.in_file,
+                        context.ingress_bytes.0.clone(),
+                        context.err_collect.0.clone())
 }
 
 fn make_packer(param   : &Param,
@@ -259,10 +224,11 @@ pub fn encode_file(param    : &Param)
                    -> Result<Stats, Error> {
     let stats : SharedStats =
         Arc::new(Mutex::new(Stats::new(param)));
+    let read_byte_counter = Arc::new(Mutex::new(0u64));
 
     let mut ctx = Context::new(param);
 
-    let reader = make_reader(param, &stats, &mut ctx);
+    let reader = make_reader(param, &stats, &mut ctx, &read_byte_counter);
 
     Ok(Stats::new(param))
 }
