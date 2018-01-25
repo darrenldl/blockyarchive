@@ -56,8 +56,8 @@ Byte order: Big Endian
 | FNM | filename (utf-8) |
 | SNM | sbx filename (utf-8) |
 | FSZ | filesize (8 bytes - BE uint64) |
-| FDT | date & time (8 bytes - BE uint64, seconds since epoch) |
-| SDT | sbx date & time (8 bytes - BE uint64) |
+| FDT | date & time (8 bytes - BE int64, seconds since epoch) |
+| SDT | sbx date & time (8 bytes - BE int64) |
 | HSH | crypto hash (using [Multihash](http://multiformats.io) protocol) |
 | PID | parent UID (*not used at the moment*)|
 
@@ -154,8 +154,8 @@ RS arrangement : X blocks (X data shards) Y blocks (Y parity shards), where Y = 
 | FNM | filename (utf-8) |
 | SNM | sbx filename (utf-8) |
 | FSZ | filesize (8 bytes - BE uint64) |
-| FDT | date & time (8 bytes - BE uint64, seconds since epoch) |
-| SDT | sbx date & time (8 bytes - BE uint64) |
+| FDT | date & time (8 bytes - BE int64, seconds since epoch) |
+| SDT | sbx date & time (8 bytes - BE int64) |
 | HSH | crypto hash (using [Multihash](http://multiformats.io) protocol) |
 | PID | parent UID (*not used at the moment*)|
 | RSD | Reed-Solomon data shards part of ratio (ratio = RSD : RSP) (1 byte - uint8) |
