@@ -204,6 +204,13 @@ fn make_packer(param   : &Param,
         let mut hash_ctx          =
             multihash::hash::Ctx::new(param.hash_type).unwrap();
 
+        let mut parity : Vec<Box<[u8]>> = Vec::with_capacity(param.rs_parity);
+        if param.rs_enabled {
+            for _ in 0..param.rs_parity {
+                parity.push(vec![0; block_size].into_boxed_slice());
+            }
+        }
+
         {
             // write dummy metadata block
             let mut block = Block::new(param.version,
@@ -243,6 +250,12 @@ fn make_packer(param   : &Param,
                         println!("Updating hash ctx");
                         println!("Updating with : {:?}", data_buf);
                         hash_ctx.update(data_buf);
+                    }
+                });
+                // update rs parity
+                scope.execute(|| {
+                    if param.rs_enabled {
+                        
                     }
                 });
                 scope.join_all();
