@@ -6,6 +6,8 @@ use super::worker::writer;
 use super::worker::writer::WriteReq;
 use std::fs;
 
+use std::time::UNIX_EPOCH;
+
 use super::file_reader;
 use super::file_error::adapt_to_err;
 
@@ -139,10 +141,11 @@ fn make_reader(param   : &Param,
                         context.err_collect.0.clone())
 }
 
-fn pack_metadata(block : &mut Block,
-                 param : &Param,
-                 stats : &Stats,
-                 hash  : Option<multihash::HashBytes>) {
+fn pack_metadata(block         : &mut Block,
+                 param         : &Param,
+                 stats         : &Stats,
+                 file_metadata : fs::Metadata,
+                 hash          : Option<multihash::HashBytes>) {
     let meta = block.meta_mut().unwrap();
 
     { // add file name
@@ -158,15 +161,34 @@ fn pack_metadata(block : &mut Block,
                                 .into_bytes()
                                 .into_boxed_slice())); }
     { // add file size
-        meta.push(Metadata::FSZ(stats
-                                .total_bytes)); }
+        meta.push(Metadata::FSZ(file_metadata
+                                .len())); }
     { // add file last modifcation time
-    }
+        let fdt = match file_metadata.modified() {
+            Ok(t)  => match t.duration_since(UNIX_EPOCH) {
+                Ok(t)  => t.as_secs() as i64,
+                Err(_) => stats.start_time
+            }
+            Err(_) => stats.start_time
+        };
+        meta.push(Metadata::FDT(fdt)); }
+    { // add sbx encoding time
+        meta.push(Metadata::SDT(stats.start_time)); }
+    { // add hash
+        if param.hash_enabled {
+            let hsh = match hash {
+                Some(hsh) => hsh,
+                None      => {
+                    let ctx = multihash::hash::Ctx::new(param.hash_type).unwrap();
+                    ctx.finish_into_hash_bytes()
+                }
+            };
+            meta.push(Metadata::HSH(hsh)); }}
 }
 
 fn make_packer(param   : &Param,
                stats   : &SharedStats,
-               context : &mut Context)
+               context : &Context)
                -> Result<JoinHandle<()>, Error> {
     let stats         = Arc::clone(stats);
     let rx_bytes      = context.ingress_bytes.1.replace(None).unwrap();
@@ -175,6 +197,7 @@ fn make_packer(param   : &Param,
     let shutdown_flag = Arc::clone(&context.shutdown);
     let param         = param.clone();
     let block_size    = ver_to_block_size(param.version);
+    let file_metadata = context.file_metadata.clone();
 
     Ok(thread::spawn(move || {
         let mut thread_pool       = Pool::new(2);
@@ -190,6 +213,7 @@ fn make_packer(param   : &Param,
             pack_metadata(&mut block,
                           &param,
                           &stats.lock().unwrap(),
+                          file_metadata,
                           None);
             let mut buf = vec![0; block_size].into_boxed_slice();
             block.sync_to_buffer(None, &mut buf).unwrap();
@@ -270,13 +294,17 @@ pub fn encode_file(param    : &Param)
 
     let rx_error : Receiver<Option<Error>> =
         ctx.err_collect.1.replace(None).unwrap();
+    let mut ret_error : Option<Error> = None;
     for _ in 0..3 {
         match rx_error.recv().unwrap() {
-            None    => println!("Got None"),
-            Some(e) => println!("Got Some error {}", e)
+            None    => {},
+            Some(e) => { ret_error = Some(e); break; }
         }
     }
 
-    let stats = stats.lock().unwrap().clone();
-    Ok(stats)
+    match ret_error {
+        Some(e) => Err(e),
+        None    => { let stats = stats.lock().unwrap().clone();
+                     Ok(stats) }
+    }
 }

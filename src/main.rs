@@ -185,5 +185,8 @@ fn main () {
         in_file    : String::from("test"),
         out_file   : String::from("test.sbx")
     };
-    encode_core::encode_file(&param).unwrap();
+    match encode_core::encode_file(&param) {
+        Ok(_)  => {},
+        Err(e) => println!("{}", e)
+    }
 }
