@@ -200,11 +200,7 @@ fn make_writer(param   : &Param,
         loop {
             if shutdown_flag.load(Ordering::Relaxed) { break; }
 
-            let buf = match rx_bytes.recv_timeout(Duration::from_millis(10)) {
-                Ok(buf)                             => buf,
-                Err(RecvTimeoutError::Timeout)      => { continue; },
-                Err(RecvTimeoutError::Disconnected) => { panic!(); }
-            };
+            let buf = recv!(timeout_millis 10 => rx_bytes);
 
             match writer.write(&buf) {
                 Ok(_) => {},
