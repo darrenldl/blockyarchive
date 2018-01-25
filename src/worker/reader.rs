@@ -13,15 +13,13 @@ use std::time::Duration;
 use std::thread;
 use std::thread::JoinHandle;
 
-use worker;
-
 pub fn make_reader(block_size    : usize,
                    write_start   : Option<usize>,
                    write_end_exc : Option<usize>,
                    counter       : &Arc<Mutex<u64>>,
                    shutdown_flag : &Arc<AtomicBool>,
                    in_file       : &str,
-                   tx_bytes      : SyncSender<Option<Box<[u8]>>>,
+                   tx_bytes      : SyncSender<Box<[u8]>>,
                    tx_error      : Sender<Option<Error>>)
                    -> Result<JoinHandle<()>, Error> {
     let write_start = match write_start {
@@ -41,14 +39,13 @@ pub fn make_reader(block_size    : usize,
     Ok(thread::spawn(move || {
         let mut reader = match reader_res {
             Ok(r)  => r,
-            Err(e) => worker_stop!(with_error_ret => tx_error, e, [tx_bytes])
+            Err(e) => worker_stop!(with_error_ret => tx_error, e, shutdown_flag)
         };
 
         let mut secondary_buf : Option<Box<[u8]>> = None;
 
         loop {
-            if shutdown_flag.load(Ordering::Relaxed) {
-                worker_stop!(graceful => tx_error, [tx_bytes]) }
+            worker_stop!(graceful_if_shutdown => tx_error, shutdown_flag);
 
             // allocate if secondary_buf is empty
             let mut buf = match secondary_buf {
@@ -63,24 +60,21 @@ pub fn make_reader(block_size    : usize,
                     worker_stop!(with_error =>
                                  tx_error,
                                  file_error::to_err(e),
-                                 [tx_bytes]);
+                                 shutdown_flag);
                 }
             };
 
-            if len_read == 0 {
-                tx_bytes.send(None);
-                worker_stop!(graceful => tx_error, [tx_bytes])
-            }
+            worker_stop!(graceful_if (len_read == 0) => tx_error, shutdown_flag);
 
             // update stats
             *counter.lock().unwrap() += len_read as u64;
 
             // send bytes over
             // if full, then put current buffer into secondary buffer and wait
-            match tx_bytes.try_send(Some(buf)) {
+            match tx_bytes.try_send(buf) {
                 Ok(()) => {},
                 Err(TrySendError::Full(b)) => {
-                    secondary_buf = b;
+                    secondary_buf = Some(b);
                     thread::sleep(Duration::from_millis(10)); },
                 Err(TrySendError::Disconnected(_)) => panic!()
             }

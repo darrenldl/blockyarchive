@@ -47,7 +47,8 @@ pub struct Stats {
     pub meta_blocks_written : u64,
     pub data_blocks_written : u64,
     pub data_bytes_encoded  : u64,
-    pub start_time          : u64,
+    pub total_bytes         : u64,
+    pub start_time          : i64,
     pub data_shards         : usize,
     pub parity_shards       : usize
 }
@@ -71,10 +72,10 @@ pub struct Context {
                          Cell<Option<Receiver<Option<Error>>>>),
     pub data_block    : Block,
     pub parity_blocks : Vec<Block>,
-    pub ingress_bytes : (SyncSender<Option<Box<[u8]>>>,
-                         Cell<Option<Receiver<Option<Box<[u8]>>>>>),
-    pub egress_bytes  : (SyncSender<Option<Box<[u8]>>>,
-                         Cell<Option<Receiver<Option<Box<[u8]>>>>>)
+    pub ingress_bytes : (SyncSender<Box<[u8]>>,
+                         Cell<Option<Receiver<Box<[u8]>>>>),
+    pub egress_bytes  : (SyncSender<Box<[u8]>>,
+                         Cell<Option<Receiver<Box<[u8]>>>>)
 }
 
 impl Context {
@@ -112,14 +113,15 @@ impl Stats {
             meta_blocks_written : 0,
             data_blocks_written : 0,
             data_bytes_encoded  : 0,
-            start_time          : time::precise_time_ns(),
+            total_bytes         : 0,
+            start_time          : time::get_time().sec,
             data_shards         : 0,
-            parity_shards       : 0
+            parity_shards       : 0,
         }
     }
 
-    pub fn time_elapsed(&self) -> u64 {
-        time::precise_time_ns() - self.start_time
+    pub fn time_elapsed(&self) -> i64 {
+        time::get_time().sec - self.start_time
     }
 }
 
@@ -155,13 +157,10 @@ fn make_packer(param   : &Param,
         let mut hash_ctx          =
             multihash::hash::Ctx::new(param.hash_type).unwrap();
         loop {
-            if shutdown_flag.load(Ordering::Relaxed) {
-                worker_stop!(graceful => tx_error, []); }
+            worker_stop!(graceful_if_shutdown => tx_error, shutdown_flag);
 
             let mut buf = match rx_bytes.recv_timeout(Duration::from_millis(10)) {
-                Ok(Some(buf))                       => buf,
-                Ok(None)                            => {
-                    worker_stop!(graceful => tx_error, []); },
+                Ok(buf)                             => buf,
                 Err(RecvTimeoutError::Timeout)      => { continue; },
                 Err(RecvTimeoutError::Disconnected) => { panic!(); }
             };
@@ -187,7 +186,7 @@ fn make_packer(param   : &Param,
 
             block.sync_to_buffer(Some(false), &mut buf);
 
-            tx_bytes.send(Some(buf));
+            tx_bytes.send(buf);
 
             // update stats
             cur_seq_num += 1;
@@ -209,8 +208,7 @@ fn make_writer(param   : &Param,
             if shutdown_flag.load(Ordering::Relaxed) { break; }
 
             let buf = match rx_bytes.recv_timeout(Duration::from_millis(10)) {
-                Ok(Some(buf))                       => buf,
-                Ok(None)                            => { break; },
+                Ok(buf)                             => buf,
                 Err(RecvTimeoutError::Timeout)      => { continue; },
                 Err(RecvTimeoutError::Disconnected) => { panic!(); }
             };
@@ -220,7 +218,7 @@ fn make_writer(param   : &Param,
                 Err(e) => { worker_stop!(with_error =>
                                          tx_error,
                                          file_error::to_err(e),
-                                         []); }
+                                         shutdown_flag); }
             }
         }
     }))

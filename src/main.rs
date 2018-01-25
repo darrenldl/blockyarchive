@@ -2,24 +2,41 @@
 
 macro_rules! worker_stop {
     (
-        graceful => $tx_error:path, [ $( $c:path ),* ]
+        graceful => $tx_error:path, $shutdown:path
     ) => {{
+        use std::sync::atomic::Ordering;
         $tx_error.send(None).unwrap();
-        $( $c.send(None).unwrap(); )*;
+        $shutdown.store(true, Ordering::Relaxed);
         break;
     }};
     (
-        with_error => $tx_error:path, $error:expr, [ $( $c:path ),* ]
+        graceful_if ($cond:expr) =>$tx_error:path, $shutdown:path
     ) => {{
+        if $cond {
+            worker_stop!(graceful => $tx_error, $shutdown)
+        }
+    }};
+    (
+        graceful_if_shutdown => $tx_error:path, $shutdown:path
+    ) => {{
+        use std::sync::atomic::Ordering;
+        worker_stop!(graceful_if ($shutdown.load(Ordering::Relaxed)) =>
+                     $tx_error, $shutdown)
+    }};
+    (
+        with_error => $tx_error:path, $error:expr, $shutdown:path
+    ) => {{
+        use std::sync::atomic::Ordering;
         $tx_error.send(Some($error)).unwrap();
-        $( $c.send(None).unwrap(); )*;
+        $shutdown.store(true, Ordering::Relaxed);
         break;
     }};
     (
-        with_error_ret => $tx_error:path, $error:expr, [ $( $c:path ),* ]
+        with_error_ret => $tx_error:path, $error:expr, $shutdown:path
     ) => {{
+        use std::sync::atomic::Ordering;
         $tx_error.send(Some($error)).unwrap();
-        $( $c.send(None).unwrap(); )*;
+        $shutdown.store(true, Ordering::Relaxed);
         return;
     }}
 }
