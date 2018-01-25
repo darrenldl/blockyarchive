@@ -155,7 +155,7 @@ fn pack_metadata(block         : &mut Block,
                                 .into_bytes()
                                 .into_boxed_slice())); }
     { // add sbx file name
-        meta.push(Metadata::FNM(param
+        meta.push(Metadata::SNM(param
                                 .out_file
                                 .clone()
                                 .into_bytes()
@@ -164,14 +164,12 @@ fn pack_metadata(block         : &mut Block,
         meta.push(Metadata::FSZ(file_metadata
                                 .len())); }
     { // add file last modifcation time
-        let fdt = match file_metadata.modified() {
+        match file_metadata.modified() {
             Ok(t)  => match t.duration_since(UNIX_EPOCH) {
-                Ok(t)  => t.as_secs() as i64,
-                Err(_) => stats.start_time
-            }
-            Err(_) => stats.start_time
-        };
-        meta.push(Metadata::FDT(fdt)); }
+                Ok(t)  => meta.push(Metadata::FDT(t.as_secs() as i64)),
+                Err(_) => {}
+            },
+            Err(_) => {} }}
     { // add sbx encoding time
         meta.push(Metadata::SDT(stats.start_time)); }
     { // add hash

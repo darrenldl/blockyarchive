@@ -187,6 +187,6 @@ fn main () {
     };
     match encode_core::encode_file(&param) {
         Ok(_)  => {},
-        Err(e) => println!("{}", e)
+        Err(e) => println!("Error : {}", e)
     }
 }
