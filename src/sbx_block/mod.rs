@@ -96,6 +96,36 @@ macro_rules! block_size {
     }
 }*/
 
+pub fn slice_buf(version : Version,
+                 buffer  : & [u8]) -> & [u8] {
+    &buffer[..ver_to_block_size(version)]
+}
+
+pub fn slice_buf_mut(version : Version,
+                     buffer  : &mut [u8]) -> &mut [u8] {
+    &mut buffer[..ver_to_block_size(version)]
+}
+
+pub fn slice_header_buf(version : Version,
+                        buffer  : &[u8]) -> &[u8] {
+    &buffer[..SBX_HEADER_SIZE]
+}
+
+pub fn slice_header_buf_mut(version : Version,
+                            buffer : &mut [u8]) -> &mut [u8] {
+    &mut buffer[..SBX_HEADER_SIZE]
+}
+
+pub fn slice_data_buf(version : Version,
+                      buffer : &[u8]) -> &[u8] {
+    &buffer[SBX_HEADER_SIZE..ver_to_block_size(version)]
+}
+
+pub fn slice_data_buf_mut(version : Version,
+                          buffer  : &mut [u8]) -> &mut [u8] {
+    &mut buffer[SBX_HEADER_SIZE..ver_to_block_size(version)]
+}
+
 impl Block {
     pub fn new(version    : Version,
                file_uid   : &[u8; SBX_FILE_UID_LEN],
@@ -168,42 +198,6 @@ impl Block {
         self.header.crc = self.calc_crc(buffer)?;
 
         Ok(())
-    }
-
-    pub fn slice_buf<'a>(&self,
-                         buffer : &'a [u8])
-                         -> &'a [u8] {
-        slice_buf!(whole => self, buffer)
-    }
-
-    pub fn slice_buf_mut<'a>(&self,
-                             buffer : &'a mut [u8])
-                             -> &'a mut [u8] {
-        slice_buf!(whole_mut => self, buffer)
-    }
-
-    pub fn slice_header_buf<'a>(&self,
-                                buffer : &'a [u8])
-                                -> &'a [u8] {
-        slice_buf!(header => self, buffer)
-    }
-
-    pub fn slice_header_buf_mut<'a>(&self,
-                                    buffer : &'a mut [u8])
-                                    -> &'a mut [u8] {
-        slice_buf!(header_mut => self, buffer)
-    }
-
-    pub fn slice_data_buf<'a>(&self,
-                              buffer : &'a [u8])
-                              -> &'a [u8] {
-        slice_buf!(data => self, buffer)
-    }
-
-    pub fn slice_data_buf_mut<'a>(&self,
-                                  buffer : &'a mut [u8])
-                                  -> &'a mut [u8] {
-        slice_buf!(data_mut => self, buffer)
     }
 
     fn header_type_matches_block_type(&self) -> bool {
