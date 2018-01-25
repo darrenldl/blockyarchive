@@ -25,10 +25,24 @@ macro_rules! worker_stop {
         }
     }};
     (
+        graceful_if_ret ($cond:expr) =>$tx_error:path, $shutdown_flag:path
+    ) => {{
+        if $cond {
+            worker_stop!(graceful_ret => $tx_error, $shutdown_flag)
+        }
+    }};
+    (
         graceful_if_shutdown => $tx_error:path, $shutdown_flag:path
     ) => {{
         use std::sync::atomic::Ordering;
         worker_stop!(graceful_if ($shutdown_flag.load(Ordering::Relaxed)) =>
+                     $tx_error, $shutdown_flag)
+    }};
+    (
+        graceful_if_shutdown_ret => $tx_error:path, $shutdown_flag:path
+    ) => {{
+        use std::sync::atomic::Ordering;
+        worker_stop!(graceful_if_ret ($shutdown_flag.load(Ordering::Relaxed)) =>
                      $tx_error, $shutdown_flag)
     }};
     (
