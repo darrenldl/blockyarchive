@@ -7,8 +7,8 @@ pub enum Metadata {
     FNM(Box<[u8]>),
     SNM(Box<[u8]>),
     FSZ(u64),
-    FDT(u64),
-    SDT(u64),
+    FDT(i64),
+    SDT(i64),
     HSH(multihash::HashBytes)
 }
 
@@ -88,9 +88,14 @@ fn single_to_bytes(meta   : &Metadata,
         FNM(ref x) | SNM(ref x) => {
             dst.copy_from_slice(x);
         },
-        FSZ(x) | FDT(x) | SDT(x) => {
+        FSZ(x) => {
             let be_bytes : [u8; 8] =
                 unsafe { std::mem::transmute::<u64, [u8; 8]>(x.to_be()) };
+            dst.copy_from_slice(&be_bytes);
+        },
+        FDT(x) | SDT(x) => {
+            let be_bytes : [u8; 8] =
+                unsafe { std::mem::transmute::<i64, [u8; 8]>(x.to_be()) };
             dst.copy_from_slice(&be_bytes);
         },
         HSH(ref x) => {
@@ -127,6 +132,7 @@ mod parsers {
 
     use nom::be_u8;
     use nom::be_u64;
+    use nom::be_i64;
 
     macro_rules! make_meta_parser {
         (
@@ -160,8 +166,8 @@ mod parsers {
     make_meta_parser!(fnm_p, b"FNM", FNM => str);
     make_meta_parser!(snm_p, b"SNM", SNM => str);
     make_meta_parser!(fsz_p, b"FSZ", FSZ => num, be_u64);
-    make_meta_parser!(fdt_p, b"FDT", FDT => num, be_u64);
-    make_meta_parser!(sdt_p, b"SDT", SDT => num, be_u64);
+    make_meta_parser!(fdt_p, b"FDT", FDT => num, be_i64);
+    make_meta_parser!(sdt_p, b"SDT", SDT => num, be_i64);
 
     named!(hsh_p <Metadata>,
            do_parse!(
