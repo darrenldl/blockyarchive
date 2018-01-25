@@ -6,7 +6,6 @@ use std::fmt;
 pub enum ErrorKind {
     RSCodecCreateFail,
     FileError(file_error::FileError),
-    SbxBlockError(sbx_block::Error)
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -28,7 +27,7 @@ impl fmt::Display for Error {
         match self.kind {
             RSCodecCreateFail => write!(f, "Reed-Solomon codec creation fail"),
             FileError(ref e)  => write!(f, "{}", e),
-            _                 => write!(f, "Unknown error")
+            // _                 => write!(f, "Unknown error")
         }
     }
 }

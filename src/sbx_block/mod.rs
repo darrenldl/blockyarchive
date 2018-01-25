@@ -1,5 +1,5 @@
 mod header;
-mod metadata;
+pub mod metadata;
 mod crc;
 mod test;
 mod header_test;

@@ -4,6 +4,10 @@ use std::sync::{Arc, Mutex};
 use super::worker::reader;
 use super::worker::writer;
 use super::worker::writer::WriteReq;
+use std::fs;
+
+use super::file_reader;
+use super::file_error::adapt_to_err;
 
 use super::multihash;
 
@@ -24,6 +28,8 @@ use std::sync::mpsc::{Sender,
                       Receiver};
 
 use super::sbx_block::{Block, BlockType};
+use super::sbx_block::metadata;
+use super::sbx_block::metadata::Metadata;
 use super::sbx_specs::{SBX_FILE_UID_LEN,
                        SBX_HEADER_SIZE,
                        ver_to_block_size};
@@ -64,11 +70,14 @@ pub struct Context {
     pub ingress_bytes : (SyncSender<Box<[u8]>>,
                          Cell<Option<Receiver<Box<[u8]>>>>),
     pub egress_bytes  : (SyncSender<WriteReq>,
-                         Cell<Option<Receiver<WriteReq>>>)
+                         Cell<Option<Receiver<WriteReq>>>),
+    pub file_metadata : fs::Metadata
 }
 
 impl Context {
-    pub fn new(param : &Param) -> Context {
+    pub fn new(param         : &Param,
+               file_metadata : fs::Metadata)
+               -> Context {
         let data_block = Block::new(param.version,
                                     &param.file_uid,
                                     BlockType::Data);
@@ -91,6 +100,7 @@ impl Context {
             parity_blocks,
             ingress_bytes : make_sync_channel_for_ctx(100),
             egress_bytes  : make_sync_channel_for_ctx(100),
+            file_metadata
         }
     }
 }
@@ -132,8 +142,26 @@ fn make_reader(param   : &Param,
 fn pack_metadata(block : &mut Block,
                  param : &Param,
                  stats : &Stats,
-                 hash : Option<multihash::HashBytes>) {
+                 hash  : Option<multihash::HashBytes>) {
     let meta = block.meta_mut().unwrap();
+
+    { // add file name
+        meta.push(Metadata::FNM(param
+                                .in_file
+                                .clone()
+                                .into_bytes()
+                                .into_boxed_slice())); }
+    { // add sbx file name
+        meta.push(Metadata::FNM(param
+                                .out_file
+                                .clone()
+                                .into_bytes()
+                                .into_boxed_slice())); }
+    { // add file size
+        meta.push(Metadata::FSZ(stats
+                                .total_bytes)); }
+    { // add file last modifcation time
+    }
 }
 
 fn make_packer(param   : &Param,
@@ -218,12 +246,19 @@ fn make_writer(param   : &Param,
 
 pub fn encode_file(param    : &Param)
                    -> Result<Stats, Error> {
+    let metadata = {
+        let reader = adapt_to_err(file_reader::FileReader::new(&param.in_file))?;
+
+        adapt_to_err(reader.metadata())?
+    };
+
+    let mut ctx = Context::new(param, metadata);
+
     let stats : SharedStats =
         Arc::new(Mutex::new(Stats::new(param)));
+
     let read_byte_counter  = Arc::new(Mutex::new(0u64));
     let write_byte_counter = Arc::new(Mutex::new(0u64));
-
-    let mut ctx = Context::new(param);
 
     let reader = make_reader(param, &stats, &mut ctx, &read_byte_counter).unwrap();
     let packer = make_packer(param, &stats, &mut ctx).unwrap();
@@ -242,5 +277,6 @@ pub fn encode_file(param    : &Param)
         }
     }
 
-    Ok(Stats::new(param))
+    let stats = stats.lock().unwrap().clone();
+    Ok(stats)
 }

@@ -57,7 +57,7 @@ impl FileReader {
     pub fn metadata(&self) -> Result<Metadata, FileError> {
         match self.file.metadata() {
             Ok(data) => Ok(data),
-            Err(e)  => Err(FileError::new(e.kind(), &self.path))
+            Err(e)   => Err(FileError::new(e.kind(), &self.path))
         }
     }
 }
