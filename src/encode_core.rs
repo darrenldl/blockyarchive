@@ -227,7 +227,7 @@ fn make_packer(param   : &Param,
             let mut block = Block::new(param.version,
                                        &param.file_uid,
                                        BlockType::Data);
-            block.header.seq_num = 1;
+            block.header.seq_num = cur_seq_num as u32;
 
             thread_pool.scoped(|scope| {
                 // update CRC
@@ -235,13 +235,15 @@ fn make_packer(param   : &Param,
                     block.update_crc(&buf).unwrap();
                 });
                 // update hash state
-                if param.hash_enabled {
-                    scope.execute(|| {
+                scope.execute(|| {
+                    if param.hash_enabled {
                         let data_buf = sbx_block::slice_data_buf(param.version,
                                                                  &buf);
+                        println!("Updating hash ctx");
+                        println!("Updating with : {:?}", data_buf);
                         hash_ctx.update(data_buf);
-                    });
-                }
+                    }
+                });
             });
 
             block.sync_to_buffer(Some(false), &mut buf).unwrap();
@@ -254,6 +256,12 @@ fn make_packer(param   : &Param,
         }
 
         {
+            /*let mut hash_ctx          =
+                multihash::hash::Ctx::new(param.hash_type).unwrap();
+
+            hash_ctx.update(b"abcd");*/
+
+            println!("Writing actual metadata block");
             // write actual metadata block
             let mut block = Block::new(param.version,
                                        &param.file_uid,
