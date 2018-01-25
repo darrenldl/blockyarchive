@@ -4,6 +4,7 @@ use std::thread::JoinHandle;
 use std::sync::{Arc, Mutex};
 use std::sync::RwLock;
 use super::file_error;
+use super::worker::reader;
 
 use super::multihash;
 
@@ -20,8 +21,7 @@ use super::misc_utils::{make_channel_for_ctx,
                         make_sync_channel_for_ctx};
 
 use super::{Error, ErrorKind};
-use super::Reader;
-use super::Writer;
+use super::FileWriter;
 use super::sbx_specs;
 use super::sbx_specs::Version;
 use super::time;
@@ -181,6 +181,7 @@ fn make_packer(param   : &Param,
     let tx_bytes      = context.egress_bytes.0.clone();
     let shutdown_flag = Arc::clone(&context.shutdown);
     let param         = param.clone();
+
     Ok(thread::spawn(move || {
         let mut thread_pool       = Pool::new(2);
         let mut cur_seq_num : u64 = 1;
@@ -229,7 +230,7 @@ fn make_packer(param   : &Param,
 fn make_writer(param   : &Param,
                stats   : &SharedStats,
                context : &mut Context) -> Result<JoinHandle<()>, Error> {
-    let mut writer    = file_error::adapt_to_err(Writer::new(&param.out_file))?;
+    let mut writer    = file_error::adapt_to_err(FileWriter::new(&param.out_file))?;
     let stats         = Arc::clone(stats);
     let rx_bytes      = context.egress_bytes.1.replace(None).unwrap();
     let tx_error      = context.err_collect.0.clone();

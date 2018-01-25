@@ -1,2 +1,2 @@
-mod writer;
-mod reader;
+pub mod writer;
+pub mod reader;

@@ -1,32 +1,30 @@
 use super::FileError;
-use std::io::Read;
+use std::io::Write;
 use std::io::SeekFrom;
 use std::fs::File;
 use std::io::Seek;
 
-const READ_RETRIES : usize = 5;
-
-pub struct Reader {
+pub struct FileWriter {
     file : File,
     path : String,
 }
 
-impl Reader {
-    pub fn new(path : &str) -> Result<Reader, FileError> {
-        let file = match File::open(path) {
+impl FileWriter {
+    pub fn new(path : &str) -> Result<FileWriter, FileError> {
+        let file = match File::create(&path) {
             Ok(f) => f,
             Err(e) => { return Err(FileError::new(e.kind(), path)); }
         };
-        Ok (Reader {
+        Ok (FileWriter {
             file,
             path : String::from(path)
         })
     }
 
-    pub fn read(&mut self, buf : &mut [u8]) -> Result<usize, FileError> {
-        match self.file.read(buf) {
-            Ok(len_read) => Ok(len_read),
-            Err(e)       => Err(FileError::new(e.kind(), &self.path))
+    pub fn write(&mut self, buf : &[u8]) -> Result<usize, FileError> {
+        match self.file.write(buf) {
+            Ok(len_wrote) => Ok(len_wrote),
+            Err(e)        => Err(FileError::new(e.kind(), &self.path))
         }
     }
 

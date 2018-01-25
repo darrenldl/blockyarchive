@@ -1,6 +1,6 @@
 use super::super::Error;
 use super::super::file_error;
-use super::super::Reader;
+use super::super::FileReader;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
@@ -22,7 +22,7 @@ pub fn make_reader(block_size    : usize,
                    tx_bytes      : SyncSender<Option<Box<[u8]>>>,
                    tx_error      : Sender<Error>)
                    -> Result<JoinHandle<()>, Error> {
-    let mut reader    = file_error::adapt_to_err(Reader::new(in_file))?;
+    let mut reader    = file_error::adapt_to_err(FileReader::new(in_file))?;
 
     let write_start = match write_start {
         Some(x) => x,

@@ -22,10 +22,10 @@ mod repair_core;
 mod show_core;
 mod sort_core;
 
-mod reader;
-use reader::Reader;
-mod writer;
-use writer::Writer;
+mod file_reader;
+use file_reader::FileReader;
+mod file_writer;
+use file_writer::FileWriter;
 
 mod worker;
 
