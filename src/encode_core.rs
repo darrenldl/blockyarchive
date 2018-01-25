@@ -133,6 +133,12 @@ fn make_reader(param   : &Param,
                         context.err_collect.0.clone())
 }
 
+fn pack_metadata(block : &mut Block,
+                 param : &Param,
+                 stats : &Stats) {
+    let meta = block.meta_mut().unwrap();
+}
+
 fn make_packer(param   : &Param,
                stats   : &SharedStats,
                context : &mut Context)
@@ -143,20 +149,31 @@ fn make_packer(param   : &Param,
     let tx_error      = context.err_collect.0.clone();
     let shutdown_flag = Arc::clone(&context.shutdown);
     let param         = param.clone();
+    let block_size    = ver_to_block_size(param.version);
 
     Ok(thread::spawn(move || {
         let mut thread_pool       = Pool::new(2);
         let mut cur_seq_num : u64 = 1;
         let mut hash_ctx          =
             multihash::hash::Ctx::new(param.hash_type).unwrap();
+
+        {
+            // write dummy metadata block
+            let mut block = Block::new(param.version,
+                                       &param.file_uid,
+                                       BlockType::Meta);
+            pack_metadata(&mut block,
+                          &param,
+                          &stats.lock().unwrap());
+            let mut buf = vec![0; block_size].into_boxed_slice();
+            block.sync_to_buffer(None, &mut buf).unwrap();
+            tx_bytes.send(WriteReq::Write(buf)).unwrap();
+        }
+
         loop {
             worker_stop!(graceful_if_shutdown => tx_error, shutdown_flag);
 
-            let mut buf = match rx_bytes.recv_timeout(Duration::from_millis(10)) {
-                Ok(buf)                             => buf,
-                Err(RecvTimeoutError::Timeout)      => { continue; },
-                Err(RecvTimeoutError::Disconnected) => { panic!(); }
-            };
+            let mut buf = recv!(timeout_millis 10 => rx_bytes);
 
             // start packing
             let mut block = Block::new(param.version,
@@ -211,9 +228,9 @@ pub fn encode_file(param    : &Param)
 
     let mut ctx = Context::new(param);
 
-    let reader = make_reader(param, &stats, &mut ctx, &read_byte_counter)?;
-    let packer = make_packer(param, &stats, &mut ctx)?;
-    let writer = make_writer(param, &stats, &mut ctx, &write_byte_counter)?;
+    let reader = make_reader(param, &stats, &mut ctx, &read_byte_counter).unwrap();
+    let packer = make_packer(param, &stats, &mut ctx).unwrap();
+    let writer = make_writer(param, &stats, &mut ctx, &write_byte_counter).unwrap();
 
     reader.join().unwrap();
     packer.join().unwrap();
