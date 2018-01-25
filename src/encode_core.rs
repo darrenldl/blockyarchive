@@ -57,8 +57,8 @@ pub struct Param {
     pub version      : Version,
     pub file_uid     : [u8; SBX_FILE_UID_LEN],
     pub rs_enabled   : bool,
-    pub rs_parity    : usize,
     pub rs_data      : usize,
+    pub rs_parity    : usize,
     pub hash_enabled : bool,
     pub hash_type    : multihash::HashType,
     pub in_file      : String,
@@ -67,7 +67,8 @@ pub struct Param {
 
 pub struct Context {
     pub shutdown      : Arc<AtomicBool>,
-    pub err_collect   : (Sender<Error>, Cell<Option<Receiver<Error>>>),
+    pub err_collect   : (Sender<Option<Error>>,
+                         Cell<Option<Receiver<Option<Error>>>>),
     pub data_block    : Block,
     pub parity_blocks : Vec<Block>,
     pub ingress_bytes : (SyncSender<Option<Box<[u8]>>>,
@@ -144,6 +145,7 @@ fn make_packer(param   : &Param,
     let stats         = Arc::clone(stats);
     let rx_bytes      = context.ingress_bytes.1.replace(None).unwrap();
     let tx_bytes      = context.egress_bytes.0.clone();
+    let tx_error      = context.err_collect.0.clone();
     let shutdown_flag = Arc::clone(&context.shutdown);
     let param         = param.clone();
 
@@ -153,11 +155,13 @@ fn make_packer(param   : &Param,
         let mut hash_ctx          =
             multihash::hash::Ctx::new(param.hash_type).unwrap();
         loop {
-            if shutdown_flag.load(Ordering::Relaxed) { break; }
+            if shutdown_flag.load(Ordering::Relaxed) {
+                worker_stop!(graceful => tx_error, []); }
 
             let mut buf = match rx_bytes.recv_timeout(Duration::from_millis(10)) {
                 Ok(Some(buf))                       => buf,
-                Ok(None)                            => { break; },
+                Ok(None)                            => {
+                    worker_stop!(graceful => tx_error, []); },
                 Err(RecvTimeoutError::Timeout)      => { continue; },
                 Err(RecvTimeoutError::Disconnected) => { panic!(); }
             };
@@ -213,8 +217,10 @@ fn make_writer(param   : &Param,
 
             match writer.write(&buf) {
                 Ok(_) => {},
-                Err(e) => { tx_error.send(file_error::to_err(e));
-                            break; }
+                Err(e) => { worker_stop!(with_error =>
+                                         tx_error,
+                                         file_error::to_err(e),
+                                         []); }
             }
         }
     }))
@@ -228,7 +234,13 @@ pub fn encode_file(param    : &Param)
 
     let mut ctx = Context::new(param);
 
-    let reader = make_reader(param, &stats, &mut ctx, &read_byte_counter);
+    let reader = make_reader(param, &stats, &mut ctx, &read_byte_counter)?;
+    let packer = make_packer(param, &stats, &mut ctx)?;
+    let writer = make_writer(param, &stats, &mut ctx)?;
+
+    reader.join();
+    packer.join();
+    writer.join();
 
     Ok(Stats::new(param))
 }

@@ -13,6 +13,8 @@ use std::time::Duration;
 use std::thread;
 use std::thread::JoinHandle;
 
+use worker;
+
 pub fn make_reader(block_size    : usize,
                    write_start   : Option<usize>,
                    write_end_exc : Option<usize>,
@@ -20,10 +22,8 @@ pub fn make_reader(block_size    : usize,
                    shutdown_flag : &Arc<AtomicBool>,
                    in_file       : &str,
                    tx_bytes      : SyncSender<Option<Box<[u8]>>>,
-                   tx_error      : Sender<Error>)
+                   tx_error      : Sender<Option<Error>>)
                    -> Result<JoinHandle<()>, Error> {
-    let mut reader    = file_error::adapt_to_err(FileReader::new(in_file))?;
-
     let write_start = match write_start {
         Some(x) => x,
         None    => 0
@@ -36,11 +36,19 @@ pub fn make_reader(block_size    : usize,
     let counter       = Arc::clone(counter);
     let shutdown_flag = Arc::clone(shutdown_flag);
 
+    let reader_res = file_error::adapt_to_err(FileReader::new(in_file));
+
     Ok(thread::spawn(move || {
+        let mut reader = match reader_res {
+            Ok(r)  => r,
+            Err(e) => worker_stop!(with_error_ret => tx_error, e, [tx_bytes])
+        };
+
         let mut secondary_buf : Option<Box<[u8]>> = None;
 
         loop {
-            if shutdown_flag.load(Ordering::Relaxed) { break; }
+            if shutdown_flag.load(Ordering::Relaxed) {
+                worker_stop!(graceful => tx_error, [tx_bytes]) }
 
             // allocate if secondary_buf is empty
             let mut buf = match secondary_buf {
@@ -51,13 +59,17 @@ pub fn make_reader(block_size    : usize,
             // read into buffer
             let len_read = match reader.read(&mut buf[write_start..write_end_exc]) {
                 Ok(l) => l,
-                Err(e) => { tx_error.send(file_error::to_err(e));
-                            break; }
+                Err(e) => {
+                    worker_stop!(with_error =>
+                                 tx_error,
+                                 file_error::to_err(e),
+                                 [tx_bytes]);
+                }
             };
 
             if len_read == 0 {
                 tx_bytes.send(None);
-                break;
+                worker_stop!(graceful => tx_error, [tx_bytes])
             }
 
             // update stats
