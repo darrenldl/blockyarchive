@@ -30,6 +30,7 @@ use std::sync::mpsc::{Sender,
                       Receiver};
 
 use super::sbx_block::{Block, BlockType};
+use super::sbx_block;
 use super::sbx_block::metadata;
 use super::sbx_block::metadata::Metadata;
 use super::sbx_specs::{SBX_FILE_UID_LEN,
@@ -211,7 +212,7 @@ fn make_packer(param   : &Param,
             pack_metadata(&mut block,
                           &param,
                           &stats.lock().unwrap(),
-                          file_metadata,
+                          file_metadata.clone(),
                           None);
             let mut buf = vec![0; block_size].into_boxed_slice();
             block.sync_to_buffer(None, &mut buf).unwrap();
@@ -236,7 +237,9 @@ fn make_packer(param   : &Param,
                 // update hash state
                 if param.hash_enabled {
                     scope.execute(|| {
-                        hash_ctx.update(&buf);
+                        let data_buf = sbx_block::slice_data_buf(param.version,
+                                                                 &buf);
+                        hash_ctx.update(data_buf);
                     });
                 }
             });
@@ -248,6 +251,22 @@ fn make_packer(param   : &Param,
             // update stats
             cur_seq_num += 1;
             stats.lock().unwrap().data_blocks_written = cur_seq_num;
+        }
+
+        {
+            // write actual metadata block
+            let mut block = Block::new(param.version,
+                                       &param.file_uid,
+                                       BlockType::Meta);
+            pack_metadata(&mut block,
+                          &param,
+                          &stats.lock().unwrap(),
+                          file_metadata,
+                          Some(hash_ctx.finish_into_hash_bytes()));
+            let mut buf = vec![0; block_size].into_boxed_slice();
+            block.sync_to_buffer(None, &mut buf).unwrap();
+            send!(no_back_off_ret WriteReq::WriteTo(0, buf) =>
+                  tx_bytes, tx_error, shutdown_flag);
         }
     }))
 }
