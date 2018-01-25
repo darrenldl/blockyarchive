@@ -27,6 +27,8 @@ use reader::Reader;
 mod writer;
 use writer::Writer;
 
+mod worker;
+
 #[macro_use]
 extern crate nom;
 
