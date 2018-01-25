@@ -2,41 +2,41 @@
 
 macro_rules! worker_stop {
     (
-        graceful => $tx_error:path, $shutdown:path
+        graceful => $tx_error:path, $shutdown_flag:path
     ) => {{
         use std::sync::atomic::Ordering;
         $tx_error.send(None).unwrap();
-        $shutdown.store(true, Ordering::Relaxed);
+        $shutdown_flag.store(true, Ordering::Relaxed);
         break;
     }};
     (
-        graceful_if ($cond:expr) =>$tx_error:path, $shutdown:path
+        graceful_if ($cond:expr) =>$tx_error:path, $shutdown_flag:path
     ) => {{
         if $cond {
-            worker_stop!(graceful => $tx_error, $shutdown)
+            worker_stop!(graceful => $tx_error, $shutdown_flag)
         }
     }};
     (
-        graceful_if_shutdown => $tx_error:path, $shutdown:path
+        graceful_if_shutdown => $tx_error:path, $shutdown_flag:path
     ) => {{
         use std::sync::atomic::Ordering;
-        worker_stop!(graceful_if ($shutdown.load(Ordering::Relaxed)) =>
-                     $tx_error, $shutdown)
+        worker_stop!(graceful_if ($shutdown_flag.load(Ordering::Relaxed)) =>
+                     $tx_error, $shutdown_flag)
     }};
     (
-        with_error => $tx_error:path, $error:expr, $shutdown:path
+        with_error => $tx_error:path, $error:expr, $shutdown_flag:path
     ) => {{
         use std::sync::atomic::Ordering;
         $tx_error.send(Some($error)).unwrap();
-        $shutdown.store(true, Ordering::Relaxed);
+        $shutdown_flag.store(true, Ordering::Relaxed);
         break;
     }};
     (
-        with_error_ret => $tx_error:path, $error:expr, $shutdown:path
+        with_error_ret => $tx_error:path, $error:expr, $shutdown_flag:path
     ) => {{
         use std::sync::atomic::Ordering;
         $tx_error.send(Some($error)).unwrap();
-        $shutdown.store(true, Ordering::Relaxed);
+        $shutdown_flag.store(true, Ordering::Relaxed);
         return;
     }}
 }
@@ -89,7 +89,7 @@ fn main () {
         hash_enabled : true,
         hash_type  : multihash::HashType::SHA256,
         in_file    : String::from("test"),
-        out_file   : String::from("text.sbx")
+        out_file   : String::from("test.sbx")
     };
     encode_core::encode_file(&param).unwrap();
 }
