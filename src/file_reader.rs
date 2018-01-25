@@ -24,10 +24,18 @@ impl FileReader {
     }
 
     pub fn read(&mut self, buf : &mut [u8]) -> Result<usize, FileError> {
-        match self.file.read(buf) {
-            Ok(len_read) => Ok(len_read),
-            Err(e)       => Err(FileError::new(e.kind(), &self.path))
+        let mut len_read = 0;
+        let mut tries    = 0;
+        while len_read < buf.len() && tries < READ_RETRIES {
+            match self.file.read(&mut buf[len_read..]) {
+                Ok(len) => { len_read += len; },
+                Err(e)  => { return Err(FileError::new(e.kind(), &self.path)); }
+            }
+
+            tries += 1;
         }
+
+        Ok(len_read)
     }
 
     pub fn seek(&mut self, pos : SeekFrom)
