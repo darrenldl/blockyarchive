@@ -3,6 +3,7 @@ use std::io::Read;
 use std::io::SeekFrom;
 use std::fs::File;
 use std::io::Seek;
+use std::fs::Metadata;
 
 const READ_RETRIES : usize = 5;
 
@@ -49,6 +50,13 @@ impl FileReader {
     pub fn cur_pos(&mut self) -> Result<u64, FileError> {
         match self.file.seek(SeekFrom::Current(0)) {
             Ok(pos) => Ok(pos),
+            Err(e)  => Err(FileError::new(e.kind(), &self.path))
+        }
+    }
+
+    pub fn metadata(&self) -> Result<Metadata, FileError> {
+        match self.file.metadata() {
+            Ok(data) => Ok(data),
             Err(e)  => Err(FileError::new(e.kind(), &self.path))
         }
     }
