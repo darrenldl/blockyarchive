@@ -24,7 +24,7 @@ macro_rules! worker_stop {
                      $tx_error, $shutdown_flag)
     }};
     (
-        with_error => $tx_error:path, $error:expr, $shutdown_flag:path
+        with_error $error:expr => $tx_error:path, $shutdown_flag:path
     ) => {{
         use std::sync::atomic::Ordering;
         $tx_error.send(Some($error)).unwrap();
@@ -32,13 +32,41 @@ macro_rules! worker_stop {
         break;
     }};
     (
-        with_error_ret => $tx_error:path, $error:expr, $shutdown_flag:path
+        with_error_if_fail ($expr:expr) => $tx_error:path, $shutdown_flag:path
+    ) => {{
+        match $expr {
+            Ok(res) => res,
+            Err(e)  => worker_stop!(with_error e => $tx_error, $shutdown_flag)
+        }
+    }};
+    (
+        with_error_ret $error:expr => $tx_error:path, $shutdown_flag:path
     ) => {{
         use std::sync::atomic::Ordering;
         $tx_error.send(Some($error)).unwrap();
         $shutdown_flag.store(true, Ordering::Relaxed);
         return;
     }}
+}
+
+macro_rules! recv {
+    (
+        no_timeout => $receiver:ident
+    ) => {{
+        $receiver.recv().unwrap()
+    }};
+    (
+        timeout_millis $timeout:expr => $receiver:ident
+    ) => {{
+        use std::time::Duration;
+        use std::sync::mpsc::RecvTimeoutError;
+        match $receiver.recv_timeout(Duration::from_millis($timeout)) {
+            Ok(item)                            => item,
+            Err(RecvTimeoutError::Timeout)      => { continue; },
+            Err(RecvTimeoutError::Disconnected) => { panic!(); }
+        }
+    }}
+
 }
 
 mod file_error;

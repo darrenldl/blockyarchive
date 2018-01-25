@@ -1,8 +1,6 @@
-use std::fs::File;
 use std::thread;
 use std::thread::JoinHandle;
 use std::sync::{Arc, Mutex};
-use std::sync::RwLock;
 use super::file_error;
 use super::worker::reader;
 
@@ -15,29 +13,24 @@ use std::cell::Cell;
 use std::time::Duration;
 
 use std::sync::mpsc::RecvTimeoutError;
-use std::sync::mpsc::TrySendError;
 
 use super::misc_utils::{make_channel_for_ctx,
                         make_sync_channel_for_ctx};
 
-use super::{Error, ErrorKind};
+use super::Error;
 use super::FileWriter;
-use super::sbx_specs;
 use super::sbx_specs::Version;
 use super::time;
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel,
-                      sync_channel,
-                      Sender,
+use std::sync::mpsc::{Sender,
                       SyncSender,
                       Receiver};
 
 use super::sbx_block::{Block, BlockType};
 use super::sbx_specs::{SBX_FILE_UID_LEN,
                        SBX_HEADER_SIZE,
-                       ver_to_block_size,
-                       ver_to_data_size};
+                       ver_to_block_size};
 
 type SharedStats = Arc<Mutex<Stats>>;
 
@@ -184,9 +177,9 @@ fn make_packer(param   : &Param,
                 }
             });
 
-            block.sync_to_buffer(Some(false), &mut buf);
+            block.sync_to_buffer(Some(false), &mut buf).unwrap();
 
-            tx_bytes.send(buf);
+            tx_bytes.send(buf).unwrap();
 
             // update stats
             cur_seq_num += 1;
@@ -215,10 +208,8 @@ fn make_writer(param   : &Param,
 
             match writer.write(&buf) {
                 Ok(_) => {},
-                Err(e) => { worker_stop!(with_error =>
-                                         tx_error,
-                                         file_error::to_err(e),
-                                         shutdown_flag); }
+                Err(e) => { worker_stop!(with_error file_error::to_err(e) =>
+                                         tx_error, shutdown_flag); }
             }
         }
     }))
@@ -236,9 +227,9 @@ pub fn encode_file(param    : &Param)
     let packer = make_packer(param, &stats, &mut ctx)?;
     let writer = make_writer(param, &stats, &mut ctx)?;
 
-    reader.join();
-    packer.join();
-    writer.join();
+    reader.join().unwrap();
+    packer.join().unwrap();
+    writer.join().unwrap();
 
     Ok(Stats::new(param))
 }

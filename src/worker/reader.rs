@@ -4,10 +4,8 @@ use super::super::FileReader;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
-use std::sync::atomic::Ordering;
 use std::sync::mpsc::SyncSender;
 use std::sync::mpsc::Sender;
-use std::sync::mpsc::RecvTimeoutError;
 use std::sync::mpsc::TrySendError;
 use std::time::Duration;
 use std::thread;
@@ -33,13 +31,12 @@ pub fn make_reader(block_size    : usize,
 
     let counter       = Arc::clone(counter);
     let shutdown_flag = Arc::clone(shutdown_flag);
-
-    let reader_res = file_error::adapt_to_err(FileReader::new(in_file));
+    let reader_res    = file_error::adapt_to_err(FileReader::new(in_file));
 
     Ok(thread::spawn(move || {
         let mut reader = match reader_res {
             Ok(r)  => r,
-            Err(e) => worker_stop!(with_error_ret => tx_error, e, shutdown_flag)
+            Err(e) => worker_stop!(with_error_ret e => tx_error, shutdown_flag)
         };
 
         let mut secondary_buf : Option<Box<[u8]>> = None;
@@ -57,10 +54,8 @@ pub fn make_reader(block_size    : usize,
             let len_read = match reader.read(&mut buf[write_start..write_end_exc]) {
                 Ok(l) => l,
                 Err(e) => {
-                    worker_stop!(with_error =>
-                                 tx_error,
-                                 file_error::to_err(e),
-                                 shutdown_flag);
+                    worker_stop!(with_error file_error::to_err(e) =>
+                                 tx_error, shutdown_flag);
                 }
             };
 

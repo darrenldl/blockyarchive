@@ -11,20 +11,8 @@ use self::metadata::Metadata;
 use super::sbx_specs::{Version,
                        SBX_HEADER_SIZE,
                        SBX_FILE_UID_LEN,
-                       SBX_LARGEST_BLOCK_SIZE,
-                       ver_to_block_size,
-                       ver_to_data_size};
-extern crate reed_solomon_erasure;
-extern crate smallvec;
-use self::smallvec::SmallVec;
-
-use std::cell::{RefCell, Ref, RefMut};
-
-use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
-
+                       ver_to_block_size};
 use self::crc::*;
-
-use super::sbx_specs;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BlockType {
@@ -100,13 +88,13 @@ macro_rules! block_size {
     }
 }
 
-macro_rules! data_size {
+/*macro_rules! data_size {
     (
         $self:ident
     ) => {
         ver_to_data_size($self.header.version)
     }
-}
+}*/
 
 impl Block {
     pub fn new(version    : Version,
