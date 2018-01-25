@@ -5,6 +5,8 @@ use std::sync::{Arc, Mutex};
 use std::sync::RwLock;
 use super::file_error;
 
+use super::multihash;
+
 use super::scoped_threadpool::Pool;
 
 use std::cell::Cell;
@@ -23,8 +25,6 @@ use super::Writer;
 use super::sbx_specs;
 use super::sbx_specs::Version;
 use super::time;
-
-use super::multihash;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel,
@@ -70,8 +70,10 @@ pub struct Context {
     pub err_collect   : (Sender<Error>, Cell<Option<Receiver<Error>>>),
     pub data_block    : Block,
     pub parity_blocks : Vec<Block>,
-    pub ingress_bytes : (SyncSender<Box<[u8]>>, Cell<Option<Receiver<Box<[u8]>>>>),
-    pub egress_bytes  : (SyncSender<Box<[u8]>>, Cell<Option<Receiver<Box<[u8]>>>>)
+    pub ingress_bytes : (SyncSender<Option<Box<[u8]>>>,
+                         Cell<Option<Receiver<Option<Box<[u8]>>>>>),
+    pub egress_bytes  : (SyncSender<Option<Box<[u8]>>>,
+                         Cell<Option<Receiver<Option<Box<[u8]>>>>>)
 }
 
 impl Context {
@@ -150,6 +152,7 @@ fn make_reader(param   : &Param,
             };
 
             if len_read == 0 {
+                tx_bytes.send(None);
                 break;
             }
 
@@ -158,10 +161,10 @@ fn make_reader(param   : &Param,
 
             // send bytes over
             // if full, then put current buffer into secondary buffer and wait
-            match tx_bytes.try_send(buf) {
+            match tx_bytes.try_send(Some(buf)) {
                 Ok(()) => {},
                 Err(TrySendError::Full(b)) => {
-                    secondary_buf = Some(b);
+                    secondary_buf = b;
                     thread::sleep(Duration::from_millis(10)); },
                 Err(TrySendError::Disconnected(_)) => panic!()
             }
@@ -173,41 +176,48 @@ fn make_packer(param   : &Param,
                stats   : &SharedStats,
                context : &mut Context)
                -> Result<JoinHandle<()>, Error> {
-    let stats           = Arc::clone(stats);
-    let rx_bytes        = context.ingress_bytes.1.replace(None).unwrap();
-    let tx_bytes        = context.egress_bytes.0.clone();
-    let shutdown_flag   = Arc::clone(&context.shutdown);
-    let version         = param.version;
-    let file_uid        = param.file_uid;
-    let mut thread_pool = Pool::new(2);
+    let stats         = Arc::clone(stats);
+    let rx_bytes      = context.ingress_bytes.1.replace(None).unwrap();
+    let tx_bytes      = context.egress_bytes.0.clone();
+    let shutdown_flag = Arc::clone(&context.shutdown);
+    let param         = param.clone();
     Ok(thread::spawn(move || {
+        let mut thread_pool       = Pool::new(2);
         let mut cur_seq_num : u64 = 1;
+        let mut hash_ctx          =
+            multihash::hash::Ctx::new(param.hash_type).unwrap();
         loop {
             if shutdown_flag.load(Ordering::Relaxed) { break; }
 
             let mut buf = match rx_bytes.recv_timeout(Duration::from_millis(10)) {
-                Ok(buf)                             => buf,
+                Ok(Some(buf))                       => buf,
+                Ok(None)                            => { break; },
                 Err(RecvTimeoutError::Timeout)      => { continue; },
                 Err(RecvTimeoutError::Disconnected) => { panic!(); }
             };
 
             // start packing
-            let mut block = Block::new(version,
-                                   &file_uid,
-                                   BlockType::Data);
+            let mut block = Block::new(param.version,
+                                       &param.file_uid,
+                                       BlockType::Data);
             block.header.seq_num = 1;
-            {
-                thread_pool.scoped(|scope| {
-                    block.calc_crc(&buf).unwrap();
+
+            thread_pool.scoped(|scope| {
+                // update CRC
+                scope.execute(|| {
+                    block.update_crc(&buf).unwrap();
                 });
-                thread_pool.scoped(|scope| {
-                    ;
-                })
-            }
+                // update hash state
+                if param.hash_enabled {
+                    scope.execute(|| {
+                        hash_ctx.update(&buf);
+                    });
+                }
+            });
 
             block.sync_to_buffer(Some(false), &mut buf);
 
-            tx_bytes.send(buf);
+            tx_bytes.send(Some(buf));
 
             // update stats
             cur_seq_num += 1;
@@ -229,7 +239,8 @@ fn make_writer(param   : &Param,
             if shutdown_flag.load(Ordering::Relaxed) { break; }
 
             let buf = match rx_bytes.recv_timeout(Duration::from_millis(10)) {
-                Ok(buf)                             => buf,
+                Ok(Some(buf))                       => buf,
+                Ok(None)                            => { break; },
                 Err(RecvTimeoutError::Timeout)      => { continue; },
                 Err(RecvTimeoutError::Disconnected) => { panic!(); }
             };
