@@ -64,8 +64,14 @@ pub fn make_writer(read_start    : Option<usize>,
                                  (adapt_to_err(
                                      writer.seek(SeekFrom::Start(tar_pos)))) =>
                                  tx_error, shutdown_flag);
-                    writer.write(&buf[read_start..read_end_exc]);
-                    writer.seek(SeekFrom::Start(cur_pos));
+                    worker_stop!(with_error_if_fail
+                                 (adapt_to_err(
+                                     writer.write(&buf[read_start..read_end_exc]))) =>
+                                 tx_error, shutdown_flag);
+                    worker_stop!(with_error_if_fail
+                                 (adapt_to_err(
+                                     writer.seek(SeekFrom::Start(cur_pos)))) =>
+                                 tx_error, shutdown_flag);
 
                     *counter.lock().unwrap() +=
                         buf[read_start..read_end_exc].len() as u64;
@@ -75,7 +81,10 @@ pub fn make_writer(read_start    : Option<usize>,
                         Some(x) => x,
                         None    => buf.len()
                     };
-                    writer.write(&buf[read_start..read_end_exc]);
+                    worker_stop!(with_error_if_fail
+                                 (adapt_to_err(
+                                     writer.write(&buf[read_start..read_end_exc]))) =>
+                                 tx_error, shutdown_flag);
 
                     *counter.lock().unwrap() +=
                         buf[read_start..read_end_exc].len() as u64;
