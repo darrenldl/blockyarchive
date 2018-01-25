@@ -2,7 +2,10 @@ use std::fs::File;
 use std::thread;
 use std::thread::JoinHandle;
 use std::sync::{Arc, Mutex};
+use std::sync::RwLock;
 use super::file_error;
+
+use super::scoped_threadpool::Pool;
 
 use std::cell::Cell;
 
@@ -121,11 +124,11 @@ fn make_reader(param   : &Param,
                stats   : &SharedStats,
                context : &mut Context)
                -> Result<JoinHandle<()>, Error> {
-    let mut reader = file_error::adapt_to_err(Reader::new(&param.in_file))?;
-    let stats = Arc::clone(stats);
-    let tx_bytes = context.ingress_bytes.0.clone();
-    let tx_error = context.err_collect.0.clone();
-    let block_size = ver_to_block_size(param.version);
+    let mut reader    = file_error::adapt_to_err(Reader::new(&param.in_file))?;
+    let stats         = Arc::clone(stats);
+    let tx_bytes      = context.ingress_bytes.0.clone();
+    let tx_error      = context.err_collect.0.clone();
+    let block_size    = ver_to_block_size(param.version);
     let shutdown_flag = Arc::clone(&context.shutdown);
     Ok(thread::spawn(move || {
         let mut secondary_buf : Option<Box<[u8]>> = None;
@@ -166,27 +169,55 @@ fn make_reader(param   : &Param,
     }))
 }
 
-fn make_packer(param  : &Param,
-               stats  : &SharedStats,
-               buffer : Vec<Block>)
-               -> Result<(), Error> {
-    use self::Version::*;
-    match param.version {
-        V1  | V2  | V3 => {
-        },
-        V11 | V12 | V13 => {
+fn make_packer(param   : &Param,
+               stats   : &SharedStats,
+               context : &mut Context)
+               -> Result<JoinHandle<()>, Error> {
+    let stats         = Arc::clone(stats);
+    let rx_bytes      = context.ingress_bytes.1.replace(None).unwrap();
+    let tx_bytes      = context.egress_bytes.0.clone();
+    let shutdown_flag = Arc::clone(&context.shutdown);
+    let version       = param.version;
+    let file_uid      = param.file_uid;
+    let mut thread_pool   = Pool::new(2);
+    Ok(thread::spawn(move || {
+        let mut cur_seq_num : u64 = 1;
+        loop {
+            if shutdown_flag.load(Ordering::Relaxed) { break; }
+
+            let mut buf = match rx_bytes.recv_timeout(Duration::from_millis(10)) {
+                Ok(buf)                             => buf,
+                Err(RecvTimeoutError::Timeout)      => { continue; },
+                Err(RecvTimeoutError::Disconnected) => { panic!(); }
+            };
+
+            // start packing
+            let mut block = Block::new(version,
+                                   &file_uid,
+                                   BlockType::Data);
+            block.header.seq_num = 1;
+            thread_pool.scoped(|scoped| {
+                block.calc_crc(&buf).unwrap();
+            });
+
+            block.sync_to_buffer(Some(false), &mut buf);
+
+            tx_bytes.send(buf);
+
+            // update stats
+            cur_seq_num += 1;
+            stats.lock().unwrap().data_blocks_written = cur_seq_num;
         }
-    }
-    Ok(())
+    }))
 }
 
 fn make_writer(param   : &Param,
                stats   : &SharedStats,
                context : &mut Context) -> Result<JoinHandle<()>, Error> {
-    let mut writer = file_error::adapt_to_err(Writer::new(&param.out_file))?;
-    let stats = Arc::clone(stats);
-    let rx_bytes = context.egress_bytes.1.replace(None).unwrap();
-    let tx_error = context.err_collect.0.clone();
+    let mut writer    = file_error::adapt_to_err(Writer::new(&param.out_file))?;
+    let stats         = Arc::clone(stats);
+    let rx_bytes      = context.egress_bytes.1.replace(None).unwrap();
+    let tx_error      = context.err_collect.0.clone();
     let shutdown_flag = Arc::clone(&context.shutdown);
     Ok(thread::spawn(move || {
         loop {

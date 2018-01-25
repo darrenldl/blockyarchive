@@ -20,6 +20,8 @@ use self::smallvec::SmallVec;
 
 use std::cell::{RefCell, Ref, RefMut};
 
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+
 use self::crc::*;
 
 use super::sbx_specs;
@@ -44,41 +46,57 @@ pub enum Data {
     Meta(SmallVec<[Metadata; 16]>)
 }
 
-#[derive(Debug, PartialEq)]
 pub struct Block {
-    header : RefCell<Header>,
+    pub header : Header,
     data   : Data,
-    buffer : Box<[u8]>,
 }
 
-macro_rules! get_buf {
+macro_rules! slice_buf {
     (
-        header => $self:ident
+        whole => $self:ident, $buf:ident
     ) => {
-        &$self.buffer[..SBX_HEADER_SIZE]
+        &$buf[..block_size!($self)]
     };
     (
-        header_mut => $self:ident
+        whole => $self:ident, $buf:ident
     ) => {
-        &mut $self.buffer[..SBX_HEADER_SIZE]
+        &mut $buf[..block_size!($self)]
     };
     (
-        data => $self:ident
+        header => $self:ident, $buf:ident
     ) => {
-        &$self.buffer[SBX_HEADER_SIZE..]
+        &$buf[..SBX_HEADER_SIZE]
     };
     (
-        data_mut => $self:ident
+        header_mut => $self:ident, $buf:ident
     ) => {
-        &mut $self.buffer[SBX_HEADER_SIZE..]
+        &mut $buf[..SBX_HEADER_SIZE]
     };
+    (
+        data => $self:ident, $buf:ident
+    ) => {
+        &$buf[SBX_HEADER_SIZE..block_size!($self)]
+    };
+    (
+        data_mut => $self:ident, $buf:ident
+    ) => {
+        &mut $buf[SBX_HEADER_SIZE..block_size!($self)]
+    }
+}
+
+macro_rules! check_buffer {
+    (
+        $self:ident, $buf:ident
+    ) => {
+        if $buf.len() < block_size!($self) { panic!("Insufficient buffer size"); }
+    }
 }
 
 macro_rules! block_size {
     (
         $self:ident
     ) => {
-        ver_to_block_size($self.header.borrow().version)
+        ver_to_block_size($self.header.version)
     }
 }
 
@@ -86,7 +104,7 @@ macro_rules! data_size {
     (
         $self:ident
     ) => {
-        ver_to_data_size($self.header.borrow().version)
+        ver_to_data_size($self.header.version)
     }
 }
 
@@ -95,82 +113,20 @@ impl Block {
                file_uid   : &[u8; SBX_FILE_UID_LEN],
                block_type : BlockType)
                -> Block {
-        let block_size = ver_to_block_size(version);
-
-        let buffer = vec![0; block_size].into_boxed_slice();
-
-        Self::new_with_buffer(version, file_uid, block_type, buffer).unwrap()
-    }
-
-    pub fn new_with_buffer(version    : Version,
-                           file_uid   : &[u8; SBX_FILE_UID_LEN],
-                           block_type : BlockType,
-                           buffer : Box<[u8]>)
-                        -> Result<Block, Error> {
-        if buffer.len() < ver_to_block_size(version) {
-            return Err(Error::IncorrectBufferSize);
-        }
-
-        Ok(match block_type {
+        match block_type {
             BlockType::Data => {
                 Block {
-                    header : RefCell::new(Header::new(version, file_uid.clone())),
+                    header : Header::new(version, file_uid.clone()),
                     data   : Data::Data,
-                    buffer
                 }
             },
             BlockType::Meta => {
                 Block {
-                    header : RefCell::new(Header::new(version, file_uid.clone())),
+                    header : Header::new(version, file_uid.clone()),
                     data   : Data::Meta(SmallVec::new()),
-                    buffer
                 }
             }
-        })
-    }
-
-    pub fn header(&self) -> Ref<Header> {
-        self.header.borrow()
-    }
-
-    pub fn header_mut(&self) -> RefMut<Header> {
-        self.header.borrow_mut()
-    }
-
-    pub fn buf(&self) -> &[u8] {
-        &self.buffer[..block_size!(self)]
-    }
-
-    pub fn buf_mut(&mut self) -> &mut [u8] {
-        &mut self.buffer[..block_size!(self)]
-    }
-
-    pub fn header_data_buf(&self) -> (&[u8], &[u8]) {
-        let (h, d) = self.buffer.split_at(SBX_HEADER_SIZE);
-
-        (h, &d[..data_size!(self)])
-    }
-
-    pub fn header_data_buf_mut(&mut self) -> (&mut [u8], &mut [u8]) {
-        let (h, d) = self.buffer.split_at_mut(SBX_HEADER_SIZE);
-
-        (h, &mut d[..data_size!(self)])
-    }
-
-    pub fn header_buf(&self) -> &[u8] {
-        self.header_data_buf().0
-    }
-
-    pub fn header_buf_mut(&mut self) -> &mut [u8] {
-        self.header_data_buf_mut().0
-    }
-
-    pub fn data_buf(&self) -> &[u8] {
-        self.header_data_buf().1
-    }
-
-    pub fn data_buf_mut(&mut self) -> &mut [u8] {
-        self.header_data_buf_mut().1
+        }
     }
 
     pub fn block_type(&self) -> BlockType {
@@ -208,22 +164,26 @@ impl Block {
         }
     }
 
-    pub fn calc_crc(&self) -> Result<u16, Error> {
+    pub fn calc_crc(&self, buffer : &[u8]) -> Result<u16, Error> {
+        check_buffer!(self, buffer);
+
         self.check_header_type_matches_block_type()?;
 
-        let crc = self.header().calc_crc();
+        let crc = self.header.calc_crc();
 
-        Ok(crc_ccitt_generic(crc, self.data_buf()))
+        Ok(crc_ccitt_generic(crc, slice_buf!(data => self, buffer)))
     }
 
-    pub fn update_crc(&self) -> Result<(), Error> {
-        self.header_mut().crc = self.calc_crc()?;
+    pub fn update_crc(&mut self,
+                      buffer : &[u8])
+                      -> Result<(), Error> {
+        self.header.crc = self.calc_crc(buffer)?;
 
         Ok(())
     }
 
     fn header_type_matches_block_type(&self) -> bool {
-        self.header().is_meta() == self.is_meta()
+        self.header.is_meta() == self.is_meta()
     }
 
     fn check_header_type_matches_block_type(&self) -> Result<(), Error> {
@@ -234,8 +194,12 @@ impl Block {
         }
     }
 
-    pub fn sync_to_buffer(&mut self, update_crc : Option<bool>)
+    pub fn sync_to_buffer(&mut self,
+                          update_crc : Option<bool>,
+                          buffer     : &mut [u8])
                           -> Result<(), Error> {
+        check_buffer!(self, buffer);
+
         self.check_header_type_matches_block_type()?;
 
         let update_crc = match update_crc {
@@ -246,17 +210,17 @@ impl Block {
         match self.data {
             Data::Meta(ref meta) => {
                 // transform metadata to bytes
-                metadata::to_bytes(meta, get_buf!(data_mut => self))?;
+                metadata::to_bytes(meta, slice_buf!(data_mut => self, buffer))?;
             },
             Data::Data => {}
         }
 
         match self.block_type() {
-            BlockType::Data => if update_crc { self.update_crc()? },
-            BlockType::Meta =>                 self.update_crc()?
+            BlockType::Data => if update_crc { self.update_crc(buffer)? },
+            BlockType::Meta =>                 self.update_crc(buffer)?
         }
 
-        self.header.borrow().to_bytes(get_buf!(header_mut => self)).unwrap();
+        self.header.to_bytes(slice_buf!(header_mut => self, buffer)).unwrap();
 
         Ok(())
     }
@@ -277,36 +241,27 @@ impl Block {
         }
     }
 
-    pub fn sync_from_buffer_header_only(&self) -> Result<(), Error> {
-        self.header.borrow_mut().from_bytes(get_buf!(header => self))?;
+    pub fn sync_from_buffer_header_only(&mut self,
+                                        buffer : &[u8])
+                                        -> Result<(), Error> {
+        self.header.from_bytes(slice_buf!(header => self, buffer))?;
 
         Ok(())
     }
 
-    pub fn upgrade_buffer_if_needed(&mut self) {
-        let block_size = ver_to_block_size(self.header().version);
-        let buffer_len = self.buffer.len();
+    pub fn sync_from_buffer(&mut self,
+                            buffer : &[u8])
+                            -> Result<(), Error> {
+        self.sync_from_buffer_header_only(buffer)?;
 
-        if buffer_len < block_size {
-            let mut new_buffer = vec![0; block_size].into_boxed_slice();
-
-            new_buffer[0..buffer_len].copy_from_slice(&self.buffer);
-
-            self.buffer = new_buffer;
-        }
-    }
-
-    pub fn sync_from_buffer(&mut self) -> Result<(), Error> {
-        self.sync_from_buffer_header_only()?;
-
-        self.upgrade_buffer_if_needed();
+        check_buffer!(self, buffer);
 
         self.switch_block_type_to_match_header();
 
         match self.data {
             Data::Meta(ref mut meta) => {
                 meta.clear();
-                let res = metadata::from_bytes(get_buf!(header => self))?;
+                let res = metadata::from_bytes(slice_buf!(data => self, buffer))?;
                 for r in res.into_iter() {
                     meta.push(r);
                 }
@@ -317,7 +272,9 @@ impl Block {
         Ok(())
     }
 
-    pub fn verify_crc(&self) -> Result<bool, Error> {
-        Ok(self.header().crc == self.calc_crc()?)
+    pub fn verify_crc(&self,
+                      buffer : &[u8])
+                      -> Result<bool, Error> {
+        Ok(self.header.crc == self.calc_crc(buffer)?)
     }
 }

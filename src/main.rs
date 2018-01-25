@@ -32,5 +32,7 @@ extern crate nom;
 
 extern crate time;
 
+extern crate scoped_threadpool;
+
 fn main () {
 }
