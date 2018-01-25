@@ -68,13 +68,6 @@ pub fn make_reader(block_size    : usize,
             // if full, then put current buffer into secondary buffer and wait
             secondary_buf = send!(try_with_back_off_millis 10, buf =>
                                   tx_bytes, tx_error, shutdown_flag);
-            /*match tx_bytes.try_send(buf) {
-                Ok(()) => {},
-                Err(TrySendError::Full(b)) => {
-                    secondary_buf = Some(b);
-                    thread::sleep(Duration::from_millis(10)); },
-                Err(TrySendError::Disconnected(_)) => panic!()
-            }*/
         }
     }))
 }
