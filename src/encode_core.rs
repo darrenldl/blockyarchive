@@ -1,8 +1,9 @@
 use std::thread;
 use std::thread::JoinHandle;
 use std::sync::{Arc, Mutex};
-use super::file_error;
 use super::worker::reader;
+use super::worker::writer;
+use super::worker::writer::WriteReq;
 
 use super::multihash;
 
@@ -18,11 +19,10 @@ use super::misc_utils::{make_channel_for_ctx,
                         make_sync_channel_for_ctx};
 
 use super::Error;
-use super::FileWriter;
 use super::sbx_specs::Version;
 use super::time;
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::{Sender,
                       SyncSender,
                       Receiver};
@@ -67,8 +67,8 @@ pub struct Context {
     pub parity_blocks : Vec<Block>,
     pub ingress_bytes : (SyncSender<Box<[u8]>>,
                          Cell<Option<Receiver<Box<[u8]>>>>),
-    pub egress_bytes  : (SyncSender<Box<[u8]>>,
-                         Cell<Option<Receiver<Box<[u8]>>>>)
+    pub egress_bytes  : (SyncSender<WriteReq>,
+                         Cell<Option<Receiver<WriteReq>>>)
 }
 
 impl Context {
@@ -179,7 +179,7 @@ fn make_packer(param   : &Param,
 
             block.sync_to_buffer(Some(false), &mut buf).unwrap();
 
-            tx_bytes.send(buf).unwrap();
+            tx_bytes.send(WriteReq::Write(buf)).unwrap();
 
             // update stats
             cur_seq_num += 1;
@@ -190,38 +190,30 @@ fn make_packer(param   : &Param,
 
 fn make_writer(param   : &Param,
                stats   : &SharedStats,
-               context : &mut Context) -> Result<JoinHandle<()>, Error> {
-    let mut writer    = file_error::adapt_to_err(FileWriter::new(&param.out_file))?;
-    let stats         = Arc::clone(stats);
-    let rx_bytes      = context.egress_bytes.1.replace(None).unwrap();
-    let tx_error      = context.err_collect.0.clone();
-    let shutdown_flag = Arc::clone(&context.shutdown);
-    Ok(thread::spawn(move || {
-        loop {
-            if shutdown_flag.load(Ordering::Relaxed) { break; }
-
-            let buf = recv!(timeout_millis 10 => rx_bytes);
-
-            match writer.write(&buf) {
-                Ok(_) => {},
-                Err(e) => { worker_stop!(with_error file_error::to_err(e) =>
-                                         tx_error, shutdown_flag); }
-            }
-        }
-    }))
+               context : &mut Context,
+               counter : &Arc<Mutex<u64>>)
+               -> Result<JoinHandle<()>, Error> {
+    writer::make_writer(None,
+                        None,
+                        counter,
+                        &context.shutdown,
+                        &param.out_file,
+                        context.egress_bytes.1.replace(None).unwrap(),
+                        context.err_collect.0.clone())
 }
 
 pub fn encode_file(param    : &Param)
                    -> Result<Stats, Error> {
     let stats : SharedStats =
         Arc::new(Mutex::new(Stats::new(param)));
-    let read_byte_counter = Arc::new(Mutex::new(0u64));
+    let read_byte_counter  = Arc::new(Mutex::new(0u64));
+    let write_byte_counter = Arc::new(Mutex::new(0u64));
 
     let mut ctx = Context::new(param);
 
     let reader = make_reader(param, &stats, &mut ctx, &read_byte_counter)?;
     let packer = make_packer(param, &stats, &mut ctx)?;
-    let writer = make_writer(param, &stats, &mut ctx)?;
+    let writer = make_writer(param, &stats, &mut ctx, &write_byte_counter)?;
 
     reader.join().unwrap();
     packer.join().unwrap();
