@@ -10,6 +10,14 @@ macro_rules! worker_stop {
         break;
     }};
     (
+        graceful_ret => $tx_error:path, $shutdown_flag:path
+    ) => {{
+        use std::sync::atomic::Ordering;
+        $tx_error.send(None).unwrap();
+        $shutdown_flag.store(true, Ordering::Relaxed);
+        return;
+    }};
+    (
         graceful_if ($cond:expr) =>$tx_error:path, $shutdown_flag:path
     ) => {{
         if $cond {
@@ -49,21 +57,61 @@ macro_rules! worker_stop {
     }}
 }
 
-macro_rules! recv {
+macro_rules! send {
     (
-        no_timeout => $receiver:ident
+        no_back_off $item:expr => $sender:ident, $tx_error:path, $shutdown_flag:path
     ) => {{
-        $receiver.recv().unwrap()
+        match $sender.send($item) {
+            Ok(()) => {},
+            Err(_) => worker_stop!(graceful => $tx_error, $shutdown_flag)
+        }
     }};
     (
-        timeout_millis $timeout:expr => $receiver:ident
+        no_back_off_ret $item:expr => $sender:ident, $tx_error:path, $shutdown_flag:path
+    ) => {{
+        match $sender.send($item) {
+            Ok(()) => {},
+            Err(_) => worker_stop!(graceful_ret => $tx_error, $shutdown_flag)
+        }
+    }};
+    (
+        try_with_back_off_millis $time:expr, $item:expr => $sender:ident, $tx_error:path, $shutdown_flag:path
+    ) => {{
+        use std::time::Duration;
+        use std::sync::mpsc::TrySendError;
+        match $sender.try_send($item) {
+            Ok(()) => None,
+            Err(TrySendError::Full(b)) => {
+                thread::sleep(Duration::from_millis($time));
+                Some(b)
+            },
+            Err(TrySendError::Disconnected(_)) =>
+                worker_stop!(graceful => $tx_error, $shutdown_flag)
+        }
+    }}
+}
+
+macro_rules! recv {
+    (
+        no_timeout => $receiver:ident, $tx_error:path, $shutdown_flag:path
+    ) => {{
+        match $receiver.recv() {
+            Ok(item) => item,
+            Err(_)   => worker_stop!(graceful => $tx_error, $shutdown_flag)
+        }
+    }};
+    (
+        timeout_millis $timeout:expr => $receiver:ident, $tx_error:path, $shutdown_flag:path
     ) => {{
         use std::time::Duration;
         use std::sync::mpsc::RecvTimeoutError;
         match $receiver.recv_timeout(Duration::from_millis($timeout)) {
             Ok(item)                            => item,
             Err(RecvTimeoutError::Timeout)      => { continue; },
-            Err(RecvTimeoutError::Disconnected) => { panic!(); }
+            Err(RecvTimeoutError::Disconnected) => {
+                worker_stop!(graceful =>
+                             $tx_error, $shutdown_flag );
+            }
         }
     }}
 

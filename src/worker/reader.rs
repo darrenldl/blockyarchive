@@ -46,8 +46,8 @@ pub fn make_reader(block_size    : usize,
 
             // allocate if secondary_buf is empty
             let mut buf = match secondary_buf {
+                Some(b) => b,
                 None    => vec![0; block_size].into_boxed_slice(),
-                Some(b) => { secondary_buf = None; b }
             };
 
             // read into buffer
@@ -66,13 +66,15 @@ pub fn make_reader(block_size    : usize,
 
             // send bytes over
             // if full, then put current buffer into secondary buffer and wait
-            match tx_bytes.try_send(buf) {
+            secondary_buf = send!(try_with_back_off_millis 10, buf =>
+                                  tx_bytes, tx_error, shutdown_flag);
+            /*match tx_bytes.try_send(buf) {
                 Ok(()) => {},
                 Err(TrySendError::Full(b)) => {
                     secondary_buf = Some(b);
                     thread::sleep(Duration::from_millis(10)); },
                 Err(TrySendError::Disconnected(_)) => panic!()
-            }
+            }*/
         }
     }))
 }

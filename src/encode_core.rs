@@ -11,10 +11,6 @@ use super::scoped_threadpool::Pool;
 
 use std::cell::Cell;
 
-use std::time::Duration;
-
-use std::sync::mpsc::RecvTimeoutError;
-
 use super::misc_utils::{make_channel_for_ctx,
                         make_sync_channel_for_ctx};
 
@@ -135,7 +131,8 @@ fn make_reader(param   : &Param,
 
 fn pack_metadata(block : &mut Block,
                  param : &Param,
-                 stats : &Stats) {
+                 stats : &Stats,
+                 hash : Option<multihash::HashBytes>) {
     let meta = block.meta_mut().unwrap();
 }
 
@@ -164,16 +161,18 @@ fn make_packer(param   : &Param,
                                        BlockType::Meta);
             pack_metadata(&mut block,
                           &param,
-                          &stats.lock().unwrap());
+                          &stats.lock().unwrap(),
+                          None);
             let mut buf = vec![0; block_size].into_boxed_slice();
             block.sync_to_buffer(None, &mut buf).unwrap();
-            tx_bytes.send(WriteReq::Write(buf)).unwrap();
+            send!(no_back_off_ret WriteReq::Write(buf) =>
+                  tx_bytes, tx_error, shutdown_flag);
         }
 
         loop {
             worker_stop!(graceful_if_shutdown => tx_error, shutdown_flag);
 
-            let mut buf = recv!(timeout_millis 10 => rx_bytes);
+            let mut buf = recv!(timeout_millis 10 => rx_bytes, tx_error, shutdown_flag);
 
             // start packing
             let mut block = Block::new(param.version,
