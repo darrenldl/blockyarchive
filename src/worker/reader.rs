@@ -42,8 +42,6 @@ pub fn make_reader(block_size    : usize,
         let mut secondary_buf : Option<Box<[u8]>> = None;
 
         loop {
-            println!("Read loop start");
-
             worker_stop!(graceful_if_shutdown => tx_error, shutdown_flag);
 
             // allocate if secondary_buf is empty
