@@ -173,13 +173,13 @@ fn make_packer(param   : &Param,
                stats   : &SharedStats,
                context : &mut Context)
                -> Result<JoinHandle<()>, Error> {
-    let stats         = Arc::clone(stats);
-    let rx_bytes      = context.ingress_bytes.1.replace(None).unwrap();
-    let tx_bytes      = context.egress_bytes.0.clone();
-    let shutdown_flag = Arc::clone(&context.shutdown);
-    let version       = param.version;
-    let file_uid      = param.file_uid;
-    let mut thread_pool   = Pool::new(2);
+    let stats           = Arc::clone(stats);
+    let rx_bytes        = context.ingress_bytes.1.replace(None).unwrap();
+    let tx_bytes        = context.egress_bytes.0.clone();
+    let shutdown_flag   = Arc::clone(&context.shutdown);
+    let version         = param.version;
+    let file_uid        = param.file_uid;
+    let mut thread_pool = Pool::new(2);
     Ok(thread::spawn(move || {
         let mut cur_seq_num : u64 = 1;
         loop {
@@ -197,9 +197,12 @@ fn make_packer(param   : &Param,
                                    BlockType::Data);
             block.header.seq_num = 1;
             {
-                thread_pool.scoped(|scoped| {
+                thread_pool.scoped(|scope| {
                     block.calc_crc(&buf).unwrap();
                 });
+                thread_pool.scoped(|scope| {
+                    ;
+                })
             }
 
             block.sync_to_buffer(Some(false), &mut buf);
