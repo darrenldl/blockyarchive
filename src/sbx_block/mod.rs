@@ -43,7 +43,7 @@ pub enum Error {
 #[derive(Debug, PartialEq)]
 pub enum Data {
     Data,
-    Meta(SmallVec<[Metadata; 16]>)
+    Meta(Vec<Metadata>)
 }
 
 pub struct Block {
@@ -58,7 +58,7 @@ macro_rules! slice_buf {
         &$buf[..block_size!($self)]
     };
     (
-        whole => $self:ident, $buf:ident
+        whole_mut => $self:ident, $buf:ident
     ) => {
         &mut $buf[..block_size!($self)]
     };
@@ -123,7 +123,7 @@ impl Block {
             BlockType::Meta => {
                 Block {
                     header : Header::new(version, file_uid.clone()),
-                    data   : Data::Meta(SmallVec::new()),
+                    data   : Data::Meta(Vec::with_capacity(10)),
                 }
             }
         }
@@ -150,14 +150,14 @@ impl Block {
         }
     }
 
-    pub fn meta(&self) -> Result<&SmallVec<[Metadata; 16]>, Error> {
+    pub fn meta(&self) -> Result<&Vec<Metadata>, Error> {
         match self.data {
             Data::Data        => Err(Error::IncorrectBlockType),
             Data::Meta(ref x) => { Ok(x) }
         }
     }
 
-    pub fn meta_mut(&mut self) -> Result<&mut SmallVec<[Metadata; 16]>, Error> {
+    pub fn meta_mut(&mut self) -> Result<&mut Vec<Metadata>, Error> {
         match self.data {
             Data::Data            => Err(Error::IncorrectBlockType),
             Data::Meta(ref mut x) => { Ok(x) }
@@ -180,6 +180,42 @@ impl Block {
         self.header.crc = self.calc_crc(buffer)?;
 
         Ok(())
+    }
+
+    pub fn slice_buf<'a>(&self,
+                         buffer : &'a [u8])
+                         -> &'a [u8] {
+        slice_buf!(whole => self, buffer)
+    }
+
+    pub fn slice_buf_mut<'a>(&self,
+                             buffer : &'a mut [u8])
+                             -> &'a mut [u8] {
+        slice_buf!(whole_mut => self, buffer)
+    }
+
+    pub fn slice_header_buf<'a>(&self,
+                                buffer : &'a [u8])
+                                -> &'a [u8] {
+        slice_buf!(header => self, buffer)
+    }
+
+    pub fn slice_header_buf_mut<'a>(&self,
+                                    buffer : &'a mut [u8])
+                                    -> &'a mut [u8] {
+        slice_buf!(header_mut => self, buffer)
+    }
+
+    pub fn slice_data_buf<'a>(&self,
+                              buffer : &'a [u8])
+                              -> &'a [u8] {
+        slice_buf!(data => self, buffer)
+    }
+
+    pub fn slice_data_buf_mut<'a>(&self,
+                                  buffer : &'a mut [u8])
+                                  -> &'a mut [u8] {
+        slice_buf!(data_mut => self, buffer)
     }
 
     fn header_type_matches_block_type(&self) -> bool {
@@ -231,7 +267,7 @@ impl Block {
         if block_type == BlockType::Meta {
             self.data = Data::Data;
         } else {
-            self.data = Data::Meta(SmallVec::new());
+            self.data = Data::Meta(Vec::with_capacity(10));
         }
     }
 
