@@ -170,8 +170,6 @@ fn make_packer(param   : &Param,
         }
 
         loop {
-            worker_stop!(graceful_if_shutdown => tx_error, shutdown_flag);
-
             let mut buf = recv!(timeout_millis 10 => rx_bytes, tx_error, shutdown_flag);
 
             // start packing
@@ -234,6 +232,15 @@ pub fn encode_file(param    : &Param)
     reader.join().unwrap();
     packer.join().unwrap();
     writer.join().unwrap();
+
+    let rx_error : Receiver<Option<Error>> =
+        ctx.err_collect.1.replace(None).unwrap();
+    for _ in 0..3 {
+        match rx_error.recv().unwrap() {
+            None    => println!("Got None"),
+            Some(e) => println!("Got Some error {}", e)
+        }
+    }
 
     Ok(Stats::new(param))
 }

@@ -41,7 +41,7 @@ pub fn make_writer(read_start    : Option<usize>,
         };
 
         loop {
-            worker_stop!(graceful_if_shutdown => tx_error, shutdown_flag);
+            println!("Write loop start");
 
             let req = recv!(timeout_millis 10 => rx_write_req, tx_error, shutdown_flag);
 
@@ -88,6 +88,8 @@ pub fn make_writer(read_start    : Option<usize>,
 
                     *counter.lock().unwrap() +=
                         buf[read_start..read_end_exc].len() as u64;
+
+                    println!("Wrote : {}", buf[read_start..read_end_exc].len());
                 }
             }
         }

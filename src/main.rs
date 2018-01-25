@@ -97,6 +97,7 @@ macro_rules! send {
             Ok(()) => None,
             Err(TrySendError::Full(b)) => {
                 thread::sleep(Duration::from_millis($time));
+                worker_stop!(graceful_if_shutdown => $tx_error, $shutdown_flag);
                 Some(b)
             },
             Err(TrySendError::Disconnected(_)) =>
@@ -121,7 +122,10 @@ macro_rules! recv {
         use std::sync::mpsc::RecvTimeoutError;
         match $receiver.recv_timeout(Duration::from_millis($timeout)) {
             Ok(item)                            => item,
-            Err(RecvTimeoutError::Timeout)      => { continue; },
+            Err(RecvTimeoutError::Timeout)      => {
+                worker_stop!(graceful_if_shutdown => $tx_error, $shutdown_flag);
+                continue;
+            },
             Err(RecvTimeoutError::Disconnected) => {
                 worker_stop!(graceful =>
                              $tx_error, $shutdown_flag );
