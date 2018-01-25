@@ -70,8 +70,8 @@ pub struct Context {
                          Cell<Option<Receiver<Option<Error>>>>),
     pub data_block    : Block,
     pub parity_blocks : Vec<Block>,
-    pub ingress_bytes : (SyncSender<Box<[u8]>>,
-                         Cell<Option<Receiver<Box<[u8]>>>>),
+    pub ingress_bytes : (SyncSender<(usize, Box<[u8]>)>,
+                         Cell<Option<Receiver<(usize, Box<[u8]>)>>>),
     pub egress_bytes  : (SyncSender<WriteReq>,
                          Cell<Option<Receiver<WriteReq>>>),
     pub file_metadata : fs::Metadata
@@ -221,7 +221,8 @@ fn make_packer(param   : &Param,
         }
 
         loop {
-            let mut buf = recv!(timeout_millis 10 => rx_bytes, tx_error, shutdown_flag);
+            let (len_read, mut buf) =
+                recv!(timeout_millis 10 => rx_bytes, tx_error, shutdown_flag);
 
             // start packing
             let mut block = Block::new(param.version,
@@ -237,13 +238,14 @@ fn make_packer(param   : &Param,
                 // update hash state
                 scope.execute(|| {
                     if param.hash_enabled {
-                        let data_buf = sbx_block::slice_data_buf(param.version,
-                                                                 &buf);
+                        let data_buf = &buf[SBX_HEADER_SIZE..
+                                            SBX_HEADER_SIZE + len_read];
                         println!("Updating hash ctx");
                         println!("Updating with : {:?}", data_buf);
                         hash_ctx.update(data_buf);
                     }
                 });
+                scope.join_all();
             });
 
             block.sync_to_buffer(Some(false), &mut buf).unwrap();
