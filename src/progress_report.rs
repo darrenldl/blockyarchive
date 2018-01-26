@@ -31,6 +31,8 @@ pub struct Context {
     pub last_report_time    : i64,
     pub last_reported_units : u64,
     pub unit                : String,
+    pub elements            : Vec<ProgressElement>,
+    pub max_print_length    : usize,
 }
 
 pub fn print_progress (settings     : &SilenceSettings,
@@ -46,6 +48,13 @@ pub fn print_progress (settings     : &SilenceSettings,
             println!("{}", context.header);
             context.header_printed = true;
         }
+
+        let message = make_message(context,
+                                   units_so_far,
+                                   total_units,
+                                   &context.elements);
+
+        println!("{1:0$}", context.max_print_length, message);
     }
 }
 
