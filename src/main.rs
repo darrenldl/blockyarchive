@@ -34,14 +34,14 @@ macro_rules! worker_stop {
         return;
     }};
     (
-        graceful_if ($cond:expr) =>$tx_error:path, $shutdown_flag:path $([$( $x:path ),*]),*
+        graceful_if ($cond:expr) => $tx_error:path, $shutdown_flag:path $([$( $x:path ),*]),*
     ) => {{
         if $cond {
             worker_stop!(graceful => $tx_error, $shutdown_flag $([$( $x ),*]),*)
         }
     }};
     (
-        graceful_if_ret ($cond:expr) =>$tx_error:path, $shutdown_flag:path $([$( $x:path ),*]),*
+        graceful_if_ret ($cond:expr) => $tx_error:path, $shutdown_flag:path $([$( $x:path ),*]),*
     ) => {{
         if $cond {
             worker_stop!(graceful_ret => $tx_error, $shutdown_flag $([$( $x ),*]),*)
@@ -136,6 +136,15 @@ macro_rules! recv {
         match $receiver.recv() {
             Ok(item) => item,
             Err(_)   => worker_stop!(graceful => $tx_error, $shutdown_flag $([$( $x ),*]),*)
+        }
+    }};
+    (
+        no_timeout_shutdown_if_none => $receiver:ident, $tx_error:path, $shutdown_flag:path $([$( $x:path ),*]),*
+    ) => {{
+        match recv!(no_timeout => $receiver,
+                    $tx_error, $shutdown_flag $([$( $x ),*]),*) {
+            Some(x) => x,
+            None    => worker_stop!(graceful => $tx_error, $shutdown_flag $([$( $x ),*]),*)
         }
     }};
     (
