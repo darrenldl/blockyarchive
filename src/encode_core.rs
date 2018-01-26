@@ -1,12 +1,10 @@
 use std::thread;
 use std::thread::JoinHandle;
 use std::sync::{Arc, Mutex};
-use super::worker::reader;
-use super::worker::writer;
-use super::worker::writer::WriteReq;
 use std::fs;
 use std::fmt;
 use super::file_utils;
+use std::io::SeekFrom;
 
 use super::progress_report;
 
@@ -15,16 +13,10 @@ use super::SmallVec;
 use std::time::UNIX_EPOCH;
 
 use super::file_reader;
+use super::file_writer;
 use super::file_error::adapt_to_err;
 
 use super::multihash;
-
-use super::pond::Pool;
-
-use std::cell::Cell;
-
-use super::misc_utils::{make_channel_for_ctx,
-                        make_sync_channel_for_ctx};
 
 use super::Error;
 use super::sbx_specs::Version;
@@ -32,17 +24,16 @@ use super::time;
 use super::ReedSolomon;
 
 use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 use std::sync::mpsc::{Sender,
-                      SyncSender,
-                      Receiver};
+                      channel};
 
 use super::sbx_block::{Block, BlockType};
 use super::sbx_block;
-use super::sbx_block::metadata;
 use super::sbx_block::metadata::Metadata;
 use super::sbx_specs::{SBX_FILE_UID_LEN,
                        SBX_HEADER_SIZE,
-                       ver_to_block_size,
+                       SBX_LARGEST_BLOCK_SIZE,
                        ver_to_data_size};
 
 use std::time::Duration;
@@ -50,10 +41,10 @@ use std::time::Duration;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
     pub version             : Version,
-    pub meta_blocks_written : u64,
-    pub data_blocks_written : u64,
+    pub meta_blocks_written : u32,
+    pub data_blocks_written : u32,
     pub data_bytes_encoded  : u64,
-    pub total_blocks        : u64,
+    pub total_blocks        : u32,
     pub start_time          : i64,
     pub time_elapsed        : i64,
     pub data_shards         : usize,
@@ -84,7 +75,7 @@ impl Stats {
     pub fn new(param : &Param, file_metadata : &fs::Metadata) -> Stats {
         let data_size = ver_to_data_size(param.version) as u64;
         let total_blocks =
-            (context.file_metadata.len() + (data_size - 1)) / data_size;
+            ((file_metadata.len() + (data_size - 1)) / data_size) as u32;
         println!("Total blocks : {}", total_blocks);
         Stats {
             version             : param.version,
@@ -107,7 +98,7 @@ impl Stats {
 fn pack_metadata(block         : &mut Block,
                  param         : &Param,
                  stats         : &Stats,
-                 file_metadata : fs::Metadata,
+                 file_metadata : &fs::Metadata,
                  hash          : Option<multihash::HashBytes>) {
     let meta = block.meta_mut().unwrap();
 
@@ -151,192 +142,167 @@ fn pack_metadata(block         : &mut Block,
             meta.push(Metadata::RSP(param.rs_parity as u8)); }}
 }
 
-fn make_packer(param   : &Param,
-               stats   : &SharedStats,
-               context : &Context)
-               -> Result<JoinHandle<()>, Error> {
-    let stats         = Arc::clone(stats);
-    let rx_bytes      = context.ingress_bytes.1.replace(None).unwrap();
-    let tx_bytes      = context.egress_bytes.0.clone();
-    let tx_error      = context.err_collect.0.clone();
-    let shutdown_flag = Arc::clone(&context.shutdown);
-    let param         = param.clone();
-    let data_size     = ver_to_data_size(param.version);
-    let block_size    = ver_to_block_size(param.version);
-    let file_metadata = context.file_metadata.clone();
-
-    Ok(thread::spawn(move || {
-        let mut block             = Block::new(param.version,
-                                               &param.file_uid,
-                                               BlockType::Data);
-        let mut thread_pool       = Pool::new(3);
-        let mut cur_seq_num : u64 = 1;
-        let mut hash_ctx          =
-            multihash::hash::Ctx::new(param.hash_type).unwrap();
-        let rs_codec              = ReedSolomon::new(param.rs_data,
-                                                     param.rs_parity).unwrap();
-
-        let mut parity : Vec<Box<[u8]>> = Vec::with_capacity(param.rs_parity);
-        if param.rs_enabled {
-            for _ in 0..param.rs_parity {
-                parity.push(vec![0; data_size].into_boxed_slice());
-            }
-        }
-        let mut partiy_refs : SmallVec<[&mut [u8]; 32]> =
-            convert_2D_slices!(parity =to_mut=> SmallVec<[&mut [u8]; 32]>,
-                               SmallVec::with_capacity);
-
-        {
-            let mut block = Block::new(param.version,
-                                       &param.file_uid,
-                                       BlockType::Meta);
-            // write dummy metadata block
-            pack_metadata(&mut block,
-                          &param,
-                          &stats.lock().unwrap(),
-                          file_metadata.clone(),
-                          None);
-            let mut buf = vec![0; block_size].into_boxed_slice();
-            block.sync_to_buffer(None, &mut buf).unwrap();
-            send!(no_back_off_ret Some(WriteReq::Write(buf)) =>
-                  tx_bytes, tx_error, shutdown_flag);
-        }
-
-        loop {
-            let rs_data_index =
-                (cur_seq_num - 1) as usize % param.rs_data;
-
-            let (len_read, mut buf) =
-                recv!(no_timeout_shutdown_if_none =>
-                      rx_bytes, tx_error, shutdown_flag);
-
-            // start packing
-            block.header.seq_num = cur_seq_num as u32;
-
-            block.update_crc(&buf).unwrap();
-            if param.hash_enabled {
-                let data_buf = &buf[SBX_HEADER_SIZE..
-                                    SBX_HEADER_SIZE + len_read];
-                hash_ctx.update(data_buf);
-            }
-            if param.rs_enabled {
-                rs_codec.encode_single_sep(rs_data_index,
-                                           sbx_block::slice_data_buf(param.version,
-                                                                     &buf),
-                                           &mut partiy_refs).unwrap();
-            }
-            /*thread_pool.scoped(|scope| {
-                // update CRC
-                scope.execute(|| {
-                    block.update_crc(&buf).unwrap();
-                });
-                // update hash state
-                scope.execute(|| {
-                    if param.hash_enabled {
-                        let data_buf = &buf[SBX_HEADER_SIZE..
-                                            SBX_HEADER_SIZE + len_read];
-                        hash_ctx.update(data_buf);
-                    }
-                });
-                // update rs parity
-                scope.execute(|| {
-                    if param.rs_enabled {
-                        rs_codec.encode_single_sep(rs_data_index,
-                                                   sbx_block::slice_data_buf(param.version,
-                                                                             &buf),
-                                                   &mut partiy_refs).unwrap();
-                    }
-                });
-            });*/
-
-            block.sync_to_buffer(Some(false), &mut buf).unwrap();
-
-            send!(back_off Some(WriteReq::Write(buf)) =>
-                  tx_bytes, tx_error, shutdown_flag);
-
-            if param.rs_enabled && rs_data_index == param.rs_parity - 1 {
-                // output parity blocks
-                for p in partiy_refs.iter() {
-                    let mut buf = vec![0; block_size].into_boxed_slice();
-                    buf[SBX_HEADER_SIZE..].copy_from_slice(p);
-
-                    block.header.seq_num = cur_seq_num as u32;
-                    block.sync_to_buffer(None, &mut buf).unwrap();
-
-                    send!(back_off Some(WriteReq::Write(buf)) =>
-                          tx_bytes, tx_error, shutdown_flag);
-
-                    cur_seq_num += 1;
-                }
-            }
-
-            // update stats
-            cur_seq_num += 1;
-            stats.lock().unwrap().data_blocks_written = cur_seq_num;
-        }
-
-        stats.lock().unwrap().data_blocks_written = cur_seq_num;
-
-        {
-            // write actual metadata block
-            let mut block = Block::new(param.version,
-                                       &param.file_uid,
-                                       BlockType::Meta);
-            pack_metadata(&mut block,
-                          &param,
-                          &stats.lock().unwrap(),
-                          file_metadata,
-                          Some(hash_ctx.finish_into_hash_bytes()));
-            let mut buf = vec![0; block_size].into_boxed_slice();
-            block.sync_to_buffer(None, &mut buf).unwrap();
-            send!(no_back_off_ret Some(WriteReq::WriteTo(0, buf)) =>
-                  tx_bytes, tx_error, shutdown_flag);
-        }
-
-        worker_stop!(graceful_ret =>
-                     tx_error, shutdown_flag [tx_bytes]);
-    }))
-}
-
-fn write_dummy_metadata_block(param : &Param,
-                              stats : &mut Stats,
-                              buf   : &mut [u8])
-                              -> Result<(), Error> {
+fn write_metadata_block(param         : &Param,
+                        stats         : &Stats,
+                        file_metadata : &fs::Metadata,
+                        hash          : Option<multihash::HashBytes>,
+                        buf           : &mut [u8]) {
     let mut block = Block::new(param.version,
                                &param.file_uid,
                                BlockType::Meta);
     pack_metadata(&mut block,
-                  &param,
-                  &stats,
-                  file_metadata.clone(),
-                  None);
+                  param,
+                  stats,
+                  file_metadata,
+                  hash);
     block.sync_to_buffer(None, buf).unwrap();
+}
+
+fn make_reporter(param         : &Param,
+                 stats         : &Arc<Mutex<Stats>>,
+                 tx_error      : Sender<Option<Error>>,
+                 shutdown_flag : &Arc<AtomicBool>)
+                 -> JoinHandle<()> {
+    use progress_report::ProgressElement::*;
+
+    let header = "Data encoding progress";
+    let unit   = "chunks";
+    let stats = Arc::clone(stats);
+    let silence_settings =
+        progress_report::silence_level_to_settings(param.silence_level);
+    let mut progress_report_context =
+        progress_report::Context::new(
+            String::from(header),
+            stats.lock().unwrap().start_time,
+            String::from(unit),
+            vec![ProgressBar, Percentage, CurrentRateShort, TimeUsedShort, TimeLeftShort],
+            vec![TimeUsedLong, AverageRateLong]
+        );
+    let total_blocks = stats.lock().unwrap().total_blocks;
+    let shutdown_flag = Arc::clone(shutdown_flag);
+
+    thread::spawn(move || {
+        loop {
+            worker_stop!(graceful_if_shutdown =>
+                         tx_error, shutdown_flag);
+
+            thread::sleep(Duration::from_millis(100));
+
+            progress_report::print_progress(&silence_settings,
+                                            &mut progress_report_context,
+                                            stats.lock().unwrap().data_blocks_written as u64,
+                                            total_blocks as u64);
+        }
+
+        progress_report::print_progress(&silence_settings,
+                                        &mut progress_report_context,
+                                        stats.lock().unwrap().data_blocks_written as u64,
+                                        total_blocks as u64);
+    })
 }
 
 pub fn encode_file(param    : &Param)
                    -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
-    let stats = Stats::new(param, &metadata);
+    let stats = Arc::new(Mutex::new(Stats::new(param, &metadata)));
 
     // set up file reader and writer
-    let reader = adapt_to_err(file_reader::FileReader::new(&param.in_file))?;
-    let writer = adapt_to_err(file_writer::FileWriter::new(&param.out_file))?;
+    let mut reader = adapt_to_err(file_reader::FileReader::new(&param.in_file))?;
+    let mut writer = adapt_to_err(file_writer::FileWriter::new(&param.out_file))?;
 
-    // progress report context
-    let mut progress_report_context =
-        progress_report::Context::new(
-            header.clone(),
-            start_time,
-            unit.clone(),
-            vec![ProgressBar, Percentage, CurrentRateShort, TimeUsedShort, TimeLeftShort],
-            vec![TimeUsedLong, AverageRateLong]
-        );
+    // setup reporter
+    let (tx_error, rx_error) = channel::<Option<Error>>();
+    let shutdown_flag        = Arc::new(AtomicBool::new(false));
+    let reporter = make_reporter(param, &stats, tx_error, &shutdown_flag);
 
-    progress_report::print_progress(&silence_settings,
-                                    &mut progress_report_context,
-                                    stats.data_blocks_written,
-                                    total_blocks);
+    // set up hash state
+    let mut hash_ctx =
+        multihash::hash::Ctx::new(param.hash_type).unwrap();
 
+    // setup Reed-Solomon things
+    let rs_codec = ReedSolomon::new(param.rs_data, param.rs_parity).unwrap();
+
+    let mut parity_buf : Vec<Box<[u8]>> = Vec::with_capacity(param.rs_parity);
+    if param.rs_enabled {
+        for _ in 0..param.rs_parity {
+            parity_buf.push(vec![0; ver_to_data_size(param.version)]
+                            .into_boxed_slice());
+        }
+    }
+    let mut partiy : SmallVec<[&mut [u8]; 32]> =
+        convert_2D_slices!(parity_buf =to_mut=> SmallVec<[&mut [u8]; 32]>,
+                           SmallVec::with_capacity);
+
+    // setup data buffer
+    let mut data : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
+    // setup main data block
+    let mut block = Block::new(param.version,
+                               &param.file_uid,
+                               BlockType::Data);
+
+    { // write dummy metadata block
+        write_metadata_block(param,
+                             &stats.lock().unwrap(),
+                             &metadata,
+                             None,
+                             &mut data);
+        writer.write(sbx_block::slice_buf(param.version, &data));
+
+        stats.lock().unwrap().meta_blocks_written += 1; }
+
+    loop {
+        let cur_seq_num = stats.lock().unwrap().data_blocks_written + 1;
+
+        let rs_data_index = cur_seq_num as usize % param.rs_data;
+
+        // read data in
+        let len_read =
+            adapt_to_err(reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data)))?;
+
+        if len_read == 0 {
+            break;
+        }
+
+        // update hash state if needed
+        if param.hash_enabled {
+            let data_part = &data[SBX_HEADER_SIZE..
+                                  SBX_HEADER_SIZE + len_read];
+            hash_ctx.update(data_part);
+        }
+        // update Reed-Solomon data if needed
+        if param.rs_enabled {
+            /*rs_codec.encode_single_sep(rs_data_index,
+                                       sbx_block::slice_data_buf(param.version,
+                                                                 &buf),
+                                       &mut partiy).unwrap();*/
+        }
+
+        // start encoding
+        block.header.seq_num = cur_seq_num;
+        block.sync_to_buffer(None, &mut data).unwrap();
+
+        // write data out
+        writer.write(sbx_block::slice_buf(param.version, &data));
+
+        // update stats
+    }
+
+    { // write actual metadata block
+        write_metadata_block(param,
+                             &stats.lock().unwrap(),
+                             &metadata,
+                             Some(hash_ctx.finish_into_hash_bytes()),
+                             &mut data);
+        writer.seek(SeekFrom::Start(0));
+        writer.write(sbx_block::slice_buf(param.version, &data)); }
+
+    // shutdown reporter
+    shutdown_flag.store(true, Ordering::Relaxed);
+
+    reporter.join();
+
+    let stats = stats.lock().unwrap().clone();
     Ok(stats)
 }

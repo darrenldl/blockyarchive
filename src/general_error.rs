@@ -1,5 +1,4 @@
 use super::file_error;
-use super::sbx_block;
 use std::fmt;
 
 #[derive(Clone, Debug, PartialEq)]
