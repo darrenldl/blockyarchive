@@ -5,6 +5,7 @@ use super::worker::reader;
 use super::worker::writer;
 use super::worker::writer::WriteReq;
 use std::fs;
+use std::fmt;
 
 use super::SmallVec;
 
@@ -51,8 +52,15 @@ pub struct Stats {
     pub data_bytes_encoded  : u64,
     pub total_bytes         : u64,
     pub start_time          : i64,
+    pub time_elapsed        : i64,
     pub data_shards         : usize,
     pub parity_shards       : usize
+}
+
+impl fmt::Display for Stats {
+    fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "")
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -121,13 +129,14 @@ impl Stats {
             data_bytes_encoded  : 0,
             total_bytes         : 0,
             start_time          : time::get_time().sec,
+            time_elapsed        : 0,
             data_shards         : 0,
             parity_shards       : 0,
         }
     }
 
-    pub fn time_elapsed(&self) -> i64 {
-        time::get_time().sec - self.start_time
+    pub fn set_time_elapsed(&mut self) {
+        self.time_elapsed = time::get_time().sec - self.start_time;
     }
 }
 
@@ -355,13 +364,15 @@ pub fn encode_file(param    : &Param)
     let read_byte_counter  = Arc::new(Mutex::new(0u64));
     let write_byte_counter = Arc::new(Mutex::new(0u64));
 
-    let reader = make_reader(param, &stats, &mut ctx, &read_byte_counter).unwrap();
-    let packer = make_packer(param, &stats, &mut ctx).unwrap();
-    let writer = make_writer(param, &stats, &mut ctx, &write_byte_counter).unwrap();
+    {
+        let reader = make_reader(param, &stats, &mut ctx, &read_byte_counter).unwrap();
+        let packer = make_packer(param, &stats, &mut ctx).unwrap();
+        let writer = make_writer(param, &stats, &mut ctx, &write_byte_counter).unwrap();
 
-    reader.join().unwrap();
-    packer.join().unwrap();
-    writer.join().unwrap();
+        reader.join().unwrap();
+        packer.join().unwrap();
+        writer.join().unwrap();
+    }
 
     let rx_error : Receiver<Option<Error>> =
         ctx.err_collect.1.replace(None).unwrap();
@@ -372,6 +383,10 @@ pub fn encode_file(param    : &Param)
             Some(e) => { ret_error = Some(e); break; }
         }
     }
+
+    let bytes_read  : &u64 = &read_byte_counter.lock().unwrap();
+
+    stats.lock().unwrap().data_bytes_encoded = *bytes_read;
 
     match ret_error {
         Some(e) => Err(e),
