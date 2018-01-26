@@ -246,7 +246,7 @@ fn make_packer(param   : &Param,
 
             let (len_read, mut buf) =
                 recv!(no_timeout_shutdown_if_none =>
-                      rx_bytes, tx_error, shutdown_flag [tx_bytes]);
+                      rx_bytes, tx_error, shutdown_flag);
 
             // start packing
             block.header.seq_num = cur_seq_num as u32;
@@ -319,6 +319,9 @@ fn make_packer(param   : &Param,
             send!(no_back_off_ret Some(WriteReq::WriteTo(0, buf)) =>
                   tx_bytes, tx_error, shutdown_flag);
         }
+
+        worker_stop!(graceful_ret =>
+                     tx_error, shutdown_flag [tx_bytes]);
     }))
 }
 

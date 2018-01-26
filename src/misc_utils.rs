@@ -97,4 +97,4 @@ pub fn make_sync_channel_for_ctx<T>(size : usize) -> (SyncSender<T>, Cell<Option
     (tx, rx)
 }
 
-pub fn ignore<T1, T2>(res : Result<T1, T2>) {}
+pub fn ignore<T1, T2>(_ : Result<T1, T2>) {}
