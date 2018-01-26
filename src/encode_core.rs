@@ -14,13 +14,12 @@ use std::time::UNIX_EPOCH;
 
 use super::file_reader;
 use super::file_writer;
-use super::file_error::adapt_to_err;
 
 use super::multihash;
 
 use super::Error;
 use super::sbx_specs::Version;
-use super::time;
+use super::time_utils;
 use super::ReedSolomon;
 
 use std::sync::atomic::AtomicBool;
@@ -45,8 +44,8 @@ pub struct Stats {
     pub data_blocks_written : u32,
     pub data_bytes_encoded  : u64,
     pub total_blocks        : u32,
-    pub start_time          : i64,
-    pub time_elapsed        : i64,
+    pub start_time          : f64,
+    pub time_elapsed        : f64,
     pub data_shards         : usize,
     pub parity_shards       : usize
 }
@@ -76,22 +75,21 @@ impl Stats {
         let data_size = ver_to_data_size(param.version) as u64;
         let total_blocks =
             ((file_metadata.len() + (data_size - 1)) / data_size) as u32;
-        println!("Total blocks : {}", total_blocks);
         Stats {
             version             : param.version,
             meta_blocks_written : 0,
             data_blocks_written : 0,
             data_bytes_encoded  : 0,
             total_blocks,
-            start_time          : time::get_time().sec,
-            time_elapsed        : 0,
+            start_time          : time_utils::get_time_now(),
+            time_elapsed        : 0.,
             data_shards         : 0,
             parity_shards       : 0,
         }
     }
 
     pub fn set_time_elapsed(&mut self) {
-        self.time_elapsed = time::get_time().sec - self.start_time;
+        self.time_elapsed = time_utils::get_time_now() - self.start_time;
     }
 }
 
@@ -125,7 +123,7 @@ fn pack_metadata(block         : &mut Block,
             },
             Err(_) => {} }}
     { // add sbx encoding time
-        meta.push(Metadata::SDT(stats.start_time)); }
+        meta.push(Metadata::SDT(stats.start_time as i64)); }
     { // add hash
         if param.hash_enabled {
             let hsh = match hash {
@@ -186,7 +184,7 @@ fn make_reporter(param         : &Param,
             worker_stop!(graceful_if_shutdown =>
                          tx_error, shutdown_flag);
 
-            thread::sleep(Duration::from_millis(100));
+            thread::sleep(Duration::from_millis(300));
 
             progress_report::print_progress(&silence_settings,
                                             &mut progress_report_context,
@@ -208,8 +206,8 @@ pub fn encode_file(param    : &Param)
     let stats = Arc::new(Mutex::new(Stats::new(param, &metadata)));
 
     // set up file reader and writer
-    let mut reader = adapt_to_err(file_reader::FileReader::new(&param.in_file))?;
-    let mut writer = adapt_to_err(file_writer::FileWriter::new(&param.out_file))?;
+    let mut reader = file_reader::FileReader::new(&param.in_file)?;
+    let mut writer = file_writer::FileWriter::new(&param.out_file)?;
 
     // setup reporter
     let (tx_error, rx_error) = channel::<Option<Error>>();
@@ -248,7 +246,7 @@ pub fn encode_file(param    : &Param)
                              &metadata,
                              None,
                              &mut data);
-        writer.write(sbx_block::slice_buf(param.version, &data));
+        writer.write(sbx_block::slice_buf(param.version, &data))?;
 
         stats.lock().unwrap().meta_blocks_written += 1; }
 
@@ -259,7 +257,7 @@ pub fn encode_file(param    : &Param)
 
         // read data in
         let len_read =
-            adapt_to_err(reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data)))?;
+            reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data))?;
 
         if len_read == 0 {
             break;
@@ -284,9 +282,10 @@ pub fn encode_file(param    : &Param)
         block.sync_to_buffer(None, &mut data).unwrap();
 
         // write data out
-        writer.write(sbx_block::slice_buf(param.version, &data));
+        writer.write(sbx_block::slice_buf(param.version, &data))?;
 
         // update stats
+        stats.lock().unwrap().data_blocks_written += 1;
     }
 
     { // write actual metadata block
@@ -295,13 +294,13 @@ pub fn encode_file(param    : &Param)
                              &metadata,
                              Some(hash_ctx.finish_into_hash_bytes()),
                              &mut data);
-        writer.seek(SeekFrom::Start(0));
-        writer.write(sbx_block::slice_buf(param.version, &data)); }
+        writer.seek(SeekFrom::Start(0))?;
+        writer.write(sbx_block::slice_buf(param.version, &data))?; }
 
     // shutdown reporter
     shutdown_flag.store(true, Ordering::Relaxed);
 
-    reporter.join();
+    reporter.join().unwrap();
 
     let stats = stats.lock().unwrap().clone();
     Ok(stats)

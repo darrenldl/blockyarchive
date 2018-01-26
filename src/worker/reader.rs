@@ -1,5 +1,4 @@
 use super::super::Error;
-use super::super::file_error;
 use super::super::FileReader;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -29,7 +28,7 @@ pub fn make_reader(block_size    : usize,
 
     let counter       = Arc::clone(counter);
     let shutdown_flag = Arc::clone(shutdown_flag);
-    let reader_res    = file_error::adapt_to_err(FileReader::new(in_file));
+    let reader_res    = FileReader::new(in_file);
 
     Ok(thread::spawn(move || {
         let mut reader = match reader_res {
@@ -47,7 +46,7 @@ pub fn make_reader(block_size    : usize,
                 match reader.read(&mut buf[write_start..write_end_exc]) {
                     Ok(l) => l,
                     Err(e) => {
-                        worker_stop!(with_error file_error::to_err(e) =>
+                        worker_stop!(with_error e =>
                                      tx_error, shutdown_flag);
                     }
                 };

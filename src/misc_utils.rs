@@ -98,3 +98,8 @@ pub fn make_sync_channel_for_ctx<T>(size : usize) -> (SyncSender<T>, Cell<Option
 }
 
 pub fn ignore<T1, T2>(_ : Result<T1, T2>) {}
+
+pub fn f64_max (v1 : f64, v2 : f64) -> f64 {
+    if v1 < v2 { v2 }
+    else       { v1 }
+}

@@ -1,4 +1,5 @@
-use super::time;
+use super::time_utils;
+use super::misc_utils::f64_max;
 use std::io::Write;
 use std::io::stdout;
 
@@ -31,9 +32,10 @@ pub struct SilenceSettings {
 
 pub struct Context {
     pub header_printed        : bool,
+    pub finish_printed        : bool,
     pub header                : String,
-    pub start_time            : i64,
-    pub last_report_time      : i64,
+    pub start_time            : f64,
+    pub last_report_time      : f64,
     pub last_reported_units   : u64,
     pub unit                  : String,
     pub active_print_elements : Vec<ProgressElement>,
@@ -43,12 +45,13 @@ pub struct Context {
 
 impl Context {
     pub fn new(header                : String,
-               start_time            : i64,
+               start_time            : f64,
                unit                  : String,
                active_print_elements : Vec<ProgressElement>,
                finish_print_elements : Vec<ProgressElement>) -> Context {
         Context {
             header_printed      : false,
+            finish_printed      : false,
             header,
             start_time,
             last_report_time    : start_time,
@@ -73,7 +76,8 @@ pub fn print_progress (settings     : &SilenceSettings,
     let percent             = helper::calc_percent(units_so_far, total_units);
 
     if !(silent_while_active && percent  < 100)
-    && !(silent_when_done    && percent == 100) {
+        && !(silent_when_done       && percent == 100)
+        && !(context.finish_printed && percent == 100) {
         // print header once if not already
         if !context.header_printed {
             println!("{}", context.header);
@@ -100,11 +104,12 @@ pub fn print_progress (settings     : &SilenceSettings,
         print!("{1:0$}", context.max_print_length, message);
         stdout().flush().unwrap();
 
-        if percent == 100 {
+        if percent == 100 && !context.finish_printed {
             println!();
+            context.finish_printed = true;
         }
 
-        context.last_report_time    = time::get_time().sec;
+        context.last_report_time    = time_utils::get_time_now();
         context.last_reported_units = units_so_far;
     }
 }
@@ -118,8 +123,8 @@ fn make_message (context      : &Context,
                                 cur_rate     : f64,
                                 avg_rate     : f64,
                                 unit         : String,
-                                time_used    : i64,
-                                time_left    : i64,
+                                time_used    : f64,
+                                time_left    : f64,
                                 units_so_far : u64,
                                 total_units  : u64,
                                 element      : &ProgressElement)
@@ -133,35 +138,34 @@ fn make_message (context      : &Context,
             AverageRateShort => format!("avg : {}", helper::make_readable_rate(avg_rate, unit)),
             AverageRateLong  => format!("Average rate : {}", helper::make_readable_rate(avg_rate, unit)),
             TimeUsedShort    => {
-                let (hour, minute, second) = helper::seconds_to_hms(time_used);
+                let (hour, minute, second) = helper::seconds_to_hms(time_used as i64);
                 format!("used : {:02}:{:02}:{:02}", hour, minute, second) },
             TimeUsedLong     => {
-                let (hour, minute, second) = helper::seconds_to_hms(time_used);
+                let (hour, minute, second) = helper::seconds_to_hms(time_used as i64);
                 format!("Time elapsed : {:02}:{:02}:{:02}", hour, minute, second) },
             TimeLeftShort    => {
-                let (hour, minute, second) = helper::seconds_to_hms(time_left);
+                let (hour, minute, second) = helper::seconds_to_hms(time_left as i64);
                 format!("left : {:02}:{:02}:{:02}", hour, minute, second) },
             TimeLeftLong     => {
-                let (hour, minute, second) = helper::seconds_to_hms(time_left);
+                let (hour, minute, second) = helper::seconds_to_hms(time_left as i64);
                 format!("Time remaining : {:02}:{:02}:{:02}", hour, minute, second) },
         }
     }
 
-    use std::cmp::max;
 
     let units_remaining        = total_units - units_so_far;
     let percent                = helper::calc_percent(units_so_far, total_units);
-    let cur_time               = time::get_time().sec;
+    let cur_time               = time_utils::get_time_now();
     let time_used              =
-        max(cur_time - context.start_time, 1);
+        f64_max(cur_time - context.start_time, 0.1);
     let time_since_last_report =
-        max(cur_time - context.last_report_time, 1);
+        f64_max(cur_time - context.last_report_time, 0.1);
     let avg_rate               =
-        units_so_far as f64 / time_used as f64;
+        units_so_far as f64 / time_used;
     let cur_rate               =
         (units_so_far - context.last_reported_units) as f64
-        / time_since_last_report as f64;
-    let time_left              = (units_remaining as f64 / cur_rate) as i64;
+        / time_since_last_report;
+    let time_left              = units_remaining as f64 / cur_rate;
     let mut res                = String::with_capacity(100);
     for e in elements.iter() {
         res.push_str(&make_string_for_element(percent,

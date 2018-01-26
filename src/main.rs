@@ -18,7 +18,6 @@ use reed_solomon_erasure::ReedSolomon;
 mod worker_macros;
 
 mod file_error;
-use file_error::FileError;
 
 mod general_error;
 use general_error::Error;
@@ -30,6 +29,7 @@ mod misc_utils;
 mod misc_utils_test;
 mod file_utils;
 mod rand_utils;
+mod time_utils;
 mod sbx_block;
 mod sbx_specs;
 
@@ -57,7 +57,7 @@ fn main () {
         rs_enabled : false,
         rs_data    : 10,
         rs_parity  : 2,
-        hash_enabled : false,
+        hash_enabled : true,
         hash_type  : multihash::HashType::SHA256,
         in_file    : String::from("test"),
         out_file   : String::from("test.sbx"),

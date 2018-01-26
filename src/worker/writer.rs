@@ -1,5 +1,4 @@
 use super::super::Error;
-use super::super::file_error::adapt_to_err;
 use super::super::FileWriter;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -32,7 +31,7 @@ pub fn make_writer(read_start    : Option<usize>,
 
     let counter       = Arc::clone(counter);
     let shutdown_flag = Arc::clone(shutdown_flag);
-    let writer_res    = adapt_to_err(FileWriter::new(out_file));
+    let writer_res    = FileWriter::new(out_file);
 
     Ok(thread::spawn(move || {
         let mut writer = match writer_res {
@@ -47,8 +46,7 @@ pub fn make_writer(read_start    : Option<usize>,
             match req {
                 WriteReq::Seek(pos)         => {
                     worker_stop!(with_error_if_fail
-                                 (adapt_to_err(
-                                     writer.seek(SeekFrom::Start(pos)))) =>
+                                 (writer.seek(SeekFrom::Start(pos))) =>
                                  tx_error, shutdown_flag);
                 },
                 WriteReq::WriteTo(tar_pos, buf) => {
@@ -57,19 +55,16 @@ pub fn make_writer(read_start    : Option<usize>,
                         None    => buf.len()
                     };
                     let cur_pos = worker_stop!(with_error_if_fail
-                                               (adapt_to_err(writer.cur_pos())) =>
+                                               (writer.cur_pos()) =>
                                                tx_error, shutdown_flag);
                     worker_stop!(with_error_if_fail
-                                 (adapt_to_err(
-                                     writer.seek(SeekFrom::Start(tar_pos)))) =>
+                                 (writer.seek(SeekFrom::Start(tar_pos))) =>
                                  tx_error, shutdown_flag);
                     worker_stop!(with_error_if_fail
-                                 (adapt_to_err(
-                                     writer.write(&buf[read_start..read_end_exc]))) =>
+                                 (writer.write(&buf[read_start..read_end_exc])) =>
                                  tx_error, shutdown_flag);
                     worker_stop!(with_error_if_fail
-                                 (adapt_to_err(
-                                     writer.seek(SeekFrom::Start(cur_pos)))) =>
+                                 (writer.seek(SeekFrom::Start(cur_pos))) =>
                                  tx_error, shutdown_flag);
 
                     *counter.lock().unwrap() +=
@@ -81,8 +76,7 @@ pub fn make_writer(read_start    : Option<usize>,
                         None    => buf.len()
                     };
                     worker_stop!(with_error_if_fail
-                                 (adapt_to_err(
-                                     writer.write(&buf[read_start..read_end_exc]))) =>
+                                 (writer.write(&buf[read_start..read_end_exc])) =>
                                  tx_error, shutdown_flag);
 
                     *counter.lock().unwrap() +=
