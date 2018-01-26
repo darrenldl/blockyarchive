@@ -1,5 +1,19 @@
 #![allow(dead_code)]
 
+#[macro_use]
+extern crate nom;
+
+extern crate time;
+
+extern crate pond;
+
+extern crate smallvec;
+use smallvec::SmallVec;
+
+#[macro_use]
+extern crate reed_solomon_erasure;
+use reed_solomon_erasure::ReedSolomon;
+
 macro_rules! worker_stop {
     (
         graceful => $tx_error:path, $shutdown_flag:path
@@ -89,7 +103,7 @@ macro_rules! send {
         }
     }};
     (
-        try_with_back_off_millis $time:expr, $item:expr => $sender:ident, $tx_error:path, $shutdown_flag:path
+        back_off_millis $time:expr, $item:expr => $sender:ident, $tx_error:path, $shutdown_flag:path
     ) => {{
         use std::time::Duration;
         use std::sync::mpsc::TrySendError;
@@ -103,6 +117,11 @@ macro_rules! send {
             Err(TrySendError::Disconnected(_)) =>
                 worker_stop!(graceful => $tx_error, $shutdown_flag)
         }
+    }};
+    (
+        back_off $item:expr => $sender:ident, $tx_error:path, $shutdown_flag:path
+    ) => {{
+        send!(back_off_millis 100, $item => $sender, $tx_error, $shutdown_flag)
     }}
 }
 
@@ -131,8 +150,12 @@ macro_rules! recv {
                              $tx_error, $shutdown_flag );
             }
         }
+    }};
+    (
+        timeout => $receiver:ident, $tx_error:path, $shutdown_flag:path
+    ) => {{
+        recv!(timeout_millis 1000 => $receiver, $tx_error, $shutdown_flag)
     }}
-
 }
 
 mod file_error;
@@ -163,14 +186,6 @@ mod file_writer;
 use file_writer::FileWriter;
 
 mod worker;
-
-
-#[macro_use]
-extern crate nom;
-
-extern crate time;
-
-extern crate scoped_threadpool;
 
 fn main () {
     use encode_core::Param;

@@ -5,7 +5,7 @@ authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 
 [dependencies]
 crc-ccitt            = { path = "crc-ccitt" }
-reed-solomon-erasure = "2.2"
+reed-solomon-erasure = "2.3"
 ring                 = "0.12.1"
 hex-slice            = "0.1.2"
 blake2_c             = "0.2.0"
@@ -15,4 +15,5 @@ nom                  = "3.2"
 time                 = "0.1"
 enum-map             = "0.2"
 # threadpool           = "1.7"
-scoped_threadpool    = "0.1"
+# scoped_threadpool    = "0.1"
+pond                 = "0.2"

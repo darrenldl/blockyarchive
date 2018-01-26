@@ -69,7 +69,7 @@ pub fn make_reader(block_size    : usize,
 
             // send bytes over
             // if full, then put current buffer into secondary buffer and wait
-            secondary_buf = send!(try_with_back_off_millis 10, (len_read, buf) =>
+            secondary_buf = send!(back_off (len_read, buf) =>
                                   tx_bytes, tx_error, shutdown_flag);
         }
     }))

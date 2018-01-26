@@ -6,6 +6,8 @@ use super::worker::writer;
 use super::worker::writer::WriteReq;
 use std::fs;
 
+use super::SmallVec;
+
 use std::time::UNIX_EPOCH;
 
 use super::file_reader;
@@ -13,7 +15,7 @@ use super::file_error::adapt_to_err;
 
 use super::multihash;
 
-use super::scoped_threadpool::Pool;
+use super::pond::Pool;
 
 use std::cell::Cell;
 
@@ -23,6 +25,7 @@ use super::misc_utils::{make_channel_for_ctx,
 use super::Error;
 use super::sbx_specs::Version;
 use super::time;
+use super::ReedSolomon;
 
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::{Sender,
@@ -35,7 +38,8 @@ use super::sbx_block::metadata;
 use super::sbx_block::metadata::Metadata;
 use super::sbx_specs::{SBX_FILE_UID_LEN,
                        SBX_HEADER_SIZE,
-                       ver_to_block_size};
+                       ver_to_block_size,
+                       ver_to_data_size};
 
 type SharedStats = Arc<Mutex<Stats>>;
 
@@ -195,27 +199,36 @@ fn make_packer(param   : &Param,
     let tx_error      = context.err_collect.0.clone();
     let shutdown_flag = Arc::clone(&context.shutdown);
     let param         = param.clone();
+    let data_size     = ver_to_data_size(param.version);
     let block_size    = ver_to_block_size(param.version);
     let file_metadata = context.file_metadata.clone();
 
     Ok(thread::spawn(move || {
+        let mut block             = Block::new(param.version,
+                                               &param.file_uid,
+                                               BlockType::Data);
         let mut thread_pool       = Pool::new(2);
         let mut cur_seq_num : u64 = 1;
         let mut hash_ctx          =
             multihash::hash::Ctx::new(param.hash_type).unwrap();
+        let rs_codec              = ReedSolomon::new(param.rs_data,
+                                                     param.rs_parity).unwrap();
 
         let mut parity : Vec<Box<[u8]>> = Vec::with_capacity(param.rs_parity);
         if param.rs_enabled {
             for _ in 0..param.rs_parity {
-                parity.push(vec![0; block_size].into_boxed_slice());
+                parity.push(vec![0; data_size].into_boxed_slice());
             }
         }
+        let mut partiy_refs : SmallVec<[&mut [u8]; 32]> =
+            convert_2D_slices!(parity =to_mut=> SmallVec<[&mut [u8]; 32]>,
+                               SmallVec::with_capacity);
 
         {
-            // write dummy metadata block
             let mut block = Block::new(param.version,
                                        &param.file_uid,
                                        BlockType::Meta);
+            // write dummy metadata block
             pack_metadata(&mut block,
                           &param,
                           &stats.lock().unwrap(),
@@ -228,13 +241,13 @@ fn make_packer(param   : &Param,
         }
 
         loop {
+            let rs_data_index =
+                (cur_seq_num - 1) as usize % param.rs_data;
+
             let (len_read, mut buf) =
-                recv!(timeout_millis 10 => rx_bytes, tx_error, shutdown_flag);
+                recv!(timeout => rx_bytes, tx_error, shutdown_flag);
 
             // start packing
-            let mut block = Block::new(param.version,
-                                       &param.file_uid,
-                                       BlockType::Data);
             block.header.seq_num = cur_seq_num as u32;
 
             thread_pool.scoped(|scope| {
@@ -247,23 +260,42 @@ fn make_packer(param   : &Param,
                     if param.hash_enabled {
                         let data_buf = &buf[SBX_HEADER_SIZE..
                                             SBX_HEADER_SIZE + len_read];
-                        println!("Updating hash ctx");
-                        println!("Updating with : {:?}", data_buf);
                         hash_ctx.update(data_buf);
+                        println!("Updated hash");
                     }
                 });
                 // update rs parity
                 scope.execute(|| {
                     if param.rs_enabled {
-                        
+                        rs_codec.encode_single_sep(rs_data_index,
+                                                   sbx_block::slice_data_buf(param.version,
+                                                                             &buf),
+                                                   &mut partiy_refs).unwrap();
                     }
                 });
-                scope.join_all();
             });
 
             block.sync_to_buffer(Some(false), &mut buf).unwrap();
 
-            tx_bytes.send(WriteReq::Write(buf)).unwrap();
+            send!(back_off WriteReq::Write(buf) =>
+                  tx_bytes, tx_error, shutdown_flag);
+
+            if param.rs_enabled && rs_data_index == param.rs_parity - 1 {
+                // output parity blocks
+                for p in partiy_refs.iter() {
+                    let mut buf = vec![0; block_size].into_boxed_slice();
+                    buf[SBX_HEADER_SIZE..].copy_from_slice(p);
+
+                    block.header.seq_num = cur_seq_num as u32;
+                    block.sync_to_buffer(None, &mut buf).unwrap();
+
+                    send!(back_off WriteReq::Write(buf) =>
+                          tx_bytes, tx_error, shutdown_flag);
+
+                    cur_seq_num += 1;
+                    stats.lock().unwrap().data_blocks_written = cur_seq_num;
+                }
+            }
 
             // update stats
             cur_seq_num += 1;
@@ -271,11 +303,6 @@ fn make_packer(param   : &Param,
         }
 
         {
-            /*let mut hash_ctx          =
-                multihash::hash::Ctx::new(param.hash_type).unwrap();
-
-            hash_ctx.update(b"abcd");*/
-
             println!("Writing actual metadata block");
             // write actual metadata block
             let mut block = Block::new(param.version,

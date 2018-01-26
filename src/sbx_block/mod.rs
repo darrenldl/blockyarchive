@@ -106,13 +106,11 @@ pub fn slice_buf_mut(version : Version,
     &mut buffer[..ver_to_block_size(version)]
 }
 
-pub fn slice_header_buf(version : Version,
-                        buffer  : &[u8]) -> &[u8] {
+pub fn slice_header_buf(buffer  : &[u8]) -> &[u8] {
     &buffer[..SBX_HEADER_SIZE]
 }
 
-pub fn slice_header_buf_mut(version : Version,
-                            buffer  : &mut [u8]) -> &mut [u8] {
+pub fn slice_header_buf_mut(buffer  : &mut [u8]) -> &mut [u8] {
     &mut buffer[..SBX_HEADER_SIZE]
 }
 

@@ -41,7 +41,7 @@ pub fn make_writer(read_start    : Option<usize>,
         };
 
         loop {
-            let req = recv!(timeout_millis 10 => rx_write_req, tx_error, shutdown_flag);
+            let req = recv!(timeout => rx_write_req, tx_error, shutdown_flag);
 
             match req {
                 WriteReq::Seek(pos)         => {
