@@ -9,7 +9,9 @@ pub enum Metadata {
     FSZ(u64),
     FDT(i64),
     SDT(i64),
-    HSH(multihash::HashBytes)
+    HSH(multihash::HashBytes),
+    RSD(u8),
+    RSP(u8),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -19,7 +21,9 @@ pub enum MetadataID {
     FSZ,
     FDT,
     SDT,
-    HSH
+    HSH,
+    RSD,
+    RSP,
 }
 
 static PREAMBLE_LEN : usize = 3 + 1;
@@ -30,7 +34,8 @@ fn single_info_size(meta : &Metadata) -> usize {
     match *meta {
         FNM(ref x) | SNM(ref x)  => x.len(),
         FSZ(_) | FDT(_) | SDT(_) => mem::size_of::<u64>(),
-        HSH(ref x)               => multihash::specs::Param::new(x.0).total_length()
+        HSH(ref x)               => multihash::specs::Param::new(x.0).total_length(),
+        RSD(_) | RSP(_)          => mem::size_of::<u8>(),
     }
 }
 
@@ -47,6 +52,8 @@ pub fn id_to_bytes(id : MetadataID) -> [u8; 3] {
         FDT => [b'F', b'D', b'T'],
         SDT => [b'S', b'D', b'T'],
         HSH => [b'H', b'S', b'H'],
+        RSD => [b'R', b'S', b'D'],
+        RSP => [b'R', b'S', b'P'],
     }
 }
 
@@ -58,6 +65,8 @@ pub fn meta_to_id(meta : &Metadata) -> MetadataID {
         Metadata::FDT(_) => MetadataID::FDT,
         Metadata::SDT(_) => MetadataID::SDT,
         Metadata::HSH(_) => MetadataID::HSH,
+        Metadata::RSD(_) => MetadataID::RSD,
+        Metadata::RSP(_) => MetadataID::RSP,
     }
 }
 
@@ -100,6 +109,9 @@ fn single_to_bytes(meta   : &Metadata,
         },
         HSH(ref x) => {
             multihash::hash_bytes_to_bytes(x, dst);
+        },
+        RSD(x) | RSP(x) => {
+            dst[0] = x;
         }
     }
 
@@ -168,6 +180,8 @@ mod parsers {
     make_meta_parser!(fsz_p, b"FSZ", FSZ => num, be_u64);
     make_meta_parser!(fdt_p, b"FDT", FDT => num, be_i64);
     make_meta_parser!(sdt_p, b"SDT", SDT => num, be_i64);
+    make_meta_parser!(rsd_p, b"RSD", RSD => num, be_u8);
+    make_meta_parser!(rsp_p, b"RSP", RSP => num, be_u8);
 
     named!(hsh_p <Metadata>,
            do_parse!(
@@ -184,7 +198,9 @@ mod parsers {
                     fsz_p  |
                     fdt_p  |
                     sdt_p  |
-                    hsh_p
+                    hsh_p  |
+                    rsd_p  |
+                    rsp_p
                )
            )
     );
