@@ -39,6 +39,8 @@ pub fn print_progress (settings     : &SilenceSettings,
                        context      : &mut Context,
                        units_so_far : u64,
                        total_units  : u64) {
+    use std::cmp::max;
+
     let silent_while_active = settings.silent_while_active;
     let silent_when_done    = settings.silent_when_done;
 
@@ -54,7 +56,13 @@ pub fn print_progress (settings     : &SilenceSettings,
                                    total_units,
                                    &context.elements);
 
-        println!("{1:0$}", context.max_print_length, message);
+        context.max_print_length = max(context.max_print_length,
+                                       message.len());
+
+        print!("\r{1:0$}", context.max_print_length, message);
+
+        context.last_report_time    = time::get_time().sec;
+        context.last_reported_units = units_so_far;
     }
 }
 

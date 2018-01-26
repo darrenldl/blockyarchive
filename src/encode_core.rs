@@ -44,6 +44,8 @@ use super::sbx_specs::{SBX_FILE_UID_LEN,
 
 type SharedStats = Arc<Mutex<Stats>>;
 
+use std::time::Duration;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
     pub version             : Version,
@@ -348,6 +350,29 @@ fn make_writer(param   : &Param,
                         context.err_collect.0.clone())
 }
 
+fn make_progress_reporter(param         : &Param,
+                          stats         : &SharedStats,
+                          context       : &mut Context,
+                          read_counter  : &Arc<Mutex<u64>>,
+                          write_counter : &Arc<Mutex<u64>>)
+                          -> Result<JoinHandle<()>, Error> {
+    let stats         = Arc::clone(stats);
+    let read_counter  = Arc::clone(read_counter);
+    let write_counter = Arc::clone(write_counter);
+    let tx_error      = context.err_collect.0.clone();
+    let shutdown_flag = Arc::clone(&context.shutdown);
+    Ok(thread::spawn(move || {
+        loop {
+            worker_stop!(graceful_if_shutdown =>
+                         tx_error, shutdown_flag);
+
+            thread::sleep(Duration::from_millis(200));
+
+
+        }
+    }))
+}
+
 pub fn encode_file(param    : &Param)
                    -> Result<Stats, Error> {
     let metadata = {
@@ -377,8 +402,8 @@ pub fn encode_file(param    : &Param)
     let rx_error : Receiver<Option<Error>> =
         ctx.err_collect.1.replace(None).unwrap();
     let mut ret_error : Option<Error> = None;
-    for _ in 0..3 {
-        match rx_error.recv().unwrap() {
+    while let Ok(r) = rx_error.try_recv() {
+        match r {
             None    => {},
             Some(e) => { ret_error = Some(e); break; }
         }
