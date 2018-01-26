@@ -7,6 +7,8 @@ use super::worker::writer::WriteReq;
 use std::fs;
 use std::fmt;
 
+use super::progress_report;
+
 use super::SmallVec;
 
 use std::time::UNIX_EPOCH;
@@ -52,7 +54,7 @@ pub struct Stats {
     pub meta_blocks_written : u64,
     pub data_blocks_written : u64,
     pub data_bytes_encoded  : u64,
-    pub total_bytes         : u64,
+    pub total_blocks        : u64,
     pub start_time          : i64,
     pub time_elapsed        : i64,
     pub data_shards         : usize,
@@ -75,7 +77,8 @@ pub struct Param {
     pub hash_enabled : bool,
     pub hash_type    : multihash::HashType,
     pub in_file      : String,
-    pub out_file     : String
+    pub out_file     : String,
+    pub silence_level : progress_report::SilenceLevel
 }
 
 pub struct Context {
@@ -88,7 +91,8 @@ pub struct Context {
                          Cell<Option<Receiver<Option<(usize, Box<[u8]>)>>>>),
     pub egress_bytes  : (SyncSender<Option<WriteReq>>,
                          Cell<Option<Receiver<Option<WriteReq>>>>),
-    pub file_metadata : fs::Metadata
+    pub file_metadata : fs::Metadata,
+    pub silence_settings : progress_report::SilenceSettings
 }
 
 impl Context {
@@ -117,19 +121,24 @@ impl Context {
             parity_blocks,
             ingress_bytes : make_sync_channel_for_ctx(100),
             egress_bytes  : make_sync_channel_for_ctx(100),
-            file_metadata
+            file_metadata,
+            silence_settings : progress_report::silence_level_to_settings(param.silence_level)
         }
     }
 }
 
 impl Stats {
-    pub fn new(param : &Param) -> Stats {
+    pub fn new(param : &Param, context : &Context) -> Stats {
+        let data_size = ver_to_data_size(param.version) as u64;
+        let total_blocks =
+            (context.file_metadata.len() + (data_size - 1)) / data_size;
+        println!("Total blocks : {}", total_blocks);
         Stats {
             version             : param.version,
             meta_blocks_written : 0,
             data_blocks_written : 0,
             data_bytes_encoded  : 0,
-            total_bytes         : 0,
+            total_blocks,
             start_time          : time::get_time().sec,
             time_elapsed        : 0,
             data_shards         : 0,
@@ -218,7 +227,7 @@ fn make_packer(param   : &Param,
         let mut block             = Block::new(param.version,
                                                &param.file_uid,
                                                BlockType::Data);
-        let mut thread_pool       = Pool::new(2);
+        let mut thread_pool       = Pool::new(3);
         let mut cur_seq_num : u64 = 1;
         let mut hash_ctx          =
             multihash::hash::Ctx::new(param.hash_type).unwrap();
@@ -273,7 +282,6 @@ fn make_packer(param   : &Param,
                         let data_buf = &buf[SBX_HEADER_SIZE..
                                             SBX_HEADER_SIZE + len_read];
                         hash_ctx.update(data_buf);
-                        println!("Updated hash");
                     }
                 });
                 // update rs parity
@@ -305,7 +313,6 @@ fn make_packer(param   : &Param,
                           tx_bytes, tx_error, shutdown_flag);
 
                     cur_seq_num += 1;
-                    stats.lock().unwrap().data_blocks_written = cur_seq_num;
                 }
             }
 
@@ -314,8 +321,9 @@ fn make_packer(param   : &Param,
             stats.lock().unwrap().data_blocks_written = cur_seq_num;
         }
 
+        stats.lock().unwrap().data_blocks_written = cur_seq_num;
+
         {
-            println!("Writing actual metadata block");
             // write actual metadata block
             let mut block = Block::new(param.version,
                                        &param.file_uid,
@@ -352,24 +360,43 @@ fn make_writer(param   : &Param,
 
 fn make_progress_reporter(param         : &Param,
                           stats         : &SharedStats,
-                          context       : &mut Context,
-                          read_counter  : &Arc<Mutex<u64>>,
-                          write_counter : &Arc<Mutex<u64>>)
+                          context       : &Context)
                           -> Result<JoinHandle<()>, Error> {
+    use progress_report::ProgressElement::*;
     let stats         = Arc::clone(stats);
-    let read_counter  = Arc::clone(read_counter);
-    let write_counter = Arc::clone(write_counter);
     let tx_error      = context.err_collect.0.clone();
     let shutdown_flag = Arc::clone(&context.shutdown);
+    let start_time    = stats.lock().unwrap().start_time;
+    let header        = String::from("Data encoding progress");
+    let unit          = String::from("chunks");
+    let total_blocks  = stats.lock().unwrap().total_blocks;
+    let mut progress_report_context =
+        progress_report::Context::new(
+            header.clone(),
+            start_time,
+            unit.clone(),
+            vec![ProgressBar, Percentage, CurrentRateShort, TimeUsedShort, TimeLeftShort],
+            vec![TimeUsedLong, AverageRateLong]
+        );
+    let silence_settings = context.silence_settings;
     Ok(thread::spawn(move || {
         loop {
+            println!("Printing progress");
             worker_stop!(graceful_if_shutdown =>
                          tx_error, shutdown_flag);
 
             thread::sleep(Duration::from_millis(200));
 
-
+            progress_report::print_progress(&silence_settings,
+                                            &mut progress_report_context,
+                                            stats.lock().unwrap().data_blocks_written,
+                                            total_blocks);
         }
+
+        progress_report::print_progress(&silence_settings,
+                                        &mut progress_report_context,
+                                        stats.lock().unwrap().data_blocks_written,
+                                        total_blocks);
     }))
 }
 
@@ -384,7 +411,7 @@ pub fn encode_file(param    : &Param)
     let mut ctx = Context::new(param, metadata);
 
     let stats : SharedStats =
-        Arc::new(Mutex::new(Stats::new(param)));
+        Arc::new(Mutex::new(Stats::new(param, &ctx)));
 
     let read_byte_counter  = Arc::new(Mutex::new(0u64));
     let write_byte_counter = Arc::new(Mutex::new(0u64));
@@ -393,10 +420,12 @@ pub fn encode_file(param    : &Param)
         let reader = make_reader(param, &stats, &mut ctx, &read_byte_counter).unwrap();
         let packer = make_packer(param, &stats, &mut ctx).unwrap();
         let writer = make_writer(param, &stats, &mut ctx, &write_byte_counter).unwrap();
+        let reporter = make_progress_reporter(param, &stats, &ctx).unwrap();
 
         reader.join().unwrap();
         packer.join().unwrap();
         writer.join().unwrap();
+        reporter.join().unwrap();
     }
 
     let rx_error : Receiver<Option<Error>> =

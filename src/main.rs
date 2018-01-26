@@ -59,7 +59,8 @@ fn main () {
         hash_enabled : true,
         hash_type  : multihash::HashType::SHA256,
         in_file    : String::from("test"),
-        out_file   : String::from("test.sbx")
+        out_file   : String::from("test.sbx"),
+        silence_level : progress_report::SilenceLevel::L0
     };
     match encode_core::encode_file(&param) {
         Ok(_)  => {},
