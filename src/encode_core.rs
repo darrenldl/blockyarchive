@@ -384,6 +384,8 @@ pub fn encode_file(param    : &Param)
         }
     }
 
+    stats.lock().unwrap().set_time_elapsed();
+
     let bytes_read  : &u64 = &read_byte_counter.lock().unwrap();
 
     stats.lock().unwrap().data_bytes_encoded = *bytes_read;

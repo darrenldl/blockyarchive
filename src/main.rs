@@ -216,6 +216,8 @@ mod repair_core;
 mod show_core;
 mod sort_core;
 
+mod progress_report;
+
 mod file_reader;
 use file_reader::FileReader;
 mod file_writer;
