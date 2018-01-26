@@ -214,16 +214,16 @@ mod helper {
         let rate_string : String =
             if        rate >  1_000_000_000_000. {
                 let adjusted_rate = rate     / 1_000_000_000_000.;
-                format!("{:6.2} {}", adjusted_rate, 'T')
+                format!("{:6.2}{}", adjusted_rate, 'T')
             } else if rate >      1_000_000_000. {
                 let adjusted_rate = rate     /     1_000_000_000.;
-                format!("{:6.2} {}", adjusted_rate, 'G')
+                format!("{:6.2}{}", adjusted_rate, 'G')
             } else if rate >          1_000_000. {
                 let adjusted_rate = rate     /         1_000_000.;
-                format!("{:6.2} {}", adjusted_rate, 'M')
+                format!("{:6.2}{}", adjusted_rate, 'M')
             } else if rate >              1_000. {
                 let adjusted_rate = rate     /             1_000.;
-                format!("{:6.0} {}", adjusted_rate, 'K')
+                format!("{:6.0}{}", adjusted_rate, 'K')
             } else {
                 format!("{:7.0}",   rate)
             };

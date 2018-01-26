@@ -271,7 +271,19 @@ fn make_packer(param   : &Param,
             // start packing
             block.header.seq_num = cur_seq_num as u32;
 
-            thread_pool.scoped(|scope| {
+            block.update_crc(&buf).unwrap();
+            if param.hash_enabled {
+                let data_buf = &buf[SBX_HEADER_SIZE..
+                                    SBX_HEADER_SIZE + len_read];
+                hash_ctx.update(data_buf);
+            }
+            if param.rs_enabled {
+                rs_codec.encode_single_sep(rs_data_index,
+                                           sbx_block::slice_data_buf(param.version,
+                                                                     &buf),
+                                           &mut partiy_refs).unwrap();
+            }
+            /*thread_pool.scoped(|scope| {
                 // update CRC
                 scope.execute(|| {
                     block.update_crc(&buf).unwrap();
@@ -293,7 +305,7 @@ fn make_packer(param   : &Param,
                                                    &mut partiy_refs).unwrap();
                     }
                 });
-            });
+            });*/
 
             block.sync_to_buffer(Some(false), &mut buf).unwrap();
 
