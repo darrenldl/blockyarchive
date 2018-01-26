@@ -119,8 +119,8 @@ impl Context {
             err_collect : make_channel_for_ctx(),
             data_block,
             parity_blocks,
-            ingress_bytes : make_sync_channel_for_ctx(100),
-            egress_bytes  : make_sync_channel_for_ctx(100),
+            ingress_bytes : make_sync_channel_for_ctx(1000),
+            egress_bytes  : make_sync_channel_for_ctx(1000),
             file_metadata,
             silence_settings : progress_report::silence_level_to_settings(param.silence_level)
         }

@@ -173,7 +173,7 @@ fn make_message (context      : &Context,
                                               units_so_far,
                                               total_units,
                                               e));
-        res.push(' ');
+        res.push_str("  ");
     }
     res
 }
