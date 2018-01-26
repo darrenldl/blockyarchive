@@ -125,8 +125,6 @@ fn make_message (context      : &Context,
                                 unit         : String,
                                 time_used    : f64,
                                 time_left    : f64,
-                                units_so_far : u64,
-                                total_units  : u64,
                                 element      : &ProgressElement)
                                 -> String {
         use self::ProgressElement::*;
@@ -174,8 +172,6 @@ fn make_message (context      : &Context,
                                               context.unit.clone(),
                                               time_used,
                                               time_left,
-                                              units_so_far,
-                                              total_units,
                                               e));
         res.push_str("  ");
     }

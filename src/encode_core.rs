@@ -210,7 +210,7 @@ pub fn encode_file(param    : &Param)
     let mut writer = file_writer::FileWriter::new(&param.out_file)?;
 
     // setup reporter
-    let (tx_error, rx_error) = channel::<Option<Error>>();
+    let (tx_error, _) = channel::<Option<Error>>();
     let shutdown_flag        = Arc::new(AtomicBool::new(false));
     let reporter = make_reporter(param, &stats, tx_error, &shutdown_flag);
 
@@ -228,7 +228,7 @@ pub fn encode_file(param    : &Param)
                             .into_boxed_slice());
         }
     }
-    let mut partiy : SmallVec<[&mut [u8]; 32]> =
+    let mut parity : SmallVec<[&mut [u8]; 32]> =
         convert_2D_slices!(parity_buf =to_mut=> SmallVec<[&mut [u8]; 32]>,
                            SmallVec::with_capacity);
 
