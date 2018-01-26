@@ -72,7 +72,7 @@ pub fn print_progress (settings     : &SilenceSettings,
 
     let percent             = helper::calc_percent(units_so_far, total_units);
 
-    if !(silent_while_active && percent != 100)
+    if !(silent_while_active && percent  < 100)
     && !(silent_when_done    && percent == 100) {
         // print header once if not already
         if !context.header_printed {
@@ -81,7 +81,7 @@ pub fn print_progress (settings     : &SilenceSettings,
         }
 
         let message =
-            if percent != 100 {
+            if percent < 100 {
                 make_message(context,
                              units_so_far,
                              total_units,
