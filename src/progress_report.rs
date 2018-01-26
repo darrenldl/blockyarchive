@@ -100,8 +100,7 @@ pub fn print_progress (settings     : &SilenceSettings,
         context.max_print_length = max(context.max_print_length,
                                        message.len());
 
-        print!("\r");
-        print!("{1:0$}", context.max_print_length, message);
+        print!("\r{1:0$}", context.max_print_length, message);
         stdout().flush().unwrap();
 
         if percent == 100 && !context.finish_printed {

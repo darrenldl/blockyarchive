@@ -158,10 +158,12 @@ fn write_metadata_block(param         : &Param,
 
 fn make_reporter(param         : &Param,
                  stats         : &Arc<Mutex<Stats>>,
-                 tx_error      : Sender<Option<Error>>,
+                 tx_error      : &Sender<Option<Error>>,
                  shutdown_flag : &Arc<AtomicBool>)
                  -> JoinHandle<()> {
     use progress_report::ProgressElement::*;
+
+    let tx_error = tx_error.clone();
 
     let header = "Data encoding progress";
     let unit   = "chunks";
@@ -212,7 +214,7 @@ pub fn encode_file(param    : &Param)
     // setup reporter
     let (tx_error, _) = channel::<Option<Error>>();
     let shutdown_flag        = Arc::new(AtomicBool::new(false));
-    let reporter = make_reporter(param, &stats, tx_error, &shutdown_flag);
+    let reporter = make_reporter(param, &stats, &tx_error, &shutdown_flag);
 
     // set up hash state
     let mut hash_ctx =

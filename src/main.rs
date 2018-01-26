@@ -7,6 +7,8 @@ extern crate time;
 
 extern crate pond;
 
+extern crate futures;
+
 extern crate smallvec;
 use smallvec::SmallVec;
 
