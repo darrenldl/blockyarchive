@@ -28,6 +28,7 @@ mod multihash;
 mod multihash_test;
 mod misc_utils;
 mod misc_utils_test;
+mod file_utils;
 mod rand_utils;
 mod sbx_block;
 mod sbx_specs;

@@ -6,6 +6,7 @@ use super::worker::writer;
 use super::worker::writer::WriteReq;
 use std::fs;
 use std::fmt;
+use super::file_utils;
 
 use super::progress_report;
 
@@ -144,6 +145,10 @@ fn pack_metadata(block         : &mut Block,
                 }
             };
             meta.push(Metadata::HSH(hsh)); }}
+    { // add RS params
+        if param.rs_enabled {
+            meta.push(Metadata::RSD(param.rs_data   as u8));
+            meta.push(Metadata::RSP(param.rs_parity as u8)); }}
 }
 
 fn make_packer(param   : &Param,
@@ -293,18 +298,32 @@ fn make_packer(param   : &Param,
     }))
 }
 
-fn make_progress_reporter(param         : &Param,
-                          stats         : &SharedStats,
-                          context       : &Context)
-                          -> Result<JoinHandle<()>, Error> {
-    use progress_report::ProgressElement::*;
-    let stats         = Arc::clone(stats);
-    let tx_error      = context.err_collect.0.clone();
-    let shutdown_flag = Arc::clone(&context.shutdown);
-    let start_time    = stats.lock().unwrap().start_time;
-    let header        = String::from("Data encoding progress");
-    let unit          = String::from("chunks");
-    let total_blocks  = stats.lock().unwrap().total_blocks;
+fn write_dummy_metadata_block(param : &Param,
+                              stats : &mut Stats,
+                              buf   : &mut [u8])
+                              -> Result<(), Error> {
+    let mut block = Block::new(param.version,
+                               &param.file_uid,
+                               BlockType::Meta);
+    pack_metadata(&mut block,
+                  &param,
+                  &stats,
+                  file_metadata.clone(),
+                  None);
+    block.sync_to_buffer(None, buf).unwrap();
+}
+
+pub fn encode_file(param    : &Param)
+                   -> Result<Stats, Error> {
+    let metadata = file_utils::get_file_metadata(&param.in_file)?;
+
+    let stats = Stats::new(param, &metadata);
+
+    // set up file reader and writer
+    let reader = adapt_to_err(file_reader::FileReader::new(&param.in_file))?;
+    let writer = adapt_to_err(file_writer::FileWriter::new(&param.out_file))?;
+
+    // progress report context
     let mut progress_report_context =
         progress_report::Context::new(
             header.clone(),
@@ -313,36 +332,11 @@ fn make_progress_reporter(param         : &Param,
             vec![ProgressBar, Percentage, CurrentRateShort, TimeUsedShort, TimeLeftShort],
             vec![TimeUsedLong, AverageRateLong]
         );
-    let silence_settings = context.silence_settings;
-    Ok(thread::spawn(move || {
-        loop {
-            worker_stop!(graceful_if_shutdown =>
-                         tx_error, shutdown_flag);
 
-            thread::sleep(Duration::from_millis(200));
-
-            progress_report::print_progress(&silence_settings,
-                                            &mut progress_report_context,
-                                            stats.lock().unwrap().data_blocks_written,
-                                            total_blocks);
-        }
-
-        progress_report::print_progress(&silence_settings,
-                                        &mut progress_report_context,
-                                        stats.lock().unwrap().data_blocks_written,
-                                        total_blocks);
-    }))
-}
-
-pub fn encode_file(param    : &Param)
-                   -> Result<Stats, Error> {
-    let metadata = {
-        let reader = adapt_to_err(file_reader::FileReader::new(&param.in_file))?;
-
-        adapt_to_err(reader.metadata())?
-    };
-
-    let stats = Stats::new(param, &metadata);
+    progress_report::print_progress(&silence_settings,
+                                    &mut progress_report_context,
+                                    stats.data_blocks_written,
+                                    total_blocks);
 
     Ok(stats)
 }
