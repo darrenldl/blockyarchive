@@ -19,8 +19,9 @@ macro_rules! worker_stop {
         graceful => $tx_error:path, $shutdown_flag:path $([$( $x:path ),*]),*
     ) => {{
         use std::sync::atomic::Ordering;
-        $tx_error.send(None).unwrap();
-        $( $x.send(None).unwrap(); )*
+        use misc_utils::ignore;
+        ignore($tx_error.send(None));
+        $( $( ignore($x.send(None)); )* )*
         $shutdown_flag.store(true, Ordering::Relaxed);
         break;
     }};
@@ -28,8 +29,9 @@ macro_rules! worker_stop {
         graceful_ret => $tx_error:path, $shutdown_flag:path $([$( $x:path ),*]),*
     ) => {{
         use std::sync::atomic::Ordering;
-        $tx_error.send(None).unwrap();
-        $( $x.send(None).unwrap(); )*
+        use misc_utils::ignore;
+        ignore($tx_error.send(None));
+        $( $( ignore($x.send(None)); )* )*
         $shutdown_flag.store(true, Ordering::Relaxed);
         return;
     }};
@@ -65,8 +67,9 @@ macro_rules! worker_stop {
         with_error $error:expr => $tx_error:path, $shutdown_flag:path $([$( $x:path ),*]),*
     ) => {{
         use std::sync::atomic::Ordering;
-        $tx_error.send(Some($error)).unwrap();
-        $( $x.send(None).unwrap(); )*
+        use misc_utils::ignore;
+        ignore($tx_error.send(Some($error)));
+        $( $( ignore($x.send(None)); )* )*
         $shutdown_flag.store(true, Ordering::Relaxed);
         break;
     }};
@@ -82,8 +85,9 @@ macro_rules! worker_stop {
         with_error_ret $error:expr => $tx_error:path, $shutdown_flag:path $([$( $x:path ),*]),*
     ) => {{
         use std::sync::atomic::Ordering;
-        $tx_error.send(Some($error)).unwrap();
-        $( $x.send(None).unwrap(); )*
+        use misc_utils::ignore;
+        ignore($tx_error.send(Some($error)));
+        $( $( ignore($x.send(None)); )* )*
         $shutdown_flag.store(true, Ordering::Relaxed);
         return;
     }}
@@ -111,15 +115,34 @@ macro_rules! send {
     ) => {{
         use std::time::Duration;
         use std::sync::mpsc::TrySendError;
-        match $sender.try_send($item) {
-            Ok(()) => None,
-            Err(TrySendError::Full(b)) => {
-                thread::sleep(Duration::from_millis($time));
-                worker_stop!(graceful_if_shutdown => $tx_error, $shutdown_flag $([$( $x ),*]),*);
-                Some(b)
-            },
-            Err(TrySendError::Disconnected(_)) =>
-                worker_stop!(graceful => $tx_error, $shutdown_flag $([$( $x ),*]),*)
+        use std::sync::atomic::Ordering;
+        let mut secondary_buffer = Some($item);
+        let mut force_shutdown = false;
+        loop {
+            let item = match secondary_buffer {
+                None    => { break; },
+                Some(b) => b,
+            };
+            match $sender.try_send(item) {
+                Ok(()) => { break; },
+                Err(TrySendError::Full(b)) => {
+                    thread::sleep(Duration::from_millis($time));
+                    if $shutdown_flag.load(Ordering::Relaxed) {
+                        break;
+                    }
+                    secondary_buffer = Some(b);
+                },
+                Err(TrySendError::Disconnected(_)) => {
+                    force_shutdown = true; break;
+                }
+            }
+        }
+        if force_shutdown {
+            worker_stop!(graceful =>
+                         $tx_error, $shutdown_flag $([$( $x ),*]),*)
+        } else {
+            worker_stop!(graceful_if_shutdown =>
+                         $tx_error, $shutdown_flag $([$( $x ),*]),*);
         }
     }};
     (

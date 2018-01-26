@@ -22,7 +22,7 @@ pub fn make_writer(read_start    : Option<usize>,
                    counter       : &Arc<Mutex<u64>>,
                    shutdown_flag : &Arc<AtomicBool>,
                    out_file      : &str,
-                   rx_write_req  : Receiver<WriteReq>,
+                   rx_write_req  : Receiver<Option<WriteReq>>,
                    tx_error      : Sender<Option<Error>>)
                    -> Result<JoinHandle<()>, Error> {
     let read_start = match read_start {
@@ -41,7 +41,8 @@ pub fn make_writer(read_start    : Option<usize>,
         };
 
         loop {
-            let req = recv!(timeout => rx_write_req, tx_error, shutdown_flag);
+            let req = recv!(no_timeout_shutdown_if_none => rx_write_req,
+                            tx_error, shutdown_flag);
 
             match req {
                 WriteReq::Seek(pos)         => {

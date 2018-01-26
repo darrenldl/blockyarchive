@@ -74,10 +74,10 @@ pub struct Context {
                          Cell<Option<Receiver<Option<Error>>>>),
     pub data_block    : Block,
     pub parity_blocks : Vec<Block>,
-    pub ingress_bytes : (SyncSender<(usize, Box<[u8]>)>,
-                         Cell<Option<Receiver<(usize, Box<[u8]>)>>>),
-    pub egress_bytes  : (SyncSender<WriteReq>,
-                         Cell<Option<Receiver<WriteReq>>>),
+    pub ingress_bytes : (SyncSender<Option<(usize, Box<[u8]>)>>,
+                         Cell<Option<Receiver<Option<(usize, Box<[u8]>)>>>>),
+    pub egress_bytes  : (SyncSender<Option<WriteReq>>,
+                         Cell<Option<Receiver<Option<WriteReq>>>>),
     pub file_metadata : fs::Metadata
 }
 
@@ -236,7 +236,7 @@ fn make_packer(param   : &Param,
                           None);
             let mut buf = vec![0; block_size].into_boxed_slice();
             block.sync_to_buffer(None, &mut buf).unwrap();
-            send!(no_back_off_ret WriteReq::Write(buf) =>
+            send!(no_back_off_ret Some(WriteReq::Write(buf)) =>
                   tx_bytes, tx_error, shutdown_flag);
         }
 
@@ -245,7 +245,8 @@ fn make_packer(param   : &Param,
                 (cur_seq_num - 1) as usize % param.rs_data;
 
             let (len_read, mut buf) =
-                recv!(timeout => rx_bytes, tx_error, shutdown_flag);
+                recv!(no_timeout_shutdown_if_none =>
+                      rx_bytes, tx_error, shutdown_flag [tx_bytes]);
 
             // start packing
             block.header.seq_num = cur_seq_num as u32;
@@ -277,7 +278,7 @@ fn make_packer(param   : &Param,
 
             block.sync_to_buffer(Some(false), &mut buf).unwrap();
 
-            send!(back_off WriteReq::Write(buf) =>
+            send!(back_off Some(WriteReq::Write(buf)) =>
                   tx_bytes, tx_error, shutdown_flag);
 
             if param.rs_enabled && rs_data_index == param.rs_parity - 1 {
@@ -289,7 +290,7 @@ fn make_packer(param   : &Param,
                     block.header.seq_num = cur_seq_num as u32;
                     block.sync_to_buffer(None, &mut buf).unwrap();
 
-                    send!(back_off WriteReq::Write(buf) =>
+                    send!(back_off Some(WriteReq::Write(buf)) =>
                           tx_bytes, tx_error, shutdown_flag);
 
                     cur_seq_num += 1;
@@ -315,7 +316,7 @@ fn make_packer(param   : &Param,
                           Some(hash_ctx.finish_into_hash_bytes()));
             let mut buf = vec![0; block_size].into_boxed_slice();
             block.sync_to_buffer(None, &mut buf).unwrap();
-            send!(no_back_off_ret WriteReq::WriteTo(0, buf) =>
+            send!(no_back_off_ret Some(WriteReq::WriteTo(0, buf)) =>
                   tx_bytes, tx_error, shutdown_flag);
         }
     }))
