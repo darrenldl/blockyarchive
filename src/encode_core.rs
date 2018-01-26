@@ -381,7 +381,6 @@ fn make_progress_reporter(param         : &Param,
     let silence_settings = context.silence_settings;
     Ok(thread::spawn(move || {
         loop {
-            println!("Printing progress");
             worker_stop!(graceful_if_shutdown =>
                          tx_error, shutdown_flag);
 

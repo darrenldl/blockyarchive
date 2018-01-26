@@ -237,12 +237,14 @@ mod helper {
         let filled_len  = total_len * percent / 100;
         let empty_len   = total_len - filled_len;
         let mut res = String::with_capacity(total_len);
+        res.push('[');
         for _ in 0..filled_len {
             res.push(fill_char);
         }
         for _ in 0..empty_len {
             res.push(empty_char);
         }
+        res.push(']');
         res
     }
 }
