@@ -2,12 +2,13 @@ use super::Error;
 use super::file_error::FileError;
 use super::file_error::to_err;
 use std::io::Write;
+use std::io::BufWriter;
 use std::io::SeekFrom;
 use std::fs::File;
 use std::io::Seek;
 
 pub struct FileWriter {
-    file : File,
+    file : BufWriter<File>,
     path : String,
 }
 
@@ -18,7 +19,7 @@ impl FileWriter {
             Err(e) => { return Err(to_err(FileError::new(e.kind(), path))); }
         };
         Ok (FileWriter {
-            file,
+            file : BufWriter::new(file),
             path : String::from(path)
         })
     }
