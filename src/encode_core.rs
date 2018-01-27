@@ -6,6 +6,8 @@ use std::fmt;
 use super::file_utils;
 use std::io::SeekFrom;
 
+use integer_utils::IntegerUtils;
+
 use super::progress_report;
 
 use super::SmallVec;
@@ -233,12 +235,6 @@ pub fn encode_file(param    : &Param)
                             .into_boxed_slice());
         }
     }
-    /*let mut parity : SmallVec<[&mut [u8]; 32]> = SmallVec::new();
-    if param.rs_enabled {
-        for p in parity_buf.iter_mut() {
-            parity.push(sbx_block::slice_data_buf_mut(param.version, p));
-        }
-    }*/
 
     // setup data buffer
     let mut data : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
@@ -258,8 +254,9 @@ pub fn encode_file(param    : &Param)
 
         stats.lock().unwrap().meta_blocks_written += 1; }
 
+    let mut cur_seq_num = 1;
+
     loop {
-        let mut cur_seq_num = stats.lock().unwrap().data_blocks_written + 1;
         let mut data_blocks_written = 0;
         let mut parity_blocks_written = 0;
 
@@ -272,8 +269,7 @@ pub fn encode_file(param    : &Param)
         }
 
         // start encoding
-        block.header.seq_num = cur_seq_num;
-        cur_seq_num += 1;
+        block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
         data_blocks_written += 1;
         block.sync_to_buffer(None, &mut data).unwrap();
 
@@ -298,8 +294,7 @@ pub fn encode_file(param    : &Param)
             };
             if let Some(parity_to_use) = res {
                 for i in 0..parity_to_use {
-                    block.header.seq_num = cur_seq_num;
-                    cur_seq_num += 1;
+                    block.header.seq_num = u32::use_then_add1(cur_seq_num);
                     parity_blocks_written += 1;
                     block.sync_to_buffer(None, &mut parity_buf[i]).unwrap();
 
@@ -310,7 +305,7 @@ pub fn encode_file(param    : &Param)
         }
 
         // update stats
-        stats.lock().unwrap().data_blocks_written += data_blocks_written;
+        stats.lock().unwrap().data_blocks_written   += data_blocks_written;
         stats.lock().unwrap().parity_blocks_written += parity_blocks_written;
     }
 
