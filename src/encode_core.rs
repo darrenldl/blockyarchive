@@ -84,11 +84,15 @@ impl Stats {
             parity_blocks_written : 0,
             data_bytes_encoded    : 0,
             total_blocks,
-            start_time            : time_utils::get_time_now(),
+            start_time            : 0.,
             time_elapsed          : 0.,
             data_shards           : 0,
             parity_shards         : 0,
         }
+    }
+
+    pub fn set_start_time(&mut self) {
+        self.start_time = time_utils::get_time_now();
     }
 
     pub fn set_time_elapsed(&mut self) {
@@ -263,6 +267,8 @@ pub fn encode_file(param    : &Param)
                                BlockType::Data);
 
     let mut cur_seq_num : u32 = 1;
+
+    stats.lock().unwrap().set_start_time();
 
     { // write dummy metadata block
         write_metadata_block(param,
