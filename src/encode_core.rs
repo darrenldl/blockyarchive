@@ -25,6 +25,7 @@ use super::time_utils;
 use super::rs_codec::RSCodec;
 
 use std::sync::atomic::AtomicBool;
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::{Sender,
                       channel};
@@ -158,18 +159,20 @@ fn write_metadata_block(param         : &Param,
     block.sync_to_buffer(None, buf).unwrap();
 }
 
-fn make_reporter(param         : &Param,
-                 stats         : &Arc<Mutex<Stats>>,
-                 tx_error      : &Sender<Option<Error>>,
-                 shutdown_flag : &Arc<AtomicBool>)
+fn make_reporter(param          : &Param,
+                 stats          : &Arc<Mutex<Stats>>,
+                 data_counter   : &Arc<AtomicUsize>,
+                 tx_error       : &Sender<Option<Error>>,
+                 shutdown_flag  : &Arc<AtomicBool>)
                  -> JoinHandle<()> {
     use progress_report::ProgressElement::*;
+
+    let data_counter = Arc::clone(data_counter);
 
     let tx_error = tx_error.clone();
 
     let header = "Data encoding progress";
     let unit   = "chunks";
-    let stats = Arc::clone(stats);
     let silence_settings =
         progress_report::silence_level_to_settings(param.silence_level);
     let mut progress_report_context =
@@ -192,13 +195,13 @@ fn make_reporter(param         : &Param,
 
             progress_report::print_progress(&silence_settings,
                                             &mut progress_report_context,
-                                            stats.lock().unwrap().data_blocks_written as u64,
+                                            data_counter.load(Ordering::Relaxed) as u64,
                                             total_blocks as u64);
         }
 
         progress_report::print_progress(&silence_settings,
                                         &mut progress_report_context,
-                                        stats.lock().unwrap().data_blocks_written as u64,
+                                        data_counter.load(Ordering::Relaxed) as u64,
                                         total_blocks as u64);
     })
 }
@@ -207,16 +210,23 @@ pub fn encode_file(param    : &Param)
                    -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
+    // setup stats
     let stats = Arc::new(Mutex::new(Stats::new(param, &metadata)));
+    let mut data_block_counter   = Arc::new(AtomicUsize::new(0));
+    let mut parity_block_counter = AtomicUsize::new(0);
 
-    // set up file reader and writer
+    // setup file reader and writer
     let mut reader = file_reader::FileReader::new(&param.in_file)?;
     let mut writer = file_writer::FileWriter::new(&param.out_file)?;
 
     // setup reporter
     let (tx_error, _) = channel::<Option<Error>>();
     let shutdown_flag        = Arc::new(AtomicBool::new(false));
-    let reporter = make_reporter(param, &stats, &tx_error, &shutdown_flag);
+    let reporter = make_reporter(param,
+                                 &stats,
+                                 &data_block_counter,
+                                 &tx_error,
+                                 &shutdown_flag);
 
     // set up hash state
     let mut hash_ctx =
@@ -284,10 +294,10 @@ pub fn encode_file(param    : &Param)
         stats.lock().unwrap().parity_blocks_written += 2;
     }
 
-    loop {
-        let mut data_blocks_written   = 0;
-        let mut parity_blocks_written = 0;
+    let mut data_blocks_written   = 0;
+    let mut parity_blocks_written = 0;
 
+    loop {
         // read data in
         let len_read =
             reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data))?;
@@ -299,7 +309,8 @@ pub fn encode_file(param    : &Param)
         sbx_block::write_padding(param.version, len_read, &mut data);
 
         // start encoding
-        block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
+        block.header.seq_num = cur_seq_num;
+        cur_seq_num += 1;
         data_blocks_written += 1;
         block.sync_to_buffer(None, &mut data).unwrap();
 
@@ -327,9 +338,13 @@ pub fn encode_file(param    : &Param)
         }
 
         // update stats
-        stats.lock().unwrap().data_blocks_written   += data_blocks_written;
-        stats.lock().unwrap().parity_blocks_written += parity_blocks_written;
+        //stats.lock().unwrap().data_blocks_written   += data_blocks_written;
+        //stats.lock().unwrap().parity_blocks_written += parity_blocks_written;
+        data_block_counter.store(data_blocks_written, Ordering::Relaxed);
     }
+
+    stats.lock().unwrap().data_blocks_written   = data_blocks_written as u32;
+    stats.lock().unwrap().parity_blocks_written = parity_blocks_written as u32;
 
     { // write actual metadata block
         write_metadata_block(param,

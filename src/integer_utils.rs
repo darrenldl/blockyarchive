@@ -12,9 +12,8 @@ macro_rules! impl_integer_utils {
                 type Item = $x;
 
                 fn use_then_add1(val : &mut Self::Item) -> Self::Item {
-                    let tmp = *val;
                     *val += 1;
-                    tmp
+                    *val - 1
                 }
             }
         )+

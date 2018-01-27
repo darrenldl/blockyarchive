@@ -58,7 +58,7 @@ fn main () {
     let param = Param {
         version : sbx_specs::Version::V1,
         file_uid : [0, 1, 2, 3, 4, 5],
-        rs_enabled : true,
+        rs_enabled : false,
         rs_data    : 10,
         rs_parity  : 2,
         hash_enabled : true,
