@@ -84,15 +84,11 @@ impl Stats {
             parity_blocks_written : 0,
             data_bytes_encoded    : 0,
             total_blocks,
-            start_time            : 0.,
+            start_time            : time_utils::get_time_now(),
             time_elapsed          : 0.,
             data_shards           : 0,
             parity_shards         : 0,
         }
-    }
-
-    pub fn set_start_time(&mut self) {
-        self.start_time = time_utils::get_time_now();
     }
 
     pub fn set_time_elapsed(&mut self) {
@@ -213,20 +209,9 @@ pub fn encode_file(param    : &Param)
                    -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
-    // setup stats
-    let stats = Arc::new(Mutex::new(Stats::new(param, &metadata)));
-
     // setup file reader and writer
     let mut reader = file_reader::FileReader::new(&param.in_file)?;
     let mut writer = file_writer::FileWriter::new(&param.out_file)?;
-
-    // setup reporter
-    let (tx_error, _) = channel::<Option<Error>>();
-    let shutdown_flag        = Arc::new(AtomicBool::new(false));
-    let reporter = make_reporter(param,
-                                 &stats,
-                                 &tx_error,
-                                 &shutdown_flag);
 
     // set up hash state
     let mut hash_ctx =
@@ -268,7 +253,16 @@ pub fn encode_file(param    : &Param)
 
     let mut cur_seq_num : u32 = 1;
 
-    stats.lock().unwrap().set_start_time();
+    // setup stats
+    let stats = Arc::new(Mutex::new(Stats::new(param, &metadata)));
+
+    // setup reporter
+    let (tx_error, _) = channel::<Option<Error>>();
+    let shutdown_flag        = Arc::new(AtomicBool::new(false));
+    let reporter = make_reporter(param,
+                                 &stats,
+                                 &tx_error,
+                                 &shutdown_flag);
 
     { // write dummy metadata block
         write_metadata_block(param,
