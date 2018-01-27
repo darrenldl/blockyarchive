@@ -84,7 +84,7 @@ impl RSCodec {
             }
         }
 
-        self.cur_data_index += 1;
+        self.cur_data_index = (self.cur_data_index + 1) % self.total_shards;
 
         ready
     }
