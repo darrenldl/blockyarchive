@@ -119,9 +119,18 @@ RS arrangement : N blocks (N data shards) M blocks (M parity shards).
 
 For **X** continuous blocks, where **X** is the remaining number of data blocks
 
+#### Blocks in **first X - 1**:
+
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
 | 16  | blockend | var  | data             |
+
+#### Last block
+
+| pos | to pos   | size | desc             |
+|---- | -------- | ---- | ---------------- |
+| 16  | n        | var  | data             |
+| n+1 | blockend | var  | padding (0x1a)   |
 
 For **ceil(X * M / N)** continuous blocks
 

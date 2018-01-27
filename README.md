@@ -25,6 +25,8 @@ rsbx has forward error correction, osbx does not.
 ## Specification
 [Sbx format](SBX_FORMAT.md)
 
+[Rbx format](RSBX_SPEC.md)
+
 ## TODO
 - Things to port from osbx
   - ```sbx_block.ml```, using [nom](https://github.com/Geal/nom) parser combinator library
