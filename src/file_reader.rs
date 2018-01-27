@@ -2,6 +2,7 @@ use super::Error;
 use super::file_error::FileError;
 use super::file_error::to_err;
 use std::io::Read;
+use std::io::BufReader;
 use std::io::SeekFrom;
 use std::fs::File;
 use std::io::Seek;
@@ -10,7 +11,7 @@ use std::fs::Metadata;
 const READ_RETRIES : usize = 5;
 
 pub struct FileReader {
-    file : File,
+    file : BufReader<File>,
     path : String,
 }
 
@@ -21,7 +22,7 @@ impl FileReader {
             Err(e) => { return Err(to_err(FileError::new(e.kind(), path))); }
         };
         Ok (FileReader {
-            file,
+            file : BufReader::new(file),
             path : String::from(path)
         })
     }
@@ -57,7 +58,7 @@ impl FileReader {
     }
 
     pub fn metadata(&self) -> Result<Metadata, Error> {
-        match self.file.metadata() {
+        match self.file.get_ref().metadata() {
             Ok(data) => Ok(data),
             Err(e)   => Err(to_err(FileError::new(e.kind(), &self.path)))
         }
