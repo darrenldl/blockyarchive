@@ -223,10 +223,11 @@ pub fn encode_file(param    : &Param)
         multihash::hash::Ctx::new(param.hash_type).unwrap();
 
     // setup Reed-Solomon things
-    let mut rs_codec = RSCodec::new(param.rs_data,
-                                    param.rs_parity,
-                                    file_utils::calc_block_count(param.version,
-                                                                 &metadata));
+    let mut rs_codec_meta = RSCodec::new(1, 2, 1);
+    let mut rs_codec_data = RSCodec::new(param.rs_data,
+                                         param.rs_parity,
+                                         file_utils::calc_block_count(param.version,
+                                                                      &metadata));
 
     let mut parity_buf : Vec<Box<[u8]>> = Vec::with_capacity(param.rs_parity);
     if param.rs_enabled {
@@ -234,6 +235,14 @@ pub fn encode_file(param    : &Param)
             parity_buf.push(vec![0; ver_to_block_size(param.version)]
                             .into_boxed_slice());
         }
+    }
+
+    let mut parity_buf_meta : [[u8; SBX_LARGEST_BLOCK_SIZE]; 2] =
+        [[0; SBX_LARGEST_BLOCK_SIZE]; 2];
+
+    let mut parity_meta : SmallVec<[&mut [u8]; 2]> = SmallVec::new();
+    for p in parity_buf_meta.iter_mut() {
+        parity_meta.push(sbx_block::slice_data_buf_mut(param.version, p));
     }
 
     // setup data buffer
@@ -244,6 +253,8 @@ pub fn encode_file(param    : &Param)
                                &param.file_uid,
                                BlockType::Data);
 
+    let mut cur_seq_num : u32 = 1;
+
     { // write dummy metadata block
         write_metadata_block(param,
                              &stats.lock().unwrap(),
@@ -252,9 +263,24 @@ pub fn encode_file(param    : &Param)
                              &mut data);
         writer.write(sbx_block::slice_buf(param.version, &data))?;
 
-        stats.lock().unwrap().meta_blocks_written += 1; }
+        stats.lock().unwrap().meta_blocks_written += 1;
 
-    let mut cur_seq_num : u32 = 1;
+        if param.rs_enabled {
+            let data_part = sbx_block::slice_data_buf(param.version, &data);
+            let parity_to_use =
+                rs_codec_meta.encode(data_part, &mut parity_meta).unwrap();
+
+            for i in 0..parity_to_use {
+                block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
+                block.sync_to_buffer(None, &mut parity_buf[i]).unwrap();
+
+                // write data out
+                writer.write(sbx_block::slice_buf(param.version, &parity_buf[i]))?;
+            }
+        }
+
+        stats.lock().unwrap().parity_blocks_written += 2;
+    }
 
     loop {
         let mut data_blocks_written   = 0;
@@ -292,7 +318,7 @@ pub fn encode_file(param    : &Param)
                 for p in parity_buf.iter_mut() {
                     parity.push(sbx_block::slice_data_buf_mut(param.version, p));
                 }
-                rs_codec.encode(data_part, &mut parity)
+                rs_codec_data.encode(data_part, &mut parity)
             };
             if let Some(parity_to_use) = res {
                 for i in 0..parity_to_use {
@@ -317,8 +343,27 @@ pub fn encode_file(param    : &Param)
                              &metadata,
                              Some(hash_ctx.finish_into_hash_bytes()),
                              &mut data);
+
         writer.seek(SeekFrom::Start(0))?;
-        writer.write(sbx_block::slice_buf(param.version, &data))?; }
+
+        writer.write(sbx_block::slice_buf(param.version, &data))?;
+
+        cur_seq_num = 1;
+
+        if param.rs_enabled {
+            let data_part = sbx_block::slice_data_buf(param.version, &data);
+            let parity_to_use =
+                rs_codec_meta.encode(data_part, &mut parity_meta).unwrap();
+
+            for i in 0..parity_to_use {
+                block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
+                block.sync_to_buffer(None, &mut parity_buf[i]).unwrap();
+
+                // write data out
+                writer.write(sbx_block::slice_buf(param.version, &parity_buf[i]))?;
+            }
+        }
+    }
 
     // shutdown reporter
     shutdown_flag.store(true, Ordering::Relaxed);
