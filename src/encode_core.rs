@@ -254,10 +254,10 @@ pub fn encode_file(param    : &Param)
 
         stats.lock().unwrap().meta_blocks_written += 1; }
 
-    let mut cur_seq_num = 1;
+    let mut cur_seq_num : u32 = 1;
 
     loop {
-        let mut data_blocks_written = 0;
+        let mut data_blocks_written   = 0;
         let mut parity_blocks_written = 0;
 
         // read data in
@@ -294,7 +294,7 @@ pub fn encode_file(param    : &Param)
             };
             if let Some(parity_to_use) = res {
                 for i in 0..parity_to_use {
-                    block.header.seq_num = u32::use_then_add1(cur_seq_num);
+                    block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
                     parity_blocks_written += 1;
                     block.sync_to_buffer(None, &mut parity_buf[i]).unwrap();
 
