@@ -58,9 +58,9 @@ fn main () {
     let param = Param {
         version : sbx_specs::Version::V1,
         file_uid : [0, 1, 2, 3, 4, 5],
-        rs_enabled : false,
+        rs_enabled : true,
         rs_data    : 10,
-        rs_parity  : 2,
+        rs_parity  : 1,
         hash_enabled : true,
         hash_type  : multihash::HashType::SHA256,
         in_file    : String::from("test"),

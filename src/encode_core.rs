@@ -161,13 +161,12 @@ fn write_metadata_block(param         : &Param,
 
 fn make_reporter(param          : &Param,
                  stats          : &Arc<Mutex<Stats>>,
-                 data_counter   : &Arc<AtomicUsize>,
                  tx_error       : &Sender<Option<Error>>,
                  shutdown_flag  : &Arc<AtomicBool>)
                  -> JoinHandle<()> {
     use progress_report::ProgressElement::*;
 
-    let data_counter = Arc::clone(data_counter);
+    let stats = Arc::clone(stats);
 
     let tx_error = tx_error.clone();
 
@@ -195,13 +194,13 @@ fn make_reporter(param          : &Param,
 
             progress_report::print_progress(&silence_settings,
                                             &mut progress_report_context,
-                                            data_counter.load(Ordering::Relaxed) as u64,
+                                            stats.lock().unwrap().data_blocks_written as u64,
                                             total_blocks as u64);
         }
 
         progress_report::print_progress(&silence_settings,
                                         &mut progress_report_context,
-                                        data_counter.load(Ordering::Relaxed) as u64,
+                                        stats.lock().unwrap().data_blocks_written as u64,
                                         total_blocks as u64);
     })
 }
@@ -212,8 +211,6 @@ pub fn encode_file(param    : &Param)
 
     // setup stats
     let stats = Arc::new(Mutex::new(Stats::new(param, &metadata)));
-    let mut data_block_counter   = Arc::new(AtomicUsize::new(0));
-    let mut parity_block_counter = AtomicUsize::new(0);
 
     // setup file reader and writer
     let mut reader = file_reader::FileReader::new(&param.in_file)?;
@@ -224,7 +221,6 @@ pub fn encode_file(param    : &Param)
     let shutdown_flag        = Arc::new(AtomicBool::new(false));
     let reporter = make_reporter(param,
                                  &stats,
-                                 &data_block_counter,
                                  &tx_error,
                                  &shutdown_flag);
 
@@ -284,7 +280,7 @@ pub fn encode_file(param    : &Param)
 
             for i in 0..parity_to_use {
                 block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
-                block.sync_to_buffer(None, &mut parity[i]).unwrap();
+                block.sync_to_buffer(None, &mut parity_meta[i]).unwrap();
 
                 // write data out
                 writer.write(sbx_block::slice_buf(param.version, &parity[i]))?;
@@ -294,10 +290,10 @@ pub fn encode_file(param    : &Param)
         stats.lock().unwrap().parity_blocks_written += 2;
     }
 
-    let mut data_blocks_written   = 0;
-    let mut parity_blocks_written = 0;
-
     loop {
+        let mut data_blocks_written   = 0;
+        let mut parity_blocks_written = 0;
+
         // read data in
         let len_read =
             reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data))?;
@@ -309,8 +305,7 @@ pub fn encode_file(param    : &Param)
         sbx_block::write_padding(param.version, len_read, &mut data);
 
         // start encoding
-        block.header.seq_num = cur_seq_num;
-        cur_seq_num += 1;
+        block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
         data_blocks_written += 1;
         block.sync_to_buffer(None, &mut data).unwrap();
 
@@ -338,13 +333,9 @@ pub fn encode_file(param    : &Param)
         }
 
         // update stats
-        //stats.lock().unwrap().data_blocks_written   += data_blocks_written;
-        //stats.lock().unwrap().parity_blocks_written += parity_blocks_written;
-        data_block_counter.store(data_blocks_written, Ordering::Relaxed);
+        stats.lock().unwrap().data_blocks_written   += data_blocks_written;
+        stats.lock().unwrap().parity_blocks_written += parity_blocks_written;
     }
-
-    stats.lock().unwrap().data_blocks_written   = data_blocks_written as u32;
-    stats.lock().unwrap().parity_blocks_written = parity_blocks_written as u32;
 
     { // write actual metadata block
         write_metadata_block(param,
