@@ -308,7 +308,7 @@ pub fn encode_file(param    : &Param)
 
         // update hash state if needed
         if param.hash_enabled {
-            let data_part = sbx_block::slice_data_buf(param.version, &data);
+            let data_part = &sbx_block::slice_data_buf(param.version, &data)[0..len_read];
             hash_ctx.update(data_part);
         }
 
