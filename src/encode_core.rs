@@ -268,6 +268,8 @@ pub fn encode_file(param    : &Param)
             break;
         }
 
+        sbx_block::write_padding(param.version, len_read, &mut data);
+
         // start encoding
         block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
         data_blocks_written += 1;

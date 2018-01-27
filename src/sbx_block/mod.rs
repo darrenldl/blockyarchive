@@ -96,6 +96,14 @@ macro_rules! block_size {
     }
 }*/
 
+pub fn write_padding(version : Version,
+                     skip    : usize,
+                     buffer  : &mut [u8]) {
+    for i in SBX_HEADER_SIZE + skip..ver_to_block_size(version) {
+        buffer[i] = 0x1A;
+    }
+}
+
 pub fn slice_buf(version : Version,
                  buffer  : & [u8]) -> & [u8] {
     &buffer[..ver_to_block_size(version)]
