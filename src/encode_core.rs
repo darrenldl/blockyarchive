@@ -20,7 +20,7 @@ use super::multihash;
 use super::Error;
 use super::sbx_specs::Version;
 use super::time_utils;
-use super::ReedSolomon;
+use super::rs_codec::RSCodec;
 
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
@@ -72,9 +72,8 @@ pub struct Param {
 
 impl Stats {
     pub fn new(param : &Param, file_metadata : &fs::Metadata) -> Stats {
-        let data_size = ver_to_data_size(param.version) as u64;
         let total_blocks =
-            ((file_metadata.len() + (data_size - 1)) / data_size) as u32;
+            file_utils::calc_block_count(param.version, file_metadata) as u32;
         Stats {
             version             : param.version,
             meta_blocks_written : 0,
@@ -221,7 +220,10 @@ pub fn encode_file(param    : &Param)
         multihash::hash::Ctx::new(param.hash_type).unwrap();
 
     // setup Reed-Solomon things
-    let rs_codec = ReedSolomon::new(param.rs_data, param.rs_parity).unwrap();
+    let mut rs_codec = RSCodec::new(param.rs_data,
+                                    param.rs_parity,
+                                    file_utils::calc_block_count(param.version,
+                                                                 &metadata));
 
     let mut parity_buf : Vec<Box<[u8]>> = Vec::with_capacity(param.rs_parity);
     if param.rs_enabled {
@@ -253,9 +255,7 @@ pub fn encode_file(param    : &Param)
         stats.lock().unwrap().meta_blocks_written += 1; }
 
     loop {
-        let cur_seq_num = stats.lock().unwrap().data_blocks_written + 1;
-
-        let rs_data_index = cur_seq_num as usize % param.rs_data;
+        let mut cur_seq_num = stats.lock().unwrap().data_blocks_written + 1;
 
         // read data in
         let len_read =
@@ -265,29 +265,38 @@ pub fn encode_file(param    : &Param)
             break;
         }
 
+        // start encoding
+        block.header.seq_num = cur_seq_num;
+        cur_seq_num += 1;
+        block.sync_to_buffer(None, &mut data).unwrap();
+
+        // write data out
+        writer.write(sbx_block::slice_buf(param.version, &data))?;
+
         // update hash state if needed
         if param.hash_enabled {
             let data_part = &data[SBX_HEADER_SIZE..
                                   SBX_HEADER_SIZE + len_read];
             hash_ctx.update(data_part);
         }
+
         // update Reed-Solomon data if needed
         if param.rs_enabled {
-            /*rs_codec.encode_single_sep(rs_data_index,
-                                       sbx_block::slice_data_buf(param.version,
-                                                                 &buf),
-                                       &mut partiy).unwrap();*/
+            if let Some(parity_to_use) = rs_codec.encode(&data,
+                                                         &mut parity) {
+                for i in 0..parity_to_use {
+                    block.header.seq_num = cur_seq_num;
+                    cur_seq_num += 1;
+                    block.sync_to_buffer(None, &mut parity[i]).unwrap();
+
+                    // write data out
+                    writer.write(sbx_block::slice_buf(param.version, &parity[i]))?;
+                }
+            }
         }
 
-        // start encoding
-        block.header.seq_num = cur_seq_num;
-        block.sync_to_buffer(None, &mut data).unwrap();
-
-        // write data out
-        writer.write(sbx_block::slice_buf(param.version, &data))?;
-
         // update stats
-        stats.lock().unwrap().data_blocks_written += 1;
+        stats.lock().unwrap().data_blocks_written = cur_seq_num - 1;
     }
 
     { // write actual metadata block
