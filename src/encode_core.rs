@@ -31,23 +31,23 @@ use super::sbx_block::{Block, BlockType};
 use super::sbx_block;
 use super::sbx_block::metadata::Metadata;
 use super::sbx_specs::{SBX_FILE_UID_LEN,
-                       SBX_HEADER_SIZE,
                        SBX_LARGEST_BLOCK_SIZE,
-                       ver_to_data_size};
+                       ver_to_block_size};
 
 use std::time::Duration;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
-    pub version             : Version,
-    pub meta_blocks_written : u32,
-    pub data_blocks_written : u32,
-    pub data_bytes_encoded  : u64,
-    pub total_blocks        : u32,
-    pub start_time          : f64,
-    pub time_elapsed        : f64,
-    pub data_shards         : usize,
-    pub parity_shards       : usize
+    pub version               : Version,
+    pub meta_blocks_written   : u32,
+    pub data_blocks_written   : u32,
+    pub parity_blocks_written : u32,
+    pub data_bytes_encoded    : u64,
+    pub total_blocks          : u32,
+    pub start_time            : f64,
+    pub time_elapsed          : f64,
+    pub data_shards           : usize,
+    pub parity_shards         : usize
 }
 
 impl fmt::Display for Stats {
@@ -75,15 +75,16 @@ impl Stats {
         let total_blocks =
             file_utils::calc_block_count(param.version, file_metadata) as u32;
         Stats {
-            version             : param.version,
-            meta_blocks_written : 0,
-            data_blocks_written : 0,
-            data_bytes_encoded  : 0,
+            version               : param.version,
+            meta_blocks_written   : 0,
+            data_blocks_written   : 0,
+            parity_blocks_written : 0,
+            data_bytes_encoded    : 0,
             total_blocks,
-            start_time          : time_utils::get_time_now(),
-            time_elapsed        : 0.,
-            data_shards         : 0,
-            parity_shards       : 0,
+            start_time            : time_utils::get_time_now(),
+            time_elapsed          : 0.,
+            data_shards           : 0,
+            parity_shards         : 0,
         }
     }
 
@@ -228,13 +229,16 @@ pub fn encode_file(param    : &Param)
     let mut parity_buf : Vec<Box<[u8]>> = Vec::with_capacity(param.rs_parity);
     if param.rs_enabled {
         for _ in 0..param.rs_parity {
-            parity_buf.push(vec![0; ver_to_data_size(param.version)]
+            parity_buf.push(vec![0; ver_to_block_size(param.version)]
                             .into_boxed_slice());
         }
     }
-    let mut parity : SmallVec<[&mut [u8]; 32]> =
-        convert_2D_slices!(parity_buf =to_mut=> SmallVec<[&mut [u8]; 32]>,
-                           SmallVec::with_capacity);
+    /*let mut parity : SmallVec<[&mut [u8]; 32]> = SmallVec::new();
+    if param.rs_enabled {
+        for p in parity_buf.iter_mut() {
+            parity.push(sbx_block::slice_data_buf_mut(param.version, p));
+        }
+    }*/
 
     // setup data buffer
     let mut data : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
@@ -256,6 +260,8 @@ pub fn encode_file(param    : &Param)
 
     loop {
         let mut cur_seq_num = stats.lock().unwrap().data_blocks_written + 1;
+        let mut data_blocks_written = 0;
+        let mut parity_blocks_written = 0;
 
         // read data in
         let len_read =
@@ -268,6 +274,7 @@ pub fn encode_file(param    : &Param)
         // start encoding
         block.header.seq_num = cur_seq_num;
         cur_seq_num += 1;
+        data_blocks_written += 1;
         block.sync_to_buffer(None, &mut data).unwrap();
 
         // write data out
@@ -275,28 +282,36 @@ pub fn encode_file(param    : &Param)
 
         // update hash state if needed
         if param.hash_enabled {
-            let data_part = &data[SBX_HEADER_SIZE..
-                                  SBX_HEADER_SIZE + len_read];
+            let data_part = sbx_block::slice_data_buf(param.version, &data);
             hash_ctx.update(data_part);
         }
 
         // update Reed-Solomon data if needed
         if param.rs_enabled {
-            if let Some(parity_to_use) = rs_codec.encode(&data,
-                                                         &mut parity) {
+            let data_part = sbx_block::slice_data_buf(param.version, &data);
+            let res = {
+                let mut parity : SmallVec<[&mut [u8]; 32]> = SmallVec::new();
+                for p in parity_buf.iter_mut() {
+                    parity.push(sbx_block::slice_data_buf_mut(param.version, p));
+                }
+                rs_codec.encode(data_part, &mut parity)
+            };
+            if let Some(parity_to_use) = res {
                 for i in 0..parity_to_use {
                     block.header.seq_num = cur_seq_num;
                     cur_seq_num += 1;
-                    block.sync_to_buffer(None, &mut parity[i]).unwrap();
+                    parity_blocks_written += 1;
+                    block.sync_to_buffer(None, &mut parity_buf[i]).unwrap();
 
                     // write data out
-                    writer.write(sbx_block::slice_buf(param.version, &parity[i]))?;
+                    writer.write(sbx_block::slice_buf(param.version, &parity_buf[i]))?;
                 }
             }
         }
 
         // update stats
-        stats.lock().unwrap().data_blocks_written = cur_seq_num - 1;
+        stats.lock().unwrap().data_blocks_written += data_blocks_written;
+        stats.lock().unwrap().parity_blocks_written += parity_blocks_written;
     }
 
     { // write actual metadata block
