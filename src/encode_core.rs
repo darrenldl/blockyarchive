@@ -283,7 +283,7 @@ pub fn encode_file(param    : &Param)
                 block.sync_to_buffer(None, &mut parity_meta[i]).unwrap();
 
                 // write data out
-                writer.write(sbx_block::slice_buf(param.version, &parity[i]))?;
+                writer.write(sbx_block::slice_buf(param.version, &parity_meta[i]))?;
             }
         }
 
@@ -356,10 +356,10 @@ pub fn encode_file(param    : &Param)
 
             for i in 0..parity_to_use {
                 block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
-                block.sync_to_buffer(None, &mut parity[i]).unwrap();
+                block.sync_to_buffer(None, &mut parity_meta[i]).unwrap();
 
                 // write data out
-                writer.write(sbx_block::slice_buf(param.version, parity[i]))?;
+                writer.write(sbx_block::slice_buf(param.version, parity_meta[i]))?;
             }
         }
     }
