@@ -5,7 +5,42 @@ use super::sbx_specs::Version;
 use super::sbx_specs::ver_to_block_size;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 
+fn last_data_set_start_index(data_shards   : usize,
+                             total_shards  : usize) -> usize {
+    total_shards - last_data_set_size(data_shards, total_shards)
+}
+
+fn last_data_set_size(data_shards   : usize,
+                      total_shards  : usize) -> usize {
+    let size = total_shards % data_shards;
+    if size == 0 {
+        data_shards
+    } else {
+        size
+    }
+}
+
+fn calc_parity_shards(data_shards   : usize,
+                      parity_shards : usize,
+                      set_size      : usize) -> usize {
+    (set_size * parity_shards + (data_shards - 1)) / data_shards
+}
+
 pub struct RSEncoder {
+    cur_data_index            : usize,
+    last_data_set_size        : usize,
+    last_data_set_start_index : usize,
+    rs_codec                  : Option<ReedSolomon>,
+    rs_codec_last             : Option<ReedSolomon>,
+    data_shards               : usize,
+    parity_shards             : usize,
+    total_shards              : usize,
+    version                   : Version,
+    parity_buf                : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
+    parity_buf_last           : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
+}
+
+pub struct RSRepairer {
     cur_data_index            : usize,
     last_data_set_size        : usize,
     last_data_set_start_index : usize,
@@ -137,25 +172,4 @@ impl RSEncoder {
 
         ready
     }
-}
-
-fn last_data_set_start_index(data_shards   : usize,
-                        total_shards  : usize) -> usize {
-    total_shards - last_data_set_size(data_shards, total_shards)
-}
-
-fn last_data_set_size(data_shards   : usize,
-                 total_shards  : usize) -> usize {
-    let size = total_shards % data_shards;
-    if size == 0 {
-        data_shards
-    } else {
-        size
-    }
-}
-
-fn calc_parity_shards(data_shards   : usize,
-                      parity_shards : usize,
-                      set_size      : usize) -> usize {
-    (set_size * parity_shards + (data_shards - 1)) / data_shards
 }
