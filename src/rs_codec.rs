@@ -2,8 +2,9 @@ use super::reed_solomon_erasure::ReedSolomon;
 use super::smallvec::SmallVec;
 use super::sbx_block;
 use super::sbx_specs::Version;
+use super::sbx_specs::ver_to_block_size;
 
-pub struct RSCodec {
+pub struct RSEncoder {
     cur_data_index            : usize,
     last_data_set_size        : usize,
     last_data_set_start_index : usize,
@@ -13,13 +14,15 @@ pub struct RSCodec {
     parity_shards             : usize,
     total_shards              : usize,
     version                   : Version,
+    parity_buf                : Vec<Box<[u8]>>,
+    parity_buf_last           : Vec<Box<[u8]>>,
 }
 
-impl RSCodec {
+impl RSEncoder {
     pub fn new(version       : Version,
                data_shards   : usize,
                parity_shards : usize,
-               total_shards  : usize) -> RSCodec {
+               total_shards  : usize) -> RSEncoder {
         let last_data_set_size         = last_data_set_size(data_shards,
                                                             total_shards);
         let last_data_set_start_index  = last_data_set_start_index(data_shards,
@@ -28,8 +31,20 @@ impl RSCodec {
                                                             parity_shards,
                                                             last_data_set_size);
 
+        let mut parity_buf : Vec<Box<[u8]>> = Vec::with_capacity(parity_shards);
+        for _ in 0..parity_shards {
+            parity_buf.push(vec![0; ver_to_block_size(version)]
+                            .into_boxed_slice());
+        }
+
+        let mut parity_buf_last : Vec<Box<[u8]>> = Vec::with_capacity(last_data_set_parity_count);
+        for _ in 0..last_data_set_parity_count {
+            parity_buf_last.push(vec![0; ver_to_block_size(version)]
+                                 .into_boxed_slice());
+        }
+
         if total_shards == 0 {
-            RSCodec {
+            RSEncoder {
                 cur_data_index            : 0,
                 last_data_set_size,
                 last_data_set_start_index,
@@ -39,9 +54,11 @@ impl RSCodec {
                 parity_shards,
                 total_shards,
                 version,
+                parity_buf,
+                parity_buf_last,
             }
         } else {
-            RSCodec {
+            RSEncoder {
                 cur_data_index : 0,
                 last_data_set_size,
                 last_data_set_start_index,
@@ -53,14 +70,15 @@ impl RSCodec {
                 parity_shards,
                 total_shards,
                 version,
+                parity_buf,
+                parity_buf_last,
             }
         }
     }
 
     pub fn encode(&mut self,
-                  data_shard    : &[u8],
-                  parity_shards : &mut [&mut [u8]])
-                  -> Option<usize> {
+                  data_shard    : &[u8])
+                  -> Option<&mut Vec<Box<[u8]>>> {
         let mut ready = None;
 
         let rs_codec      = match self.rs_codec {
@@ -74,29 +92,35 @@ impl RSCodec {
 
         let data = sbx_block::slice_data_buf(self.version, data_shard);
 
-        let mut parity : SmallVec<[&mut [u8]; 32]> = SmallVec::new();
-
         if self.cur_data_index < self.last_data_set_start_index {
             let index = self.cur_data_index % self.data_shards;
-            for p in &mut parity_shards[0..self.parity_shards].iter_mut() {
-                parity.push(sbx_block::slice_data_buf_mut(self.version, p));
+            {
+                let mut parity : SmallVec<[&mut [u8]; 32]> = SmallVec::new();
+
+                for p in &mut self.parity_buf[0..self.parity_shards].iter_mut() {
+                    parity.push(sbx_block::slice_data_buf_mut(self.version, p));
+                }
+                rs_codec.encode_single_sep(index,
+                                           data,
+                                           &mut parity).unwrap();
             }
-            rs_codec.encode_single_sep(index,
-                                       data,
-                                       &mut parity).unwrap();
             if index == self.data_shards - 1 {
-                ready = Some(rs_codec.parity_shard_count());
+                ready = Some(&mut self.parity_buf);
             }
         } else {
             let index = self.cur_data_index - self.last_data_set_start_index;
-            for p in &mut parity_shards[0..rs_codec_last.parity_shard_count()].iter_mut() {
-                parity.push(sbx_block::slice_data_buf_mut(self.version, p));
+            {
+                let mut parity : SmallVec<[&mut [u8]; 32]> = SmallVec::new();
+
+                for p in &mut self.parity_buf_last[0..rs_codec_last.parity_shard_count()].iter_mut() {
+                    parity.push(sbx_block::slice_data_buf_mut(self.version, p));
+                }
+                rs_codec_last.encode_single_sep(index,
+                                                data,
+                                                &mut parity).unwrap();
             }
-            rs_codec_last.encode_single_sep(index,
-                                            data,
-                                            &mut parity).unwrap();
             if index == self.last_data_set_size - 1 {
-                ready = Some(rs_codec_last.parity_shard_count());
+                ready = Some(&mut self.parity_buf_last);
             }
         }
 

@@ -22,7 +22,7 @@ use super::multihash;
 use super::Error;
 use super::sbx_specs::Version;
 use super::time_utils;
-use super::rs_codec::RSCodec;
+use super::rs_codec::RSEncoder;
 
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicUsize;
@@ -218,30 +218,12 @@ pub fn encode_file(param    : &Param)
         multihash::hash::Ctx::new(param.hash_type).unwrap();
 
     // setup Reed-Solomon things
-    let mut rs_codec_meta = RSCodec::new(param.version, 1, 2, 1);
-    let mut rs_codec_data = RSCodec::new(param.version,
-                                         param.rs_data,
-                                         param.rs_parity,
-                                         file_utils::calc_block_count(param.version,
-                                                                      &metadata));
-
-    let mut parity_buf : Vec<Box<[u8]>> = Vec::with_capacity(param.rs_parity);
-    if param.rs_enabled {
-        for _ in 0..param.rs_parity {
-            parity_buf.push(vec![0; ver_to_block_size(param.version)]
-                            .into_boxed_slice());
-        }
-    }
-
-    let mut parity = convert_2D_slices!(parity_buf =to_mut=> SmallVec<[&mut [u8]; 32]>,
-                                        SmallVec::with_capacity);
-
-    let mut parity_buf_meta : [[u8; SBX_LARGEST_BLOCK_SIZE]; 2] =
-        [[0; SBX_LARGEST_BLOCK_SIZE]; 2];
-
-    let mut parity_meta =
-        convert_2D_slices!(parity_buf_meta =to_mut=> SmallVec<[&mut [u8]; 32]>,
-                           SmallVec::with_capacity);
+    let mut rs_codec_meta = RSEncoder::new(param.version, 1, 2, 1);
+    let mut rs_codec_data = RSEncoder::new(param.version,
+                                           param.rs_data,
+                                           param.rs_parity,
+                                           file_utils::calc_block_count(param.version,
+                                                                        &metadata));
 
     // setup data buffer
     let mut data : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
@@ -276,14 +258,14 @@ pub fn encode_file(param    : &Param)
 
         if param.rs_enabled {
             let parity_to_use =
-                rs_codec_meta.encode(&data, &mut parity_meta).unwrap();
+                rs_codec_meta.encode(&data).unwrap();
 
-            for i in 0..parity_to_use {
+            for p in parity_to_use.iter_mut() {
                 block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
-                block.sync_to_buffer(None, &mut parity_meta[i]).unwrap();
+                block.sync_to_buffer(None, p).unwrap();
 
                 // write data out
-                writer.write(sbx_block::slice_buf(param.version, &parity_meta[i]))?;
+                writer.write(sbx_block::slice_buf(param.version, p))?;
             }
         }
 
@@ -320,14 +302,14 @@ pub fn encode_file(param    : &Param)
 
         // update Reed-Solomon data if needed
         if param.rs_enabled {
-            if let Some(parity_to_use) = rs_codec_data.encode(&data, &mut parity) {
-                for i in 0..parity_to_use {
+            if let Some(parity_to_use) = rs_codec_data.encode(&data) {
+                for p in parity_to_use.iter_mut() {
                     block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
                     parity_blocks_written += 1;
-                    block.sync_to_buffer(None, &mut parity[i]).unwrap();
+                    block.sync_to_buffer(None, p).unwrap();
 
                     // write data out
-                    writer.write(sbx_block::slice_buf(param.version, parity[i]))?;
+                    writer.write(sbx_block::slice_buf(param.version, p))?;
                 }
             }
         }
@@ -352,14 +334,14 @@ pub fn encode_file(param    : &Param)
 
         if param.rs_enabled {
             let parity_to_use =
-                rs_codec_meta.encode(&data, &mut parity_meta).unwrap();
+                rs_codec_meta.encode(&data).unwrap();
 
-            for i in 0..parity_to_use {
+            for p in parity_to_use.iter_mut() {
                 block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
-                block.sync_to_buffer(None, &mut parity_meta[i]).unwrap();
+                block.sync_to_buffer(None, p).unwrap();
 
                 // write data out
-                writer.write(sbx_block::slice_buf(param.version, parity_meta[i]))?;
+                writer.write(sbx_block::slice_buf(param.version, p))?;
             }
         }
     }
