@@ -11,7 +11,7 @@ pub fn get_file_metadata(file : &str) -> Result<fs::Metadata, Error> {
 }
 
 pub fn calc_block_count(version  : Version,
-                        metadata : &fs::Metadata) -> usize {
+                        metadata : &fs::Metadata) -> u64 {
     let data_size = ver_to_data_size(version) as u64;
-    ((metadata.len() + (data_size - 1)) / data_size) as usize
+    ((metadata.len() + (data_size - 1)) / data_size)
 }
