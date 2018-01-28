@@ -25,7 +25,7 @@ rsbx has forward error correction, osbx does not.
 ## Specification
 [Sbx format](SBX_FORMAT.md)
 
-[Rbx format](RSBX_SPEC.md)
+[Rsbx format](RSBX_SPEC.md)
 
 ## TODO
 - Things to port from osbx
