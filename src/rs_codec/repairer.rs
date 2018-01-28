@@ -65,38 +65,25 @@ impl RSRepairer {
             buf_last.push(v);
         }
 
-        if total_shards == 0 {
-            RSRepairer {
-                cur_index              : 0,
-                last_data_set_size,
-                last_set_start_seq_num,
-                rs_codec               : None,
-                rs_codec_last          : None,
-                data_shards,
-                parity_shards,
-                total_shards,
-                version,
-                buf,
-                buf_last,
-                ref_block              : ref_block.clone(),
-            }
-        } else {
-            RSRepairer {
-                cur_index              : 0,
-                last_data_set_size,
-                last_set_start_seq_num,
-                rs_codec               : Some(ReedSolomon::new(data_shards,
-                                                                  parity_shards).unwrap()),
-                rs_codec_last          : Some(ReedSolomon::new(last_data_set_size,
-                                                                  last_data_set_parity_count).unwrap()),
-                data_shards,
-                parity_shards,
-                total_shards,
-                version,
-                buf,
-                buf_last,
-                ref_block              : ref_block.clone(),
-            }
+        RSRepairer {
+            cur_index              : 0,
+            last_data_set_size,
+            last_set_start_seq_num,
+            rs_codec               :
+            if total_blocks == 0 { None }
+            else { Some(ReedSolomon::new(data_shards,
+                                         parity_shards).unwrap()) },
+            rs_codec_last          :
+            if total_blocks == 0 { None }
+            else { Some(ReedSolomon::new(last_data_set_size,
+                                         last_data_set_parity_count).unwrap()) },
+            data_shards,
+            parity_shards,
+            total_blocks,
+            version,
+            buf,
+            buf_last,
+            ref_block              : ref_block.clone(),
         }
     }
 

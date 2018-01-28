@@ -236,9 +236,6 @@ pub fn encode_file(param    : &Param)
                                            file_utils::calc_block_count(param.version,
                                                                         &metadata));
 
-    // setup data buffer
-    let mut data : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
-
     // setup main data block
     let mut block = Block::new(param.version,
                                &param.file_uid,

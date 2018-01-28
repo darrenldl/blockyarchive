@@ -16,6 +16,27 @@ extern crate reed_solomon_erasure;
 #[macro_use]
 mod worker_macros;
 
+macro_rules! smallvec {
+    [
+        $arr:ty => $val:expr; $len:expr
+    ] => {{
+        let mut v : SmallVec<$arr> = SmallVec::with_capacity($len);
+        for _ in 0..$len {
+            v.push($val);
+        }
+        v
+    }};
+    [
+        $val:expr; $len:expr
+    ] => {{
+        let mut v = SmallVec::with_capacity($len);
+        for _ in 0..$len {
+            v.push($val);
+        }
+        v
+    }}
+}
+
 mod file_error;
 
 mod general_error;

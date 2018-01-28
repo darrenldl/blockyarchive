@@ -303,10 +303,10 @@ impl Block {
         Ok(self.header.crc == self.calc_crc(buffer)?)
     }
 
-    pub fn check_if_buffer_contains_valid_block(&self,
-                                                buffer       : &[u8],
-                                                must_be_type : BlockType)
-                                                -> bool {
+    pub fn check_if_buffer_valid(&self,
+                                 buffer       : &[u8],
+                                 must_be_type : BlockType)
+                                 -> bool {
         let mut block = Block::new(self.header.version,
                                    &self.header.file_uid,
                                    self.block_type());

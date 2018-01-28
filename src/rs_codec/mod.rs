@@ -1,20 +1,20 @@
 mod encoder;
 use encoder::RSEncoder;
 
-mod repairer;
-use repairer::RSRepairer;
+//mod repairer;
+//use repairer::RSRepairer;
 
 use super::Error;
 use super::ErrorKind;
 
-fn last_data_set_start_index(data_shards   : usize,
-                             total_shards  : u64) -> u64 {
-    total_shards - last_data_set_size(data_shards, total_shards) as u64
+fn last_data_set_start_index(data_shards       : usize,
+                             total_data_blocks : u64) -> u64 {
+    total_data_blocks - last_data_set_size(data_shards, total_data_blocks) as u64
 }
 
-fn last_data_set_size(data_shards   : usize,
-                      total_shards  : u64) -> usize {
-    let size = total_shards % data_shards as u64;
+fn last_data_set_size(data_shards       : usize,
+                      total_data_blocks : u64) -> usize {
+    let size = total_blocks % data_shards as u64;
     if size == 0 {
         data_shards as usize
     } else {
@@ -22,12 +22,12 @@ fn last_data_set_size(data_shards   : usize,
     }
 }
 
-fn last_set_start_seq_num(data_shards   : usize,
-                          parity_shards : usize,
-                          total_shards  : u64) -> u64 {
-    let normal_set_count = total_shards / data_shards as u64;
+fn last_block_set_start_seq_num(data_shards       : usize,
+                                parity_shards     : usize,
+                                total_data_blocks : u64) -> u64 {
+    let normal_set_count = total_data_blocks / data_shards as u64;
 
-    normal_set_count * (data_shards + parity_shards)
+    normal_set_count * (data_shards + parity_shards) as u64
 }
 
 fn calc_parity_shards(data_shards   : usize,
