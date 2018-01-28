@@ -5,12 +5,13 @@ use std::fs;
 use std::fmt;
 use super::file_utils;
 use std::io::SeekFrom;
+use std::ops::DerefMut;
 
 use integer_utils::IntegerUtils;
 
-use super::progress_report;
+use progress_report::ProgressReport;
 
-use super::SmallVec;
+use super::progress_report;
 
 use std::time::UNIX_EPOCH;
 
@@ -21,11 +22,9 @@ use super::multihash;
 
 use super::Error;
 use super::sbx_specs::Version;
-use super::time_utils;
 use super::rs_codec::RSEncoder;
 
 use std::sync::atomic::AtomicBool;
-use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc::{Sender,
                       channel};
@@ -34,8 +33,7 @@ use super::sbx_block::{Block, BlockType};
 use super::sbx_block;
 use super::sbx_block::metadata::Metadata;
 use super::sbx_specs::{SBX_FILE_UID_LEN,
-                       SBX_LARGEST_BLOCK_SIZE,
-                       ver_to_block_size};
+                       SBX_LARGEST_BLOCK_SIZE};
 
 use std::time::Duration;
 
@@ -48,7 +46,7 @@ pub struct Stats {
     pub data_bytes_encoded    : u64,
     pub total_blocks          : u32,
     pub start_time            : f64,
-    pub time_elapsed          : f64,
+    pub end_time              : f64,
     pub data_shards           : usize,
     pub parity_shards         : usize
 }
@@ -84,16 +82,22 @@ impl Stats {
             parity_blocks_written : 0,
             data_bytes_encoded    : 0,
             total_blocks,
-            start_time            : time_utils::get_time_now(),
-            time_elapsed          : 0.,
+            start_time            : 0.,
+            end_time              : 0.,
             data_shards           : 0,
             parity_shards         : 0,
         }
     }
+}
 
-    pub fn set_time_elapsed(&mut self) {
-        self.time_elapsed = time_utils::get_time_now() - self.start_time;
-    }
+impl ProgressReport for Stats {
+    fn start_time_mut(&mut self) -> &mut f64 { &mut self.start_time }
+
+    fn end_time_mut(&mut self)   -> &mut f64 { &mut self.end_time }
+
+    fn units_so_far(&self)       -> u64      { self.data_blocks_written as u64 }
+
+    fn total_units(&self)        -> u64      { self.total_blocks as u64 }
 }
 
 fn pack_metadata(block         : &mut Block,
@@ -177,12 +181,10 @@ fn make_reporter(param          : &Param,
     let mut progress_report_context =
         progress_report::Context::new(
             String::from(header),
-            stats.lock().unwrap().start_time,
             String::from(unit),
             vec![ProgressBar, Percentage, CurrentRateShort, TimeUsedShort, TimeLeftShort],
             vec![TimeUsedLong, AverageRateLong]
         );
-    let total_blocks = stats.lock().unwrap().total_blocks;
     let shutdown_flag = Arc::clone(shutdown_flag);
 
     thread::spawn(move || {
@@ -194,20 +196,29 @@ fn make_reporter(param          : &Param,
 
             progress_report::print_progress(&silence_settings,
                                             &mut progress_report_context,
-                                            stats.lock().unwrap().data_blocks_written as u64,
-                                            total_blocks as u64);
+                                            stats.lock().unwrap().deref_mut());
         }
 
         progress_report::print_progress(&silence_settings,
                                         &mut progress_report_context,
-                                        stats.lock().unwrap().data_blocks_written as u64,
-                                        total_blocks as u64);
+                                        stats.lock().unwrap().deref_mut());
     })
 }
 
 pub fn encode_file(param    : &Param)
                    -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
+
+    // setup stats
+    let stats = Arc::new(Mutex::new(Stats::new(param, &metadata)));
+
+    // setup reporter
+    let (tx_error, _) = channel::<Option<Error>>();
+    let shutdown_flag        = Arc::new(AtomicBool::new(false));
+    let reporter = make_reporter(param,
+                                 &stats,
+                                 &tx_error,
+                                 &shutdown_flag);
 
     // setup file reader and writer
     let mut reader = file_reader::FileReader::new(&param.in_file)?;
@@ -235,16 +246,7 @@ pub fn encode_file(param    : &Param)
 
     let mut cur_seq_num : u32 = 1;
 
-    // setup stats
-    let stats = Arc::new(Mutex::new(Stats::new(param, &metadata)));
-
-    // setup reporter
-    let (tx_error, _) = channel::<Option<Error>>();
-    let shutdown_flag        = Arc::new(AtomicBool::new(false));
-    let reporter = make_reporter(param,
-                                 &stats,
-                                 &tx_error,
-                                 &shutdown_flag);
+    stats.lock().unwrap().set_start_time();
 
     { // write dummy metadata block
         write_metadata_block(param,
@@ -345,6 +347,8 @@ pub fn encode_file(param    : &Param)
             }
         }
     }
+
+    stats.lock().unwrap().set_end_time();
 
     // shutdown reporter
     shutdown_flag.store(true, Ordering::Relaxed);

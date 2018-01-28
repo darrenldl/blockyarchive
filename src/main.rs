@@ -10,9 +10,7 @@ extern crate pond;
 extern crate futures;
 
 extern crate smallvec;
-use smallvec::SmallVec;
 
-#[macro_use]
 extern crate reed_solomon_erasure;
 
 #[macro_use]

@@ -34,7 +34,6 @@ pub struct Context {
     pub header_printed        : bool,
     pub finish_printed        : bool,
     pub header                : String,
-    pub start_time            : f64,
     pub last_report_time      : f64,
     pub last_reported_units   : u64,
     pub unit                  : String,
@@ -45,7 +44,6 @@ pub struct Context {
 
 impl Context {
     pub fn new(header                : String,
-               start_time            : f64,
                unit                  : String,
                active_print_elements : Vec<ProgressElement>,
                finish_print_elements : Vec<ProgressElement>) -> Context {
@@ -53,8 +51,7 @@ impl Context {
             header_printed      : false,
             finish_printed      : false,
             header,
-            start_time,
-            last_report_time    : start_time,
+            last_report_time    : 0.,
             last_reported_units : 0,
             unit,
             active_print_elements,
@@ -64,16 +61,46 @@ impl Context {
     }
 }
 
-pub fn print_progress (settings     : &SilenceSettings,
-                       context      : &mut Context,
-                       units_so_far : u64,
-                       total_units  : u64) {
+pub trait ProgressReport {
+    fn start_time_mut(&mut self) -> &mut f64;
+
+    fn end_time_mut(&mut self) -> &mut f64;
+
+    fn units_so_far(&self) -> u64;
+
+    fn total_units(&self) -> u64;
+
+    fn set_start_time(&mut self) {
+        *self.start_time_mut() = time_utils::get_time_now();
+    }
+
+    fn get_start_time(&mut self) -> f64 {
+        *self.start_time_mut()
+    }
+
+    fn set_end_time(&mut self) {
+        *self.end_time_mut() = time_utils::get_time_now();
+    }
+
+    fn get_end_time(&mut self) -> f64 {
+        *self.end_time_mut()
+    }
+}
+
+pub fn print_progress<T>(settings     : &SilenceSettings,
+                         context      : &mut Context,
+                         stats        : &mut T)
+    where T : ProgressReport
+{
     use std::cmp::max;
 
     let silent_while_active = settings.silent_while_active;
     let silent_when_done    = settings.silent_when_done;
 
-    let percent             = helper::calc_percent(units_so_far, total_units);
+    let units_so_far = stats.units_so_far();
+    let total_units  = stats.total_units();
+
+    let percent = helper::calc_percent(units_so_far, total_units);
 
     if !(silent_while_active && percent  < 100)
         && !(silent_when_done       && percent == 100)
@@ -87,11 +114,15 @@ pub fn print_progress (settings     : &SilenceSettings,
         let message =
             if percent < 100 {
                 make_message(context,
+                             stats.get_start_time(),
+                             stats.get_end_time(),
                              units_so_far,
                              total_units,
                              &context.active_print_elements)
             } else {
                 make_message(context,
+                             stats.get_start_time(),
+                             stats.get_end_time(),
                              units_so_far,
                              total_units,
                              &context.finish_print_elements)
@@ -114,6 +145,8 @@ pub fn print_progress (settings     : &SilenceSettings,
 }
 
 fn make_message (context      : &Context,
+                 start_time   : f64,
+                 end_time     : f64,
                  units_so_far : u64,
                  total_units  : u64,
                  elements     : &[ProgressElement])
@@ -154,7 +187,7 @@ fn make_message (context      : &Context,
     let percent                = helper::calc_percent(units_so_far, total_units);
     let cur_time               = time_utils::get_time_now();
     let time_used              =
-        f64_max(cur_time - context.start_time, 0.1);
+        f64_max(end_time - start_time, 0.1);
     let time_since_last_report =
         f64_max(cur_time - context.last_report_time, 0.1);
     let avg_rate               =
