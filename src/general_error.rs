@@ -1,9 +1,10 @@
 use super::file_error;
+use super::rs_codec;
 use std::fmt;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ErrorKind {
-    RSCodecCreateFail,
+    RSError(rs_codec::Error),
     FileError(file_error::FileError),
 }
 
@@ -24,9 +25,8 @@ impl fmt::Display for Error {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorKind::*;
         match self.kind {
-            RSCodecCreateFail => write!(f, "Reed-Solomon codec creation fail"),
-            FileError(ref e)  => write!(f, "{}", e),
-            // _                 => write!(f, "Unknown error")
+            RSCodecError(ref e) => write!(f, "RS codec error : {}", e),
+            FileError(ref e)    => write!(f, "File error : {}", e),
         }
     }
 }

@@ -28,15 +28,16 @@ pub enum Error {
     ParseError
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Data {
     Data,
     Meta(Vec<Metadata>)
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct Block {
     pub header : Header,
-    data   : Data,
+    data       : Data,
 }
 
 macro_rules! slice_buf {
@@ -300,5 +301,26 @@ impl Block {
                       buffer : &[u8])
                       -> Result<bool, Error> {
         Ok(self.header.crc == self.calc_crc(buffer)?)
+    }
+
+    pub fn check_if_buffer_contains_valid_block(&self,
+                                                buffer       : &[u8],
+                                                must_be_type : BlockType)
+                                                -> bool {
+        let mut block = Block::new(self.header.version,
+                                   &self.header.file_uid,
+                                   self.block_type());
+
+        match block.sync_from_buffer(buffer) {
+            Ok(()) => {},
+            Err(_) => { return false; }
+        }
+
+        match must_be_type {
+            None    => {}
+            Some(t) => { if block.block_type() != t { return false; } }
+        }
+
+        block.verify_crc(buffer).unwrap()
     }
 }

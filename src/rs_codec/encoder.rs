@@ -1,30 +1,13 @@
-use super::reed_solomon_erasure::ReedSolomon;
-use super::smallvec::SmallVec;
-use super::sbx_block;
-use super::sbx_specs::Version;
-use super::sbx_specs::ver_to_block_size;
-use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
+use super::super::reed_solomon_erasure::ReedSolomon;
+use super::super::smallvec::SmallVec;
+use super::super::sbx_block;
+use super::super::sbx_specs::Version;
+use super::super::sbx_block::BlockType;
+use super::super::sbx_specs::ver_to_block_size;
+use super::super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 
-fn last_data_set_start_index(data_shards   : usize,
-                             total_shards  : u64) -> u64 {
-    total_shards - last_data_set_size(data_shards, total_shards) as u64
-}
-
-fn last_data_set_size(data_shards   : usize,
-                      total_shards  : u64) -> usize {
-    let size = total_shards % data_shards as u64;
-    if size == 0 {
-        data_shards as usize
-    } else {
-        size as usize
-    }
-}
-
-fn calc_parity_shards(data_shards   : usize,
-                      parity_shards : usize,
-                      set_size      : usize) -> usize {
-    (set_size * parity_shards + (data_shards - 1)) / data_shards
-}
+use super::RSError;
+use super::to_err;
 
 pub struct RSEncoder {
     cur_data_index            : u64,
@@ -34,31 +17,17 @@ pub struct RSEncoder {
     rs_codec_last             : Option<ReedSolomon>,
     data_shards               : usize,
     parity_shards             : usize,
-    total_shards              : u64,
+    total_blocks              : u64,
     version                   : Version,
     parity_buf                : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     parity_buf_last           : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
-}
-
-pub struct RSRepairer {
-    cur_data_index            : u64,
-    last_data_set_size        : usize,
-    last_data_set_start_index : u64,
-    rs_codec                  : Option<ReedSolomon>,
-    rs_codec_last             : Option<ReedSolomon>,
-    data_shards               : usize,
-    parity_shards             : usize,
-    total_shards              : u64,
-    version                   : Version,
-    buf                       : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
-    buf_last                  : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
 }
 
 impl RSEncoder {
     pub fn new(version       : Version,
                data_shards   : usize,
                parity_shards : usize,
-               total_shards  : u64) -> RSEncoder {
+               total_blocks  : u64) -> RSEncoder {
         let last_data_set_size         = last_data_set_size(data_shards,
                                                             total_shards);
         let last_data_set_start_index  = last_data_set_start_index(data_shards,
@@ -172,72 +141,5 @@ impl RSEncoder {
         self.cur_data_index = (self.cur_data_index + 1) % self.total_shards;
 
         ready
-    }
-}
-
-impl RSRepairer {
-    pub fn new(version       : Version,
-               data_shards   : usize,
-               parity_shards : usize,
-               total_shards  : u64) -> RSRepairer {
-        let last_data_set_size         = last_data_set_size(data_shards,
-                                                            total_shards);
-        let last_data_set_start_index  = last_data_set_start_index(data_shards,
-                                                                   total_shards);
-        let last_data_set_parity_count = calc_parity_shards(data_shards,
-                                                            parity_shards,
-                                                            last_data_set_size);
-
-        let mut buf : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
-            SmallVec::with_capacity(data_shards + parity_shards);
-        for _ in 0..data_shards + parity_shards {
-            let mut v : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]> = SmallVec::new();
-            for _ in 0..SBX_LARGEST_BLOCK_SIZE {
-                v.push(0);
-            }
-            buf.push(v);
-        }
-
-        let mut buf_last : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
-            SmallVec::with_capacity(last_data_set_size + last_data_set_parity_count);
-        for _ in 0..last_data_set_size + last_data_set_parity_count {
-            let mut v : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]> = SmallVec::new();
-            for _ in 0..SBX_LARGEST_BLOCK_SIZE {
-                v.push(0);
-            }
-            buf_last.push(v);
-        }
-
-        if total_shards == 0 {
-            RSRepairer {
-                cur_data_index            : 0,
-                last_data_set_size,
-                last_data_set_start_index,
-                rs_codec                  : None,
-                rs_codec_last             : None,
-                data_shards,
-                parity_shards,
-                total_shards,
-                version,
-                buf,
-                buf_last,
-            }
-        } else {
-            RSRepairer {
-                cur_data_index            : 0,
-                last_data_set_size,
-                last_data_set_start_index,
-                rs_codec                  : Some(ReedSolomon::new(data_shards,
-                                                                  parity_shards).unwrap()),
-                rs_codec_last             : Some(ReedSolomon::new(last_data_set_size,
-                                                                  last_data_set_parity_count).unwrap()),
-                data_shards,
-                parity_shards,
-                total_shards,
-                version,
-                buf,
-                buf_last,
-            }
-        }
     }
 }
