@@ -100,13 +100,14 @@ impl RSRepairer {
         }
     }
 
-    pub fn repair(&mut self) -> Result<&SmallVec<[bool; 32]>, Error> {
+    pub fn repair(&mut self) -> &SmallVec<[bool; 32]> {
         if self.cur_index < self.last_set_start_seq_num {
             for i in 0..self.data_shards + self.parity_shards {
                 self.buf_slice_present[i] =
                     self.ref_block.check_if_buffer_contains_valid_block(&buf[i],
                                                                         self.block_type);
             }
+            &self.buf_last_slice_present
         } else {
             let last_set_parity_count = calc_parity_shards(self.data_shards,
                                                            self.parity_shards,
@@ -116,6 +117,7 @@ impl RSRepairer {
                     self.ref_block.check_if_buffer_contains_valid_block(&buf_last[i],
                                                                         self.block_type);
             }
+            &self.buf_last_slice_present
         }
     }
 }

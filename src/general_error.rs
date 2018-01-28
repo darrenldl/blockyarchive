@@ -4,7 +4,7 @@ use std::fmt;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ErrorKind {
-    RSError(rs_codec::Error),
+    RSError(rs_codec::RSError),
     FileError(file_error::FileError),
 }
 
