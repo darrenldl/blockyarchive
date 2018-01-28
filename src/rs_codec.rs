@@ -3,6 +3,7 @@ use super::smallvec::SmallVec;
 use super::sbx_block;
 use super::sbx_specs::Version;
 use super::sbx_specs::ver_to_block_size;
+use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 
 pub struct RSEncoder {
     cur_data_index            : usize,
@@ -14,8 +15,8 @@ pub struct RSEncoder {
     parity_shards             : usize,
     total_shards              : usize,
     version                   : Version,
-    parity_buf                : Vec<Box<[u8]>>,
-    parity_buf_last           : Vec<Box<[u8]>>,
+    parity_buf                : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
+    parity_buf_last           : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
 }
 
 impl RSEncoder {
@@ -31,16 +32,24 @@ impl RSEncoder {
                                                             parity_shards,
                                                             last_data_set_size);
 
-        let mut parity_buf : Vec<Box<[u8]>> = Vec::with_capacity(parity_shards);
+        let mut parity_buf : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
+            SmallVec::with_capacity(parity_shards);
         for _ in 0..parity_shards {
-            parity_buf.push(vec![0; ver_to_block_size(version)]
-                            .into_boxed_slice());
+            let mut v : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]> = SmallVec::new();
+            for _ in 0..SBX_LARGEST_BLOCK_SIZE {
+                v.push(0);
+            }
+            parity_buf.push(v);
         }
 
-        let mut parity_buf_last : Vec<Box<[u8]>> = Vec::with_capacity(last_data_set_parity_count);
+        let mut parity_buf_last : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
+            SmallVec::with_capacity(last_data_set_parity_count);
         for _ in 0..last_data_set_parity_count {
-            parity_buf_last.push(vec![0; ver_to_block_size(version)]
-                                 .into_boxed_slice());
+            let mut v : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]> = SmallVec::new();
+            for _ in 0..SBX_LARGEST_BLOCK_SIZE {
+                v.push(0);
+            }
+            parity_buf_last.push(v);
         }
 
         if total_shards == 0 {
@@ -78,7 +87,7 @@ impl RSEncoder {
 
     pub fn encode(&mut self,
                   data_shard    : &[u8])
-                  -> Option<&mut Vec<Box<[u8]>>> {
+                  -> Option<&mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>> {
         let mut ready = None;
 
         let rs_codec      = match self.rs_codec {
