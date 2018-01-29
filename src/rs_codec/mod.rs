@@ -1,5 +1,7 @@
 mod encoder;
-use encoder::RSEncoder;
+pub use self::encoder::RSEncoder;
+
+use super::smallvec::SmallVec;
 
 //mod repairer;
 //use repairer::RSRepairer;
@@ -36,10 +38,11 @@ fn calc_parity_shards(data_shards   : usize,
     (set_size * parity_shards + (data_shards - 1)) / data_shards
 }
 
+#[derive(Clone)]
 pub struct RSError {
     version             : Version,
     block_seq_num_start : u64,
-    block_count         : u64,
+    block_count         : usize,
     block_type          : BlockType,
     shard_present       : SmallVec<[bool; 32]>,
 }
@@ -51,7 +54,7 @@ fn to_err(e : RSError) -> Error {
 impl RSError {
     pub fn new(version             : Version,
                block_seq_num_start : u64,
-               block_count         : u64,
+               block_count         : usize,
                block_type          : BlockType,
                shard_present       : &[bool]) -> RSError {
         let mut shard_present_vec : SmallVec<[bool; 32]> =

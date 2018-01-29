@@ -2,13 +2,13 @@ use super::file_error;
 use super::rs_codec;
 use std::fmt;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone)]
 pub enum ErrorKind {
     RSError(rs_codec::RSError),
     FileError(file_error::FileError),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone)]
 pub struct Error {
     kind : ErrorKind
 }

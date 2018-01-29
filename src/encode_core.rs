@@ -32,8 +32,8 @@ use std::sync::mpsc::{Sender,
 use super::sbx_block::{Block, BlockType};
 use super::sbx_block;
 use super::sbx_block::metadata::Metadata;
-use super::sbx_specs::{SBX_FILE_UID_LEN,
-                       SBX_LARGEST_BLOCK_SIZE};
+use super::sbx_specs::SBX_FILE_UID_LEN;
+use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 
 use std::time::Duration;
 
@@ -236,6 +236,9 @@ pub fn encode_file(param    : &Param)
                                            file_utils::calc_block_count(param.version,
                                                                         &metadata));
 
+    // setup main data buffer
+    let mut data : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
     // setup main data block
     let mut block = Block::new(param.version,
                                &param.file_uid,
@@ -246,18 +249,22 @@ pub fn encode_file(param    : &Param)
     stats.lock().unwrap().set_start_time();
 
     { // write dummy metadata block
-        write_metadata_block(param,
-                             &stats.lock().unwrap(),
-                             &metadata,
-                             None,
-                             &mut data);
-        writer.write(sbx_block::slice_buf(param.version, &data))?;
+        {
+            let data = rs_codec_meta.data_buf_mut();
+
+            write_metadata_block(param,
+                                 &stats.lock().unwrap(),
+                                 &metadata,
+                                 None,
+                                 data);
+            writer.write(sbx_block::slice_buf(param.version,
+                                              data))?;
+        }
 
         stats.lock().unwrap().meta_blocks_written += 1;
 
         if param.rs_enabled {
-            let parity_to_use =
-                rs_codec_meta.encode(&data).unwrap();
+            let parity_to_use = rs_codec_meta.encode(&data).unwrap();
 
             for p in parity_to_use.iter_mut() {
                 block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
@@ -291,7 +298,7 @@ pub fn encode_file(param    : &Param)
         block.sync_to_buffer(None, &mut data).unwrap();
 
         // write data out
-        writer.write(sbx_block::slice_buf(param.version, &data))?;
+        writer.write(sbx_block::slice_buf(param.version, &mut data))?;
 
         // update hash state if needed
         if param.hash_enabled {
@@ -332,8 +339,7 @@ pub fn encode_file(param    : &Param)
         cur_seq_num = 1;
 
         if param.rs_enabled {
-            let parity_to_use =
-                rs_codec_meta.encode(&data).unwrap();
+            let parity_to_use = rs_codec_meta.encode(&data).unwrap();
 
             for p in parity_to_use.iter_mut() {
                 block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);

@@ -305,7 +305,7 @@ impl Block {
 
     pub fn check_if_buffer_valid(&self,
                                  buffer       : &[u8],
-                                 must_be_type : BlockType)
+                                 must_be_type : Option<BlockType>)
                                  -> bool {
         let mut block = Block::new(self.header.version,
                                    &self.header.file_uid,

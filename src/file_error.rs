@@ -1,7 +1,7 @@
 use std::io::ErrorKind;
 use std::fmt;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone)]
 pub struct FileError {
     kind : ErrorKind,
     path : String,

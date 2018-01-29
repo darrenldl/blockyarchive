@@ -2,12 +2,7 @@ use super::super::reed_solomon_erasure::ReedSolomon;
 use super::super::smallvec::SmallVec;
 use super::super::sbx_block;
 use super::super::sbx_specs::Version;
-use super::super::sbx_block::BlockType;
-use super::super::sbx_specs::ver_to_block_size;
 use super::super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-
-use super::RSError;
-use super::to_err;
 
 pub struct RSEncoder {
     cur_data_index            : u64,
@@ -73,14 +68,13 @@ impl RSEncoder {
             par_num_last   : last_data_set_parity_count,
             total_blocks,
             version,
-            dat_buf,
             par_buf_normal,
             par_buf_last,
         }
     }
 
     pub fn encode(&mut self,
-                  data_shard : &[u8])
+                  data : &[u8])
                   -> Option<&mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>> {
         let mut ready = None;
 
@@ -93,7 +87,7 @@ impl RSEncoder {
             Some(ref r) => r
         };
 
-        let data = sbx_block::slice_data_buf(self.version, data_shard);
+        let data = sbx_block::slice_data_buf(self.version, data);
 
         if self.cur_data_index < self.last_data_set_start_index as u64 {
             let index = (self.cur_data_index % self.dat_num_normal as u64) as usize;
