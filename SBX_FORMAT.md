@@ -89,17 +89,17 @@ Assumes configuration is **N** data shards and **M** parity shards.
 | 16  | n        | var  | encoded metadata |
 |  n+1| blockend | var  | padding (0x1a)   |
 
-### Block 1-2
+### Block 1-3
 
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
 | 16  | blockend | var  | parity           |
 
-RS arrangement : block 0 (data shard) block 1 (parity shard) block 2 (parity shard).
+RS arrangement : block 0 (data shard) block 1 (parity shard) block 2 (parity shard) block 3 (parity shard).
 
-Above gives 200% redundancy for the metadata block.
+Above gives 300% redundancy for the metadata block.
 
-### Blocks >= 3 & < 3 + K * (N + M), where K is an integer >= 1:
+### Blocks >= 4 & < 4 + K * (N + M), where K is an integer >= 1:
 
 For **N** continuous blocks
 
