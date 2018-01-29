@@ -35,20 +35,11 @@ impl RSEncoder {
                                                             last_data_set_size);
         let block_size = ver_to_block_size(version);
 
-        let mut par_buf_normal : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
-            SmallVec::with_capacity(parity_shards);
-        for _ in 0..parity_shards {
-            let v : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]> = smallvec![0; block_size];
-            par_buf_normal.push(v);
-        }
+        let par_buf_normal : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
+            smallvec![smallvec![0; block_size]; parity_shards];
 
-        let mut par_buf_last : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
-            SmallVec::with_capacity(last_data_set_parity_count);
-        for _ in 0..last_data_set_parity_count {
-            let v : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]> =
-                smallvec![0; block_size];
-            par_buf_last.push(v);
-        }
+        let par_buf_last : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
+            smallvec![smallvec![0; block_size]; last_data_set_parity_count];
 
         RSEncoder {
             cur_data_index            : 0,
