@@ -3,6 +3,13 @@ pub use self::encoder::RSEncoder;
 
 use super::smallvec::SmallVec;
 
+use super::sbx_block::BlockType;
+use super::sbx_specs::Version;
+
+use super::sbx_specs::ver_to_block_size;
+
+use std::fmt;
+
 //mod repairer;
 //use repairer::RSRepairer;
 
@@ -16,7 +23,7 @@ fn last_data_set_start_index(data_shards       : usize,
 
 fn last_data_set_size(data_shards       : usize,
                       total_data_blocks : u64) -> usize {
-    let size = total_blocks % data_shards as u64;
+    let size = total_data_blocks % data_shards as u64;
     if size == 0 {
         data_shards as usize
     } else {
@@ -39,7 +46,13 @@ fn calc_parity_shards(data_shards   : usize,
 }
 
 #[derive(Clone)]
+pub enum RSErrorKind {
+    RepairFail,
+}
+
+#[derive(Clone)]
 pub struct RSError {
+    kind                : RSErrorKind,
     version             : Version,
     block_seq_num_start : u64,
     block_count         : usize,
@@ -53,6 +66,7 @@ fn to_err(e : RSError) -> Error {
 
 impl RSError {
     pub fn new(version             : Version,
+               kind                : RSErrorKind,
                block_seq_num_start : u64,
                block_count         : usize,
                block_type          : BlockType,
@@ -63,11 +77,49 @@ impl RSError {
             shard_present_vec.push(*s);
         }
         RSError {
+            kind,
             version,
             block_seq_num_start,
             block_count,
             block_type,
             shard_present : shard_present_vec
+        }
+    }
+}
+
+impl fmt::Display for RSError {
+    fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
+        use self::RSErrorKind::*;
+        match self.kind {
+            RepairFail => {
+                let mut msg = String::with_capacity(20);
+                let block_size = ver_to_block_size(self.version) as u64;
+                let block_seq_num_start  = self.block_seq_num_start;
+                let block_seq_num_end    = block_seq_num_start + self.block_count as u64 - 1;
+                let file_pos_first_block = block_seq_num_start * block_size;
+                let file_pos_last_block  = block_seq_num_end   * block_size;
+                msg.push_str(&format!("too few blocks present to repair blocks {} - {} (file pos : {} (0x{:X}) - {} (0x{:X}))\n",
+                                     block_seq_num_start,
+                                     block_seq_num_end,
+                                     file_pos_first_block,
+                                     file_pos_first_block,
+                                     file_pos_last_block,
+                                     file_pos_last_block,
+                ));
+                msg.push_str("missing/corrupted : ");
+                let mut first_num = true;
+                for i in 0..self.shard_present.len() {
+                    if !self.shard_present[i] {
+                        if first_num {
+                            msg.push_str(&format!("{}", i));
+                            first_num = false;
+                        } else {
+                            msg.push_str(&format!(", {}", i));
+                        }
+                    }
+                }
+                write!(f, "{}", msg)
+            }
         }
     }
 }

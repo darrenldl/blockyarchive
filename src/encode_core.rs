@@ -34,6 +34,7 @@ use super::sbx_block;
 use super::sbx_block::metadata::Metadata;
 use super::sbx_specs::SBX_FILE_UID_LEN;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
+use super::sbx_specs::SBX_RS_METADATA_PARITY_COUNT;
 
 use std::time::Duration;
 
@@ -229,7 +230,10 @@ pub fn encode_file(param    : &Param)
         multihash::hash::Ctx::new(param.hash_type).unwrap();
 
     // setup Reed-Solomon things
-    let mut rs_codec_meta = RSEncoder::new(param.version, 1, 2, 1);
+    let mut rs_codec_meta = RSEncoder::new(param.version,
+                                           1,
+                                           SBX_RS_METADATA_PARITY_COUNT,
+                                           1);
     let mut rs_codec_data = RSEncoder::new(param.version,
                                            param.rs_data,
                                            param.rs_parity,
@@ -249,17 +253,13 @@ pub fn encode_file(param    : &Param)
     stats.lock().unwrap().set_start_time();
 
     { // write dummy metadata block
-        {
-            let data = rs_codec_meta.data_buf_mut();
-
-            write_metadata_block(param,
-                                 &stats.lock().unwrap(),
-                                 &metadata,
-                                 None,
-                                 data);
-            writer.write(sbx_block::slice_buf(param.version,
-                                              data))?;
-        }
+        write_metadata_block(param,
+                             &stats.lock().unwrap(),
+                             &metadata,
+                             None,
+                             &mut data);
+        writer.write(sbx_block::slice_buf(param.version,
+                                          &data))?;
 
         stats.lock().unwrap().meta_blocks_written += 1;
 

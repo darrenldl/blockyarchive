@@ -3,6 +3,8 @@ use super::super::smallvec::SmallVec;
 use super::super::sbx_block;
 use super::super::sbx_specs::Version;
 use super::super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
+use super::super::sbx_specs::ver_to_block_size;
+use super::*;
 
 pub struct RSEncoder {
     cur_data_index            : u64,
@@ -15,7 +17,6 @@ pub struct RSEncoder {
     par_num_last              : usize,
     total_blocks              : u64,
     version                   : Version,
-    dat_buf                   : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>,
     par_buf_normal            : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     par_buf_last              : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
 }
@@ -26,30 +27,27 @@ impl RSEncoder {
                parity_shards : usize,
                total_blocks  : u64) -> RSEncoder {
         let last_data_set_size         = last_data_set_size(data_shards,
-                                                            total_shards);
+                                                            total_blocks);
         let last_data_set_start_index  = last_data_set_start_index(data_shards,
-                                                                   total_shards);
+                                                                   total_blocks);
         let last_data_set_parity_count = calc_parity_shards(data_shards,
                                                             parity_shards,
                                                             last_data_set_size);
-        let block_size = vec_to_block_size(version);
-
-        let mut dat_buf : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]> =
-            smallvec![0; block_size];
+        let block_size = ver_to_block_size(version);
 
         let mut par_buf_normal : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
             SmallVec::with_capacity(parity_shards);
         for _ in 0..parity_shards {
             let v : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]> = smallvec![0; block_size];
-            parity_buf.push(v);
+            par_buf_normal.push(v);
         }
 
-        let par_buf_last : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
+        let mut par_buf_last : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
             SmallVec::with_capacity(last_data_set_parity_count);
         for _ in 0..last_data_set_parity_count {
             let v : SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]> =
                 smallvec![0; block_size];
-            parity_buf_last.push(v);
+            par_buf_last.push(v);
         }
 
         RSEncoder {
@@ -97,7 +95,7 @@ impl RSEncoder {
                 for p in &mut self.par_buf_normal[0..self.par_num_normal] {
                     parity.push(sbx_block::slice_data_buf_mut(self.version, p));
                 }
-                rs_codec.encode_single_sep(index,
+                rs_codec_normal.encode_single_sep(index,
                                            data,
                                            &mut parity).unwrap();
             }
