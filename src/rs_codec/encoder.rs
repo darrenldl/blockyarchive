@@ -15,7 +15,7 @@ pub struct RSEncoder {
     par_num_normal            : usize,
     dat_num_last              : usize,
     par_num_last              : usize,
-    total_blocks              : u64,
+    total_data_chunks         : u64,
     version                   : Version,
     par_buf_normal            : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     par_buf_last              : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
@@ -25,11 +25,11 @@ impl RSEncoder {
     pub fn new(version       : Version,
                data_shards   : usize,
                parity_shards : usize,
-               total_blocks  : u64) -> RSEncoder {
+               total_data_chunks  : u64) -> RSEncoder {
         let last_data_set_size         = last_data_set_size(data_shards,
-                                                            total_blocks);
+                                                            total_data_chunks);
         let last_data_set_start_index  = last_data_set_start_index(data_shards,
-                                                                   total_blocks);
+                                                                   total_data_chunks);
         let last_data_set_parity_count = calc_parity_shards(data_shards,
                                                             parity_shards,
                                                             last_data_set_size);
@@ -45,17 +45,17 @@ impl RSEncoder {
             cur_data_index            : 0,
             last_data_set_start_index,
             rs_codec_normal :
-            if total_blocks == 0 { None }
+            if total_data_chunks == 0 { None }
             else { Some(ReedSolomon::new(data_shards, parity_shards).unwrap()) },
             rs_codec_last   :
-            if total_blocks == 0 { None }
+            if total_data_chunks == 0 { None }
             else { Some(ReedSolomon::new(last_data_set_size,
                                       last_data_set_parity_count).unwrap()) },
             dat_num_normal : data_shards,
             par_num_normal : parity_shards,
             dat_num_last   : last_data_set_size,
             par_num_last   : last_data_set_parity_count,
-            total_blocks,
+            total_data_chunks,
             version,
             par_buf_normal,
             par_buf_last,
@@ -111,7 +111,7 @@ impl RSEncoder {
             }
         }
 
-        self.cur_data_index = (self.cur_data_index + 1) % self.total_blocks;
+        self.cur_data_index = (self.cur_data_index + 1) % self.total_data_chunks;
 
         ready
     }
