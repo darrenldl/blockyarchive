@@ -11,6 +11,7 @@ extern crate futures;
 
 extern crate smallvec;
 
+#[macro_use]
 extern crate reed_solomon_erasure;
 
 #[macro_use]

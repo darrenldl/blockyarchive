@@ -10,8 +10,8 @@ use super::sbx_specs::ver_to_block_size;
 
 use std::fmt;
 
-//mod repairer;
-//use repairer::RSRepairer;
+mod repairer;
+pub use self::repairer::RSRepairer;
 
 use super::Error;
 use super::ErrorKind;
