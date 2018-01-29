@@ -34,7 +34,9 @@ fn last_data_set_size(data_shards       : usize,
 fn last_block_set_start_seq_num(data_shards       : usize,
                                 parity_shards     : usize,
                                 total_data_chunks : u64) -> u64 {
-    let normal_set_count = total_data_chunks / data_shards as u64;
+    let last_data_set_size = last_data_set_size(data_shards, total_data_chunks) as u64;
+
+    let normal_set_count   = total_data_chunks - last_data_set_size;
 
     normal_set_count * (data_shards + parity_shards) as u64
 }
@@ -43,6 +45,20 @@ fn calc_parity_shards(data_shards   : usize,
                       parity_shards : usize,
                       set_size      : usize) -> usize {
     (set_size * parity_shards + (data_shards - 1)) / data_shards
+}
+
+fn calc_total_blocks (data_shards       : usize,
+                      parity_shards     : usize,
+                      total_data_chunks : u64) -> u64 {
+    let last_block_set_start_seq_num =
+        last_block_set_start_seq_num(data_shards,
+                                     parity_shards,
+                                     total_data_chunks);
+    let last_data_set_size           =
+        last_data_set_size(data_shards,
+                           total_data_chunks) as u64;
+
+    last_block_set_start_seq_num + last_data_set_size
 }
 
 #[derive(Clone)]
