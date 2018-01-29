@@ -22,10 +22,10 @@ pub struct RSEncoder {
 }
 
 impl RSEncoder {
-    pub fn new(version       : Version,
-               data_shards   : usize,
-               parity_shards : usize,
-               total_data_chunks  : u64) -> RSEncoder {
+    pub fn new(version           : Version,
+               data_shards       : usize,
+               parity_shards     : usize,
+               total_data_chunks : u64) -> RSEncoder {
         let last_data_set_size         = last_data_set_size(data_shards,
                                                             total_data_chunks);
         let last_data_set_start_index  = last_data_set_start_index(data_shards,
