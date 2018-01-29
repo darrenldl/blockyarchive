@@ -26,10 +26,12 @@ impl RSEncoder {
                data_shards       : usize,
                parity_shards     : usize,
                total_data_chunks : u64) -> RSEncoder {
-        let last_data_set_size         = last_data_set_size(data_shards,
-                                                            total_data_chunks);
-        let last_data_set_start_index  = last_data_set_start_index(data_shards,
-                                                                   total_data_chunks);
+        let last_data_set_size         =
+            last_data_set_size(data_shards,
+                               total_data_chunks);
+        let last_data_set_start_index  =
+            last_data_set_start_index(data_shards,
+                                      total_data_chunks);
         let last_data_set_parity_count = calc_parity_shards(data_shards,
                                                             parity_shards,
                                                             last_data_set_size);

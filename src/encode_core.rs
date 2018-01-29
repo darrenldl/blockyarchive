@@ -75,7 +75,7 @@ pub struct Param {
 impl Stats {
     pub fn new(param : &Param, file_metadata : &fs::Metadata) -> Stats {
         let total_blocks =
-            file_utils::calc_block_count(param.version, file_metadata) as u32;
+            file_utils::calc_data_chunk_count(param.version, file_metadata) as u32;
         Stats {
             version               : param.version,
             meta_blocks_written   : 0,
@@ -237,8 +237,8 @@ pub fn encode_file(param    : &Param)
     let mut rs_codec_data = RSEncoder::new(param.version,
                                            param.rs_data,
                                            param.rs_parity,
-                                           file_utils::calc_block_count(param.version,
-                                                                        &metadata));
+                                           file_utils::calc_data_chunk_count(param.version,
+                                                                             &metadata));
 
     // setup main data buffer
     let mut data : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
