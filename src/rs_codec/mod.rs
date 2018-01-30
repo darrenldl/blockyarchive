@@ -81,8 +81,8 @@ fn to_err(e : RSError) -> Error {
 }
 
 impl RSError {
-    pub fn new(version             : Version,
-               kind                : RSErrorKind,
+    pub fn new(kind                : RSErrorKind,
+               version             : Version,
                block_seq_num_start : u64,
                block_count         : usize,
                block_type          : BlockType,
