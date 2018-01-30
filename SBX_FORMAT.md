@@ -67,6 +67,8 @@ Supported crypto hashes since 1.0.0 are
   - SHA512
   - BLAKE2B\_512
 
+Metadata block (block 0) can be disabled
+
 ## For versions : 11, 12, 13
 Overall similar to above specs.
 
@@ -172,3 +174,5 @@ RS arrangement : X blocks (X data shards) Y blocks (Y parity shards), where Y = 
 
 Supported forward error correction algorithms since 1.0.0 are
   - Reed-Solomon erasure code - probably the only one for versions 11, 12, 13
+
+Metadata and the parity blocks (blocks 0 - 3) are mandatory
