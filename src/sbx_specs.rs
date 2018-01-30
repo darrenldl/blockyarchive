@@ -104,3 +104,19 @@ pub fn ver_to_data_size (version : Version) -> usize {
         V13 => params_for_v13::DATA_SIZE,
     }
 }
+
+pub fn ver_forces_rs_enabled(version : Version) -> bool {
+    use self::Version::*;
+    match version {
+        V1  | V2  | V3  => false,
+        V11 | V12 | V13 => true,
+    }
+}
+
+pub fn ver_forces_meta_enabled(version : Version) -> bool {
+    use self::Version::*;
+    match version {
+        V1  | V2  | V3  => false,
+        V11 | V12 | V13 => true,
+    }
+}

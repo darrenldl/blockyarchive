@@ -35,6 +35,8 @@ use super::sbx_block::metadata::Metadata;
 use super::sbx_specs::SBX_FILE_UID_LEN;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::SBX_RS_METADATA_PARITY_COUNT;
+use super::sbx_specs::ver_forces_meta_enabled;
+use super::sbx_specs::ver_forces_rs_enabled;
 
 use std::time::Duration;
 
@@ -60,16 +62,41 @@ impl fmt::Display for Stats {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {
-    pub version      : Version,
-    pub file_uid     : [u8; SBX_FILE_UID_LEN],
-    pub rs_enabled   : bool,
-    pub rs_data      : usize,
-    pub rs_parity    : usize,
-    pub hash_enabled : bool,
-    pub hash_type    : multihash::HashType,
-    pub in_file      : String,
-    pub out_file     : String,
-    pub silence_level : progress_report::SilenceLevel
+    version      : Version,
+    file_uid     : [u8; SBX_FILE_UID_LEN],
+    rs_data      : usize,
+    rs_parity    : usize,
+    rs_enabled   : bool,
+    meta_enabled : bool,
+    hash_type    : multihash::HashType,
+    in_file      : String,
+    out_file     : String,
+    silence_level : progress_report::SilenceLevel
+}
+
+impl Param {
+    pub fn new(version       : Version,
+               file_uid      : &[u8; SBX_FILE_UID_LEN],
+               rs_data       : usize,
+               rs_parity     : usize,
+               meta_enabled  : bool,
+               hash_type     : multihash::HashType,
+               in_file       : &str,
+               out_file      : &str,
+               silence_level : progress_report::SilenceLevel) -> Param {
+        Param {
+            version,
+            file_uid : file_uid.clone(),
+            rs_data,
+            rs_parity,
+            rs_enabled : ver_forces_rs_enabled(version),
+            meta_enabled : ver_forces_meta_enabled(version) || meta_enabled,
+            hash_type,
+            in_file  : String::from(in_file),
+            out_file : String::from(out_file),
+            silence_level,
+        }
+    }
 }
 
 impl Stats {
@@ -133,15 +160,14 @@ fn pack_metadata(block         : &mut Block,
     { // add sbx encoding time
         meta.push(Metadata::SDT(stats.start_time as i64)); }
     { // add hash
-        if param.hash_enabled {
-            let hsh = match hash {
-                Some(hsh) => hsh,
-                None      => {
-                    let ctx = multihash::hash::Ctx::new(param.hash_type).unwrap();
-                    ctx.finish_into_hash_bytes()
-                }
-            };
-            meta.push(Metadata::HSH(hsh)); }}
+        let hsh = match hash {
+            Some(hsh) => hsh,
+            None      => {
+                let ctx = multihash::hash::Ctx::new(param.hash_type).unwrap();
+                ctx.finish_into_hash_bytes()
+            }
+        };
+        meta.push(Metadata::HSH(hsh)); }
     { // add RS params
         if param.rs_enabled {
             meta.push(Metadata::RSD(param.rs_data   as u8));
@@ -153,15 +179,17 @@ fn write_metadata_block(param         : &Param,
                         file_metadata : &fs::Metadata,
                         hash          : Option<multihash::HashBytes>,
                         buf           : &mut [u8]) {
-    let mut block = Block::new(param.version,
-                               &param.file_uid,
-                               BlockType::Meta);
-    pack_metadata(&mut block,
-                  param,
-                  stats,
-                  file_metadata,
-                  hash);
-    block.sync_to_buffer(None, buf).unwrap();
+    if param.meta_enabled {
+        let mut block = Block::new(param.version,
+                                   &param.file_uid,
+                                   BlockType::Meta);
+        pack_metadata(&mut block,
+                      param,
+                      stats,
+                      file_metadata,
+                      hash);
+        block.sync_to_buffer(None, buf).unwrap();
+    }
 }
 
 fn make_reporter(param          : &Param,
@@ -301,7 +329,7 @@ pub fn encode_file(param    : &Param)
         writer.write(sbx_block::slice_buf(param.version, &mut data))?;
 
         // update hash state if needed
-        if param.hash_enabled {
+        if param.meta_enabled {
             let data_part = &sbx_block::slice_data_buf(param.version, &data)[0..len_read];
             hash_ctx.update(data_part);
         }

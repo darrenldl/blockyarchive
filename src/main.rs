@@ -75,18 +75,15 @@ mod worker;
 
 fn main () {
     use encode_core::Param;
-    let param = Param {
-        version : sbx_specs::Version::V1,
-        file_uid : [0, 1, 2, 3, 4, 5],
-        rs_enabled : true,
-        rs_data    : 10,
-        rs_parity  : 2,
-        hash_enabled : true,
-        hash_type  : multihash::HashType::SHA256,
-        in_file    : String::from("test"),
-        out_file   : String::from("test.sbx"),
-        silence_level : progress_report::SilenceLevel::L0
-    };
+    let param = Param::new(sbx_specs::Version::V11,
+                           &[0, 1, 2, 3, 4, 5],
+                           10,
+                           2,
+                           true,
+                           multihash::HashType::SHA256,
+                           "test",
+                           "test.sbx",
+                           progress_report::SilenceLevel::L0);
     match encode_core::encode_file(&param) {
         Ok(_)  => {},
         Err(e) => println!("Error : {}", e)
