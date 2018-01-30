@@ -1,11 +1,8 @@
-use std::thread;
-use std::thread::JoinHandle;
 use std::sync::{Arc, Mutex};
 use std::fs;
 use std::fmt;
 use super::file_utils;
 use std::io::SeekFrom;
-use std::ops::DerefMut;
 
 use integer_utils::IntegerUtils;
 
@@ -25,11 +22,6 @@ use super::Error;
 use super::sbx_specs::Version;
 use super::rs_codec::RSEncoder;
 
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::Ordering;
-use std::sync::mpsc::{Sender,
-                      channel};
-
 use super::sbx_block::{Block, BlockType};
 use super::sbx_block;
 use super::sbx_block::metadata::Metadata;
@@ -38,8 +30,6 @@ use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::SBX_RS_METADATA_PARITY_COUNT;
 use super::sbx_specs::ver_forces_meta_enabled;
 use super::sbx_specs::ver_forces_rs_enabled;
-
-use std::time::Duration;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
