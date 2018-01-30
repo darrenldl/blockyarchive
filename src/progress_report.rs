@@ -2,6 +2,14 @@ use super::time_utils;
 use super::misc_utils::f64_max;
 use std::io::Write;
 use std::io::stdout;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
+use std::thread::JoinHandle;
+use std::sync::Barrier;
+use std::thread;
+use std::time::Duration;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum SilenceLevel {
@@ -31,33 +39,103 @@ pub struct SilenceSettings {
 }
 
 pub struct Context {
-    pub header_printed        : bool,
-    pub finish_printed        : bool,
-    pub header                : String,
-    pub last_report_time      : f64,
-    pub last_reported_units   : u64,
-    pub unit                  : String,
-    pub active_print_elements : Vec<ProgressElement>,
-    pub finish_print_elements : Vec<ProgressElement>,
-    pub max_print_length      : usize,
+    header_printed        : bool,
+    finish_printed        : bool,
+    header                : String,
+    last_report_time      : f64,
+    last_reported_units   : u64,
+    unit                  : String,
+    active_print_elements : Vec<ProgressElement>,
+    finish_print_elements : Vec<ProgressElement>,
+    max_print_length      : usize,
+    silence_settings      : SilenceSettings,
 }
 
 impl Context {
-    pub fn new(header                : String,
-               unit                  : String,
+    pub fn new(header                : &str,
+               unit                  : &str,
+               silence_level         : SilenceLevel,
                active_print_elements : Vec<ProgressElement>,
                finish_print_elements : Vec<ProgressElement>) -> Context {
         Context {
-            header_printed      : false,
-            finish_printed      : false,
-            header,
-            last_report_time    : 0.,
-            last_reported_units : 0,
-            unit,
+            header_printed        : false,
+            finish_printed        : false,
+            header                : String::from(header),
+            last_report_time      : 0.,
+            last_reported_units   : 0,
+            unit                  : String::from(unit),
             active_print_elements,
             finish_print_elements,
-            max_print_length    : 0,
+            max_print_length      : 0,
+            silence_settings      : silence_level_to_settings(silence_level),
         }
+    }
+}
+
+pub struct ProgressReporter {
+    start_flag    : Arc<Barrier>,
+    shutdown_flag : Arc<AtomicBool>,
+    runner        : JoinHandle<()>,
+}
+
+impl ProgressReporter {
+    pub fn new<T :'static + ProgressReport + Send>(stats         : &Arc<Mutex<T>>,
+                                          header        : &str,
+                                          unit          : &str,
+                                          silence_level : SilenceLevel)
+                                          -> ProgressReporter {
+        use self::ProgressElement::*;
+        let mut context          = Context::new(header,
+                                                unit,
+                                                silence_level,
+                                                vec![ProgressBar,
+                                                     Percentage,
+                                                     CurrentRateShort,
+                                                     TimeUsedShort,
+                                                     TimeLeftShort],
+                                                vec![TimeUsedLong,
+                                                     AverageRateLong]);
+        let start_flag           = Arc::new(Barrier::new(2));
+        let shutdown_flag        = Arc::new(AtomicBool::new(false));
+        let runner_stats         = Arc::clone(stats);
+        let runner_start_flag    = Arc::clone(&start_flag);
+        let runner_shutdown_flag = Arc::clone(&shutdown_flag);
+        let runner               = thread::spawn(move || {
+            runner_start_flag.wait();
+
+            runner_stats.lock().unwrap().set_start_time();
+
+            loop {
+                if runner_shutdown_flag.load(Ordering::Relaxed) {
+                    break;
+                }
+
+                thread::sleep(Duration::from_millis(300));
+
+                print_progress::<T>(&mut context,
+                                    &mut runner_stats.lock().unwrap());
+            }
+
+            runner_stats.lock().unwrap().set_end_time();
+
+            print_progress::<T>(&mut context,
+                                &mut runner_stats.lock().unwrap());
+        });
+        ProgressReporter {
+            start_flag,
+            shutdown_flag,
+            runner,
+        }
+    }
+
+    pub fn start(&mut self) {
+        self.start_flag.wait();
+    }
+
+    pub fn stop(self) {
+        self.shutdown_flag.store(true, Ordering::Relaxed);
+
+        self.runner.join().unwrap();
     }
 }
 
@@ -87,15 +165,14 @@ pub trait ProgressReport {
     }
 }
 
-pub fn print_progress<T>(settings     : &SilenceSettings,
-                         context      : &mut Context,
-                         stats        : &mut T)
+pub fn print_progress<T>(context  : &mut Context,
+                         stats    : &mut T)
     where T : ProgressReport
 {
     use std::cmp::max;
 
-    let silent_while_active = settings.silent_while_active;
-    let silent_when_done    = settings.silent_when_done;
+    let silent_while_active = context.silence_settings.silent_while_active;
+    let silent_when_done    = context.silence_settings.silent_when_done;
 
     let units_so_far = stats.units_so_far();
     let total_units  = stats.total_units();
@@ -131,7 +208,7 @@ pub fn print_progress<T>(settings     : &SilenceSettings,
         context.max_print_length = max(context.max_print_length,
                                        message.len());
 
-        print!("\r{1:0$}", context.max_print_length, message);
+        print!("{1:0$}\r", context.max_print_length, message);
         stdout().flush().unwrap();
 
         if percent == 100 && !context.finish_printed {

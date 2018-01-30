@@ -10,6 +10,7 @@ use std::ops::DerefMut;
 use integer_utils::IntegerUtils;
 
 use progress_report::ProgressReport;
+use progress_report::ProgressReporter;
 
 use super::progress_report;
 
@@ -190,48 +191,6 @@ fn write_metadata_block(param         : &Param,
     block.sync_to_buffer(None, buf).unwrap();
 }
 
-fn make_reporter(param          : &Param,
-                 stats          : &Arc<Mutex<Stats>>,
-                 tx_error       : &Sender<Option<Error>>,
-                 shutdown_flag  : &Arc<AtomicBool>)
-                 -> JoinHandle<()> {
-    use progress_report::ProgressElement::*;
-
-    let stats = Arc::clone(stats);
-
-    let tx_error = tx_error.clone();
-
-    let header = "Data encoding progress";
-    let unit   = "chunks";
-    let silence_settings =
-        progress_report::silence_level_to_settings(param.silence_level);
-    let mut progress_report_context =
-        progress_report::Context::new(
-            String::from(header),
-            String::from(unit),
-            vec![ProgressBar, Percentage, CurrentRateShort, TimeUsedShort, TimeLeftShort],
-            vec![TimeUsedLong, AverageRateLong]
-        );
-    let shutdown_flag = Arc::clone(shutdown_flag);
-
-    thread::spawn(move || {
-        loop {
-            worker_stop!(graceful_if_shutdown =>
-                         tx_error, shutdown_flag);
-
-            thread::sleep(Duration::from_millis(300));
-
-            progress_report::print_progress(&silence_settings,
-                                            &mut progress_report_context,
-                                            stats.lock().unwrap().deref_mut());
-        }
-
-        progress_report::print_progress(&silence_settings,
-                                        &mut progress_report_context,
-                                        stats.lock().unwrap().deref_mut());
-    })
-}
-
 pub fn encode_file(param    : &Param)
                    -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
@@ -240,12 +199,10 @@ pub fn encode_file(param    : &Param)
     let stats = Arc::new(Mutex::new(Stats::new(param, &metadata)));
 
     // setup reporter
-    let (tx_error, _) = channel::<Option<Error>>();
-    let shutdown_flag        = Arc::new(AtomicBool::new(false));
-    let reporter = make_reporter(param,
-                                 &stats,
-                                 &tx_error,
-                                 &shutdown_flag);
+    let mut reporter = ProgressReporter::new(&stats,
+                                             "Data encoding progress",
+                                             "chunks",
+                                             param.silence_level);
 
     // setup file reader and writer
     let mut reader = file_reader::FileReader::new(&param.in_file)?;
@@ -276,7 +233,7 @@ pub fn encode_file(param    : &Param)
 
     let mut cur_seq_num : u32 = 1;
 
-    stats.lock().unwrap().set_start_time();
+    reporter.start();
 
     if param.meta_enabled { // write dummy metadata block
         write_metadata_block(param,
@@ -377,12 +334,7 @@ pub fn encode_file(param    : &Param)
         }
     }
 
-    stats.lock().unwrap().set_end_time();
-
-    // shutdown reporter
-    shutdown_flag.store(true, Ordering::Relaxed);
-
-    reporter.join().unwrap();
+    reporter.stop();
 
     let stats = stats.lock().unwrap().clone();
     Ok(stats)
