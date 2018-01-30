@@ -72,19 +72,21 @@ impl Context {
     }
 }
 
-pub struct ProgressReporter {
+pub struct ProgressReporter<T : ProgressReport> {
     start_flag    : Arc<Barrier>,
     shutdown_flag : Arc<AtomicBool>,
     runner        : JoinHandle<()>,
+    stats         : Arc<Mutex<T>>,
 }
 
-impl ProgressReporter {
-    pub fn new<T :'static + ProgressReport + Send>(stats         : &Arc<Mutex<T>>,
-                                          header        : &str,
-                                          unit          : &str,
-                                          silence_level : SilenceLevel)
-                                          -> ProgressReporter {
+impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
+    pub fn new(stats         : &Arc<Mutex<T>>,
+               header        : &str,
+               unit          : &str,
+               silence_level : SilenceLevel)
+               -> ProgressReporter<T> {
         use self::ProgressElement::*;
+        let stats                = Arc::clone(stats);
         let mut context          = Context::new(header,
                                                 unit,
                                                 silence_level,
@@ -97,13 +99,11 @@ impl ProgressReporter {
                                                      AverageRateLong]);
         let start_flag           = Arc::new(Barrier::new(2));
         let shutdown_flag        = Arc::new(AtomicBool::new(false));
-        let runner_stats         = Arc::clone(stats);
+        let runner_stats         = Arc::clone(&stats);
         let runner_start_flag    = Arc::clone(&start_flag);
         let runner_shutdown_flag = Arc::clone(&shutdown_flag);
         let runner               = thread::spawn(move || {
             runner_start_flag.wait();
-
-            runner_stats.lock().unwrap().set_start_time();
 
             loop {
                 if runner_shutdown_flag.load(Ordering::Relaxed) {
@@ -116,8 +116,6 @@ impl ProgressReporter {
                                     &mut runner_stats.lock().unwrap());
             }
 
-            runner_stats.lock().unwrap().set_end_time();
-
             print_progress::<T>(&mut context,
                                 &mut runner_stats.lock().unwrap());
         });
@@ -125,14 +123,19 @@ impl ProgressReporter {
             start_flag,
             shutdown_flag,
             runner,
+            stats,
         }
     }
 
     pub fn start(&mut self) {
+        self.stats.lock().unwrap().set_start_time();
+
         self.start_flag.wait();
     }
 
     pub fn stop(self) {
+        self.stats.lock().unwrap().set_end_time();
+
         self.shutdown_flag.store(true, Ordering::Relaxed);
 
         self.runner.join().unwrap();
@@ -208,7 +211,7 @@ pub fn print_progress<T>(context  : &mut Context,
         context.max_print_length = max(context.max_print_length,
                                        message.len());
 
-        print!("{1:0$}\r", context.max_print_length, message);
+        print!("\r{1:0$}", context.max_print_length, message);
         stdout().flush().unwrap();
 
         if percent == 100 && !context.finish_printed {
