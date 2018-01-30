@@ -115,12 +115,12 @@ impl fmt::Display for RSError {
                 let file_pos_first_block = block_seq_num_start * block_size;
                 let file_pos_last_block  = block_seq_num_end   * block_size;
                 msg.push_str(&format!("too few blocks present to repair blocks {} - {} (file pos : {} (0x{:X}) - {} (0x{:X}))\n",
-                                     block_seq_num_start,
-                                     block_seq_num_end,
-                                     file_pos_first_block,
-                                     file_pos_first_block,
-                                     file_pos_last_block,
-                                     file_pos_last_block,
+                                      block_seq_num_start,
+                                      block_seq_num_end,
+                                      file_pos_first_block,
+                                      file_pos_first_block,
+                                      file_pos_last_block,
+                                      file_pos_last_block,
                 ));
                 msg.push_str("missing/corrupted : ");
                 let mut first_num = true;
