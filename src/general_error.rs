@@ -23,10 +23,12 @@ impl Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "")?;
+
         use self::ErrorKind::*;
         match self.kind {
-            RSError(ref e) => writeln!(f, "FEC codec error : {}", e),
-            FileError(ref e)    => writeln!(f, "File error : {}", e),
+            RSError(ref e)   => writeln!(f, "FEC codec error : {}", e),
+            FileError(ref e) => writeln!(f, "File error : {}", e),
         }
     }
 }
