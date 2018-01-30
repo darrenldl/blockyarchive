@@ -248,16 +248,16 @@ fn make_message (context      : &Context,
             AverageRateShort => format!("avg : {}", helper::make_readable_rate(avg_rate, unit)),
             AverageRateLong  => format!("Average rate : {}", helper::make_readable_rate(avg_rate, unit)),
             TimeUsedShort    => {
-                let (hour, minute, second) = helper::seconds_to_hms(time_used as i64);
+                let (hour, minute, second) = time_utils::seconds_to_hms(time_used as i64);
                 format!("used : {:02}:{:02}:{:02}", hour, minute, second) },
             TimeUsedLong     => {
-                let (hour, minute, second) = helper::seconds_to_hms(time_used as i64);
+                let (hour, minute, second) = time_utils::seconds_to_hms(time_used as i64);
                 format!("Time elapsed : {:02}:{:02}:{:02}", hour, minute, second) },
             TimeLeftShort    => {
-                let (hour, minute, second) = helper::seconds_to_hms(time_left as i64);
+                let (hour, minute, second) = time_utils::seconds_to_hms(time_left as i64);
                 format!("left : {:02}:{:02}:{:02}", hour, minute, second) },
             TimeLeftLong     => {
-                let (hour, minute, second) = helper::seconds_to_hms(time_left as i64);
+                let (hour, minute, second) = time_utils::seconds_to_hms(time_left as i64);
                 format!("Time remaining : {:02}:{:02}:{:02}", hour, minute, second) },
         }
     }
@@ -302,17 +302,6 @@ pub fn silence_level_to_settings (level:SilenceLevel) -> SilenceSettings {
 }
 
 mod helper {
-    pub fn seconds_to_hms (total_secs : i64) -> (usize, usize, usize) {
-        use std::cmp::max;
-        let total_secs = max(total_secs, 0);
-        let hour   : usize = (total_secs / (60 * 60)) as usize;
-        let minute : usize = ((total_secs - (hour as i64) * 60 * 60) / 60) as usize;
-        let second : usize = (total_secs
-                              - (hour   as i64) * 60 * 60
-                              - (minute as i64) * 60) as usize;
-        (hour, minute, second)
-    }
-
     pub fn calc_percent (units_so_far : u64, total_units : u64) -> usize {
         use std::cmp::min;
         if total_units == 0 {

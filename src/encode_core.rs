@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::fs;
 use std::fmt;
 use super::file_utils;
+use super::time_utils;
 use std::io::SeekFrom;
 
 use integer_utils::IntegerUtils;
@@ -30,6 +31,8 @@ use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::SBX_RS_METADATA_PARITY_COUNT;
 use super::sbx_specs::ver_forces_meta_enabled;
 use super::sbx_specs::ver_forces_rs_enabled;
+use super::sbx_specs::{ver_to_block_size,
+                       ver_to_data_size};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
@@ -47,7 +50,26 @@ pub struct Stats {
 
 impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "")
+        let block_size             = ver_to_block_size(self.version);
+        let data_size              = ver_to_data_size(self.version);
+        let meta_blocks_written    = self.meta_blocks_written;
+        let data_blocks_written    = self.data_blocks_written;
+        let parity_blocks_written  = self.parity_blocks_written;
+        let blocks_written = meta_blocks_written
+            + data_blocks_written
+            + self.parity_blocks_written;
+        let data_bytes_encoded     = self.data_blocks_written;
+        let time_elapsed           = (self.end_time - self.start_time) as i64;
+        let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
+
+        writeln!(f, "Block size used in encoding         : {}", block_size)?;
+        writeln!(f, "Data  size used in encoding         : {}", data_size)?;
+        writeln!(f, "Number of blocks written            : {}", blocks_written)?;
+        writeln!(f, "Number of blocks written (metadata) : {}", meta_blocks_written)?;
+        writeln!(f, "Number of blocks written (data)     : {}", meta_blocks_written)?;
+        writeln!(f, "Number of blocks written (parity)   : {}", parity_blocks_written)?;
+        writeln!(f, "Amount of data encoded (bytes)      : {}", data_bytes_encoded)?;
+        writeln!(f, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)
     }
 }
 
@@ -245,10 +267,11 @@ pub fn encode_file(param : &Param)
 
                 // write data out
                 writer.write(sbx_block::slice_buf(param.version, p))?;
+
             }
         }
 
-        stats.lock().unwrap().parity_blocks_written += 2;
+        stats.lock().unwrap().parity_blocks_written += SBX_RS_METADATA_PARITY_COUNT as u32;
     }
 
     loop {
