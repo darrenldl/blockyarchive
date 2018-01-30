@@ -181,7 +181,7 @@ fn write_metadata_block(param         : &Param,
     block.sync_to_buffer(None, buf).unwrap();
 }
 
-pub fn encode_file(param    : &Param)
+pub fn encode_file(param : &Param)
                    -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
