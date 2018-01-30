@@ -179,17 +179,15 @@ fn write_metadata_block(param         : &Param,
                         file_metadata : &fs::Metadata,
                         hash          : Option<multihash::HashBytes>,
                         buf           : &mut [u8]) {
-    if param.meta_enabled {
-        let mut block = Block::new(param.version,
-                                   &param.file_uid,
-                                   BlockType::Meta);
-        pack_metadata(&mut block,
-                      param,
-                      stats,
-                      file_metadata,
-                      hash);
-        block.sync_to_buffer(None, buf).unwrap();
-    }
+    let mut block = Block::new(param.version,
+                               &param.file_uid,
+                               BlockType::Meta);
+    pack_metadata(&mut block,
+                  param,
+                  stats,
+                  file_metadata,
+                  hash);
+    block.sync_to_buffer(None, buf).unwrap();
 }
 
 fn make_reporter(param          : &Param,
@@ -280,7 +278,7 @@ pub fn encode_file(param    : &Param)
 
     stats.lock().unwrap().set_start_time();
 
-    { // write dummy metadata block
+    if param.meta_enabled { // write dummy metadata block
         write_metadata_block(param,
                              &stats.lock().unwrap(),
                              &metadata,
@@ -353,7 +351,7 @@ pub fn encode_file(param    : &Param)
         stats.lock().unwrap().parity_blocks_written += parity_blocks_written;
     }
 
-    { // write actual metadata block
+    if param.meta_enabled { // write actual metadata block
         write_metadata_block(param,
                              &stats.lock().unwrap(),
                              &metadata,
