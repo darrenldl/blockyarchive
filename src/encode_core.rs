@@ -30,46 +30,58 @@ use super::sbx_specs::SBX_FILE_UID_LEN;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::SBX_RS_METADATA_PARITY_COUNT;
 use super::sbx_specs::ver_forces_meta_enabled;
-use super::sbx_specs::ver_forces_rs_enabled;
 use super::sbx_specs::{ver_to_block_size,
-                       ver_to_data_size};
+                       ver_to_data_size,
+                       ver_supports_rs};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
-    pub version               : Version,
-    pub meta_blocks_written   : u32,
-    pub data_blocks_written   : u32,
-    pub parity_blocks_written : u32,
-    pub data_bytes_encoded    : u64,
-    pub total_blocks          : u32,
-    pub start_time            : f64,
-    pub end_time              : f64,
-    pub data_shards           : usize,
-    pub parity_shards         : usize
+    version                     : Version,
+    pub meta_blocks_written     : u32,
+    pub meta_par_blocks_written : u32,
+    pub data_blocks_written     : u32,
+    pub data_par_blocks_written : u32,
+    total_blocks                : u32,
+    start_time                  : f64,
+    end_time                    : f64,
 }
 
 impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
-        let block_size             = ver_to_block_size(self.version);
-        let data_size              = ver_to_data_size(self.version);
-        let meta_blocks_written    = self.meta_blocks_written;
-        let data_blocks_written    = self.data_blocks_written;
-        let parity_blocks_written  = self.parity_blocks_written;
+        let rs_enabled              = ver_supports_rs(self.version);
+        let block_size              = ver_to_block_size(self.version);
+        let data_size               = ver_to_data_size(self.version);
+        let meta_blocks_written     = self.meta_blocks_written;
+        let data_blocks_written     = self.data_blocks_written;
+        let meta_par_blocks_written = self.meta_par_blocks_written;
+        let data_par_blocks_written = self.data_par_blocks_written;
         let blocks_written = meta_blocks_written
             + data_blocks_written
-            + self.parity_blocks_written;
-        let data_bytes_encoded     = self.data_blocks_written;
-        let time_elapsed           = (self.end_time - self.start_time) as i64;
-        let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
+            + meta_par_blocks_written
+            + data_par_blocks_written;
+        let data_bytes_encoded      = self.data_blocks_written * data_size as u32;
+        let time_elapsed            = (self.end_time - self.start_time) as i64;
+        let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
-        writeln!(f, "Block size used in encoding         : {}", block_size)?;
-        writeln!(f, "Data  size used in encoding         : {}", data_size)?;
-        writeln!(f, "Number of blocks written            : {}", blocks_written)?;
-        writeln!(f, "Number of blocks written (metadata) : {}", meta_blocks_written)?;
-        writeln!(f, "Number of blocks written (data)     : {}", meta_blocks_written)?;
-        writeln!(f, "Number of blocks written (parity)   : {}", parity_blocks_written)?;
-        writeln!(f, "Amount of data encoded (bytes)      : {}", data_bytes_encoded)?;
-        writeln!(f, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)
+        if rs_enabled {
+            writeln!(f, "Block size used in encoding                : {}", block_size)?;
+            writeln!(f, "Data  size used in encoding                : {}", data_size)?;
+            writeln!(f, "Number of blocks written                   : {}", blocks_written)?;
+            writeln!(f, "Number of blocks written (metadata)        : {}", meta_blocks_written)?;
+            writeln!(f, "Number of blocks written (metadata parity) : {}", meta_par_blocks_written)?;
+            writeln!(f, "Number of blocks written (data)            : {}", data_blocks_written)?;
+            writeln!(f, "Number of blocks written (data parity)     : {}", data_par_blocks_written)?;
+            writeln!(f, "Amount of data encoded (bytes)             : {}", data_bytes_encoded)?;
+            writeln!(f, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)
+        } else {
+            writeln!(f, "Block size used in encoding         : {}", block_size)?;
+            writeln!(f, "Data  size used in encoding         : {}", data_size)?;
+            writeln!(f, "Number of blocks written            : {}", blocks_written)?;
+            writeln!(f, "Number of blocks written (metadata) : {}", meta_blocks_written)?;
+            writeln!(f, "Number of blocks written (data)     : {}", data_blocks_written)?;
+            writeln!(f, "Amount of data encoded (bytes)      : {}", data_bytes_encoded)?;
+            writeln!(f, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)
+        }
     }
 }
 
@@ -102,7 +114,7 @@ impl Param {
             file_uid : file_uid.clone(),
             rs_data,
             rs_parity,
-            rs_enabled : ver_forces_rs_enabled(version),
+            rs_enabled : ver_supports_rs(version),
             meta_enabled : ver_forces_meta_enabled(version) || meta_enabled,
             hash_type,
             in_file  : String::from(in_file),
@@ -117,16 +129,14 @@ impl Stats {
         let total_blocks =
             file_utils::calc_data_chunk_count(param.version, file_metadata) as u32;
         Stats {
-            version               : param.version,
-            meta_blocks_written   : 0,
-            data_blocks_written   : 0,
-            parity_blocks_written : 0,
-            data_bytes_encoded    : 0,
+            version                 : param.version,
+            meta_blocks_written     : 0,
+            data_blocks_written     : 0,
+            meta_par_blocks_written : 0,
+            data_par_blocks_written : 0,
             total_blocks,
-            start_time            : 0.,
-            end_time              : 0.,
-            data_shards           : 0,
-            parity_shards         : 0,
+            start_time              : 0.,
+            end_time                : 0.,
         }
     }
 }
@@ -271,12 +281,12 @@ pub fn encode_file(param : &Param)
             }
         }
 
-        stats.lock().unwrap().parity_blocks_written += SBX_RS_METADATA_PARITY_COUNT as u32;
+        stats.lock().unwrap().meta_par_blocks_written += SBX_RS_METADATA_PARITY_COUNT as u32;
     }
 
     loop {
         let mut data_blocks_written   = 0;
-        let mut parity_blocks_written = 0;
+        let mut data_par_blocks_written = 0;
 
         // read data in
         let len_read =
@@ -307,7 +317,7 @@ pub fn encode_file(param : &Param)
             if let Some(parity_to_use) = rs_codec_data.encode(&data) {
                 for p in parity_to_use.iter_mut() {
                     block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
-                    parity_blocks_written += 1;
+                    data_par_blocks_written += 1;
                     block.sync_to_buffer(None, p).unwrap();
 
                     // write data out
@@ -317,8 +327,8 @@ pub fn encode_file(param : &Param)
         }
 
         // update stats
-        stats.lock().unwrap().data_blocks_written   += data_blocks_written;
-        stats.lock().unwrap().parity_blocks_written += parity_blocks_written;
+        stats.lock().unwrap().data_blocks_written     += data_blocks_written;
+        stats.lock().unwrap().data_par_blocks_written += data_par_blocks_written;
     }
 
     if param.meta_enabled { // write actual metadata block

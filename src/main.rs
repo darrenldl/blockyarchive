@@ -85,7 +85,7 @@ fn main () {
                            "test.sbx",
                            progress_report::SilenceLevel::L0);
     match encode_core::encode_file(&param) {
-        Ok(_)  => {},
-        Err(e) => println!("Error : {}", e)
+        Ok(s)  => print!("{}", s),
+        Err(e) => print!("Error : {}", e)
     }
 }

@@ -105,7 +105,7 @@ pub fn ver_to_data_size (version : Version) -> usize {
     }
 }
 
-pub fn ver_forces_rs_enabled(version : Version) -> bool {
+pub fn ver_supports_rs(version : Version) -> bool {
     use self::Version::*;
     match version {
         V1  | V2  | V3  => false,
