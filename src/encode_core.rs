@@ -41,7 +41,7 @@ pub struct Stats {
     pub meta_par_blocks_written : u32,
     pub data_blocks_written     : u32,
     pub data_par_blocks_written : u32,
-    total_blocks                : u32,
+    total_data_blocks           : u32,
     start_time                  : f64,
     end_time                    : f64,
 }
@@ -126,7 +126,7 @@ impl Param {
 
 impl Stats {
     pub fn new(param : &Param, file_metadata : &fs::Metadata) -> Stats {
-        let total_blocks =
+        let total_data_blocks =
             file_utils::calc_data_chunk_count(param.version, file_metadata) as u32;
         Stats {
             version                 : param.version,
@@ -134,7 +134,7 @@ impl Stats {
             data_blocks_written     : 0,
             meta_par_blocks_written : 0,
             data_par_blocks_written : 0,
-            total_blocks,
+            total_data_blocks,
             start_time              : 0.,
             end_time                : 0.,
         }
@@ -148,7 +148,7 @@ impl ProgressReport for Stats {
 
     fn units_so_far(&self)       -> u64      { self.data_blocks_written as u64 }
 
-    fn total_units(&self)        -> u64      { self.total_blocks as u64 }
+    fn total_units(&self)        -> u64      { self.total_data_blocks as u64 }
 }
 
 fn pack_metadata(block         : &mut Block,

@@ -77,7 +77,9 @@ macro_rules! check_buffer {
     (
         $self:ident, $buf:ident
     ) => {
-        if $buf.len() < block_size!($self) { panic!("Insufficient buffer size"); }
+        if $buf.len() < block_size!($self) {
+            return Err(Error::IncorrectBufferSize);
+        }
     }
 }
 
@@ -304,8 +306,9 @@ impl Block {
     }
 
     pub fn check_if_buffer_valid(&self,
-                                 buffer       : &[u8],
-                                 must_be_type : Option<BlockType>)
+                                 buffer          : &[u8],
+                                 must_be_version : Option<Version>,
+                                 must_be_type    : Option<BlockType>)
                                  -> bool {
         let mut block = Block::new(self.header.version,
                                    &self.header.file_uid,
