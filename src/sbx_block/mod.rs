@@ -210,7 +210,7 @@ impl Block {
     }
 
     fn header_type_matches_block_type(&self) -> bool {
-        self.header.is_meta() == self.is_meta()
+        self.header.header_type() == self.block_type()
     }
 
     fn check_header_type_matches_block_type(&self) -> Result<(), Error> {

@@ -1,6 +1,7 @@
 use std;
 use super::super::sbx_specs::{Version, SBX_FILE_UID_LEN, SBX_SIGNATURE};
 use super::super::sbx_specs;
+use super::BlockType;
 
 use super::crc::*;
 
@@ -70,12 +71,26 @@ impl Header {
         crc_ccitt_generic(crc, &seq_num)
     }
 
+    pub fn header_type(&self) -> BlockType {
+        if self.seq_num == 0 {
+            BlockType::Meta
+        } else {
+            BlockType::Data
+        }
+    }
+
     pub fn is_meta(&self) -> bool {
-        self.seq_num == 0
+        match self.header_type() {
+            BlockType::Data => false,
+            BlockType::Meta => true
+        }
     }
 
     pub fn is_data(&self) -> bool {
-        self.seq_num != 0
+        match self.header_type() {
+            BlockType::Data => true,
+            BlockType::Meta => false
+        }
     }
 }
 
