@@ -107,8 +107,7 @@ impl RSRepairer {
         if self.cur_seq_num < self.last_block_set_start_seq_num {
             for i in 0..self.dat_num_normal + self.par_num_normal {
                 self.buf_normal_slice_present[i] =
-                    self.ref_block.check_if_buffer_valid(&self.buf_normal[i],
-                                                         Some(&header_pred));
+                    self.ref_block.check_if_buffer_valid(&self.buf_normal[i]);
             }
             let mut buf : SmallVec<[&mut [u8]; 32]> =
                 convert_2D_slices!(self.buf_normal =>to_mut SmallVec<[&mut [u8]; 32]>,
@@ -132,8 +131,7 @@ impl RSRepairer {
         } else {
             for i in 0..self.dat_num_last + self.par_num_last {
                 self.buf_last_slice_present[i] =
-                    self.ref_block.check_if_buffer_valid(&self.buf_last[i],
-                                                         Some(&header_pred));
+                    self.ref_block.check_if_buffer_valid(&self.buf_last[i]);
             }
             let mut buf : SmallVec<[&mut [u8]; 32]> =
                 convert_2D_slices!(self.buf_last =>to_mut SmallVec<[&mut [u8]; 32]>,

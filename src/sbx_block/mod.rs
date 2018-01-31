@@ -24,6 +24,7 @@ pub enum Error {
     IncorrectBlockType,
     InconsistentHeaderBlockType,
     InsufficientBufferSize,
+    IncorrectBufferSize,
     TooMuchMetaData,
     ParseError
 }
@@ -305,11 +306,9 @@ impl Block {
         Ok(self.header.crc == self.calc_crc(buffer)?)
     }
 
-    pub fn check_if_buffer_valid<F>(&self,
-                                    buffer      : &[u8],
-                                    header_pred : Option<&F>) -> bool
-        where F : Fn(&Header) -> bool
-    {
+    pub fn check_if_buffer_valid(&self,
+                                 buffer : &[u8])
+                                 -> bool {
         let mut block = Block::new(self.header.version,
                                    &self.header.file_uid,
                                    self.block_type());
@@ -317,12 +316,6 @@ impl Block {
         match block.sync_from_buffer(buffer) {
             Ok(()) => {},
             Err(_) => { return false; }
-        }
-
-        if let Some(p) = header_pred {
-            if !p(&self.header) {
-                return false;
-            }
         }
 
         block.verify_crc(buffer).unwrap()
