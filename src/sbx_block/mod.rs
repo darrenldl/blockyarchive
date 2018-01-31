@@ -1,4 +1,4 @@
-mod header;
+pub mod header;
 pub mod metadata;
 mod crc;
 mod test;
@@ -305,11 +305,11 @@ impl Block {
         Ok(self.header.crc == self.calc_crc(buffer)?)
     }
 
-    pub fn check_if_buffer_valid(&self,
-                                 buffer          : &[u8],
-                                 must_be_version : Option<Version>,
-                                 must_be_type    : Option<BlockType>)
-                                 -> bool {
+    pub fn check_if_buffer_valid<F>(&self,
+                                    buffer      : &[u8],
+                                    header_pred : Option<&F>) -> bool
+        where F : Fn(&Header) -> bool
+    {
         let mut block = Block::new(self.header.version,
                                    &self.header.file_uid,
                                    self.block_type());
@@ -319,9 +319,10 @@ impl Block {
             Err(_) => { return false; }
         }
 
-        match must_be_type {
-            None    => {}
-            Some(t) => { if block.block_type() != t { return false; } }
+        if let Some(p) = header_pred {
+            if !p(&self.header) {
+                return false;
+            }
         }
 
         block.verify_crc(buffer).unwrap()
