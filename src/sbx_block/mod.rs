@@ -23,7 +23,7 @@ pub enum BlockType {
 pub enum Error {
     IncorrectBlockType,
     InconsistentHeaderBlockType,
-    IncorrectBufferSize,
+    InsufficientBufferSize,
     TooMuchMetaData,
     ParseError
 }
@@ -78,7 +78,7 @@ macro_rules! check_buffer {
         $self:ident, $buf:ident
     ) => {
         if $buf.len() < block_size!($self) {
-            return Err(Error::IncorrectBufferSize);
+            return Err(Error::InsufficientBufferSize);
         }
     }
 }
