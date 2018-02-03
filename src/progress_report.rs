@@ -77,6 +77,7 @@ pub struct ProgressReporter<T : ProgressReport> {
     shutdown_flag : Arc<AtomicBool>,
     runner        : JoinHandle<()>,
     stats         : Arc<Mutex<T>>,
+    active_flag   : Arc<AtomicBool>,
 }
 
 impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
@@ -99,9 +100,11 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
                                                      AverageRateLong]);
         let start_flag           = Arc::new(Barrier::new(2));
         let shutdown_flag        = Arc::new(AtomicBool::new(false));
+        let active_flag          = Arc::new(AtomicBool::new(true));
         let runner_stats         = Arc::clone(&stats);
         let runner_start_flag    = Arc::clone(&start_flag);
         let runner_shutdown_flag = Arc::clone(&shutdown_flag);
+        let runner_active_flag   = Arc::clone(&active_flag);
         let runner               = thread::spawn(move || {
             runner_start_flag.wait();
 
@@ -112,8 +115,10 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
 
                 thread::sleep(Duration::from_millis(300));
 
-                print_progress::<T>(&mut context,
-                                    &mut runner_stats.lock().unwrap());
+                if runner_active_flag.load(Ordering::Relaxed) {
+                    print_progress::<T>(&mut context,
+                                        &mut runner_stats.lock().unwrap());
+                }
             }
 
             print_progress::<T>(&mut context,
@@ -124,6 +129,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             shutdown_flag,
             runner,
             stats,
+            active_flag,
         }
     }
 
@@ -131,6 +137,23 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
         self.stats.lock().unwrap().set_start_time();
 
         self.start_flag.wait();
+    }
+
+    pub fn pause(&mut self) {
+        let units_so_far = self.stats.lock().units_so_far();
+        let total_units  = self.stats.lock().total_units();
+
+        let percent = helper::calc_percent(units_so_far, total_units);
+
+        if percent < 100 {
+            println!();
+        }
+
+        self.active_flag.store(false, Ordering::Relaxed);
+    }
+
+    pub fn resume(&mut self) {
+        self.active_flag.store(true, Ordering::Relaxed);
     }
 
     pub fn stop(self) {
