@@ -140,8 +140,8 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
     }
 
     pub fn pause(&mut self) {
-        let units_so_far = self.stats.lock().units_so_far();
-        let total_units  = self.stats.lock().total_units();
+        let units_so_far = self.stats.lock().unwrap().units_so_far();
+        let total_units  = self.stats.lock().unwrap().total_units();
 
         let percent = helper::calc_percent(units_so_far, total_units);
 

@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+/*use std::sync::{Arc, Mutex};
 use std::fs;
 use std::fmt;
 use super::file_utils;
@@ -45,3 +45,4 @@ pub struct Stats {
     start_time                  : f64,
     end_time                    : f64,
 }
+*/

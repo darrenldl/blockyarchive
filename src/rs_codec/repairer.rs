@@ -6,7 +6,6 @@ use super::super::sbx_block::Block;
 use super::super::sbx_specs::ver_to_block_size;
 use super::super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::*;
-use super::super::sbx_block::header::Header;
 
 use super::Error;
 
@@ -100,8 +99,8 @@ impl RSRepairer {
             Some(ref r) => r
         };
 
-        let header_pred = |header : &Header| {
-            header.is_meta()
+        let block_pred = |block : &Block| -> bool {
+            block.is_meta()
         };
 
         if self.cur_seq_num < self.last_block_set_start_seq_num {

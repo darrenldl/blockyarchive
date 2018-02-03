@@ -1,4 +1,4 @@
-pub mod header;
+mod header;
 pub mod metadata;
 mod crc;
 mod test;
@@ -37,8 +37,8 @@ pub enum Data {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Block {
-    pub header : Header,
-    data       : Data,
+    header      : Header,
+    data        : Data,
 }
 
 macro_rules! slice_buf {
@@ -157,6 +157,39 @@ impl Block {
         }
     }
 
+    pub fn get_version(&self) -> Version {
+        self.header.version
+    }
+
+    pub fn set_version(&mut self,
+                       version : Version) {
+        self.header.version = version;
+    }
+
+    pub fn get_file_uid(&self) -> [u8; SBX_FILE_UID_LEN] {
+        self.header.file_uid
+    }
+
+    pub fn set_file_uid(&mut self,
+                        file_uid : [u8; SBX_FILE_UID_LEN]) {
+        self.header.file_uid = file_uid;
+    }
+
+    pub fn get_crc(&self) -> u16 {
+        self.header.crc
+    }
+
+    pub fn get_seq_num(&self) -> u32 {
+        self.header.seq_num
+    }
+
+    pub fn set_seq_num(&mut self,
+                       seq_num : u32) {
+        self.header.seq_num = seq_num;
+
+        self.switch_block_type_to_match_header();
+    }
+
     pub fn block_type(&self) -> BlockType {
         match self.data {
             Data::Data    => BlockType::Data,
@@ -263,7 +296,7 @@ impl Block {
         }
     }
 
-    pub fn switch_block_type_to_match_header(&mut self) {
+    fn switch_block_type_to_match_header(&mut self) {
         if !self.header_type_matches_block_type() {
             self.switch_block_type();
         }

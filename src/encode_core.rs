@@ -272,7 +272,7 @@ pub fn encode_file(param : &Param)
             let parity_to_use = rs_codec_meta.encode(&data).unwrap();
 
             for p in parity_to_use.iter_mut() {
-                block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
+                block.set_seq_num(u32::use_then_add1(&mut cur_seq_num));
                 block.sync_to_buffer(None, p).unwrap();
 
                 // write data out
@@ -299,7 +299,7 @@ pub fn encode_file(param : &Param)
         sbx_block::write_padding(param.version, len_read, &mut data);
 
         // start encoding
-        block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
+        block.set_seq_num(u32::use_then_add1(&mut cur_seq_num));
         data_blocks_written += 1;
         block.sync_to_buffer(None, &mut data).unwrap();
 
@@ -316,7 +316,7 @@ pub fn encode_file(param : &Param)
         if param.rs_enabled {
             if let Some(parity_to_use) = rs_codec_data.encode(&data) {
                 for p in parity_to_use.iter_mut() {
-                    block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
+                    block.set_seq_num(u32::use_then_add1(&mut cur_seq_num));
                     data_par_blocks_written += 1;
                     block.sync_to_buffer(None, p).unwrap();
 
@@ -348,7 +348,7 @@ pub fn encode_file(param : &Param)
             let parity_to_use = rs_codec_meta.encode(&data).unwrap();
 
             for p in parity_to_use.iter_mut() {
-                block.header.seq_num = u32::use_then_add1(&mut cur_seq_num);
+                block.set_seq_num(u32::use_then_add1(&mut cur_seq_num));
                 block.sync_to_buffer(None, p).unwrap();
 
                 // write data out
