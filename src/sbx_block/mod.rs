@@ -14,6 +14,8 @@ use super::sbx_specs::{Version,
                        ver_to_block_size};
 use self::crc::*;
 
+use std::num::Wrapping;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BlockType {
     Data, Meta
@@ -180,20 +182,25 @@ impl Block {
     }
 
     pub fn get_seq_num(&self) -> u32 {
-        self.header.seq_num
+        self.header.seq_num.0
     }
 
     pub fn set_seq_num(&mut self,
                        seq_num : u32) {
-        self.header.seq_num = seq_num;
+        self.header.seq_num = Wrapping(seq_num);
+
+        self.switch_block_type_to_match_header();
+    }
+
+    pub fn add_seq_num(&mut self,
+                       val : u32) {
+        self.header.seq_num += Wrapping(val);
 
         self.switch_block_type_to_match_header();
     }
 
     pub fn add1_seq_num(&mut self) {
-        self.header.seq_num.wrapping_add(1);
-
-        self.switch_block_type_to_match_header();
+        self.add_seq_num(1);
     }
 
     pub fn block_type(&self) -> BlockType {

@@ -3,6 +3,8 @@ use super::super::sbx_specs::{Version, SBX_FILE_UID_LEN, SBX_SIGNATURE};
 use super::super::sbx_specs;
 use super::BlockType;
 
+use std::num::Wrapping;
+
 use super::crc::*;
 
 use super::Error;
@@ -12,7 +14,7 @@ pub struct Header {
     pub version  : Version,
     pub crc      : u16,
     pub file_uid : [u8; SBX_FILE_UID_LEN],
-    pub seq_num  : u32
+    pub seq_num  : Wrapping<u32>,
 }
 
 impl Header {
@@ -22,7 +24,7 @@ impl Header {
             version,
             crc       : 0,
             file_uid,
-            seq_num   : 0
+            seq_num   : Wrapping(0)
         }
     }
 
@@ -43,7 +45,7 @@ impl Header {
             buffer[6..12].copy_from_slice(&self.file_uid); }
         { // seq num
             let seq_num : [u8; 4] =
-                unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num.to_be()) };
+                unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num.0.to_be()) };
             buffer[12..16].copy_from_slice(&seq_num); }
 
         Ok(())
@@ -67,12 +69,12 @@ impl Header {
     pub fn calc_crc(&self) -> u16 {
         let crc = sbx_crc_ccitt(self.version, &self.file_uid);
         let seq_num : [u8; 4] =
-            unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num) };
+            unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num.0) };
         crc_ccitt_generic(crc, &seq_num)
     }
 
     pub fn header_type(&self) -> BlockType {
-        if self.seq_num == 0 {
+        if self.seq_num.0 == 0 {
             BlockType::Meta
         } else {
             BlockType::Data
@@ -98,6 +100,8 @@ mod parsers {
     use nom::{be_u16, be_u32};
     use super::Header;
     use super::Version;
+
+    use std::num::Wrapping;
 
     named!(sig_p,
            tag!(b"SBx")
@@ -129,7 +133,10 @@ mod parsers {
                        let mut file_uid : [u8; 6] = [0; 6];
                        file_uid.copy_from_slice(file_uid_raw);
                        Header {
-                           version, crc, file_uid, seq_num
+                           version,
+                           crc,
+                           file_uid,
+                           seq_num : Wrapping(seq_num)
                        }
                    })
            )
