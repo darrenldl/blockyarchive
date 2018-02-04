@@ -253,8 +253,6 @@ pub fn encode_file(param : &Param)
                                &param.file_uid,
                                BlockType::Data);
 
-    let mut cur_seq_num : u32 = 1;
-
     reporter.start();
 
     if param.meta_enabled { // write dummy metadata block
@@ -266,18 +264,20 @@ pub fn encode_file(param : &Param)
         writer.write(sbx_block::slice_buf(param.version,
                                           &data))?;
 
+        block.add1_seq_num();
+
         stats.lock().unwrap().meta_blocks_written += 1;
 
         if param.rs_enabled {
             let parity_to_use = rs_codec_meta.encode(&data).unwrap();
 
             for p in parity_to_use.iter_mut() {
-                block.set_seq_num(u32::use_then_add1(&mut cur_seq_num));
                 block.sync_to_buffer(None, p).unwrap();
 
                 // write data out
                 writer.write(sbx_block::slice_buf(param.version, p))?;
 
+                block.add1_seq_num();
             }
         }
 
@@ -285,7 +285,7 @@ pub fn encode_file(param : &Param)
     }
 
     loop {
-        let mut data_blocks_written   = 0;
+        let mut data_blocks_written     = 0;
         let mut data_par_blocks_written = 0;
 
         // read data in
@@ -299,9 +299,10 @@ pub fn encode_file(param : &Param)
         sbx_block::write_padding(param.version, len_read, &mut data);
 
         // start encoding
-        block.set_seq_num(u32::use_then_add1(&mut cur_seq_num));
-        data_blocks_written += 1;
         block.sync_to_buffer(None, &mut data).unwrap();
+
+        block.add1_seq_num();
+        data_blocks_written += 1;
 
         // write data out
         writer.write(sbx_block::slice_buf(param.version, &mut data))?;
@@ -316,12 +317,13 @@ pub fn encode_file(param : &Param)
         if param.rs_enabled {
             if let Some(parity_to_use) = rs_codec_data.encode(&data) {
                 for p in parity_to_use.iter_mut() {
-                    block.set_seq_num(u32::use_then_add1(&mut cur_seq_num));
-                    data_par_blocks_written += 1;
                     block.sync_to_buffer(None, p).unwrap();
 
                     // write data out
                     writer.write(sbx_block::slice_buf(param.version, p))?;
+
+                    block.add1_seq_num();
+                    data_par_blocks_written += 1;
                 }
             }
         }
@@ -332,6 +334,8 @@ pub fn encode_file(param : &Param)
     }
 
     if param.meta_enabled { // write actual metadata block
+        block.set_seq_num(0);
+
         write_metadata_block(param,
                              &stats.lock().unwrap(),
                              &metadata,
@@ -342,17 +346,18 @@ pub fn encode_file(param : &Param)
 
         writer.write(sbx_block::slice_buf(param.version, &data))?;
 
-        cur_seq_num = 1;
+        block.add1_seq_num();
 
         if param.rs_enabled {
             let parity_to_use = rs_codec_meta.encode(&data).unwrap();
 
             for p in parity_to_use.iter_mut() {
-                block.set_seq_num(u32::use_then_add1(&mut cur_seq_num));
                 block.sync_to_buffer(None, p).unwrap();
 
                 // write data out
                 writer.write(sbx_block::slice_buf(param.version, p))?;
+
+                block.add1_seq_num();
             }
         }
     }
