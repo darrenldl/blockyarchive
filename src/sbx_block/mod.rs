@@ -191,7 +191,7 @@ impl Block {
     }
 
     pub fn add1_seq_num(&mut self) {
-        self.header.seq_num += 1;
+        self.header.seq_num.wrapping_add(1);
 
         self.switch_block_type_to_match_header();
     }
