@@ -26,6 +26,7 @@ pub struct RSRepairer {
     buf_last_slice_present       : SmallVec<[bool; 32]>,
     block_type                   : BlockType,
     ref_block                    : Block,
+    buf_par_verify               : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
 }
 
 impl RSRepairer {
@@ -62,6 +63,9 @@ impl RSRepairer {
         let buf_last_slice_present : SmallVec<[bool; 32]> =
             smallvec![false; last_data_set_size + last_data_set_parity_count];
 
+        let buf_par_verify : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
+            smallvec![smallvec![0; block_size]; parity_shards];
+
         RSRepairer {
             cur_seq_num            : 0,
             last_block_set_start_seq_num,
@@ -85,6 +89,27 @@ impl RSRepairer {
             buf_last_slice_present,
             block_type,
             ref_block              : ref_block.clone(),
+            buf_par_verify,
+        }
+    }
+
+    fn in_normal_block_set(&self) -> bool {
+        self.cur_seq_num < self.last_block_set_start_seq_num
+    }
+
+    pub fn get_buf(&self) -> &SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> {
+        if self.in_normal_block_set() {
+            &self.buf_normal
+        } else {
+            &self.buf_last
+        }
+    }
+
+    pub fn get_buf_mut(&mut self) -> &mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> {
+        if self.in_normal_block_set() {
+            &mut self.buf_normal
+        } else {
+            &mut self.buf_last
         }
     }
 
@@ -103,7 +128,7 @@ impl RSRepairer {
             block.is_meta()
         };
 
-        if self.cur_seq_num < self.last_block_set_start_seq_num {
+        if self.in_normal_block_set() {
             for i in 0..self.dat_num_normal + self.par_num_normal {
                 self.buf_normal_slice_present[i] =
                     self.ref_block.check_if_buffer_valid(&self.buf_normal[i]);
@@ -152,5 +177,9 @@ impl RSRepairer {
                                                   &self.buf_last_slice_present)))
             }
         }
+    }
+
+    pub fn verify(&mut self) {
+        
     }
 }

@@ -64,6 +64,10 @@ impl RSEncoder {
         }
     }
 
+    fn in_normal_data_set(&self) -> bool {
+        self.cur_data_index < self.last_data_set_start_index as u64
+    }
+
     pub fn encode(&mut self,
                   data : &[u8])
                   -> Option<&mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>> {
@@ -80,7 +84,7 @@ impl RSEncoder {
 
         let data = sbx_block::slice_data_buf(self.version, data);
 
-        if self.cur_data_index < self.last_data_set_start_index as u64 {
+        if self.in_normal_data_set() {
             let index = (self.cur_data_index % self.dat_num_normal as u64) as usize;
             {
                 let mut parity : SmallVec<[&mut [u8]; 32]> = SmallVec::new();
