@@ -45,7 +45,7 @@ impl RSEncoder {
             smallvec![smallvec![0; block_size]; last_data_set_parity_count];
 
         RSEncoder {
-            active : total_data_chunks == 0,
+            active : total_data_chunks != 0,
             cur_data_index            : 0,
             last_data_set_start_index,
             rs_codec_normal : ReedSolomon::new(data_shards,
