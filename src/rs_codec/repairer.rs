@@ -7,6 +7,7 @@ use super::super::sbx_specs::ver_to_block_size;
 use super::super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::super::sbx_specs::SBX_RS_METADATA_PARITY_COUNT;
 use super::*;
+use super::super::sbx_block;
 
 use super::Error;
 
@@ -158,15 +159,18 @@ impl RSRepairer {
                     self.buf_normal_slice_present[i] =
                         self.ref_block.check_if_buffer_valid(&self.buf_normal[i]);
                 }
-                let mut buf : SmallVec<[&mut [u8]; 32]> =
-                    convert_2D_slices!(self.buf_normal =>to_mut SmallVec<[&mut [u8]; 32]>,
-                                       SmallVec::with_capacity);
+                let mut buf : SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(self. dat_num_normal + self.par_num_normal);
+
+                for p in self.buf_normal.iter_mut() {
+                    buf.push(sbx_block::slice_data_buf_mut(self.version, p));
+                }
+
                 let res = if data_only {
                     rs_codec.reconstruct_data(&mut buf,
-                                                     &self.buf_normal_slice_present)
+                                              &self.buf_normal_slice_present)
                 } else {
                     rs_codec.reconstruct(&mut buf,
-                                                &self.buf_normal_slice_present)
+                                         &self.buf_normal_slice_present)
                 };
                 match res {
                     Ok(()) => Ok(()),
@@ -186,15 +190,17 @@ impl RSRepairer {
                     self.buf_last_slice_present[i] =
                         self.ref_block.check_if_buffer_valid(&self.buf_last[i]);
                 }
-                let mut buf : SmallVec<[&mut [u8]; 32]> =
-                    convert_2D_slices!(self.buf_last =>to_mut SmallVec<[&mut [u8]; 32]>,
-                                       SmallVec::with_capacity);
+                let mut buf : SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(self. dat_num_last + self.par_num_last);
+                for p in self.buf_last.iter_mut() {
+                    buf.push(sbx_block::slice_data_buf_mut(self.version, p));
+                }
+
                 let res = if data_only {
                     rs_codec.reconstruct_data(&mut buf,
-                                                   &self.buf_last_slice_present)
+                                              &self.buf_last_slice_present)
                 } else {
                     rs_codec.reconstruct(&mut buf,
-                                              &self.buf_last_slice_present)
+                                         &self.buf_last_slice_present)
                 };
                 match res {
                     Ok(()) => Ok(()),

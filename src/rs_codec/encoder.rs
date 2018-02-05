@@ -91,7 +91,7 @@ impl RSEncoder {
                     Some(ref r) => r,
                 };
                 {
-                    let mut parity : SmallVec<[&mut [u8]; 32]> = SmallVec::new();
+                    let mut parity : SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(self.par_num_normal);
 
                     for p in &mut self.par_buf_normal[0..self.par_num_normal] {
                         parity.push(sbx_block::slice_data_buf_mut(self.version, p));
