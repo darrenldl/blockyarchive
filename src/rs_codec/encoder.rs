@@ -75,19 +75,20 @@ impl RSEncoder {
     {
         let cur_data_index = self.cur_data_index;
 
-        if self.in_normal_data_set() {
-            self.add1_cur_data_index();
+        let ret =
+            if self.in_normal_data_set() {
+                (&self.rs_codec_normal,
+                 &mut self.par_buf_normal,
+                 cur_data_index)
+            } else {
+                (&self.rs_codec_last,
+                 &mut self.par_buf_last,
+                 cur_data_index)
+            };
 
-            (&self.rs_codec_normal,
-             &mut self.par_buf_normal,
-             cur_data_index)
-        } else {
-            self.add1_cur_data_index();
+        self.add1_cur_data_index();
 
-            (&self.rs_codec_last,
-             &mut self.par_buf_last,
-             cur_data_index)
-        }
+        ret
     }
 
     fn add_cur_data_index(&mut self,
