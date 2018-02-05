@@ -70,7 +70,7 @@ impl RSEncoder {
 
     fn add_cur_data_index(&mut self,
                           val : u64) {
-        self.cur_data_index = self.cur_data_index.wrapping_add(1) % self.total_data_chunks;
+        self.cur_data_index = self.cur_data_index.wrapping_add(val) % self.total_data_chunks;
     }
 
     fn add1_cur_data_index(&mut self) {

@@ -64,6 +64,7 @@ fn calc_total_blocks (data_shards       : usize,
 #[derive(Clone)]
 pub enum RSErrorKind {
     RepairFail,
+    VerifyFail,
 }
 
 #[derive(Clone)]
@@ -134,6 +135,23 @@ impl fmt::Display for RSError {
                         }
                     }
                 }
+                write!(f, "{}", msg)
+            },
+            VerifyFail => {
+                let mut msg = String::with_capacity(20);
+                let block_size = ver_to_block_size(self.version) as u64;
+                let block_seq_num_start  = self.block_seq_num_start;
+                let block_seq_num_end    = block_seq_num_start + self.block_count as u64 - 1;
+                let file_pos_first_block = block_seq_num_start * block_size;
+                let file_pos_last_block  = block_seq_num_end   * block_size;
+                msg.push_str(&format!("failed to verify blocks {} - {} (file pos : {} (0x{:X}) - {} (0x{:X}))\n",
+                                      block_seq_num_start,
+                                      block_seq_num_end,
+                                      file_pos_first_block,
+                                      file_pos_first_block,
+                                      file_pos_last_block,
+                                      file_pos_last_block,
+                ));
                 write!(f, "{}", msg)
             }
         }

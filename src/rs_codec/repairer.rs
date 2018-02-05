@@ -154,7 +154,6 @@ impl RSRepairer {
                     None        => { return Ok(()); },
                     Some(ref r) => r,
                 };
-
                 for i in 0..self.dat_num_normal + self.par_num_normal {
                     self.buf_normal_slice_present[i] =
                         self.ref_block.check_if_buffer_valid(&self.buf_normal[i]);
@@ -183,7 +182,6 @@ impl RSRepairer {
                     None        => { return Ok(()); },
                     Some(ref r) => r
                 };
-
                 for i in 0..self.dat_num_last + self.par_num_last {
                     self.buf_last_slice_present[i] =
                         self.ref_block.check_if_buffer_valid(&self.buf_last[i]);
@@ -216,16 +214,51 @@ impl RSRepairer {
     }
 
     pub fn verify(&mut self)
-                  -> Result<(), Error> {
-        let rs_codec_normal = match self.rs_codec_normal {
-            None        => { return Ok(()); },
-            Some(ref r) => r,
-        };
-        let rs_codec_last   = match self.rs_codec_last {
-            None        => { return Ok(()); },
-            Some(ref r) => r
+                  -> Result<bool, Error> {
+        let res = if self.in_normal_block_set() {
+            let rs_codec = match self.rs_codec_normal {
+                None        => { return Ok(true); },
+                Some(ref r) => r,
+            };
+            let slices : SmallVec<[&[u8]; 32]> =
+                convert_2D_slices!(self.buf_normal =>to SmallVec<[&[u8]; 32]>,
+                                   SmallVec::with_capacity);
+            let mut buffer : SmallVec<[&mut [u8]; 32]> =
+                convert_2D_slices!(self.buf_normal_par_verify =>to_mut SmallVec<[&mut [u8]; 32]>,
+                SmallVec::with_capacity);
+            match rs_codec.verify_with_buffer(&slices, &mut buffer) {
+                Ok(v)  => Ok(v),
+                Err(_) => Err(to_err(RSError::new(RSErrorKind::VerifyFail,
+                                                  self.version,
+                                                  self.cur_seq_num,
+                                                  self.dat_num_normal + self.par_num_normal,
+                                                  self.block_type,
+                                                  &self.buf_normal_slice_present)))
+            }
+        } else {
+            let rs_codec = match self.rs_codec_last {
+                None        => { return Ok(true); },
+                Some(ref r) => r
+            };
+            let slices : SmallVec<[&[u8]; 32]> =
+                convert_2D_slices!(self.buf_last =>to SmallVec<[&[u8]; 32]>,
+                                   SmallVec::with_capacity);
+            let mut buffer : SmallVec<[&mut [u8]; 32]> =
+                convert_2D_slices!(self.buf_last_par_verify =>to_mut SmallVec<[&mut [u8]; 32]>,
+                                   SmallVec::with_capacity);
+            match rs_codec.verify_with_buffer(&slices, &mut buffer) {
+                Ok(v)  => Ok(v),
+                Err(_) => Err(to_err(RSError::new(RSErrorKind::VerifyFail,
+                                                  self.version,
+                                                  self.cur_seq_num,
+                                                  self.dat_num_last + self.par_num_last,
+                                                  self.block_type,
+                                                  &self.buf_last_slice_present)))
+            }
         };
 
-        Ok(())
+        self.add_cur_block_set_to_cur_seq_num();
+
+        res
     }
 }
