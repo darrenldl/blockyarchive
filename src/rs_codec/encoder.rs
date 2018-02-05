@@ -73,13 +73,17 @@ impl RSEncoder {
          &mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
          u64)
     {
-        let cur_data_index = self.add1_cur_data_index();
+        let cur_data_index = self.cur_data_index;
 
         if self.in_normal_data_set() {
+            self.add1_cur_data_index();
+
             (&self.rs_codec_normal,
              &mut self.par_buf_normal,
              cur_data_index)
         } else {
+            self.add1_cur_data_index();
+
             (&self.rs_codec_last,
              &mut self.par_buf_last,
              cur_data_index)
@@ -87,15 +91,11 @@ impl RSEncoder {
     }
 
     fn add_cur_data_index(&mut self,
-                          val   : u64) -> u64 {
-        let ret = self.cur_data_index;
-
+                          val   : u64) {
         self.cur_data_index = self.cur_data_index.wrapping_add(val) % self.total_data_chunks;
-
-        ret
     }
 
-    fn add1_cur_data_index(&mut self) -> u64 {
+    fn add1_cur_data_index(&mut self) {
         self.add_cur_data_index(1)
     }
 
