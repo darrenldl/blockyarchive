@@ -12,15 +12,12 @@ use super::super::sbx_block;
 use super::Error;
 
 pub struct RSRepairer {
+    active                       : bool,
     cur_seq_num                  : u64,
     start_seq_num                : u64,
     last_block_set_start_seq_num : u64,
-    rs_codec_normal              : Option<ReedSolomon>,
-    rs_codec_last                : Option<ReedSolomon>,
-    dat_num_normal               : usize,
-    par_num_normal               : usize,
-    dat_num_last                 : usize,
-    par_num_last                 : usize,
+    rs_codec_normal              : ReedSolomon,
+    rs_codec_last                : ReedSolomon,
     total_blocks                 : u64,
     version                      : Version,
     buf_normal                   : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
@@ -89,10 +86,6 @@ impl RSRepairer {
             if total_data_chunks == 0 { None }
             else { Some(ReedSolomon::new(last_data_set_size,
                                          last_data_set_parity_count).unwrap()) },
-            dat_num_normal : data_shards,
-            par_num_normal : parity_shards,
-            dat_num_last   : last_data_set_size,
-            par_num_last   : last_data_set_parity_count,
             total_blocks,
             version,
             buf_normal,
@@ -108,6 +101,30 @@ impl RSRepairer {
 
     fn in_normal_block_set(&self) -> bool {
         self.cur_seq_num < self.last_block_set_start_seq_num
+    }
+
+    fn pick_asset_for_repair_and_incre_cur_seq_num(&mut self)
+                                        ->
+        (&ReedSolomon,
+         &mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
+         &mut SmallVec<[bool; 32]>)
+    {
+        let cur_seq_num = self.cur_seq_num;
+
+        let ret =
+            if self.in_normal_block_set() {
+                (&self.rs_codec_normal,
+                 &mut self.buf_normal,
+                 &mut self.buf_normal_slice_present)
+            } else {
+                (&self.rs_codec_last,
+                 &mut self.buf_last,
+                 &mut self.buf_last_slice_present)
+            };
+
+        self.add_cur_block_set_to_cur_seq_num();
+
+        ret
     }
 
     fn add_cur_seq_num(&mut self,
@@ -149,7 +166,7 @@ impl RSRepairer {
 
     pub fn repair(&mut self,
                   data_only : bool) -> Result<(), Error> {
-        let res = {
+        let 
             if self.in_normal_block_set() {
                 let rs_codec = match self.rs_codec_normal {
                     None        => { return Ok(()); },
@@ -213,8 +230,6 @@ impl RSRepairer {
                 }
             }
         };
-
-        self.add_cur_block_set_to_cur_seq_num();
 
         res
     }
