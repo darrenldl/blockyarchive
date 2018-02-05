@@ -52,7 +52,7 @@ impl RSEncoder {
             rs_codec_last   :
             if total_data_chunks == 0 { None }
             else { Some(ReedSolomon::new(last_data_set_size,
-                                      last_data_set_parity_count).unwrap()) },
+                                         last_data_set_parity_count).unwrap()) },
             dat_num_normal : data_shards,
             par_num_normal : parity_shards,
             dat_num_last   : last_data_set_size,
