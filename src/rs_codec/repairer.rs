@@ -149,16 +149,12 @@ impl RSRepairer {
     pub fn repair(&mut self,
                   data_only : bool) -> Result<(), Error> {
         let res = {
-            let rs_codec_normal = match self.rs_codec_normal {
-                None        => { return Ok(()); },
-                Some(ref r) => r,
-            };
-            let rs_codec_last   = match self.rs_codec_last {
-                None        => { return Ok(()); },
-                Some(ref r) => r
-            };
-
             if self.in_normal_block_set() {
+                let rs_codec = match self.rs_codec_normal {
+                    None        => { return Ok(()); },
+                    Some(ref r) => r,
+                };
+
                 for i in 0..self.dat_num_normal + self.par_num_normal {
                     self.buf_normal_slice_present[i] =
                         self.ref_block.check_if_buffer_valid(&self.buf_normal[i]);
@@ -167,10 +163,10 @@ impl RSRepairer {
                     convert_2D_slices!(self.buf_normal =>to_mut SmallVec<[&mut [u8]; 32]>,
                                        SmallVec::with_capacity);
                 let res = if data_only {
-                    rs_codec_normal.reconstruct_data(&mut buf,
+                    rs_codec.reconstruct_data(&mut buf,
                                                      &self.buf_normal_slice_present)
                 } else {
-                    rs_codec_normal.reconstruct(&mut buf,
+                    rs_codec.reconstruct(&mut buf,
                                                 &self.buf_normal_slice_present)
                 };
                 match res {
@@ -183,6 +179,11 @@ impl RSRepairer {
                                                       &self.buf_normal_slice_present)))
                 }
             } else {
+                let rs_codec = match self.rs_codec_last {
+                    None        => { return Ok(()); },
+                    Some(ref r) => r
+                };
+
                 for i in 0..self.dat_num_last + self.par_num_last {
                     self.buf_last_slice_present[i] =
                         self.ref_block.check_if_buffer_valid(&self.buf_last[i]);
@@ -191,10 +192,10 @@ impl RSRepairer {
                     convert_2D_slices!(self.buf_last =>to_mut SmallVec<[&mut [u8]; 32]>,
                                        SmallVec::with_capacity);
                 let res = if data_only {
-                    rs_codec_last.reconstruct_data(&mut buf,
+                    rs_codec.reconstruct_data(&mut buf,
                                                    &self.buf_last_slice_present)
                 } else {
-                    rs_codec_last.reconstruct(&mut buf,
+                    rs_codec.reconstruct(&mut buf,
                                               &self.buf_last_slice_present)
                 };
                 match res {
