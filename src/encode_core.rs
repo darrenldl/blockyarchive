@@ -5,8 +5,6 @@ use super::file_utils;
 use super::time_utils;
 use std::io::SeekFrom;
 
-use integer_utils::IntegerUtils;
-
 use progress_report::ProgressReport;
 use progress_report::ProgressReporter;
 

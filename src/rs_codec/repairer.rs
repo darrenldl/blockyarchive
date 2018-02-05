@@ -5,12 +5,14 @@ use super::super::sbx_block::BlockType;
 use super::super::sbx_block::Block;
 use super::super::sbx_specs::ver_to_block_size;
 use super::super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
+use super::super::sbx_specs::SBX_RS_METADATA_PARITY_COUNT;
 use super::*;
 
 use super::Error;
 
 pub struct RSRepairer {
     cur_seq_num                  : u64,
+    start_seq_num                : u64,
     last_block_set_start_seq_num : u64,
     rs_codec_normal              : Option<ReedSolomon>,
     rs_codec_last                : Option<ReedSolomon>,
@@ -21,12 +23,13 @@ pub struct RSRepairer {
     total_blocks                 : u64,
     version                      : Version,
     buf_normal                   : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
+    buf_normal_par_verify        : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     buf_normal_slice_present     : SmallVec<[bool; 32]>,
     buf_last                     : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
+    buf_last_par_verify          : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     buf_last_slice_present       : SmallVec<[bool; 32]>,
     block_type                   : BlockType,
     ref_block                    : Block,
-    buf_par_verify               : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
 }
 
 impl RSRepairer {
@@ -63,11 +66,19 @@ impl RSRepairer {
         let buf_last_slice_present : SmallVec<[bool; 32]> =
             smallvec![false; last_data_set_size + last_data_set_parity_count];
 
-        let buf_par_verify : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
+        let buf_normal_par_verify : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
             smallvec![smallvec![0; block_size]; parity_shards];
+        let buf_last_par_verify : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
+            smallvec![smallvec![0; block_size]; last_data_set_parity_count];
+
+        let start_seq_num = match block_type {
+            BlockType::Meta => 0,
+            BlockType::Data => 1 + SBX_RS_METADATA_PARITY_COUNT,
+        } as u64;
 
         RSRepairer {
-            cur_seq_num            : 0,
+            cur_seq_num            : start_seq_num,
+            start_seq_num,
             last_block_set_start_seq_num,
             rs_codec_normal        :
             if total_data_chunks == 0 { None }
@@ -84,17 +95,39 @@ impl RSRepairer {
             total_blocks,
             version,
             buf_normal,
+            buf_normal_par_verify,
             buf_normal_slice_present,
             buf_last,
+            buf_last_par_verify,
             buf_last_slice_present,
             block_type,
             ref_block              : ref_block.clone(),
-            buf_par_verify,
         }
     }
 
     fn in_normal_block_set(&self) -> bool {
         self.cur_seq_num < self.last_block_set_start_seq_num
+    }
+
+    fn add_cur_seq_num(&mut self,
+                       val : u64) {
+        let mut cur_seq_num_from_start  = self.cur_seq_num  - self.start_seq_num;
+        let total_blocks_from_start = self.total_blocks - self.start_seq_num;
+
+        cur_seq_num_from_start = cur_seq_num_from_start.wrapping_add(val);
+        cur_seq_num_from_start = cur_seq_num_from_start % total_blocks_from_start;
+
+        self.cur_seq_num = cur_seq_num_from_start + self.start_seq_num;
+    }
+
+    fn add_cur_block_set_to_cur_seq_num(&mut self) {
+        let cur_block_set_size = if self.in_normal_block_set() {
+            self.dat_num_normal + self.par_num_normal
+        } else {
+            self.dat_num_last   + self.par_num_last
+        } as u64;
+
+        self.add_cur_seq_num(cur_block_set_size);
     }
 
     pub fn get_buf(&self) -> &SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> {
@@ -115,6 +148,74 @@ impl RSRepairer {
 
     pub fn repair(&mut self,
                   data_only : bool) -> Result<(), Error> {
+        let res = {
+            let rs_codec_normal = match self.rs_codec_normal {
+                None        => { return Ok(()); },
+                Some(ref r) => r,
+            };
+            let rs_codec_last   = match self.rs_codec_last {
+                None        => { return Ok(()); },
+                Some(ref r) => r
+            };
+
+            if self.in_normal_block_set() {
+                for i in 0..self.dat_num_normal + self.par_num_normal {
+                    self.buf_normal_slice_present[i] =
+                        self.ref_block.check_if_buffer_valid(&self.buf_normal[i]);
+                }
+                let mut buf : SmallVec<[&mut [u8]; 32]> =
+                    convert_2D_slices!(self.buf_normal =>to_mut SmallVec<[&mut [u8]; 32]>,
+                                       SmallVec::with_capacity);
+                let res = if data_only {
+                    rs_codec_normal.reconstruct_data(&mut buf,
+                                                     &self.buf_normal_slice_present)
+                } else {
+                    rs_codec_normal.reconstruct(&mut buf,
+                                                &self.buf_normal_slice_present)
+                };
+                match res {
+                    Ok(()) => Ok(()),
+                    Err(_) => Err(to_err(RSError::new(RSErrorKind::RepairFail,
+                                                      self.version,
+                                                      self.cur_seq_num,
+                                                      self.dat_num_normal + self.par_num_normal,
+                                                      self.block_type,
+                                                      &self.buf_normal_slice_present)))
+                }
+            } else {
+                for i in 0..self.dat_num_last + self.par_num_last {
+                    self.buf_last_slice_present[i] =
+                        self.ref_block.check_if_buffer_valid(&self.buf_last[i]);
+                }
+                let mut buf : SmallVec<[&mut [u8]; 32]> =
+                    convert_2D_slices!(self.buf_last =>to_mut SmallVec<[&mut [u8]; 32]>,
+                                       SmallVec::with_capacity);
+                let res = if data_only {
+                    rs_codec_last.reconstruct_data(&mut buf,
+                                                   &self.buf_last_slice_present)
+                } else {
+                    rs_codec_last.reconstruct(&mut buf,
+                                              &self.buf_last_slice_present)
+                };
+                match res {
+                    Ok(()) => Ok(()),
+                    Err(_) => Err(to_err(RSError::new(RSErrorKind::RepairFail,
+                                                      self.version,
+                                                      self.cur_seq_num,
+                                                      self.dat_num_last + self.par_num_last,
+                                                      self.block_type,
+                                                      &self.buf_last_slice_present)))
+                }
+            }
+        };
+
+        self.add_cur_block_set_to_cur_seq_num();
+
+        res
+    }
+
+    pub fn verify(&mut self)
+                  -> Result<(), Error> {
         let rs_codec_normal = match self.rs_codec_normal {
             None        => { return Ok(()); },
             Some(ref r) => r,
@@ -124,62 +225,6 @@ impl RSRepairer {
             Some(ref r) => r
         };
 
-        let block_pred = |block : &Block| -> bool {
-            block.is_meta()
-        };
-
-        if self.in_normal_block_set() {
-            for i in 0..self.dat_num_normal + self.par_num_normal {
-                self.buf_normal_slice_present[i] =
-                    self.ref_block.check_if_buffer_valid(&self.buf_normal[i]);
-            }
-            let mut buf : SmallVec<[&mut [u8]; 32]> =
-                convert_2D_slices!(self.buf_normal =>to_mut SmallVec<[&mut [u8]; 32]>,
-                                   SmallVec::with_capacity);
-            let res = if data_only {
-                rs_codec_normal.reconstruct_data(&mut buf,
-                                                 &self.buf_normal_slice_present)
-            } else {
-                rs_codec_normal.reconstruct(&mut buf,
-                                            &self.buf_normal_slice_present)
-            };
-            match res {
-                Ok(()) => Ok(()),
-                Err(_) => Err(to_err(RSError::new(RSErrorKind::RepairFail,
-                                                  self.version,
-                                                  self.cur_seq_num,
-                                                  self.dat_num_normal + self.par_num_normal,
-                                                  self.block_type,
-                                                  &self.buf_normal_slice_present)))
-            }
-        } else {
-            for i in 0..self.dat_num_last + self.par_num_last {
-                self.buf_last_slice_present[i] =
-                    self.ref_block.check_if_buffer_valid(&self.buf_last[i]);
-            }
-            let mut buf : SmallVec<[&mut [u8]; 32]> =
-                convert_2D_slices!(self.buf_last =>to_mut SmallVec<[&mut [u8]; 32]>,
-                                   SmallVec::with_capacity);
-            let res = if data_only {
-                rs_codec_last.reconstruct_data(&mut buf,
-                                               &self.buf_last_slice_present)
-            } else {
-                rs_codec_last.reconstruct(&mut buf,
-                                          &self.buf_last_slice_present)
-            };
-            match res {
-                Ok(()) => Ok(()),
-                Err(_) => Err(to_err(RSError::new(RSErrorKind::RepairFail,
-                                                  self.version,
-                                                  self.cur_seq_num,
-                                                  self.dat_num_last + self.par_num_last,
-                                                  self.block_type,
-                                                  &self.buf_last_slice_present)))
-            }
-        }
-    }
-
-    pub fn verify(&mut self) {
-        
+        Ok(())
     }
 }
