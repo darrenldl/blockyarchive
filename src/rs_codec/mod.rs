@@ -39,7 +39,7 @@ fn last_block_set_start_seq_num(data_shards       : usize,
     // Cannot just do total_data_chunks / data_shards
     // as the first data set can also be the last data set,
     // in which case normal_set_count would be 0, last_data_set_count would be 1
-    let normal_set_count   = (total_data_chunks - last_data_set_size) / data_shards;
+    let normal_set_count   = (total_data_chunks - last_data_set_size) / data_shards as u64;
 
     normal_set_count * (data_shards + parity_shards) as u64
 }
