@@ -36,7 +36,7 @@ fn last_block_set_start_seq_num(data_shards       : usize,
                                 total_data_chunks : u64) -> u64 {
     let last_data_set_size = last_data_set_size(data_shards, total_data_chunks) as u64;
 
-    let normal_set_count   = total_data_chunks - last_data_set_size;
+    let normal_set_count   = (total_data_chunks - last_data_set_size) / data_shards;
 
     normal_set_count * (data_shards + parity_shards) as u64
 }
