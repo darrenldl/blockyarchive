@@ -138,6 +138,19 @@ pub fn slice_data_buf_mut(version : Version,
     &mut buffer[SBX_HEADER_SIZE..ver_to_block_size(version)]
 }
 
+pub fn check_if_buffer_valid(buffer : &[u8]) -> bool {
+    let mut block = Block::new(Version::V1,
+                               b"\x00\x00\x00\x00\x00\x00",
+                               BlockType::Data);
+
+    match block.sync_from_buffer(buffer) {
+        Ok(()) => {},
+        Err(_) => { return false; }
+    }
+
+    block.verify_crc(buffer).unwrap()
+}
+
 impl Block {
     pub fn new(version    : Version,
                file_uid   : &[u8; SBX_FILE_UID_LEN],
@@ -352,18 +365,4 @@ impl Block {
         Ok(self.header.crc == self.calc_crc(buffer)?)
     }
 
-    pub fn check_if_buffer_valid(&self,
-                                 buffer : &[u8])
-                                 -> bool {
-        let mut block = Block::new(self.header.version,
-                                   &self.header.file_uid,
-                                   self.block_type());
-
-        match block.sync_from_buffer(buffer) {
-            Ok(()) => {},
-            Err(_) => { return false; }
-        }
-
-        block.verify_crc(buffer).unwrap()
-    }
 }

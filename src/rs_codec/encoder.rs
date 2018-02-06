@@ -22,6 +22,33 @@ pub struct RSEncoder {
     par_buf_last              : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
 }
 
+macro_rules! add_cur_data_index {
+    (
+        $self:ident, $val:expr
+    ) => {{
+        $self.cur_data_index = $self.cur_data_index.wrapping_add($val) % $self.total_data_chunks;
+    }};
+    (
+        1 => $self:ident
+    ) => {{
+        add_cur_data_index!($self, 1);
+    }}
+}
+
+macro_rules! pick_asset {
+    (
+        encode => $self:ident
+    ) => {{
+        if $self.in_normal_data_set() {
+            (&$self.rs_codec_normal,
+             &mut $self.par_buf_normal)
+        } else {
+            (&$self.rs_codec_last,
+             &mut $self.par_buf_last)
+        }
+    }}
+}
+
 impl RSEncoder {
     pub fn new(version           : Version,
                data_shards       : usize,
@@ -67,39 +94,6 @@ impl RSEncoder {
         self.cur_data_index < self.last_data_set_start_index as u64
     }
 
-    fn pick_asset_and_incre_cur_data_index(&mut self)
-                                           ->
-        (&ReedSolomon,
-         &mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
-         u64)
-    {
-        let cur_data_index = self.cur_data_index;
-
-        let ret =
-            if self.in_normal_data_set() {
-                (&self.rs_codec_normal,
-                 &mut self.par_buf_normal,
-                 cur_data_index)
-            } else {
-                (&self.rs_codec_last,
-                 &mut self.par_buf_last,
-                 cur_data_index)
-            };
-
-        self.add1_cur_data_index();
-
-        ret
-    }
-
-    fn add_cur_data_index(&mut self,
-                          val   : u64) {
-        self.cur_data_index = self.cur_data_index.wrapping_add(val) % self.total_data_chunks;
-    }
-
-    fn add1_cur_data_index(&mut self) {
-        self.add_cur_data_index(1)
-    }
-
     pub fn encode(&mut self,
                   data : &[u8])
                   -> Option<&mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>> {
@@ -109,12 +103,11 @@ impl RSEncoder {
 
         let version = self.version;
 
-        let (rs_codec, par_buf, cur_data_index) =
-            self.pick_asset_and_incre_cur_data_index();
+        let (rs_codec, par_buf) = pick_asset!(encode => self);
 
         let data_shards = rs_codec.data_shard_count();
 
-        let index = (cur_data_index
+        let index = (self.cur_data_index
                      % rs_codec.data_shard_count() as u64) as usize;
 
         {
@@ -127,6 +120,8 @@ impl RSEncoder {
                                        data,
                                        &mut parity).unwrap();
         }
+
+        add_cur_data_index!(1 => self);
 
         if index == data_shards - 1 {
             Some(par_buf)

@@ -87,11 +87,16 @@ impl RSError {
                block_seq_num_start : u64,
                block_count         : usize,
                block_type          : BlockType,
-               shard_present       : &[bool]) -> RSError {
+               shard_present       : Option<&[bool]>) -> RSError {
         let mut shard_present_vec : SmallVec<[bool; 32]> =
             SmallVec::with_capacity(block_count);
-        for s in shard_present.iter() {
-            shard_present_vec.push(*s);
+        match shard_present {
+            None => {},
+            Some(shard_present) => {
+                for s in shard_present.iter() {
+                    shard_present_vec.push(*s);
+                }
+            }
         }
         RSError {
             kind,
