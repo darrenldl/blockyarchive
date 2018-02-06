@@ -72,7 +72,7 @@ Metadata block (block 0) can be disabled
 ## For versions : 11, 12, 13
 Overall similar to above specs.
 
-Assumes configuration is **N** data shards and **M** parity shards.
+Assumes configuration is **M** data shards and **N** parity shards.
 
 ### Common blocks header:
 
@@ -101,21 +101,21 @@ RS arrangement : block 0 (data shard) block 1 (parity shard) block 2 (parity sha
 
 Above gives 300% redundancy for the metadata block.
 
-### Blocks >= 4 & < 4 + K * (N + M), where K is an integer >= 1:
-
-For **N** continuous blocks
-
-| pos | to pos   | size | desc             |
-|---- | -------- | ---- | ---------------- |
-| 16  | blockend | var  | data             |
+### Blocks >= 4 & < 4 + K * (M + N), where K is an integer >= 1:
 
 For **M** continuous blocks
 
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
+| 16  | blockend | var  | data             |
+
+For **N** continuous blocks
+
+| pos | to pos   | size | desc             |
+|---- | -------- | ---- | ---------------- |
 | 16  | blockend | var  | parity           |
 
-RS arrangement : N blocks (N data shards) M blocks (M parity shards).
+RS arrangement : M blocks (M data shards) N blocks (N parity shards).
 
 ### Last set of blocks
 
@@ -134,13 +134,13 @@ For **X** continuous blocks, where **X** is the remaining number of data blocks
 | 16  | n        | var  | data             |
 | n+1 | blockend | var  | padding (0x1a)   |
 
-For **ceil(X * M / N)** continuous blocks
+For **ceil(X * N / M)** continuous blocks
 
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
 | 16  | blockend | var  | parity           |
 
-RS arrangement : X blocks (X data shards) Y blocks (Y parity shards), where Y = ceil(X * M / N).
+RS arrangement : X blocks (X data shards) Y blocks (Y parity shards), where Y = ceil(X * N / M).
 
 ### Versions:
 
