@@ -12,8 +12,8 @@ use super::progress_report;
 
 use std::time::UNIX_EPOCH;
 
-use super::file_reader;
-use super::file_writer;
+use super::file_reader::FileReader;
+use super::file_writer::FileWriter;
 
 use super::multihash;
 
@@ -225,8 +225,8 @@ pub fn encode_file(param : &Param)
                                              param.silence_level);
 
     // setup file reader and writer
-    let mut reader = file_reader::FileReader::new(&param.in_file)?;
-    let mut writer = file_writer::FileWriter::new(&param.out_file)?;
+    let mut reader = FileReader::new(&param.in_file)?;
+    let mut writer = FileWriter::new(&param.out_file)?;
 
     // set up hash state
     let mut hash_ctx =

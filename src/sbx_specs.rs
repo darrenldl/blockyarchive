@@ -2,6 +2,8 @@ pub const SBX_LARGEST_BLOCK_SIZE : usize = 4096;
 
 pub const SBX_RS_METADATA_PARITY_COUNT : usize = 3;
 
+pub const SBX_SCAN_BLOCK_SIZE : usize = 128;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Version {
     V1,
