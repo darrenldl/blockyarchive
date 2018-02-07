@@ -48,6 +48,13 @@ pub struct Stats {
     end_time                    : f64,
 }
 
+pub struct ScanStats {
+    pub bytes_processed : u64,
+    pub total_bytes     : u64,
+    start_time          : f64,
+    end_time            : f64,
+}
+
 impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "")
@@ -56,16 +63,19 @@ impl fmt::Display for Stats {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {
+    no_meta  : bool,
     in_file  : String,
     out_file : String,
     silence_level : progress_report::SilenceLevel
 }
 
 impl Param {
-    pub fn new(in_file  : &str,
+    pub fn new(no_meta  : bool,
+               in_file  : &str,
                out_file : &str,
                silence_level : progress_report::SilenceLevel) -> Param {
         Param {
+            no_meta,
             in_file  : String::from(in_file),
             out_file : String::from(out_file),
             silence_level,
@@ -73,9 +83,19 @@ impl Param {
     }
 }
 
+impl ScanStats {
+    pub fn new(file_metadata : &fs::Metadata) -> ScanStats {
+        ScanStats {
+            bytes_processed : 0,
+            total_bytes     : file_metadata.len(),
+            start_time      : 0.,
+            end_time        : 0.,
+        }
+    }
+}
+
 impl Stats {
     pub fn new(ref_block     : Block,
-               param         : &Param,
                file_metadata : &fs::Metadata) -> Stats {
         let total_blocks =
             file_utils::calc_total_block_count(ref_block.get_version(),
@@ -93,6 +113,16 @@ impl Stats {
     }
 }
 
+impl ProgressReport for ScanStats {
+    fn start_time_mut(&mut self) -> &mut f64 { &mut self.start_time }
+
+    fn end_time_mut(&mut self)   -> &mut f64 { &mut self.end_time }
+
+    fn units_so_far(&self)       -> u64      { self.bytes_processed }
+
+    fn total_units(&self)        -> u64      { self.total_bytes }
+}
+
 impl ProgressReport for Stats {
     fn start_time_mut(&mut self) -> &mut f64 { &mut self.start_time }
 
@@ -108,9 +138,10 @@ impl ProgressReport for Stats {
     fn total_units(&self)        -> u64      { self.total_blocks as u64 }
 }
 
-fn get_ref_block(reader  : &mut FileReader,
-                 no_meta : bool)
-                 -> Result<Option<Block>, Error> {
+fn get_ref_block(scan_stats : &Arc<Mutex<ScanStats>>,
+                 reader     : &mut FileReader,
+                 no_meta    : bool)
+                 -> Result<Option<(Block, [u8; SBX_LARGEST_BLOCK_SIZE])>, Error> {
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
         [0; SBX_LARGEST_BLOCK_SIZE];
 
@@ -126,6 +157,8 @@ fn get_ref_block(reader  : &mut FileReader,
     loop {
         // scan at 128 chunk size
         let len_read = reader.read(&mut buffer[0..SBX_SCAN_BLOCK_SIZE])?;
+
+        scan_stats.lock().unwrap().bytes_processed += len_read as u64;
 
         if len_read < SBX_SCAN_BLOCK_SIZE {
             break;
@@ -175,8 +208,31 @@ fn get_ref_block(reader  : &mut FileReader,
     reader.seek(SeekFrom::Start(0))?;
 
     Ok(if let Some(_) = meta_block {
-        meta_block
+        (meta_block, buffer)
     } else {
-        data_block
+        (data_block, buffer)
     })
+}
+
+pub fn decode_file(param : &Param)
+                   -> Result<Stats, Error> {
+    let metadata = file_utils::get_file_metadata(&param.in_file)?;
+
+    let scan_stats = Arc::new(Mutex::new(ScanStats::new(&metadata)));
+
+    let mut reader = FileReader::new(&param.in_file)?;
+    let mut writer = FileWriter::new(&param.out_file)?;
+
+    // find a reference block
+    let (ref_block, buffer) =
+        match get_ref_block(&scan_stats, &mut reader, param.no_meta)? {
+            None => { return Err(Error::with_message("failed to find reference block")); },
+            Some(x) => x,
+        };
+
+    let stats      = Arc::new(Mutex::new(Stats::new(ref_block, &metadata)));
+
+    let stats = stats.lock().unwrap().clone();
+
+    Ok(stats)
 }

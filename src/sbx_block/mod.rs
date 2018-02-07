@@ -364,5 +364,4 @@ impl Block {
                       -> Result<bool, Error> {
         Ok(self.header.crc == self.calc_crc(buffer)?)
     }
-
 }

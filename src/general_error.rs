@@ -6,6 +6,7 @@ use std::fmt;
 pub enum ErrorKind {
     RSError(rs_codec::RSError),
     FileError(file_error::FileError),
+    MessageOnly(String)
 }
 
 #[derive(Clone)]
@@ -19,14 +20,21 @@ impl Error {
             kind
         }
     }
+
+    pub fn with_message(msg : &str) -> Error {
+        Error {
+            kind : ErrorKind::MessageOnly(String::from(msg))
+        }
+    }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorKind::*;
         match self.kind {
-            RSError(ref e)   => writeln!(f, "FEC codec error : {}", e),
-            FileError(ref e) => writeln!(f, "File error : {}", e),
+            RSError(ref e)     => writeln!(f, "FEC codec error : {}", e),
+            FileError(ref e)   => writeln!(f, "File error : {}", e),
+            MessageOnly(ref e) => writeln!(f, "Error : {}", e),
         }
     }
 }
