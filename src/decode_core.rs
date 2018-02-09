@@ -155,33 +155,38 @@ fn get_ref_block(scan_stats : &Arc<Mutex<ScanStats>>,
     reader.seek(SeekFrom::Start(0))?;
 
     loop {
-        // scan at 128 chunk size
-        let len_read = reader.read(&mut buffer[0..SBX_SCAN_BLOCK_SIZE])?;
+        { // scan at 128 chunk size
+            let len_read = reader.read(&mut buffer[0..SBX_SCAN_BLOCK_SIZE])?;
 
-        scan_stats.lock().unwrap().bytes_processed += len_read as u64;
+            scan_stats.lock().unwrap().bytes_processed += len_read as u64;
 
-        if len_read < SBX_SCAN_BLOCK_SIZE {
-            break;
+            if len_read < SBX_SCAN_BLOCK_SIZE {
+                break;
+            }
+
+            match block.sync_from_buffer_header_only(&buffer[0..SBX_SCAN_BLOCK_SIZE]) {
+                Ok(()) => {},
+                Err(_) => { continue; }
+            }
         }
 
-        match block.sync_from_buffer_header_only(&buffer[0..SBX_SCAN_BLOCK_SIZE]) {
-            Ok(()) => {},
-            Err(_) => { continue; }
-        }
+        { // get remaining bytes of block if necessary
+            let block_size = ver_to_block_size(block.get_version());
 
-        let block_size = ver_to_block_size(block.get_version());
+            let remaining_size = block_size - SBX_SCAN_BLOCK_SIZE;
 
-        let remaining_size = block_size - SBX_SCAN_BLOCK_SIZE;
+            let len_read = reader.read(&mut buffer[SBX_SCAN_BLOCK_SIZE..block_size])?;
 
-        let len_read = reader.read(&mut buffer[SBX_SCAN_BLOCK_SIZE..block_size])?;
+            scan_stats.lock().unwrap().bytes_processed += len_read as u64;
 
-        if len_read < remaining_size {
-            break;
-        }
+            if len_read < remaining_size {
+                break;
+            }
 
-        match block.sync_from_buffer(&buffer[0..block_size]) {
-            Ok(()) => {},
-            Err(_) => { continue; }
+            match block.sync_from_buffer(&buffer[0..block_size]) {
+                Ok(()) => {},
+                Err(_) => { continue; }
+            }
         }
 
         match block.block_type() {
@@ -207,10 +212,12 @@ fn get_ref_block(scan_stats : &Arc<Mutex<ScanStats>>,
 
     reader.seek(SeekFrom::Start(0))?;
 
-    Ok(if let Some(_) = meta_block {
-        (meta_block, buffer)
+    Ok(if     let Some(b) = meta_block {
+        Some((b, buffer))
+    } else if let Some(b) = data_block {
+        Some((b, buffer))
     } else {
-        (data_block, buffer)
+        None
     })
 }
 
