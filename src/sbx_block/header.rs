@@ -1,5 +1,8 @@
 use std;
-use super::super::sbx_specs::{Version, SBX_FILE_UID_LEN, SBX_SIGNATURE};
+use super::super::sbx_specs::{Version,
+                              SBX_FILE_UID_LEN,
+                              SBX_SIGNATURE,
+                              ver_first_data_seq_num};
 use super::super::sbx_specs;
 use super::BlockType;
 
@@ -20,7 +23,7 @@ pub struct Header {
 impl Header {
     pub fn new(version  : Version,
                file_uid : [u8; SBX_FILE_UID_LEN],
-               seq_num  : usize) -> Header {
+               seq_num  : u32) -> Header {
         Header {
             version,
             crc       : 0,
@@ -75,7 +78,7 @@ impl Header {
     }
 
     pub fn header_type(&self) -> BlockType {
-        if self.seq_num.0 < ver_first_data_seq_num(self.version) {
+        if self.seq_num.0 < ver_first_data_seq_num(self.version) as u32 {
             BlockType::Meta
         } else {
             BlockType::Data

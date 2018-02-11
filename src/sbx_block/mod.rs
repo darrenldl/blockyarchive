@@ -12,7 +12,8 @@ use self::metadata::MetadataID;
 use super::sbx_specs::{Version,
                        SBX_HEADER_SIZE,
                        SBX_FILE_UID_LEN,
-                       ver_to_block_size};
+                       ver_to_block_size,
+                       ver_first_data_seq_num};
 use self::crc::*;
 
 use std::num::Wrapping;
@@ -159,14 +160,14 @@ impl Block {
                -> Block {
         match block_type {
             BlockType::Data => {
-                let seq_num = ver_first_data_seq_num(version);
+                let seq_num = ver_first_data_seq_num(version) as u32;
                 Block {
                     header : Header::new(version, file_uid.clone(), seq_num),
                     data   : Data::Data,
                 }
             },
             BlockType::Meta => {
-                let seq_num = 0;
+                let seq_num = 0 as u32;
                 Block {
                     header : Header::new(version, file_uid.clone(), seq_num),
                     data   : Data::Meta(Vec::with_capacity(10)),
@@ -176,9 +177,10 @@ impl Block {
     }
 
     pub fn dummy() -> Block {
-        let seq_num = ver_first_data_seq_num(version);
+        let version = Version::V1;
+        let seq_num = ver_first_data_seq_num(version) as u32;
         Block {
-            header : Header::new(Version::V1, [0; 6], seq_num),
+            header : Header::new(version, [0; 6], seq_num),
             data   : Data::Data,
         }
     }
@@ -250,7 +252,7 @@ impl Block {
 
     pub fn get_meta_ref_by_id(&self,
                               id : MetadataID)
-                              -> Result<&Vec<Metadata>, Error> {
+                              -> Result<Option<&Metadata>, Error> {
         match self.data {
             Data::Data        => Err(Error::IncorrectBlockType),
             Data::Meta(ref meta) => {
@@ -261,12 +263,26 @@ impl Block {
 
     pub fn get_meta_ref_mut_by_id(&mut self,
                                   id : MetadataID)
-                                  -> Result<&mut Vec<Metadata>, Error> {
+                                  -> Result<Option<&mut Metadata>, Error> {
         match self.data {
             Data::Data               => Err(Error::IncorrectBlockType),
             Data::Meta(ref mut meta) => {
                 Ok(metadata::get_meta_ref_mut_by_id(id, meta))
             }
+        }
+    }
+
+    pub fn meta(&self) -> Result<&Vec<Metadata>, Error> {
+        match self.data {
+            Data::Data           => Err(Error::IncorrectBlockType),
+            Data::Meta(ref meta) => Ok(meta)
+        }
+    }
+
+    pub fn meta_mut(&mut self) -> Result<&mut Vec<Metadata>, Error> {
+        match self.data {
+            Data::Data               => Err(Error::IncorrectBlockType),
+            Data::Meta(ref mut meta) => Ok(meta)
         }
     }
 
