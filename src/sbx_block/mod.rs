@@ -7,6 +7,7 @@ mod metadata_test;
 
 use self::header::Header;
 use self::metadata::Metadata;
+use self::metadata::MetadataID;
 
 use super::sbx_specs::{Version,
                        SBX_HEADER_SIZE,
@@ -158,17 +159,27 @@ impl Block {
                -> Block {
         match block_type {
             BlockType::Data => {
+                let seq_num = ver_first_data_seq_num(version);
                 Block {
-                    header : Header::new(version, file_uid.clone()),
+                    header : Header::new(version, file_uid.clone(), seq_num),
                     data   : Data::Data,
                 }
             },
             BlockType::Meta => {
+                let seq_num = 0;
                 Block {
-                    header : Header::new(version, file_uid.clone()),
+                    header : Header::new(version, file_uid.clone(), seq_num),
                     data   : Data::Meta(Vec::with_capacity(10)),
                 }
             }
+        }
+    }
+
+    pub fn dummy() -> Block {
+        let seq_num = ver_first_data_seq_num(version);
+        Block {
+            header : Header::new(Version::V1, [0; 6], seq_num),
+            data   : Data::Data,
         }
     }
 
@@ -237,17 +248,25 @@ impl Block {
         }
     }
 
-    pub fn meta(&self) -> Result<&Vec<Metadata>, Error> {
+    pub fn get_meta_ref_by_id(&self,
+                              id : MetadataID)
+                              -> Result<&Vec<Metadata>, Error> {
         match self.data {
             Data::Data        => Err(Error::IncorrectBlockType),
-            Data::Meta(ref x) => { Ok(x) }
+            Data::Meta(ref meta) => {
+                Ok(metadata::get_meta_ref_by_id(id, meta))
+            }
         }
     }
 
-    pub fn meta_mut(&mut self) -> Result<&mut Vec<Metadata>, Error> {
+    pub fn get_meta_ref_mut_by_id(&mut self,
+                                  id : MetadataID)
+                                  -> Result<&mut Vec<Metadata>, Error> {
         match self.data {
-            Data::Data            => Err(Error::IncorrectBlockType),
-            Data::Meta(ref mut x) => { Ok(x) }
+            Data::Data               => Err(Error::IncorrectBlockType),
+            Data::Meta(ref mut meta) => {
+                Ok(metadata::get_meta_ref_mut_by_id(id, meta))
+            }
         }
     }
 
@@ -333,6 +352,8 @@ impl Block {
                                         -> Result<(), Error> {
         self.header.from_bytes(slice_buf!(header => self, buffer))?;
 
+        self.switch_block_type_to_match_header();
+
         Ok(())
     }
 
@@ -342,8 +363,6 @@ impl Block {
         self.sync_from_buffer_header_only(buffer)?;
 
         check_buffer!(self, buffer);
-
-        self.switch_block_type_to_match_header();
 
         match self.data {
             Data::Meta(ref mut meta) => {

@@ -122,3 +122,8 @@ pub fn ver_forces_meta_enabled(version : Version) -> bool {
         V11 | V12 | V13 => true,
     }
 }
+
+pub fn ver_first_data_seq_num(version : Version) -> usize {
+    if ver_supports_rs(version) { 1 + SBX_RS_METADATA_PARITY_COUNT }
+    else                        { 1 }
+}

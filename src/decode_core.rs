@@ -43,6 +43,7 @@ pub struct Stats {
     pub meta_par_blocks_decoded : u32,
     pub data_blocks_decoded     : u32,
     pub data_par_blocks_decoded : u32,
+    blocks_decode_failed        : u32,
     total_blocks                : u32,
     start_time                  : f64,
     end_time                    : f64,
@@ -138,27 +139,34 @@ impl ProgressReport for Stats {
     fn total_units(&self)        -> u64      { self.total_blocks as u64 }
 }
 
-fn get_ref_block(scan_stats : &Arc<Mutex<ScanStats>>,
-                 reader     : &mut FileReader,
-                 no_meta    : bool)
-                 -> Result<Option<(Block, [u8; SBX_LARGEST_BLOCK_SIZE])>, Error> {
+fn get_ref_block(reader   : &mut FileReader,
+                 param    : &Param,
+                 metadata : &fs::Metadata)
+                 -> Result<Option<Block>, Error> {
+    let stats = Arc::new(Mutex::new(ScanStats::new(&metadata)));
+
+    let mut reporter = progress_report::ProgressReporter::new(&stats,
+                                                              "Scan progress",
+                                                              "bytes",
+                                                              param.silence_level);
+
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
         [0; SBX_LARGEST_BLOCK_SIZE];
 
-    let mut block = Block::new(Version::V1,
-                               b"\x00\x00\x00\x00\x00\x00",
-                               BlockType::Data);
+    let mut block = Block::dummy();
 
     let mut meta_block = None;
     let mut data_block = None;
 
     reader.seek(SeekFrom::Start(0))?;
 
+    reporter.start();
+
     loop {
         { // scan at 128 chunk size
             let len_read = reader.read(&mut buffer[0..SBX_SCAN_BLOCK_SIZE])?;
 
-            scan_stats.lock().unwrap().bytes_processed += len_read as u64;
+            stats.lock().unwrap().bytes_processed += len_read as u64;
 
             if len_read < SBX_SCAN_BLOCK_SIZE {
                 break;
@@ -177,7 +185,7 @@ fn get_ref_block(scan_stats : &Arc<Mutex<ScanStats>>,
 
             let len_read = reader.read(&mut buffer[SBX_SCAN_BLOCK_SIZE..block_size])?;
 
-            scan_stats.lock().unwrap().bytes_processed += len_read as u64;
+            stats.lock().unwrap().bytes_processed += len_read as u64;
 
             if len_read < remaining_size {
                 break;
@@ -202,7 +210,7 @@ fn get_ref_block(scan_stats : &Arc<Mutex<ScanStats>>,
             }
         }
 
-        if no_meta {
+        if param.no_meta {
             if let Some(_) = meta_block { break; }
             if let Some(_) = data_block { break; }
         } else {
@@ -210,14 +218,14 @@ fn get_ref_block(scan_stats : &Arc<Mutex<ScanStats>>,
         }
     }
 
+    reporter.stop();
+
     reader.seek(SeekFrom::Start(0))?;
 
-    Ok(if     let Some(b) = meta_block {
-        Some((b, buffer))
-    } else if let Some(b) = data_block {
-        Some((b, buffer))
+    Ok(if let Some(_) = meta_block {
+        meta_block
     } else {
-        None
+        data_block
     })
 }
 
@@ -225,19 +233,50 @@ pub fn decode_file(param : &Param)
                    -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
-    let scan_stats = Arc::new(Mutex::new(ScanStats::new(&metadata)));
-
     let mut reader = FileReader::new(&param.in_file)?;
     let mut writer = FileWriter::new(&param.out_file)?;
 
     // find a reference block
     let (ref_block, buffer) =
-        match get_ref_block(&scan_stats, &mut reader, param.no_meta)? {
+        match get_ref_block(&mut reader, param, &metadata)? {
             None => { return Err(Error::with_message("failed to find reference block")); },
             Some(x) => x,
         };
 
-    let stats      = Arc::new(Mutex::new(Stats::new(ref_block, &metadata)));
+    let stats = Arc::new(Mutex::new(Stats::new(ref_block, &metadata)));
+
+    let mut block = Block::dummy();
+
+    let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
+    let seq_num_offset = ver_first_data_seq_num(ref_block.get_version());
+
+    let data_size = ver_to_data_size(ref_block.get_version());
+
+    loop {
+        // read at reference block block size
+        reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+                                             &mut buffer));
+
+        if let Err(_) = block.sync_from_buffer(&buffer) {
+            stats.lock().blocks_decode_failed += 1;
+            continue;
+        }
+
+        if block.is_meta() { // do nothing if block is meta or meta parity
+            stats.lock().meta_blocks_decoded += 1;
+        } else {
+            stats.lock().data_blocks_decoded += 1;
+
+            // write data block
+            let write_to = (block.get_seq_num() - seq_num_offset) * data_size;
+
+            writer.seek(SeekFrom::Start(write_to as u64))?;
+
+            writer.write(sbx_block::slice_data_buf(ref_block.get_version(),
+                                                   &buffer));
+        }
+    }
 
     let stats = stats.lock().unwrap().clone();
 

@@ -117,12 +117,14 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
 
                 if runner_active_flag.load(Ordering::Relaxed) {
                     print_progress::<T>(&mut context,
-                                        &mut runner_stats.lock().unwrap());
+                                        &mut runner_stats.lock().unwrap(),
+                                        false);
                 }
             }
 
             print_progress::<T>(&mut context,
-                                &mut runner_stats.lock().unwrap());
+                                &mut runner_stats.lock().unwrap(),
+                                true);
         });
         ProgressReporter {
             start_flag,
@@ -191,8 +193,9 @@ pub trait ProgressReport {
     }
 }
 
-pub fn print_progress<T>(context  : &mut Context,
-                         stats    : &mut T)
+pub fn print_progress<T>(context        : &mut Context,
+                         stats          : &mut T,
+                         pretend_finish : bool)
     where T : ProgressReport
 {
     use std::cmp::max;
@@ -215,20 +218,20 @@ pub fn print_progress<T>(context  : &mut Context,
         }
 
         let message =
-            if percent < 100 {
-                make_message(context,
-                             stats.get_start_time(),
-                             stats.get_end_time(),
-                             units_so_far,
-                             total_units,
-                             &context.active_print_elements)
-            } else {
+            if percent < 100 || pretend_finish {
                 make_message(context,
                              stats.get_start_time(),
                              stats.get_end_time(),
                              units_so_far,
                              total_units,
                              &context.finish_print_elements)
+            } else {
+                make_message(context,
+                             stats.get_start_time(),
+                             stats.get_end_time(),
+                             units_so_far,
+                             total_units,
+                             &context.active_print_elements)
             };
 
         context.max_print_length = max(context.max_print_length,

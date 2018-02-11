@@ -18,13 +18,14 @@ pub struct Header {
 }
 
 impl Header {
-    pub fn new(version   : Version,
-               file_uid : [u8; SBX_FILE_UID_LEN]) -> Header {
+    pub fn new(version  : Version,
+               file_uid : [u8; SBX_FILE_UID_LEN],
+               seq_num  : usize) -> Header {
         Header {
             version,
             crc       : 0,
             file_uid,
-            seq_num   : Wrapping(0)
+            seq_num   : Wrapping(seq_num)
         }
     }
 
@@ -74,7 +75,7 @@ impl Header {
     }
 
     pub fn header_type(&self) -> BlockType {
-        if self.seq_num.0 == 0 {
+        if self.seq_num.0 < ver_first_data_seq_num(self.version) {
             BlockType::Meta
         } else {
             BlockType::Data

@@ -215,9 +215,9 @@ pub fn from_bytes(bytes : &[u8])
     }
 }
 
-pub fn get_meta_ref_with_id(id    : MetadataID,
-                            metas : &[Metadata])
-                            -> Option<&Metadata> {
+pub fn get_meta_ref_by_id(id    : MetadataID,
+                          metas : &[Metadata])
+                          -> Option<&Metadata> {
     for m in metas.iter() {
         if meta_to_id(m) == id {
             return Some(m);
@@ -226,9 +226,9 @@ pub fn get_meta_ref_with_id(id    : MetadataID,
     None
 }
 
-pub fn get_meta_ref_mut_with_id(id    : MetadataID,
-                                metas : &mut [Metadata])
-                                -> Option<&mut Metadata> {
+pub fn get_meta_ref_mut_by_id(id    : MetadataID,
+                              metas : &mut [Metadata])
+                              -> Option<&mut Metadata> {
     for m in metas.iter_mut() {
         if meta_to_id(m) == id {
             return Some(m);
