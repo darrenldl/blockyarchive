@@ -1,13 +1,13 @@
 mod header;
-pub mod metadata;
+mod metadata;
 mod crc;
 mod test;
 mod header_test;
 mod metadata_test;
 
 use self::header::Header;
-use self::metadata::Metadata;
-use self::metadata::MetadataID;
+pub use self::metadata::Metadata;
+pub use self::metadata::MetadataID;
 
 use super::sbx_specs::{Version,
                        SBX_HEADER_SIZE,

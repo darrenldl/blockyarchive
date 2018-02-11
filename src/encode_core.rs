@@ -23,7 +23,7 @@ use super::rs_codec::RSEncoder;
 
 use super::sbx_block::{Block, BlockType};
 use super::sbx_block;
-use super::sbx_block::metadata::Metadata;
+use super::sbx_block::Metadata;
 use super::sbx_specs::SBX_FILE_UID_LEN;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::SBX_RS_METADATA_PARITY_COUNT;

@@ -17,9 +17,11 @@ use super::multihash;
 use super::Error;
 use super::sbx_specs::Version;
 
+use super::sbx_block::MetadataID;
+use super::sbx_block::Metadata;
+
 use super::sbx_block::{Block, BlockType};
 use super::sbx_block;
-use super::sbx_block::metadata::Metadata;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::{ver_to_block_size,
                        ver_to_data_size,
@@ -241,9 +243,19 @@ pub fn decode_file(param : &Param)
 
     let seq_num_offset = ver_first_data_seq_num(ref_block.get_version()) as u32;
 
-    let block_size = ver_to_block_size(ref_block.get_version());
+    let block_size   = ver_to_block_size(ref_block.get_version());
 
-    let data_size = ver_to_data_size(ref_block.get_version()) as u64;
+    let data_size    = ver_to_data_size(ref_block.get_version()) as u64;
+
+    let hash_enabled =
+        if ref_block.is_data() {
+            false
+        } else {
+            match ref_block.get_meta_ref_by_id(MetadataID::HSH).unwrap() {
+                None    => false,
+                Some(_) => true,
+            }
+        };
 
     loop {
         // read at reference block block size
@@ -270,7 +282,7 @@ pub fn decode_file(param : &Param)
             writer.seek(SeekFrom::Start(write_to as u64))?;
 
             writer.write(sbx_block::slice_data_buf(ref_block.get_version(),
-                                                   &buffer));
+                                                   &buffer))?;
         }
     }
 
