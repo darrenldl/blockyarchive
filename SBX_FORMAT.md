@@ -72,6 +72,10 @@ Metadata block (block 0) can be disabled
 ## For versions : 11, 12, 13
 Overall similar to above specs.
 
+Block categories : `Meta`, `Data`, `Parity`
+
+Only `Meta` and `Data` are mutually exclusive, a block can be both `Meta` and `Parity, ` or `Data` and `Parity`.
+
 Assumes configuration is **M** data shards and **N** parity shards.
 
 ### Common blocks header:
@@ -99,6 +103,10 @@ Assumes configuration is **M** data shards and **N** parity shards.
 
 RS arrangement : block 0 (data shard) block 1 (parity shard) block 2 (parity shard) block 3 (parity shard).
 
+Block 0 is `Meta` only.
+
+Block 1-3 are both `Meta` and `Parity`.
+
 Above gives 300% redundancy for the metadata block.
 
 ### Blocks >= 4 & < 4 + K * (M + N), where K is an integer >= 1:
@@ -116,6 +124,10 @@ For **N** continuous blocks
 | 16  | blockend | var  | parity           |
 
 RS arrangement : M blocks (M data shards) N blocks (N parity shards).
+
+The M blocks are `Data` only.
+
+The N blocks are both `Data` and `Parity`.
 
 ### Last set of blocks
 
@@ -141,6 +153,10 @@ For **ceil(X * N / M)** continuous blocks
 | 16  | blockend | var  | parity           |
 
 RS arrangement : X blocks (X data shards) Y blocks (Y parity shards), where Y = ceil(X * N / M).
+
+The X blocks are `Data` only.
+
+The Y blocks are both `Data` and `Parity`.
 
 ### Versions:
 
