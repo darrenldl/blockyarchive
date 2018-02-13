@@ -185,7 +185,7 @@ fn get_ref_block(param : &Param)
     let mut meta_block = None;
     let mut data_block = None;
 
-    reader.seek(SeekFrom::Start(0))?;
+    let mut reader = FileReader::new(&param.in_file)?;
 
     reporter.start();
 
@@ -247,8 +247,6 @@ fn get_ref_block(param : &Param)
 
     reporter.stop();
 
-    reader.seek(SeekFrom::Start(0))?;
-
     Ok(if let Some(_) = meta_block {
         meta_block
     } else {
@@ -264,7 +262,12 @@ pub fn decode(param     : &Param,
     let mut reader = FileReader::new(&param.in_file)?;
     let mut writer = FileWriter::new(&param.out_file)?;
 
-    let stat = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
+    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
+
+    let mut reporter = ProgressReporter::new(&stats,
+                                             "Decode progress",
+                                             "bytes",
+                                             param.silence_level);
 
     let mut block = Block::dummy();
 
@@ -275,6 +278,8 @@ pub fn decode(param     : &Param,
     let block_size   = ver_to_block_size(ref_block.get_version());
 
     let data_size    = ver_to_data_size(ref_block.get_version()) as u64;
+
+    reporter.start();
 
     loop {
         // read at reference block block size
@@ -304,6 +309,8 @@ pub fn decode(param     : &Param,
                                                    &buffer))?;
         }
     }
+
+    reporter.stop();
 
     let res = stats.lock().unwrap().clone();
 
@@ -340,11 +347,7 @@ fn hash(param     : &Param,
                                              "bytes",
                                              param.silence_level);
 
-    let mut reader = FileReader::new(&param.out_file)?;
-
-    reader.seek(SeekFrom::Start(0));
-
-    let buffer : [u8; HASH_FILE_BLOCK_SIZE] = [0; HASH_FILE_BLOCK_SIZE];
+    let mut buffer : [u8; HASH_FILE_BLOCK_SIZE] = [0; HASH_FILE_BLOCK_SIZE];
 
     loop {
         let len_read = reader.read(&mut buffer)?;
@@ -367,7 +370,7 @@ pub fn decode_file(param : &Param)
             Some(x) => x,
         };
 
-    let stats = decode(param, &ref_block)?;
+    let mut stats = decode(param, &ref_block)?;
 
     stats.calculated_hash = hash(param, &ref_block)?;
 

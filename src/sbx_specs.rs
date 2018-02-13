@@ -1,8 +1,11 @@
-pub const SBX_LARGEST_BLOCK_SIZE : usize = 4096;
+pub const SBX_LARGEST_BLOCK_SIZE            : usize = 4096;
 
-pub const SBX_RS_METADATA_PARITY_COUNT : usize = 3;
+pub const SBX_RS_METADATA_PARITY_COUNT      : usize = 3;
 
-pub const SBX_SCAN_BLOCK_SIZE : usize = 128;
+pub const SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM : usize =
+    1 + SBX_RS_METADATA_PARITY_COUNT;
+
+pub const SBX_SCAN_BLOCK_SIZE               : usize = 128;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Version {
@@ -124,6 +127,6 @@ pub fn ver_forces_meta_enabled(version : Version) -> bool {
 }
 
 pub fn ver_first_data_seq_num(version : Version) -> u32 {
-    if ver_supports_rs(version) { 1 + SBX_RS_METADATA_PARITY_COUNT as u32 }
+    if ver_supports_rs(version) { SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32 }
     else                        { 1 }
 }

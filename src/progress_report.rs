@@ -72,12 +72,13 @@ impl Context {
     }
 }
 
-pub struct ProgressReporter<T : ProgressReport> {
-    start_flag    : Arc<Barrier>,
-    shutdown_flag : Arc<AtomicBool>,
-    runner        : JoinHandle<()>,
-    stats         : Arc<Mutex<T>>,
-    active_flag   : Arc<AtomicBool>,
+pub struct ProgressReporter<T : 'static + ProgressReport + Send> {
+    start_barrier    : Arc<Barrier>,
+    shutdown_flag    : Arc<AtomicBool>,
+    shutdown_barrier : Arc<Barrier>,
+    runner           : JoinHandle<()>,
+    stats            : Arc<Mutex<T>>,
+    active_flag      : Arc<AtomicBool>,
 }
 
 impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
@@ -98,15 +99,17 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
                                                      TimeLeftShort],
                                                 vec![TimeUsedLong,
                                                      AverageRateLong]);
-        let start_flag           = Arc::new(Barrier::new(2));
-        let shutdown_flag        = Arc::new(AtomicBool::new(false));
-        let active_flag          = Arc::new(AtomicBool::new(true));
-        let runner_stats         = Arc::clone(&stats);
-        let runner_start_flag    = Arc::clone(&start_flag);
-        let runner_shutdown_flag = Arc::clone(&shutdown_flag);
-        let runner_active_flag   = Arc::clone(&active_flag);
-        let runner               = thread::spawn(move || {
-            runner_start_flag.wait();
+        let start_barrier           = Arc::new(Barrier::new(2));
+        let shutdown_flag           = Arc::new(AtomicBool::new(false));
+        let shutdown_barrier        = Arc::new(Barrier::new(2));
+        let active_flag             = Arc::new(AtomicBool::new(true));
+        let runner_stats            = Arc::clone(&stats);
+        let runner_start_barrier    = Arc::clone(&start_barrier);
+        let runner_shutdown_flag    = Arc::clone(&shutdown_flag);
+        let runner_shutdown_barrier = Arc::clone(&shutdown_barrier);
+        let runner_active_flag      = Arc::clone(&active_flag);
+        let runner                  = thread::spawn(move || {
+            runner_start_barrier.wait();
 
             loop {
                 if runner_shutdown_flag.load(Ordering::Relaxed) {
@@ -125,23 +128,26 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             print_progress::<T>(&mut context,
                                 &mut runner_stats.lock().unwrap(),
                                 true);
+
+            runner_shutdown_barrier.wait();
         });
         ProgressReporter {
-            start_flag,
+            start_barrier,
             shutdown_flag,
+            shutdown_barrier,
             runner,
             stats,
             active_flag,
         }
     }
 
-    pub fn start(&mut self) {
+    pub fn start(&self) {
         self.stats.lock().unwrap().set_start_time();
 
-        self.start_flag.wait();
+        self.start_barrier.wait();
     }
 
-    pub fn pause(&mut self) {
+    pub fn pause(&self) {
         let units_so_far = self.stats.lock().unwrap().units_so_far();
         let total_units  = self.stats.lock().unwrap().total_units();
 
@@ -154,16 +160,22 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
         self.active_flag.store(false, Ordering::Relaxed);
     }
 
-    pub fn resume(&mut self) {
+    pub fn resume(&self) {
         self.active_flag.store(true, Ordering::Relaxed);
     }
 
-    pub fn stop(self) {
+    pub fn stop(&self) {
         self.stats.lock().unwrap().set_end_time();
 
         self.shutdown_flag.store(true, Ordering::Relaxed);
 
-        self.runner.join().unwrap();
+        self.shutdown_barrier.wait();
+    }
+}
+
+impl<T : 'static + ProgressReport + Send> Drop for ProgressReporter<T> {
+    fn drop(&mut self) {
+        self.stop();
     }
 }
 

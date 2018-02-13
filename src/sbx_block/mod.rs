@@ -16,23 +16,15 @@ use super::sbx_specs::{Version,
                        ver_first_data_seq_num};
 use self::crc::*;
 
+use super::multihash;
+
 use std::num::Wrapping;
 
 macro_rules! make_meta_getter {
-    /*(
-        $func_name:ident => $meta_id:path, $meta:path => $ret_type:ty
-    ) => {
-        pub fn $func_name (&self) -> Result<$ret_type, Error> {
-            match self.get_meta_ref_by_id($meta_id)? {
-                None                => None,
-                Some(&$meta(ref x)) => Some(x.clone()),
-                _                   => panic!(),
-            }
-        }
-    };*/
     (
         $func_name:ident => $meta_id:ident => $ret_type:ty
     ) => {
+        #[allow(non_snake_case)]
         pub fn $func_name (&self) -> Result<Option<$ret_type>, Error> {
             match self.get_meta_ref_by_id(MetadataID::$meta_id)? {
                 None                             => Ok(None),

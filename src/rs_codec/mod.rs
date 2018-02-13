@@ -13,36 +13,12 @@ use std::fmt;
 mod repairer;
 pub use self::repairer::RSRepairer;
 
+mod indexer;
+
 use super::Error;
 use super::ErrorKind;
 
-fn last_data_set_start_index(data_shards       : usize,
-                             total_data_chunks : u64) -> u64 {
-    total_data_chunks - last_data_set_size(data_shards, total_data_chunks) as u64
-}
-
-fn last_data_set_size(data_shards       : usize,
-                      total_data_chunks : u64) -> usize {
-    let size = total_data_chunks % data_shards as u64;
-    if size == 0 {
-        data_shards as usize
-    } else {
-        size as usize
-    }
-}
-
-fn last_block_set_start_seq_num(data_shards       : usize,
-                                parity_shards     : usize,
-                                total_data_chunks : u64) -> u64 {
-    let last_data_set_size = last_data_set_size(data_shards, total_data_chunks) as u64;
-
-    // Cannot just do total_data_chunks / data_shards
-    // as the first data set can also be the last data set,
-    // in which case normal_set_count would be 0, last_data_set_count would be 1
-    let normal_set_count   = (total_data_chunks - last_data_set_size) / data_shards as u64;
-
-    normal_set_count * (data_shards + parity_shards) as u64
-}
+use super::sbx_specs::SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM;
 
 fn calc_parity_shards(data_shards   : usize,
                       parity_shards : usize,
@@ -50,18 +26,92 @@ fn calc_parity_shards(data_shards   : usize,
     (set_size * parity_shards + (data_shards - 1)) / data_shards
 }
 
-fn calc_total_blocks (data_shards       : usize,
-                      parity_shards     : usize,
-                      total_data_chunks : u64) -> u64 {
-    let last_block_set_start_seq_num =
-        last_block_set_start_seq_num(data_shards,
-                                     parity_shards,
-                                     total_data_chunks);
-    let last_data_set_size           =
-        last_data_set_size(data_shards,
-                           total_data_chunks) as u64;
+pub mod from_data_block_count {
+    use super::*;
 
-    last_block_set_start_seq_num + last_data_set_size
+    pub fn last_data_set_start_index(data_shards       : usize,
+                                     total_data_chunks : u64) -> u64 {
+        total_data_chunks - last_data_set_size(data_shards,
+                                               total_data_chunks) as u64
+    }
+
+    pub fn last_data_set_size(data_shards       : usize,
+                              total_data_chunks : u64) -> usize {
+        let size = total_data_chunks % data_shards as u64;
+        if size == 0 {
+            data_shards as usize
+        } else {
+            size as usize
+        }
+    }
+
+    pub fn last_block_set_start_seq_num(data_shards       : usize,
+                                        parity_shards     : usize,
+                                        total_data_chunks : u64) -> u64 {
+        let last_data_set_size = last_data_set_size(data_shards,
+                                                    total_data_chunks) as u64;
+
+        // Cannot just do total_data_chunks / data_shards
+        // as the first data set can also be the last data set,
+        // in which case normal_set_count would be 0, last_data_set_count would be 1
+        let normal_set_count   = (total_data_chunks - last_data_set_size) / data_shards as u64;
+
+        SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u64
+            + normal_set_count * (data_shards + parity_shards) as u64
+    }
+
+    pub fn last_block_set_size(data_shards       : usize,
+                               parity_shards     : usize,
+                               total_data_chunks : u64) -> u64 {
+        let last_data_set_size = last_data_set_size(data_shards,
+                                                    total_data_chunks) as u64;
+
+        last_data_set_size + calc_parity_shards(data_shards,
+                                                parity_shards,
+                                                last_data_set_size)
+    }
+
+    pub fn calc_total_blocks (data_shards       : usize,
+                              parity_shards     : usize,
+                              total_data_chunks : u64) -> u64 {
+        let last_block_set_start_seq_num =
+            last_block_set_start_seq_num(data_shards,
+                                         parity_shards,
+                                         total_data_chunks);
+        let last_block_set_size           =
+            last_block_set_size(data_shards,
+                                total_data_chunks) as u64;
+
+        SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM
+            + last_block_set_start_seq_num + last_block_set_size
+    }
+}
+
+pub mod from_total_block_count {
+    pub fn last_block_set_start_seq_num(data_shards   : usize,
+                                        parity_shards : usize,
+                                        total_blocks  : u64) -> u32 {
+        total_blocks - last_block_set_size(data_shards,
+                                           parity_shards,
+                                           total_blocks) as u64
+    }
+
+    pub fn last_block_set_size(data_shards   : usize,
+                               parity_shards : usize,
+                               total_blocks  : u64) -> usize {
+        let size = total_blocks % (data_shards + parity_shards) as u64;
+        if size == 0 {
+            data_shards + parity_shards
+        } else {
+            size as usize
+        }
+    }
+
+    pub fn seq_num_is_parity(data_shards   : usize,
+                             parity_shards : usize,
+                             total_blocks  : u64) -> usize {
+
+    }
 }
 
 #[derive(Clone)]
