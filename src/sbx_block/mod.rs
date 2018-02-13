@@ -18,6 +18,31 @@ use self::crc::*;
 
 use std::num::Wrapping;
 
+macro_rules! make_meta_getter {
+    /*(
+        $func_name:ident => $meta_id:path, $meta:path => $ret_type:ty
+    ) => {
+        pub fn $func_name (&self) -> Result<$ret_type, Error> {
+            match self.get_meta_ref_by_id($meta_id)? {
+                None                => None,
+                Some(&$meta(ref x)) => Some(x.clone()),
+                _                   => panic!(),
+            }
+        }
+    };*/
+    (
+        $func_name:ident => $meta_id:ident => $ret_type:ty
+    ) => {
+        pub fn $func_name (&self) -> Result<Option<$ret_type>, Error> {
+            match self.get_meta_ref_by_id(MetadataID::$meta_id)? {
+                None                             => Ok(None),
+                Some(&Metadata::$meta_id(ref x)) => Ok(Some(x.clone())),
+                _                                => panic!(),
+            }
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BlockType {
     Data, Meta
@@ -261,9 +286,9 @@ impl Block {
                     self.get_seq_num()
                     - ver_first_data_seq_num(self.get_version());
                 let index_in_set =
-                    index % (data_shards + parity_shards) as u64;
+                    index % (data_shards + parity_shards) as u32;
 
-                (data_shards <= index_in_set)
+                (data_shards as u32 <= index_in_set)
             }
         }
     }
@@ -289,6 +314,15 @@ impl Block {
             }
         }
     }
+
+    make_meta_getter!(get_FNM => FNM => Box<[u8]>);
+    make_meta_getter!(get_SNM => SNM => Box<[u8]>);
+    make_meta_getter!(get_FSZ => FSZ => u64);
+    make_meta_getter!(get_FDT => FDT => i64);
+    make_meta_getter!(get_SDT => SDT => i64);
+    make_meta_getter!(get_HSH => HSH => multihash::HashBytes);
+    make_meta_getter!(get_RSD => RSD => u8);
+    make_meta_getter!(get_RSP => RSP => u8);
 
     pub fn meta(&self) -> Result<&Vec<Metadata>, Error> {
         match self.data {

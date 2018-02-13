@@ -123,7 +123,7 @@ pub fn ver_forces_meta_enabled(version : Version) -> bool {
     }
 }
 
-pub fn ver_first_data_seq_num(version : Version) -> usize {
-    if ver_supports_rs(version) { 1 + SBX_RS_METADATA_PARITY_COUNT }
+pub fn ver_first_data_seq_num(version : Version) -> u32 {
+    if ver_supports_rs(version) { 1 + SBX_RS_METADATA_PARITY_COUNT as u32 }
     else                        { 1 }
 }

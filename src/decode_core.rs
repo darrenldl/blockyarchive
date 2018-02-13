@@ -13,6 +13,7 @@ use super::file_writer::FileWriter;
 use super::sbx_specs::SBX_SCAN_BLOCK_SIZE;
 
 use super::multihash;
+use super::multihash::*;
 
 use super::Error;
 use super::sbx_specs::Version;
@@ -27,6 +28,8 @@ use super::sbx_specs::{ver_to_block_size,
                        ver_to_data_size,
                        ver_first_data_seq_num};
 
+const HASH_FILE_BLOCK_SIZE : usize = 4096;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
     version                     : Version,
@@ -38,9 +41,18 @@ pub struct Stats {
     total_blocks                : u32,
     start_time                  : f64,
     end_time                    : f64,
+    pub recorded_hash           : Option<multihash::HashBytes>,
+    pub calculated_hash         : Option<multihash::HashBytes>,
 }
 
-pub struct ScanStats {
+struct ScanStats {
+    pub bytes_processed : u64,
+    pub total_bytes     : u64,
+    start_time          : f64,
+    end_time            : f64,
+}
+
+struct HashStats {
     pub bytes_processed : u64,
     pub total_bytes     : u64,
     start_time          : f64,
@@ -86,6 +98,17 @@ impl ScanStats {
     }
 }
 
+impl HashStats {
+    pub fn new(file_metadata : &fs::Metadata) -> HashStats {
+        HashStats {
+            bytes_processed : 0,
+            total_bytes     : file_metadata.len(),
+            start_time      : 0.,
+            end_time        : 0.,
+        }
+    }
+}
+
 impl Stats {
     pub fn new(ref_block     : &Block,
                file_metadata : &fs::Metadata) -> Stats {
@@ -102,11 +125,23 @@ impl Stats {
             total_blocks,
             start_time              : 0.,
             end_time                : 0.,
+            recorded_hash           : None,
+            calculated_hash         : None,
         }
     }
 }
 
 impl ProgressReport for ScanStats {
+    fn start_time_mut(&mut self) -> &mut f64 { &mut self.start_time }
+
+    fn end_time_mut(&mut self)   -> &mut f64 { &mut self.end_time }
+
+    fn units_so_far(&self)       -> u64      { self.bytes_processed }
+
+    fn total_units(&self)        -> u64      { self.total_bytes }
+}
+
+impl ProgressReport for HashStats {
     fn start_time_mut(&mut self) -> &mut f64 { &mut self.start_time }
 
     fn end_time_mut(&mut self)   -> &mut f64 { &mut self.end_time }
@@ -131,10 +166,10 @@ impl ProgressReport for Stats {
     fn total_units(&self)        -> u64      { self.total_blocks as u64 }
 }
 
-fn get_ref_block(reader   : &mut FileReader,
-                 param    : &Param,
-                 metadata : &fs::Metadata)
+fn get_ref_block(param : &Param)
                  -> Result<Option<Block>, Error> {
+    let metadata = file_utils::get_file_metadata(&param.in_file)?;
+
     let stats = Arc::new(Mutex::new(ScanStats::new(&metadata)));
 
     let mut reporter = ProgressReporter::new(&stats,
@@ -221,21 +256,15 @@ fn get_ref_block(reader   : &mut FileReader,
     })
 }
 
-pub fn decode_file(param : &Param)
-                   -> Result<Stats, Error> {
+pub fn decode(param     : &Param,
+              ref_block : &Block)
+              -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
     let mut reader = FileReader::new(&param.in_file)?;
     let mut writer = FileWriter::new(&param.out_file)?;
 
-    // find a reference block
-    let ref_block =
-        match get_ref_block(&mut reader, param, &metadata)? {
-            None => { return Err(Error::with_message("failed to find reference block")); },
-            Some(x) => x,
-        };
-
-    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
+    let stat = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
 
     let mut block = Block::dummy();
 
@@ -246,16 +275,6 @@ pub fn decode_file(param : &Param)
     let block_size   = ver_to_block_size(ref_block.get_version());
 
     let data_size    = ver_to_data_size(ref_block.get_version()) as u64;
-
-    let hash_enabled =
-        if ref_block.is_data() {
-            false
-        } else {
-            match ref_block.get_meta_ref_by_id(MetadataID::HSH).unwrap() {
-                None    => false,
-                Some(_) => true,
-            }
-        };
 
     loop {
         // read at reference block block size
@@ -286,7 +305,71 @@ pub fn decode_file(param : &Param)
         }
     }
 
-    let stats = stats.lock().unwrap().clone();
+    let res = stats.lock().unwrap().clone();
+
+    Ok(res)
+}
+
+fn hash(param     : &Param,
+        ref_block : &Block)
+        -> Result<Option<HashBytes>, Error> {
+    let hash_bytes : Option<HashBytes> =
+        if ref_block.is_data() {
+            None
+        } else {
+            ref_block.get_HSH().unwrap()
+        };
+
+    let mut hash_ctx : hash::Ctx =
+        match hash_bytes {
+            None          => { return Ok(None); },
+            Some((ht, _)) => match hash::Ctx::new(ht) {
+                Err(()) => { return Ok(None); },
+                Ok(ctx) => ctx,
+            }
+        };
+
+    let mut reader = FileReader::new(&param.out_file)?;
+
+    let metadata = reader.metadata()?;
+
+    let stats = Arc::new(Mutex::new(HashStats::new(&metadata)));
+
+    let mut reporter = ProgressReporter::new(&stats,
+                                             "Hash progress",
+                                             "bytes",
+                                             param.silence_level);
+
+    let mut reader = FileReader::new(&param.out_file)?;
+
+    reader.seek(SeekFrom::Start(0));
+
+    let buffer : [u8; HASH_FILE_BLOCK_SIZE] = [0; HASH_FILE_BLOCK_SIZE];
+
+    loop {
+        let len_read = reader.read(&mut buffer)?;
+
+        hash_ctx.update(&buffer[0..len_read]);
+
+        if len_read < HASH_FILE_BLOCK_SIZE {
+            break;
+        }
+    }
+
+    Ok(Some(hash_ctx.finish_into_hash_bytes()))
+}
+
+pub fn decode_file(param : &Param)
+                   -> Result<Stats, Error> {
+    let ref_block =
+        match get_ref_block(param)? {
+            None => { return Err(Error::with_message("failed to find reference block")); },
+            Some(x) => x,
+        };
+
+    let stats = decode(param, &ref_block)?;
+
+    stats.calculated_hash = hash(param, &ref_block)?;
 
     Ok(stats)
 }

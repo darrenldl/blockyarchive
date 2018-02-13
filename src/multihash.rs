@@ -114,6 +114,13 @@ pub mod hash {
         BLAKE2B_512(blake2b::State)
     }
 
+    pub fn hash_type_is_supported(hash_type : HashType) -> bool {
+        match Ctx::new(hash_type) {
+            Ok(_)  => true,
+            Err(_) => false
+        }
+    }
+
     impl Ctx {
         pub fn new(hash_type : HashType) -> Result<Ctx, ()> {
             let ctx = match hash_type {
@@ -149,13 +156,6 @@ pub mod hash {
                 _Ctx::SHA512(_)      => HashType::SHA512,
                 _Ctx::BLAKE2B_256(_) => HashType::BLAKE2B_256,
                 _Ctx::BLAKE2B_512(_) => HashType::BLAKE2B_512
-            }
-        }
-
-        pub fn hash_type_is_supported(hash_type : HashType) -> bool {
-            match Self::new(hash_type) {
-                Ok(_)  => true,
-                Err(_) => false
             }
         }
 
