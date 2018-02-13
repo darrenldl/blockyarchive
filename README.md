@@ -11,7 +11,7 @@ This implementation adds forward error correction on top of the SeqBox format by
 ## Goals
 As rsbx is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
 
-And also since I don't have a lot of time outside of holidays, modularity and ease of maintenance will be of high priority during development as well so I can keep maintaining rsbx in future.
+Modularity and ease of maintenance will be of high priority during development as well for easy maintenance in future.
 
 ## Compared to osbx
 rsbx will be using the same test suite for the core functionalities, and should share largely the same command line interface, with differences due to different designs of the libraries.
@@ -27,17 +27,8 @@ rsbx has forward error correction, osbx does not.
 
 [Rsbx specs](RSBX_SPECS.md)
 
-## TODO
-- Things to port from osbx
-  - ```sbx_block.ml```, using [nom](https://github.com/Geal/nom) parser combinator library
-  - Command line interface code, using [clap](https://github.com/kbknapp/clap-rs)
-  - ```crcccitt.ml```
-  - ...
-- Diagrams for the actor model used
-
-## Done
-- ```crcccitt``` crate
-- ```mpmc_rb``` crate (multi-producer multi-consumer ring buffer)
+## Contributions
+Contributions are welcome. Note that by submitting contributions, you agree to license your work under the same license used by this project(3-Clause BSD).
 
 ## Acknowledgement
 I would like to thank [Marco](https://github.com/MarcoPon) (official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx.
