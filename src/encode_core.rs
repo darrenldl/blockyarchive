@@ -219,10 +219,10 @@ pub fn encode_file(param : &Param)
     let stats = Arc::new(Mutex::new(Stats::new(param, &metadata)));
 
     // setup reporter
-    let mut reporter = ProgressReporter::new(&stats,
-                                             "Data encoding progress",
-                                             "chunks",
-                                             param.silence_level);
+    let reporter = ProgressReporter::new(&stats,
+                                         "Data encoding progress",
+                                         "chunks",
+                                         param.silence_level);
 
     // setup file reader and writer
     let mut reader = FileReader::new(&param.in_file)?;
@@ -241,7 +241,7 @@ pub fn encode_file(param : &Param)
                                            param.rs_data,
                                            param.rs_parity,
                                            file_utils::calc_data_chunk_count(param.version,
-                                                                             &metadata));
+                                                                             &metadata) as u32);
 
     // setup main data buffer
     let mut data : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];

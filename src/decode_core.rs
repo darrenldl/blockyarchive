@@ -172,10 +172,10 @@ fn get_ref_block(param : &Param)
 
     let stats = Arc::new(Mutex::new(ScanStats::new(&metadata)));
 
-    let mut reporter = ProgressReporter::new(&stats,
-                                             "Scan progress",
-                                             "bytes",
-                                             param.silence_level);
+    let reporter = ProgressReporter::new(&stats,
+                                         "Scan progress",
+                                         "bytes",
+                                         param.silence_level);
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
         [0; SBX_LARGEST_BLOCK_SIZE];
@@ -264,10 +264,10 @@ pub fn decode(param     : &Param,
 
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
 
-    let mut reporter = ProgressReporter::new(&stats,
-                                             "Decode progress",
-                                             "bytes",
-                                             param.silence_level);
+    let reporter = ProgressReporter::new(&stats,
+                                         "Decode progress",
+                                         "bytes",
+                                         param.silence_level);
 
     let mut block = Block::dummy();
 
@@ -342,22 +342,28 @@ fn hash(param     : &Param,
 
     let stats = Arc::new(Mutex::new(HashStats::new(&metadata)));
 
-    let mut reporter = ProgressReporter::new(&stats,
-                                             "Hash progress",
-                                             "bytes",
-                                             param.silence_level);
+    let reporter = ProgressReporter::new(&stats,
+                                         "Hash progress",
+                                         "bytes",
+                                         param.silence_level);
 
     let mut buffer : [u8; HASH_FILE_BLOCK_SIZE] = [0; HASH_FILE_BLOCK_SIZE];
+
+    reporter.start();
 
     loop {
         let len_read = reader.read(&mut buffer)?;
 
         hash_ctx.update(&buffer[0..len_read]);
 
+        stats.lock().unwrap().bytes_processed += len_read as u64;
+
         if len_read < HASH_FILE_BLOCK_SIZE {
             break;
         }
     }
+
+    reporter.stop();
 
     Ok(Some(hash_ctx.finish_into_hash_bytes()))
 }

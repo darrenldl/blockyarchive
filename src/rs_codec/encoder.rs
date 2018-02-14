@@ -8,15 +8,15 @@ use super::*;
 
 pub struct RSEncoder {
     active                    : bool,
-    cur_data_index            : u64,
-    last_data_set_start_index : u64,
+    cur_data_index            : u32,
+    last_data_set_start_index : u32,
     rs_codec_normal           : ReedSolomon,
     rs_codec_last             : ReedSolomon,
     dat_num_normal            : usize,
     par_num_normal            : usize,
     dat_num_last              : usize,
     par_num_last              : usize,
-    total_data_chunks         : u64,
+    total_data_chunks         : u32,
     version                   : Version,
     par_buf_normal            : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     par_buf_last              : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
@@ -53,13 +53,13 @@ impl RSEncoder {
     pub fn new(version           : Version,
                data_shards       : usize,
                parity_shards     : usize,
-               total_data_chunks : u64) -> RSEncoder {
+               total_data_chunks : u32) -> RSEncoder {
         let last_data_set_size         =
-            last_data_set_size(data_shards,
-                               total_data_chunks);
+            from_data_block_count::last_data_set_size(data_shards,
+                                                      total_data_chunks);
         let last_data_set_start_index  =
-            last_data_set_start_index(data_shards,
-                                      total_data_chunks);
+            from_data_block_count::last_data_set_start_index(data_shards,
+                                                             total_data_chunks);
         let last_data_set_parity_count = calc_parity_shards(data_shards,
                                                             parity_shards,
                                                             last_data_set_size);
@@ -91,7 +91,7 @@ impl RSEncoder {
     }
 
     fn in_normal_data_set(&self) -> bool {
-        self.cur_data_index < self.last_data_set_start_index as u64
+        self.cur_data_index < self.last_data_set_start_index as u32
     }
 
     pub fn encode(&mut self,
@@ -108,7 +108,7 @@ impl RSEncoder {
         let data_shards = rs_codec.data_shard_count();
 
         let index = (self.cur_data_index
-                     % rs_codec.data_shard_count() as u64) as usize;
+                     % rs_codec.data_shard_count() as u32) as usize;
 
         {
             let mut parity : SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(par_buf.len());

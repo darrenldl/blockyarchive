@@ -165,11 +165,13 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
     }
 
     pub fn stop(&self) {
-        self.stats.lock().unwrap().set_end_time();
+        if !self.shutdown_flag.load(Ordering::Relaxed) {
+            self.shutdown_flag.store(true, Ordering::Relaxed);
 
-        self.shutdown_flag.store(true, Ordering::Relaxed);
+            self.stats.lock().unwrap().set_end_time();
 
-        self.shutdown_barrier.wait();
+            self.shutdown_barrier.wait();
+        }
     }
 }
 

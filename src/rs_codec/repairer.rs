@@ -5,7 +5,7 @@ use super::super::sbx_block::BlockType;
 use super::super::sbx_block::Block;
 use super::super::sbx_specs::ver_to_block_size;
 use super::super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-use super::super::sbx_specs::SBX_RS_METADATA_PARITY_COUNT;
+use super::super::sbx_specs::SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM;
 use super::*;
 use super::super::sbx_block;
 
@@ -13,12 +13,12 @@ use super::Error;
 
 pub struct RSRepairer {
     active                       : bool,
-    cur_seq_num                  : u64,
-    start_seq_num                : u64,
-    last_block_set_start_seq_num : u64,
+    cur_seq_num                  : u32,
+    start_seq_num                : u32,
+    last_block_set_start_seq_num : u32,
     rs_codec_normal              : ReedSolomon,
     rs_codec_last                : ReedSolomon,
-    total_blocks                 : u64,
+    total_blocks                 : u32,
     version                      : Version,
     buf_normal                   : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     buf_normal_par_verify        : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
@@ -58,7 +58,7 @@ macro_rules! add_cur_seq_num {
                 $self.rs_codec_normal.total_shard_count()
             } else {
                 $self.rs_codec_last.total_shard_count()
-            } as u64;
+            } as u32;
 
         add_cur_seq_num!($self, cur_block_set_size);
     }}
@@ -99,23 +99,24 @@ impl RSRepairer {
                block_type        : BlockType,
                data_shards       : usize,
                parity_shards     : usize,
-               total_data_chunks : u64) -> RSRepairer {
+               total_data_chunks : u32) -> RSRepairer {
         let last_data_set_size           =
-            last_data_set_size(data_shards,
-                               total_data_chunks);
+            from_data_block_count::last_data_set_size(data_shards,
+                                                      total_data_chunks);
         let last_block_set_start_seq_num =
-            last_block_set_start_seq_num(data_shards,
-                                         parity_shards,
-                                         total_data_chunks);
+            from_data_block_count::last_block_set_start_seq_num(data_shards,
+                                                                parity_shards,
+                                                                total_data_chunks);
         let last_data_set_parity_count   = calc_parity_shards(data_shards,
                                                               parity_shards,
                                                               last_data_set_size);
 
         let block_size = ver_to_block_size(version);
 
-        let total_blocks = calc_total_blocks(data_shards,
-                                             parity_shards,
-                                             total_data_chunks);
+        let total_blocks =
+            from_data_block_count::calc_total_blocks(data_shards,
+                                                     parity_shards,
+                                                     total_data_chunks);
 
         let buf_normal : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
             smallvec![smallvec![0; block_size]; data_shards + parity_shards];
@@ -134,8 +135,8 @@ impl RSRepairer {
 
         let start_seq_num = match block_type {
             BlockType::Meta => 0,
-            BlockType::Data => 1 + SBX_RS_METADATA_PARITY_COUNT,
-        } as u64;
+            BlockType::Data => SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM,
+        } as u32;
 
         RSRepairer {
             active                 : total_data_chunks != 0,
@@ -203,7 +204,7 @@ impl RSRepairer {
                 Err(_) => Err(to_err(RSError::new(RSErrorKind::RepairFail,
                                                   self.version,
                                                   self.cur_seq_num,
-                                                  total_num,
+                                                  total_num as u32,
                                                   self.block_type,
                                                   Some(slice_present))))
             }
@@ -239,7 +240,7 @@ impl RSRepairer {
                 Err(_) => Err(to_err(RSError::new(RSErrorKind::VerifyFail,
                                                   self.version,
                                                   self.cur_seq_num,
-                                                  total_num,
+                                                  total_num as u32,
                                                   self.block_type,
                                                   None)))
             };
