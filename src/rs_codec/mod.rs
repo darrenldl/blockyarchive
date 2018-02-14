@@ -39,6 +39,8 @@ pub mod from_data_block_count {
 
     pub fn last_data_set_size(data_shards       : usize,
                               total_data_chunks : u32) -> usize {
+        if total_data_chunks == 0 { return 0; }
+
         let size = total_data_chunks % data_shards as u32;
 
         if size == 0 { data_shards as usize }
