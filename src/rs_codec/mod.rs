@@ -87,6 +87,35 @@ pub mod from_data_block_count {
         SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32
             + last_block_set_start_seq_num + last_block_set_size
     }
+
+    pub fn seq_num_is_parity(seq_num           : u32,
+                             data_shards       : usize,
+                             parity_shards     : usize,
+                             total_data_chunks : u32) -> bool {
+        let last_data_set_size =
+            last_data_set_size(data_shards,
+                               total_data_chunks) as u32;
+        let last_block_set_start_seq_num =
+            last_block_set_start_seq_num(data_shards,
+                                         parity_shards,
+                                         total_data_chunks);
+
+        if        seq_num == 0 {
+            false // this is metadata block
+        } else if seq_num < SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32 {
+            true  // this is metadata parity block
+        } else if seq_num < last_block_set_start_seq_num {
+            // this is block in normal block set
+            let index        = seq_num - SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32;
+            let index_in_set = index % (data_shards + parity_shards) as u32;
+
+            (data_shards as u32 <= index_in_set)
+        } else { // this is block in last block set
+            let index_in_set = seq_num - last_block_set_start_seq_num;
+
+            (last_data_set_size <= index_in_set)
+        }
+    }
 }
 
 pub mod from_total_block_count {
@@ -102,17 +131,8 @@ pub mod from_total_block_count {
                                parity_shards : usize,
                                total_blocks  : u32) -> usize {
         let size = total_blocks % (data_shards + parity_shards) as u32;
-        if size == 0 {
-            data_shards + parity_shards
-        } else {
-            size as usize
-        }
-    }
-
-    pub fn seq_num_is_parity(data_shards   : usize,
-                             parity_shards : usize,
-                             total_blocks  : u32) -> bool {
-        false
+        if size == 0 { data_shards + parity_shards }
+        else         { size                        as usize }
     }
 }
 

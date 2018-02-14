@@ -267,24 +267,6 @@ impl Block {
         }
     }
 
-    pub fn is_parity(&self,
-                     data_shards   : usize,
-                     parity_shards : usize,
-                     total_blocks  : u64) -> bool {
-        match self.block_type() {
-            BlockType::Meta => 0 < self.get_seq_num(),
-            BlockType::Data => {
-                let index =
-                    self.get_seq_num()
-                    - ver_first_data_seq_num(self.get_version());
-                let index_in_set =
-                    index % (data_shards + parity_shards) as u32;
-
-                (data_shards as u32 <= index_in_set)
-            }
-        }
-    }
-
     pub fn get_meta_ref_by_id(&self,
                               id : MetadataID)
                               -> Result<Option<&Metadata>, Error> {
