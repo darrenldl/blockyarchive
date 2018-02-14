@@ -74,20 +74,19 @@ pub mod from_data_block_count {
                                                  last_data_set_size)) as u32
     }
 
-    pub fn calc_total_blocks (data_shards       : usize,
-                              parity_shards     : usize,
-                              total_data_chunks : u32) -> u32 {
+    pub fn calc_total_blocks(data_shards       : usize,
+                             parity_shards     : usize,
+                             total_data_chunks : u32) -> u32 {
         let last_block_set_start_seq_num =
             last_block_set_start_seq_num(data_shards,
                                          parity_shards,
                                          total_data_chunks);
-        let last_block_set_size           =
+        let last_block_set_size =
             last_block_set_size(data_shards,
                                 parity_shards,
                                 total_data_chunks) as u32;
 
-        SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32
-            + last_block_set_start_seq_num + last_block_set_size
+        last_block_set_start_seq_num + last_block_set_size
     }
 
     pub fn seq_num_is_parity(seq_num           : u32,

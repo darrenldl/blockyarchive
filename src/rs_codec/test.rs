@@ -135,4 +135,86 @@ mod from_data_block_count {
                                               parity_shards,
                                               18));
     }
+
+    #[test]
+    fn test_calc_total_blocks_simple_cases() {
+        let data_shards = 3;
+        let parity_shards = 2;
+
+        assert_eq!(4 + 2, calc_total_blocks(data_shards,
+                                            parity_shards,
+                                            1));
+        assert_eq!(4 + 5, calc_total_blocks(data_shards,
+                                            parity_shards,
+                                            3));
+        assert_eq!(4 + 5 + 2, calc_total_blocks(data_shards,
+                                                parity_shards,
+                                                4));
+        assert_eq!(4 + 5 + 4, calc_total_blocks(data_shards,
+                                                parity_shards,
+                                                5));
+        assert_eq!(4 + 10, calc_total_blocks(data_shards,
+                                             parity_shards,
+                                             6));
+    }
+
+    #[test]
+    fn test_seq_num_is_parity_simple_cases() {
+        let data_shards       = 5;
+        let parity_shards     = 1;
+        let total_data_chunks = 21;
+
+        assert_eq!(false, seq_num_is_parity(0,
+                                            data_shards,
+                                            parity_shards,
+                                            total_data_chunks));
+        assert_eq!(true,  seq_num_is_parity(1,
+                                            data_shards,
+                                            parity_shards,
+                                            total_data_chunks));
+        assert_eq!(true,  seq_num_is_parity(2,
+                                            data_shards,
+                                            parity_shards,
+                                            total_data_chunks));
+        assert_eq!(true,  seq_num_is_parity(3,
+                                            data_shards,
+                                            parity_shards,
+                                            total_data_chunks));
+        assert_eq!(false, seq_num_is_parity(4,
+                                            data_shards,
+                                            parity_shards,
+                                            total_data_chunks));
+        assert_eq!(true,  seq_num_is_parity(9,
+                                            data_shards,
+                                            parity_shards,
+                                            total_data_chunks));
+        assert_eq!(false, seq_num_is_parity(10,
+                                            data_shards,
+                                            parity_shards,
+                                            total_data_chunks));
+        assert_eq!(true,  seq_num_is_parity(15,
+                                            data_shards,
+                                            parity_shards,
+                                            total_data_chunks));
+        assert_eq!(false, seq_num_is_parity(16,
+                                            data_shards,
+                                            parity_shards,
+                                            total_data_chunks));
+        assert_eq!(true,  seq_num_is_parity(21,
+                                            data_shards,
+                                            parity_shards,
+                                            total_data_chunks));
+        assert_eq!(true,  seq_num_is_parity(27,
+                                            data_shards,
+                                            parity_shards,
+                                            total_data_chunks));
+        assert_eq!(false, seq_num_is_parity(28,
+                                            data_shards,
+                                            parity_shards,
+                                            total_data_chunks));
+        assert_eq!(true,  seq_num_is_parity(29,
+                                            data_shards,
+                                            parity_shards,
+                                            total_data_chunks));
+    }
 }
