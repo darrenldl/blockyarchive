@@ -9,7 +9,7 @@ extern crate rand;
 
 #[test]
 fn test_from_bytes_versions() {
-    let mut header = Header::new(Version::V1, [0; 6]);
+    let mut header = Header::new(Version::V1, [0; 6], 0);
 
     {
         let buffer : &[u8; 16] = b"SBx\x01\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
@@ -19,7 +19,7 @@ fn test_from_bytes_versions() {
         assert_eq!(header.version, Version::V1);
         assert_eq!(header.crc, 0xCDEF);
         assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
-        assert_eq!(header.seq_num, 0x01020304);
+        assert_eq!(header.seq_num.0, 0x01020304);
     }
     {
         let buffer : &[u8; 16] = b"SBx\x02\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
@@ -29,7 +29,7 @@ fn test_from_bytes_versions() {
         assert_eq!(header.version, Version::V2);
         assert_eq!(header.crc, 0xCDEF);
         assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
-        assert_eq!(header.seq_num, 0x01020304);
+        assert_eq!(header.seq_num.0, 0x01020304);
     }
     {
         let buffer : &[u8; 16] = b"SBx\x03\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
@@ -39,7 +39,7 @@ fn test_from_bytes_versions() {
         assert_eq!(header.version, Version::V3);
         assert_eq!(header.crc, 0xCDEF);
         assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
-        assert_eq!(header.seq_num, 0x01020304);
+        assert_eq!(header.seq_num.0, 0x01020304);
     }
     {
         let buffer : &[u8; 16] = b"SBx\x0B\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
@@ -49,7 +49,7 @@ fn test_from_bytes_versions() {
         assert_eq!(header.version, Version::V11);
         assert_eq!(header.crc, 0xCDEF);
         assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
-        assert_eq!(header.seq_num, 0x01020304);
+        assert_eq!(header.seq_num.0, 0x01020304);
     }
     {
         let buffer : &[u8; 16] = b"SBx\x0C\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
@@ -59,7 +59,7 @@ fn test_from_bytes_versions() {
         assert_eq!(header.version, Version::V12);
         assert_eq!(header.crc, 0xCDEF);
         assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
-        assert_eq!(header.seq_num, 0x01020304);
+        assert_eq!(header.seq_num.0, 0x01020304);
     }
     {
         let buffer : &[u8; 16] = b"SBx\x0D\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
@@ -69,7 +69,7 @@ fn test_from_bytes_versions() {
         assert_eq!(header.version, Version::V13);
         assert_eq!(header.crc, 0xCDEF);
         assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
-        assert_eq!(header.seq_num, 0x01020304);
+        assert_eq!(header.seq_num.0, 0x01020304);
     }
 }
 
@@ -78,9 +78,10 @@ fn test_to_bytes_versions() {
     {
         let mut header =
             Header::new(Version::V1,
-                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05],
+                        0);
         header.crc = 0xCDEF;
-        header.seq_num = 0x01020304;
+        header.seq_num.0 = 0x01020304;
 
         let mut buffer : [u8; 16] = [0; 16];
 
@@ -92,9 +93,10 @@ fn test_to_bytes_versions() {
     {
         let mut header =
             Header::new(Version::V2,
-                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05],
+                        0);
         header.crc = 0xCDEF;
-        header.seq_num = 0x01020304;
+        header.seq_num.0 = 0x01020304;
 
         let mut buffer : [u8; 16] = [0; 16];
 
@@ -106,9 +108,10 @@ fn test_to_bytes_versions() {
     {
         let mut header =
             Header::new(Version::V3,
-                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05],
+                        0);
         header.crc = 0xCDEF;
-        header.seq_num = 0x01020304;
+        header.seq_num.0 = 0x01020304;
 
         let mut buffer : [u8; 16] = [0; 16];
 
@@ -120,9 +123,10 @@ fn test_to_bytes_versions() {
     {
         let mut header =
             Header::new(Version::V11,
-                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05],
+                        0);
         header.crc = 0xCDEF;
-        header.seq_num = 0x01020304;
+        header.seq_num.0 = 0x01020304;
 
         let mut buffer : [u8; 16] = [0; 16];
 
@@ -134,9 +138,10 @@ fn test_to_bytes_versions() {
     {
         let mut header =
             Header::new(Version::V12,
-                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05],
+                        0);
         header.crc = 0xCDEF;
-        header.seq_num = 0x01020304;
+        header.seq_num.0 = 0x01020304;
 
         let mut buffer : [u8; 16] = [0; 16];
 
@@ -148,9 +153,10 @@ fn test_to_bytes_versions() {
     {
         let mut header =
             Header::new(Version::V13,
-                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+                        [0x00, 0x01, 0x02, 0x03, 0x04, 0x05],
+                        0);
         header.crc = 0xCDEF;
-        header.seq_num = 0x01020304;
+        header.seq_num.0 = 0x01020304;
 
         let mut buffer : [u8; 16] = [0; 16];
 
@@ -163,7 +169,7 @@ fn test_to_bytes_versions() {
 
 #[test]
 fn test_from_bytes_error_handling() {
-    let mut header = Header::new(Version::V1, [0; 6]);
+    let mut header = Header::new(Version::V1, [0; 6], 0);
 
     {
         let buffer : [u8; 15] = [0; 15];
@@ -197,7 +203,7 @@ fn test_from_bytes_error_handling() {
 
 #[test]
 fn test_to_bytes_error_handling() {
-    let header = Header::new(Version::V1, [0; 6]);
+    let header = Header::new(Version::V1, [0; 6], 0);
 
     {
         let mut buffer : [u8; 15] = [0; 15];
@@ -218,19 +224,19 @@ fn test_from_to_from_bytes() {
             [b'S', b'B', b'x', 0x01, 0xCC, 0xCC, 0xDD, 0xDD, 0xDD, 0xDD, 0xDD, 0xDD, 0xEE, 0xEE, 0xEE, 0xEE];
         fill_random_bytes(&mut buffer[4..16]);
 
-        let mut expect = Header::new(Version::V1, [0; 6]);
+        let mut expect = Header::new(Version::V1, [0; 6], 0);
         expect.crc = ((buffer[4] as u16) << 8) + (buffer[5] as u16);
         for i in 0..6 {
             expect.file_uid[i] = buffer[6 + i];
         }
-        expect.seq_num =
+        expect.seq_num.0 =
             ((buffer[12] as u32) << 24) +
             ((buffer[13] as u32) << 16) +
             ((buffer[14] as u32) <<  8) +
             (buffer[15] as u32);
 
         {
-            let mut header = Header::new(Version::V1, [0; 6]);
+            let mut header = Header::new(Version::V1, [0; 6], 0);
 
             header.from_bytes(&buffer).unwrap();
 
@@ -252,10 +258,10 @@ fn test_from_to_from_bytes() {
 #[test]
 fn test_to_from_to_bytes() {
     for _ in 0..1000 {
-        let mut header = Header::new(Version::V1, [0; 6]);
+        let mut header = Header::new(Version::V1, [0; 6], 0);
         header.crc = rand::random::<u16>();
         fill_random_bytes(&mut header.file_uid);
-        header.seq_num = rand::random::<u32>();
+        header.seq_num.0 = rand::random::<u32>();
 
         let mut expect : [u8; 16] =
             [b'S', b'B', b'x', 0x01, 0xCC, 0xCC, 0xDD, 0xDD, 0xDD, 0xDD, 0xDD, 0xDD, 0xEE, 0xEE, 0xEE, 0xEE];
@@ -264,10 +270,10 @@ fn test_to_from_to_bytes() {
         for i in 0..6 {
             expect[6 + i] = header.file_uid[i];
         }
-        expect[12] = (header.seq_num >> 24) as u8;
-        expect[13] = (header.seq_num >> 16) as u8;
-        expect[14] = (header.seq_num >>  8) as u8;
-        expect[15] =  header.seq_num        as u8;
+        expect[12] = (header.seq_num.0 >> 24) as u8;
+        expect[13] = (header.seq_num.0 >> 16) as u8;
+        expect[14] = (header.seq_num.0 >>  8) as u8;
+        expect[15] =  header.seq_num.0        as u8;
         {
             let mut buffer : [u8; 16] = [0; 16];
 
@@ -275,7 +281,7 @@ fn test_to_from_to_bytes() {
 
             assert_eq!(expect, buffer);
 
-            let mut header2 = Header::new(Version::V2, [11; 6]);
+            let mut header2 = Header::new(Version::V2, [11; 6], 100);
 
             header2.from_bytes(&buffer).unwrap();
 
