@@ -218,3 +218,39 @@ mod from_data_block_count {
                                             total_data_chunks));
     }
 }
+
+mod from_total_block_count {
+    use super::super::from_total_block_count::*;
+    use super::super::super::sbx_specs::SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM;
+
+    #[test]
+    fn test_last_block_set_start_seq_num_simple_cases() {
+        let data_shards = 2;
+        let parity_shards = 3;
+
+        assert_eq!(SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32 + 5,
+                   last_block_set_start_seq_num(data_shards,
+                                                parity_shards,
+                                                14));
+        assert_eq!(SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32 + 10,
+                   last_block_set_start_seq_num(data_shards,
+                                                parity_shards,
+                                                16));
+    }
+
+    #[test]
+    fn test_last_block_set_size_simple_cases() {
+        let data_shards = 2;
+        let parity_shards = 3;
+
+        assert_eq!(5, last_block_set_size(data_shards,
+                                          parity_shards,
+                                          14));
+        assert_eq!(2, last_block_set_size(data_shards,
+                                          parity_shards,
+                                          16));
+        assert_eq!(3, last_block_set_size(data_shards,
+                                          parity_shards,
+                                          17));
+    }
+}

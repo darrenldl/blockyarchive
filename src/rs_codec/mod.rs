@@ -93,6 +93,9 @@ pub mod from_data_block_count {
                              data_shards       : usize,
                              parity_shards     : usize,
                              total_data_chunks : u32) -> bool {
+        assert!(seq_num <= calc_total_blocks(data_shards,
+                                             parity_shards,
+                                             total_data_chunks));
         let last_data_set_size =
             last_data_set_size(data_shards,
                                total_data_chunks) as u32;
@@ -134,7 +137,7 @@ pub mod from_total_block_count {
                                parity_shards : usize,
                                total_blocks  : u32) -> usize {
         let size =
-            (total_blocks - SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM)
+            (total_blocks - SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32)
             % (data_shards + parity_shards) as u32;
         if size == 0 { data_shards + parity_shards }
         else         { size                        as usize }
