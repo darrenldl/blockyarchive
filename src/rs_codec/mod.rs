@@ -22,12 +22,6 @@ use super::ErrorKind;
 
 use super::sbx_specs::SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM;
 
-pub fn calc_parity_shards(data_shards   : usize,
-                          parity_shards : usize,
-                          set_size      : usize) -> usize {
-    (set_size * parity_shards + (data_shards - 1)) / data_shards
-}
-
 pub mod from_data_block_count {
     use super::*;
 
