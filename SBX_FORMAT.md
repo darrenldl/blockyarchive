@@ -146,17 +146,23 @@ For **X** continuous blocks, where **X** is the remaining number of data blocks
 | 16  | n        | var  | data             |
 | n+1 | blockend | var  | padding (0x1a)   |
 
-For **ceil(X * N / M)** continuous blocks
+For **M - X** continuous blocks, where **M** is the specified data shards count.
+
+| pos | to pos   | size | desc             |
+|---- | -------- | ---- | ---------------- |
+| 16  | blockend | var  | padding (0x1a)   |
+
+For **N** continuous blocks
 
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
 | 16  | blockend | var  | parity           |
 
-RS arrangement : X blocks (X data shards) Y blocks (Y parity shards), where Y = ceil(X * N / M).
+RS arrangement : M blocks (X data shards + (M - X) padding blocks) N blocks.
 
-The X blocks are `Data` only.
+The M blocks are `Data` only.
 
-The Y blocks are both `Data` and `Parity`.
+The N blocks are both `Data` and `Parity`.
 
 ### Versions:
 
