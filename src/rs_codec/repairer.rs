@@ -131,7 +131,6 @@ impl RSRepairer {
                   -> Result<bool, Error> {
         let rs_codec      = &self.rs_codec;
         let slice_buf     = &self.buf;
-        let slice_present = &self.buf_present;
         let par_buf       = &mut self.buf_par_verify;
 
         let par_num   = rs_codec.parity_shard_count();
