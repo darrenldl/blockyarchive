@@ -242,6 +242,10 @@ pub fn encode_file(param : &Param)
 
     // setup main data buffer
     let mut data : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+    let data_size = ver_to_data_size(param.version);
+
+    // setup padding block
+    let padding : [u8; SBX_LARGEST_BLOCK_SIZE] = [0x1A; SBX_LARGEST_BLOCK_SIZE];
 
     // setup main data block
     let mut block = Block::new(param.version,
@@ -310,7 +314,27 @@ pub fn encode_file(param : &Param)
 
         // update Reed-Solomon data if needed
         if param.rs_enabled {
-            if let Some(parity_to_use) = rs_codec_data.encode(&data) {
+            // encode normally once
+            let temp_res = rs_codec_data.encode(&mut data);
+            let encode_res =
+                if len_read < data_size { // current data block is the last one
+                    match temp_res {
+                        None => {
+                            // fill remaining slots with padding (logically)
+                            loop {
+                                match rs_codec_data.encode(&padding) {
+                                    None    => {},
+                                    Some(x) => { break Some(x); }
+                                }
+                            }
+                        },
+                        Some(x) => Some(x),
+                    }
+                } else {
+                    temp_res
+                };
+
+            if let Some(parity_to_use) = encode_res {
                 for p in parity_to_use.iter_mut() {
                     block.sync_to_buffer(None, p).unwrap();
 
