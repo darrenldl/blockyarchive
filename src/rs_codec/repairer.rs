@@ -12,30 +12,15 @@ use super::super::sbx_block;
 use super::Error;
 
 pub struct RSRepairer {
-    active                       : bool,
-    cur_seq_num                  : u32,
-    start_seq_num                : u32,
-    last_block_set_start_seq_num : u32,
-    rs_codec_normal              : ReedSolomon,
-    rs_codec_last                : ReedSolomon,
-    total_blocks                 : u32,
-    version                      : Version,
-    buf_normal                   : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
-    buf_normal_par_verify        : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
-    buf_normal_slice_present     : SmallVec<[bool; 32]>,
-    buf_last                     : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
-    buf_last_par_verify          : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
-    buf_last_slice_present       : SmallVec<[bool; 32]>,
-    block_type                   : BlockType,
-    ref_block                    : Block,
-}
-
-macro_rules! in_normal_block_set {
-    (
-        $self:ident
-    ) => {{
-        $self.cur_seq_num < $self.last_block_set_start_seq_num
-    }}
+    cur_seq_num    : u32,
+    start_seq_num  : u32,
+    rs_codec       : ReedSolomon,
+    version        : Version,
+    buf            : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
+    buf_par_verify : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
+    buf_present    : SmallVec<[bool; 32]>,
+    block_type     : BlockType,
+    ref_block      : Block,
 }
 
 macro_rules! add_cur_seq_num {
@@ -43,54 +28,18 @@ macro_rules! add_cur_seq_num {
         $self:ident, $val:expr
     ) => {{
         let mut cur_seq_num_from_start = $self.cur_seq_num  - $self.start_seq_num;
-        let total_blocks_from_start    = $self.total_blocks - $self.start_seq_num;
 
         cur_seq_num_from_start = cur_seq_num_from_start.wrapping_add($val);
-        cur_seq_num_from_start = cur_seq_num_from_start % total_blocks_from_start;
 
         $self.cur_seq_num = cur_seq_num_from_start + $self.start_seq_num;
     }};
     (
         cur_block_set => $self:ident
     ) => {{
-        let cur_block_set_size =
-            if in_normal_block_set!($self) {
-                $self.rs_codec_normal.total_shard_count()
-            } else {
-                $self.rs_codec_last.total_shard_count()
-            } as u32;
+        let cur_block_set_size = $self.rs_codec.total_shard_count() as u32;
 
         add_cur_seq_num!($self, cur_block_set_size);
     }}
-}
-
-macro_rules! pick_asset {
-    (
-        repair => $self:ident
-    ) => {{
-        if in_normal_block_set!($self) {
-            (&$self.rs_codec_normal,
-             &mut $self.buf_normal,
-             &mut $self.buf_normal_slice_present)
-        } else {
-            (&$self.rs_codec_last,
-             &mut $self.buf_last,
-             &mut $self.buf_last_slice_present)
-        }
-    }};
-    (
-        verify => $self:ident
-    ) => {{
-        if in_normal_block_set!($self) {
-            (&$self.rs_codec_normal,
-             &$self.buf_normal,
-             &mut $self.buf_normal_par_verify)
-        } else {
-            (&$self.rs_codec_last,
-             &$self.buf_last,
-             &mut $self.buf_last_par_verify)
-        }
-    }};
 }
 
 impl RSRepairer {
@@ -98,40 +47,16 @@ impl RSRepairer {
                ref_block         : &Block,
                block_type        : BlockType,
                data_shards       : usize,
-               parity_shards     : usize,
-               total_data_chunks : u32) -> RSRepairer {
-        let last_data_set_size           =
-            from_data_block_count::last_data_set_size(data_shards,
-                                                      total_data_chunks);
-        let last_block_set_start_seq_num =
-            from_data_block_count::last_block_set_start_seq_num(data_shards,
-                                                                parity_shards,
-                                                                total_data_chunks);
-        let last_data_set_parity_count   = calc_parity_shards(data_shards,
-                                                              parity_shards,
-                                                              last_data_set_size);
-
+               parity_shards     : usize) -> RSRepairer {
         let block_size = ver_to_block_size(version);
 
-        let total_blocks =
-            from_data_block_count::calc_total_blocks(data_shards,
-                                                     parity_shards,
-                                                     total_data_chunks);
-
-        let buf_normal : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
+        let buf : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
             smallvec![smallvec![0; block_size]; data_shards + parity_shards];
-        let buf_normal_slice_present : SmallVec<[bool; 32]> =
+        let buf_present : SmallVec<[bool; 32]> =
             smallvec![false; data_shards + parity_shards];
 
-        let buf_last : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
-            smallvec![smallvec![0; block_size]; last_data_set_size + last_data_set_parity_count];
-        let buf_last_slice_present : SmallVec<[bool; 32]> =
-            smallvec![false; last_data_set_size + last_data_set_parity_count];
-
-        let buf_normal_par_verify : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
+        let buf_par_verify : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
             smallvec![smallvec![0; block_size]; parity_shards];
-        let buf_last_par_verify : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
-            smallvec![smallvec![0; block_size]; last_data_set_parity_count];
 
         let start_seq_num = match block_type {
             BlockType::Meta => 0,
@@ -139,46 +64,32 @@ impl RSRepairer {
         } as u32;
 
         RSRepairer {
-            active                 : total_data_chunks != 0,
-            cur_seq_num            : start_seq_num,
+            cur_seq_num       : start_seq_num,
             start_seq_num,
-            last_block_set_start_seq_num,
-            rs_codec_normal        : ReedSolomon::new(data_shards,
-                                                      parity_shards).unwrap(),
-            rs_codec_last          : ReedSolomon::new(last_data_set_size,
-                                                      last_data_set_parity_count).unwrap(),
-            total_blocks,
+            rs_codec          : ReedSolomon::new(data_shards,
+                                                 parity_shards).unwrap(),
             version,
-            buf_normal,
-            buf_normal_par_verify,
-            buf_normal_slice_present,
-            buf_last,
-            buf_last_par_verify,
-            buf_last_slice_present,
+            buf,
+            buf_par_verify,
+            buf_present,
             block_type,
-            ref_block              : ref_block.clone(),
+            ref_block         : ref_block.clone(),
         }
     }
 
     pub fn get_buf(&self) -> &SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> {
-        if in_normal_block_set!(self) {
-            &self.buf_normal
-        } else {
-            &self.buf_last
-        }
+        &self.buf
     }
 
     pub fn get_buf_mut(&mut self) -> &mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> {
-        if in_normal_block_set!(self) {
-            &mut self.buf_normal
-        } else {
-            &mut self.buf_last
-        }
+        &mut self.buf
     }
 
     pub fn repair(&mut self,
                   data_only : bool) -> Result<(), Error> {
-        let (rs_codec, slice_buf, slice_present) = pick_asset!(repair => self);
+        let rs_codec      = &self.rs_codec;
+        let slice_buf     = &mut self.buf;
+        let slice_present = &mut self.buf_present;
 
         let total_num = rs_codec.total_shard_count();
 
@@ -218,7 +129,10 @@ impl RSRepairer {
     pub fn verify(&mut self,
                   incre_cur_seq_num : bool)
                   -> Result<bool, Error> {
-        let (rs_codec, slice_buf, par_buf) = pick_asset!(verify => self);
+        let rs_codec      = &self.rs_codec;
+        let slice_buf     = &self.buf;
+        let slice_present = &self.buf_present;
+        let par_buf       = &mut self.buf_par_verify;
 
         let par_num   = rs_codec.parity_shard_count();
         let total_num = rs_codec.total_shard_count();

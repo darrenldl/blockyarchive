@@ -2,7 +2,6 @@ use std::sync::{Arc, Mutex};
 use std::fs;
 use std::fmt;
 use super::file_utils;
-use super::time_utils;
 use std::io::SeekFrom;
 
 use super::progress_report::*;
@@ -19,7 +18,6 @@ use super::Error;
 use super::sbx_specs::Version;
 
 use super::sbx_block::MetadataID;
-use super::sbx_block::Metadata;
 
 use super::sbx_block::{Block, BlockType};
 use super::sbx_block;

@@ -4,17 +4,14 @@ use super::super::sbx_block;
 use super::super::sbx_specs::Version;
 use super::super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::super::sbx_specs::ver_to_block_size;
-use super::*;
 
 pub struct RSEncoder {
-    active                    : bool,
-    cur_data_index            : u32,
-    rs_codec                  : ReedSolomon,
-    dat_num                   : usize,
-    par_num                   : usize,
-    version                   : Version,
-    par_buf_normal            : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
-    par_buf_last              : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
+    cur_data_index : u32,
+    rs_codec       : ReedSolomon,
+    dat_num        : usize,
+    par_num        : usize,
+    version        : Version,
+    par_buf        : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
 }
 
 macro_rules! add_cur_data_index {
@@ -40,7 +37,6 @@ impl RSEncoder {
             smallvec![smallvec![0; block_size]; parity_shards];
 
         RSEncoder {
-            active         : total_data_chunks != 0,
             cur_data_index : 0,
             rs_codec       : ReedSolomon::new(data_shards,
                                               parity_shards).unwrap(),
@@ -51,19 +47,13 @@ impl RSEncoder {
         }
     }
 
-    fn in_normal_data_set(&self) -> bool {
-        self.cur_data_index < self.last_data_set_start_index as u32
-    }
-
     pub fn encode(&mut self,
                   data : &[u8])
                   -> Option<&mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>> {
-        if !self.active { return None; }
-
         let data = sbx_block::slice_data_buf(self.version, data);
 
         let version  = self.version;
-        let rs_codec = &self.codec;
+        let rs_codec = &self.rs_codec;
         let par_buf  = &mut self.par_buf;
 
         let data_shards = rs_codec.data_shard_count();

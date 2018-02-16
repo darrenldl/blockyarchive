@@ -235,13 +235,10 @@ pub fn encode_file(param : &Param)
     // setup Reed-Solomon things
     let mut rs_codec_meta = RSEncoder::new(param.version,
                                            1,
-                                           SBX_RS_METADATA_PARITY_COUNT,
-                                           1);
+                                           SBX_RS_METADATA_PARITY_COUNT);
     let mut rs_codec_data = RSEncoder::new(param.version,
                                            param.rs_data,
-                                           param.rs_parity,
-                                           file_utils::calc_data_chunk_count(param.version,
-                                                                             &metadata) as u32);
+                                           param.rs_parity);
 
     // setup main data buffer
     let mut data : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
