@@ -17,8 +17,6 @@ use super::multihash::*;
 use super::Error;
 use super::sbx_specs::Version;
 
-use super::sbx_block::MetadataID;
-
 use super::sbx_block::{Block, BlockType};
 use super::sbx_block;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
