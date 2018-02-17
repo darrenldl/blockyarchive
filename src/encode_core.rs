@@ -315,34 +315,43 @@ pub fn encode_file(param : &Param)
         // update Reed-Solomon data if needed
         if param.rs_enabled {
             // encode normally once
-            let temp_res = rs_codec_data.encode(&mut data);
-            let encode_res =
-                if len_read < data_size { // current data block is the last one
-                    match temp_res {
-                        None => {
-                            // fill remaining slots with padding (logically)
-                            loop {
-                                match rs_codec_data.encode(&padding) {
-                                    None    => {},
-                                    Some(x) => { break Some(x); }
-                                }
-                            }
-                        },
-                        Some(x) => Some(x),
+            let fill_padding =
+                match rs_codec_data.encode(&data) {
+                    None                => len_read < data_size, // true if current data block is the last one
+                    Some(parity_to_use) => {
+                        for p in parity_to_use.iter_mut() {
+                            block.sync_to_buffer(None, p).unwrap();
+
+                            // write data out
+                            writer.write(sbx_block::slice_buf(param.version, p))?;
+
+                            block.add1_seq_num();
+                            data_par_blocks_written += 1;
+                        }
+
+                        false
                     }
-                } else {
-                    temp_res
                 };
 
-            if let Some(parity_to_use) = encode_res {
-                for p in parity_to_use.iter_mut() {
-                    block.sync_to_buffer(None, p).unwrap();
+            if fill_padding {
+                // fill remaining slots with padding (logically)
+                loop {
+                    match rs_codec_data.encode(&padding) {
+                        None    => {},
+                        Some(parity_to_use) => {
+                            for p in parity_to_use.iter_mut() {
+                                block.sync_to_buffer(None, p).unwrap();
 
-                    // write data out
-                    writer.write(sbx_block::slice_buf(param.version, p))?;
+                                // write data out
+                                writer.write(sbx_block::slice_buf(param.version, p))?;
 
-                    block.add1_seq_num();
-                    data_par_blocks_written += 1;
+                                block.add1_seq_num();
+                                data_par_blocks_written += 1;
+                            }
+
+                            break;
+                        }
+                    }
                 }
             }
         }
