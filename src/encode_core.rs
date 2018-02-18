@@ -260,8 +260,7 @@ pub fn encode_file(param : &Param)
                              &metadata,
                              None,
                              &mut data);
-        writer.write(sbx_block::slice_buf(param.version,
-                                          &data))?;
+        writer.write(sbx_block::slice_buf(param.version, &data))?;
 
         block.add1_seq_num();
 
@@ -364,13 +363,13 @@ pub fn encode_file(param : &Param)
     if param.meta_enabled { // write actual metadata block
         block.set_seq_num(0);
 
+        writer.seek(SeekFrom::Start(0))?;
+
         write_metadata_block(param,
                              &stats.lock().unwrap(),
                              &metadata,
                              Some(hash_ctx.finish_into_hash_bytes()),
                              &mut data);
-
-        writer.seek(SeekFrom::Start(0))?;
 
         writer.write(sbx_block::slice_buf(param.version, &data))?;
 
