@@ -8,8 +8,6 @@ use super::super::sbx_specs::ver_to_block_size;
 pub struct RSEncoder {
     cur_data_index : u32,
     rs_codec       : ReedSolomon,
-    dat_num        : usize,
-    par_num        : usize,
     version        : Version,
     par_buf        : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
 }
@@ -28,9 +26,9 @@ macro_rules! add_cur_data_index {
 }
 
 impl RSEncoder {
-    pub fn new(version           : Version,
-               data_shards       : usize,
-               parity_shards     : usize) -> RSEncoder {
+    pub fn new(version       : Version,
+               data_shards   : usize,
+               parity_shards : usize) -> RSEncoder {
         let block_size = ver_to_block_size(version);
 
         let par_buf : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
@@ -40,15 +38,13 @@ impl RSEncoder {
             cur_data_index : 0,
             rs_codec       : ReedSolomon::new(data_shards,
                                               parity_shards).unwrap(),
-            dat_num        : data_shards,
-            par_num        : parity_shards,
             version,
             par_buf,
         }
     }
 
     pub fn encode(&mut self,
-                  data         : &[u8])
+                  data : &[u8])
                   -> Option<&mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>> {
         let data = sbx_block::slice_data_buf(self.version, data);
 
@@ -58,11 +54,11 @@ impl RSEncoder {
 
         let data_shards = rs_codec.data_shard_count();
 
-        let index = (self.cur_data_index
-                     % rs_codec.data_shard_count() as u32) as usize;
+        let index = (self.cur_data_index % data_shards as u32) as usize;
 
         {
-            let mut parity : SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(par_buf.len());
+            let mut parity : SmallVec<[&mut [u8]; 32]> =
+                SmallVec::with_capacity(par_buf.len());
 
             for p in par_buf.iter_mut() {
                 parity.push(sbx_block::slice_data_buf_mut(version, p));
