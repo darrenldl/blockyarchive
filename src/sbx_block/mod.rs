@@ -357,8 +357,10 @@ impl Block {
 
         match self.data {
             Data::Meta(ref meta) => {
-                // transform metadata to bytes
-                metadata::to_bytes(meta, slice_buf!(data_mut => self, buffer))?;
+                if self.get_seq_num() == 0 {  // not a metadata parity block
+                    // transform metadata to bytes
+                    metadata::to_bytes(meta, slice_buf!(data_mut => self, buffer))?;
+                }
             },
             Data::Data => {}
         }
