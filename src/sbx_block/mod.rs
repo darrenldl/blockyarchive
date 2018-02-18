@@ -410,10 +410,12 @@ impl Block {
 
         match self.data {
             Data::Meta(ref mut meta) => {
-                meta.clear();
-                let res = metadata::from_bytes(slice_buf!(data => self, buffer))?;
-                for r in res.into_iter() {
-                    meta.push(r);
+                if self.get_seq_num() == 0 {
+                    meta.clear();
+                    let res = metadata::from_bytes(slice_buf!(data => self, buffer))?;
+                    for r in res.into_iter() {
+                        meta.push(r);
+                    }
                 }
             },
             Data::Data => {}
