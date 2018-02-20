@@ -222,9 +222,12 @@ pub fn print_progress<T>(context        : &mut Context,
 
     let percent = helper::calc_percent(units_so_far, total_units);
 
-    if !(silent_while_active && percent  < 100)
-        && !(silent_when_done       && percent == 100)
-        && !(context.finish_printed && percent == 100) {
+    let progress_complete = percent == 100 || pretend_finish;
+
+    if !(silent_while_active && !progress_complete)
+        && !(silent_when_done       && progress_complete)
+        && !(context.finish_printed && progress_complete)
+    {
         // print header once if not already
         if !context.header_printed {
             println!("{}", context.header);
@@ -232,7 +235,7 @@ pub fn print_progress<T>(context        : &mut Context,
         }
 
         let message =
-            if percent < 100 || pretend_finish {
+            if progress_complete {
                 make_message(context,
                              stats.get_start_time(),
                              stats.get_end_time(),
@@ -254,7 +257,7 @@ pub fn print_progress<T>(context        : &mut Context,
         print!("\r{1:0$}", context.max_print_length, message);
         stdout().flush().unwrap();
 
-        if percent == 100 && !context.finish_printed {
+        if progress_complete && !context.finish_printed {
             println!();
             context.finish_printed = true;
         }
