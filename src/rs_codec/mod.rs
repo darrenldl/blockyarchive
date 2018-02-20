@@ -20,25 +20,6 @@ mod test;
 use super::Error;
 use super::ErrorKind;
 
-use super::sbx_specs::SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM;
-
-pub fn seq_num_is_parity(seq_num           : u32,
-                         data_shards       : usize,
-                         parity_shards     : usize) -> bool {
-
-    if        seq_num == 0 {
-        false // this is metadata block
-    } else if seq_num < SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32 {
-        true  // this is metadata parity block
-    } else {
-        // this is block in normal block set
-        let index        = seq_num - SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32;
-        let index_in_set = index % (data_shards + parity_shards) as u32;
-
-        (data_shards as u32 <= index_in_set)
-    }
-}
-
 #[derive(Clone)]
 pub enum RSErrorKind {
     RepairFail,

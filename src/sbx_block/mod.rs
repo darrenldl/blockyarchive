@@ -13,7 +13,8 @@ use super::sbx_specs::{Version,
                        SBX_HEADER_SIZE,
                        SBX_FILE_UID_LEN,
                        ver_to_block_size,
-                       ver_first_data_seq_num};
+                       ver_first_data_seq_num,
+                       SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM};
 use self::crc::*;
 
 use super::multihash;
@@ -170,6 +171,21 @@ pub fn check_if_buffer_valid(buffer : &[u8]) -> bool {
     block.verify_crc(buffer).unwrap()
 }
 
+pub fn seq_num_is_parity(seq_num       : u32,
+                         data_shards   : usize,
+                         parity_shards : usize) -> bool {
+    if        seq_num == 0 {
+        false // this is metadata block
+    } else if seq_num < SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32 {
+        true  // this is metadata parity block
+    } else {  // data sets
+        let index        = seq_num - SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32;
+        let index_in_set = index % (data_shards + parity_shards) as u32;
+
+        (data_shards as u32 <= index_in_set)
+    }
+}
+
 impl Block {
     pub fn new(version    : Version,
                file_uid   : &[u8; SBX_FILE_UID_LEN],
@@ -265,6 +281,14 @@ impl Block {
             BlockType::Data => true,
             BlockType::Meta => false
         }
+    }
+
+    pub fn is_parity(&self,
+                     data_shards   : usize,
+                     parity_shards : usize) -> bool {
+        seq_num_is_parity(self.get_seq_num(),
+                          data_shards,
+                          parity_shards)
     }
 
     pub fn get_meta_ref_by_id(&self,
@@ -410,7 +434,7 @@ impl Block {
 
         match self.data {
             Data::Meta(ref mut meta) => {
-                if self.get_seq_num() == 0 {
+                if self.header.seq_num.0 == 0 {
                     meta.clear();
                     let res = metadata::from_bytes(slice_buf!(data => self, buffer))?;
                     for r in res.into_iter() {
