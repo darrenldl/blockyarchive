@@ -14,6 +14,7 @@ use super::sbx_specs::{Version,
                        SBX_FILE_UID_LEN,
                        ver_to_block_size,
                        ver_first_data_seq_num,
+                       ver_supports_rs,
                        SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM};
 use self::crc::*;
 
@@ -246,7 +247,7 @@ impl Block {
 
     pub fn set_seq_num(&mut self,
                        seq_num : u32) {
-        self.header.seq_num = Wrapping(seq_num);
+        self.header.seq_num.0 = seq_num;
 
         self.switch_block_type_to_match_header();
     }
@@ -286,9 +287,10 @@ impl Block {
     pub fn is_parity(&self,
                      data_shards   : usize,
                      parity_shards : usize) -> bool {
-        seq_num_is_parity(self.get_seq_num(),
-                          data_shards,
-                          parity_shards)
+        ver_supports_rs(self.header.version)
+            && seq_num_is_parity(self.get_seq_num(),
+                                 data_shards,
+                                 parity_shards)
     }
 
     pub fn get_meta_ref_by_id(&self,
