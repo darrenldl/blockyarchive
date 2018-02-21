@@ -22,7 +22,8 @@ use super::sbx_block;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::{ver_to_block_size,
                        ver_to_data_size,
-                       ver_first_data_seq_num};
+                       ver_first_data_seq_num,
+                       ver_supports_rs};
 
 const HASH_FILE_BLOCK_SIZE : usize = 4096;
 
@@ -163,7 +164,7 @@ impl ProgressReport for Stats {
 }
 
 fn get_ref_block(param : &Param)
-                 -> Result<Option<Block>, Error> {
+                 -> Result<Option<(u64, Block)>, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
     let stats = Arc::new(Mutex::new(ScanStats::new(&metadata)));
@@ -244,14 +245,15 @@ fn get_ref_block(param : &Param)
     reporter.stop();
 
     Ok(if let Some(_) = meta_block {
-        meta_block
+        (stats.lock().unwrap().bytes_processed, meta_block)
     } else {
-        data_block
+        (stats.lock().unwrap().bytes_processed, data_block)
     })
 }
 
-pub fn decode(param     : &Param,
-              ref_block : &Block)
+pub fn decode(param         : &Param,
+              ref_block_pos : u64,
+              ref_block     : &Block)
               -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
@@ -261,8 +263,8 @@ pub fn decode(param     : &Param,
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
 
     let reporter = ProgressReporter::new(&stats,
-                                         "Decode progress",
-                                         "bytes",
+                                         "Data decoding progress",
+                                         "blocks",
                                          param.silence_level);
 
     let mut block = Block::dummy();
@@ -274,6 +276,38 @@ pub fn decode(param     : &Param,
     let block_size   = ver_to_block_size(ref_block.get_version());
 
     let data_size    = ver_to_data_size(ref_block.get_version()) as u64;
+
+    let data_shards;
+    let parity_shards;
+
+    if ver_support_rs(ref_block.get_version()) {
+        // must be metadata block, and must contain fields `RSD`, `RSP`
+        if ref_block.is_data() {
+            return Err(Error::with_message(format!("reference block at {} (0x{:X}) is not a metadata block",
+                                                   ref_block_pos,
+                                                   ref_block_pos)));
+        } else {
+            data_shards = match ref_block.get_RSD().unwrap() {
+                Some(x) => x,
+                None    => {
+                    return Err(Error::with_message(format!("reference block at {} (0x{:X}) is a metadata block but does not have RSD field",
+                                                           ref_block_pos,
+                                                           ref_block_pos)));
+                }
+            };
+
+            parity_shards = match ref_block.get_RSP().unwrap() {
+                Some(x) => x,
+                None    => {
+                    return Err(Error::with_message(format!("reference block at {} (0x{:X}) is a metadata block but does not have RSP field",
+                                                           ref_block_pos,
+                                                           ref_block_pos)));
+                }
+            }
+        }
+    } else {
+        // no restrictions
+    }
 
     reporter.start();
 
@@ -366,13 +400,13 @@ fn hash(param     : &Param,
 
 pub fn decode_file(param : &Param)
                    -> Result<Stats, Error> {
-    let ref_block =
+    let (ref_block_pos, ref_block) =
         match get_ref_block(param)? {
             None => { return Err(Error::with_message("failed to find reference block")); },
             Some(x) => x,
         };
 
-    let mut stats = decode(param, &ref_block)?;
+    let mut stats = decode(param, ref_block_pos, &ref_block)?;
 
     stats.calculated_hash = hash(param, &ref_block)?;
 
