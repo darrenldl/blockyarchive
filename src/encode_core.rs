@@ -200,16 +200,36 @@ fn write_metadata_block(param         : &Param,
                         stats         : &Stats,
                         file_metadata : &fs::Metadata,
                         hash          : Option<multihash::HashBytes>,
-                        buf           : &mut [u8]) {
-    let mut block = Block::new(param.version,
-                               &param.file_uid,
-                               BlockType::Meta);
-    pack_metadata(&mut block,
+                        block         : &mut Block,
+                        buf           : &mut [u8],
+                        writer        : &mut FileWriter)
+                        -> Result<(), Error> {
+    // set to metadata block
+    block.set_seq_num(0);
+
+    writer.seek(SeekFrom::Start(0))?;
+
+    pack_metadata(block,
                   param,
                   stats,
                   file_metadata,
                   hash);
-    block.sync_to_buffer(None, buf).unwrap();
+
+    block_sync_and_write(block,
+                         buf,
+                         writer)
+}
+
+fn block_sync_and_write(block  : &mut Block,
+                        buffer : &mut [u8],
+                        writer : &mut FileWriter) -> Result<(), Error> {
+    block.sync_to_buffer(None, buffer).unwrap();
+
+    writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
+
+    block.add1_seq_num();
+
+    Ok(())
 }
 
 pub fn encode_file(param : &Param)
@@ -255,17 +275,13 @@ pub fn encode_file(param : &Param)
     reporter.start();
 
     if param.meta_enabled { // write dummy metadata block
-        // set to metadata block
-        block.set_seq_num(0);
-
         write_metadata_block(param,
                              &stats.lock().unwrap(),
                              &metadata,
                              None,
-                             &mut data);
-        writer.write(sbx_block::slice_buf(param.version, &data))?;
-
-        block.add1_seq_num();
+                             &mut block,
+                             &mut data,
+                             &mut writer)?;
 
         stats.lock().unwrap().meta_blocks_written += 1;
 
@@ -273,12 +289,9 @@ pub fn encode_file(param : &Param)
             let parity_to_use = rs_codec_meta.encode(&data).unwrap();
 
             for p in parity_to_use.iter_mut() {
-                block.sync_to_buffer(None, p).unwrap();
-
-                // write data out
-                writer.write(sbx_block::slice_buf(param.version, p))?;
-
-                block.add1_seq_num();
+                block_sync_and_write(&mut block,
+                                     p,
+                                     &mut writer)?;
             }
         }
 
@@ -301,21 +314,20 @@ pub fn encode_file(param : &Param)
                     // fill remaining slots with padding
                     loop {
                         // write padding
-                        block.sync_to_buffer(None, &mut padding).unwrap();
-                        writer.write(sbx_block::slice_buf(param.version, &padding))?;
-                        block.add1_seq_num();
+                        block_sync_and_write(&mut block,
+                                             &mut padding,
+                                             &mut writer)?;
+
                         data_blocks_written += 1;
 
                         match rs_codec_data.encode(&padding) {
                             None                => {},
                             Some(parity_to_use) => {
                                 for p in parity_to_use.iter_mut() {
-                                    block.sync_to_buffer(None, p).unwrap();
+                                    block_sync_and_write(&mut block,
+                                                         p,
+                                                         &mut writer)?;
 
-                                    // write data out
-                                    writer.write(sbx_block::slice_buf(param.version, p))?;
-
-                                    block.add1_seq_num();
                                     data_par_blocks_written += 1;
                                 }
 
@@ -331,13 +343,11 @@ pub fn encode_file(param : &Param)
         sbx_block::write_padding(param.version, len_read, &mut data);
 
         // start encoding
-        block.sync_to_buffer(None, &mut data).unwrap();
+        block_sync_and_write(&mut block,
+                             &mut data,
+                             &mut writer)?;
 
-        block.add1_seq_num();
         data_blocks_written += 1;
-
-        // write data out
-        writer.write(sbx_block::slice_buf(param.version, &mut data))?;
 
         // update hash state if needed
         if param.meta_enabled {
@@ -352,12 +362,10 @@ pub fn encode_file(param : &Param)
                 None                => {},
                 Some(parity_to_use) => {
                     for p in parity_to_use.iter_mut() {
-                        block.sync_to_buffer(None, p).unwrap();
+                        block_sync_and_write(&mut block,
+                                             p,
+                                             &mut writer)?;
 
-                        // write data out
-                        writer.write(sbx_block::slice_buf(param.version, p))?;
-
-                        block.add1_seq_num();
                         data_par_blocks_written += 1;
                     }
                 }
@@ -370,30 +378,21 @@ pub fn encode_file(param : &Param)
     }
 
     if param.meta_enabled { // write actual metadata block
-        block.set_seq_num(0);
-
-        writer.seek(SeekFrom::Start(0))?;
-
         write_metadata_block(param,
                              &stats.lock().unwrap(),
                              &metadata,
                              Some(hash_ctx.finish_into_hash_bytes()),
-                             &mut data);
-
-        writer.write(sbx_block::slice_buf(param.version, &data))?;
-
-        block.add1_seq_num();
+                             &mut block,
+                             &mut data,
+                             &mut writer)?;
 
         if param.rs_enabled {
             let parity_to_use = rs_codec_meta.encode(&data).unwrap();
 
             for p in parity_to_use.iter_mut() {
-                block.sync_to_buffer(None, p).unwrap();
-
-                // write data out
-                writer.write(sbx_block::slice_buf(param.version, p))?;
-
-                block.add1_seq_num();
+                block_sync_and_write(&mut block,
+                                     p,
+                                     &mut writer)?;
             }
         }
     }
