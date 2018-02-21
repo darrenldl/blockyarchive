@@ -34,6 +34,10 @@ Data block is valid if and only if
     - else
       - if there is any valid metadata block in sbx container, then the first one will be used as reference block
       - else the first valid data block will be used as reference block
+    - if the version of reference block is 1, 2, or 3
+      - the block can be either `Data` or `Meta`, and all metadata fields are optional
+    - else if the version of reference block is 11, 12, or 13
+      - the block must be `Meta`, and metadata fields `RSD`, `RSP` must be present
   2. Scan for valid blocks from start of sbx container to decode and output using reference block's block size as alignment
     - if a block is invalid, nothing is done
     - if a block is valid, and is a metadata block, nothing is done
