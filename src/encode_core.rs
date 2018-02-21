@@ -27,6 +27,7 @@ use super::sbx_block::Metadata;
 use super::sbx_specs::SBX_FILE_UID_LEN;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::SBX_RS_METADATA_PARITY_COUNT;
+use super::sbx_specs::SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM;
 use super::sbx_specs::ver_forces_meta_enabled;
 use super::sbx_specs::{ver_to_block_size,
                        ver_to_data_size,
@@ -242,10 +243,9 @@ pub fn encode_file(param : &Param)
 
     // setup main data buffer
     let mut data : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
-    let data_size = ver_to_data_size(param.version);
 
     // setup padding block
-    let padding : [u8; SBX_LARGEST_BLOCK_SIZE] = [0x1A; SBX_LARGEST_BLOCK_SIZE];
+    let mut padding : [u8; SBX_LARGEST_BLOCK_SIZE] = [0x1A; SBX_LARGEST_BLOCK_SIZE];
 
     // setup main data block
     let mut block = Block::new(param.version,
@@ -255,6 +255,9 @@ pub fn encode_file(param : &Param)
     reporter.start();
 
     if param.meta_enabled { // write dummy metadata block
+        // set to metadata block
+        block.set_seq_num(0);
+
         write_metadata_block(param,
                              &stats.lock().unwrap(),
                              &metadata,
@@ -291,6 +294,37 @@ pub fn encode_file(param : &Param)
             reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data))?;
 
         if len_read == 0 {
+            if param.rs_enabled {
+                // check if the current batch of RS blocks are filled
+                if (block.get_seq_num() - SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32)
+                    % (param.rs_data + param.rs_parity) as u32 != 0 {
+                    // fill remaining slots with padding
+                    loop {
+                        // write padding
+                        block.sync_to_buffer(None, &mut padding).unwrap();
+                        writer.write(sbx_block::slice_buf(param.version, &padding))?;
+                        block.add1_seq_num();
+                        data_blocks_written += 1;
+
+                        match rs_codec_data.encode(&padding) {
+                            None                => {},
+                            Some(parity_to_use) => {
+                                for p in parity_to_use.iter_mut() {
+                                    block.sync_to_buffer(None, p).unwrap();
+
+                                    // write data out
+                                    writer.write(sbx_block::slice_buf(param.version, p))?;
+
+                                    block.add1_seq_num();
+                                    data_par_blocks_written += 1;
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
             break;
         }
 
@@ -314,45 +348,20 @@ pub fn encode_file(param : &Param)
         // update Reed-Solomon data if needed
         if param.rs_enabled {
             // encode normally once
-            let fill_padding =
-                match rs_codec_data.encode(&data) {
-                    None                => len_read < data_size, // true if current data block is the last one
-                    Some(parity_to_use) => {
-                        for p in parity_to_use.iter_mut() {
-                            block.sync_to_buffer(None, p).unwrap();
+            match rs_codec_data.encode(&data) {
+                None                => {},
+                Some(parity_to_use) => {
+                    for p in parity_to_use.iter_mut() {
+                        block.sync_to_buffer(None, p).unwrap();
 
-                            // write data out
-                            writer.write(sbx_block::slice_buf(param.version, p))?;
+                        // write data out
+                        writer.write(sbx_block::slice_buf(param.version, p))?;
 
-                            block.add1_seq_num();
-                            data_par_blocks_written += 1;
-                        }
-
-                        false
-                    }
-                };
-
-            if fill_padding {
-                // fill remaining slots with padding (logically)
-                loop {
-                    match rs_codec_data.encode(&padding) {
-                        None    => {},
-                        Some(parity_to_use) => {
-                            for p in parity_to_use.iter_mut() {
-                                block.sync_to_buffer(None, p).unwrap();
-
-                                // write data out
-                                writer.write(sbx_block::slice_buf(param.version, p))?;
-
-                                block.add1_seq_num();
-                                data_par_blocks_written += 1;
-                            }
-
-                            break;
-                        }
+                        block.add1_seq_num();
+                        data_par_blocks_written += 1;
                     }
                 }
-            }
+            };
         }
 
         // update stats
