@@ -282,6 +282,8 @@ pub fn decode(param         : &Param,
     let mut data_shards   = None;
     let mut parity_shards = None;
 
+    let rs_enabled;
+
     if ver_supports_rs(ref_block.get_version()) {
         // must be metadata block, and must contain fields `RSD`, `RSP`
         if ref_block.is_data() {
@@ -290,7 +292,7 @@ pub fn decode(param         : &Param,
                                                    ref_block_pos)));
         } else {
             data_shards = match ref_block.get_RSD().unwrap() {
-                Some(x) => Some(x),
+                Some(x) => Some(x as usize),
                 None    => {
                     return Err(Error::with_message(&format!("reference block at {} (0x{:X}) is a metadata block but does not have RSD field",
                                                            ref_block_pos,
@@ -299,7 +301,7 @@ pub fn decode(param         : &Param,
             };
 
             parity_shards = match ref_block.get_RSP().unwrap() {
-                Some(x) => Some(x),
+                Some(x) => Some(x as usize),
                 None    => {
                     return Err(Error::with_message(&format!("reference block at {} (0x{:X}) is a metadata block but does not have RSP field",
                                                            ref_block_pos,
@@ -307,8 +309,11 @@ pub fn decode(param         : &Param,
                 }
             }
         }
+
+        rs_enabled = true;
     } else {
         // no restrictions
+        rs_enabled = false;
     }
 
     reporter.start();
@@ -328,17 +333,39 @@ pub fn decode(param         : &Param,
         }
 
         if block.is_meta() { // do nothing if block is meta or meta parity
-            stats.lock().unwrap().meta_blocks_decoded += 1;
+            if rs_enabled {
+                if block.is_parity(data_shards.unwrap(), parity_shards.unwrap()) {
+                    stats.lock().unwrap().meta_par_blocks_decoded += 1;
+                } else {
+                    stats.lock().unwrap().meta_blocks_decoded += 1;
+                }
+            } else {
+                stats.lock().unwrap().meta_blocks_decoded += 1;
+            }
         } else {
-            stats.lock().unwrap().data_blocks_decoded += 1;
+            let write_data =
+                if rs_enabled {
+                    if block.is_parity(data_shards.unwrap(), parity_shards.unwrap()) {
+                        stats.lock().unwrap().data_par_blocks_decoded += 1;
+                        false
+                    } else {
+                        stats.lock().unwrap().data_blocks_decoded += 1;
+                        true
+                    }
+                } else {
+                    stats.lock().unwrap().data_blocks_decoded += 1;
+                    true
+                };
 
-            // write data block
-            let write_to = (block.get_seq_num() - seq_num_offset) as u64 * data_size;
+            if write_data {
+                // write data block
+                let write_to = (block.get_seq_num() - seq_num_offset) as u64 * data_size;
 
-            writer.seek(SeekFrom::Start(write_to as u64))?;
+                writer.seek(SeekFrom::Start(write_to as u64))?;
 
-            writer.write(sbx_block::slice_data_buf(ref_block.get_version(),
-                                                   &buffer))?;
+                writer.write(sbx_block::slice_data_buf(ref_block.get_version(),
+                                                       &buffer))?;
+            }
         }
     }
 
