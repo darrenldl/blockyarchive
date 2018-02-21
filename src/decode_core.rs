@@ -288,15 +288,15 @@ pub fn decode(param         : &Param,
         // must be metadata block, and must contain fields `RSD`, `RSP`
         if ref_block.is_data() {
             return Err(Error::with_message(&format!("reference block at {} (0x{:X}) is not a metadata block",
-                                                   ref_block_pos,
-                                                   ref_block_pos)));
+                                                    ref_block_pos,
+                                                    ref_block_pos)));
         } else {
             data_shards = match ref_block.get_RSD().unwrap() {
                 Some(x) => Some(x as usize),
                 None    => {
                     return Err(Error::with_message(&format!("reference block at {} (0x{:X}) is a metadata block but does not have RSD field",
-                                                           ref_block_pos,
-                                                           ref_block_pos)));
+                                                            ref_block_pos,
+                                                            ref_block_pos)));
                 }
             };
 
@@ -304,8 +304,8 @@ pub fn decode(param         : &Param,
                 Some(x) => Some(x as usize),
                 None    => {
                     return Err(Error::with_message(&format!("reference block at {} (0x{:X}) is a metadata block but does not have RSP field",
-                                                           ref_block_pos,
-                                                           ref_block_pos)));
+                                                            ref_block_pos,
+                                                            ref_block_pos)));
                 }
             }
         }
