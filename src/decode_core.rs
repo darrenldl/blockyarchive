@@ -244,10 +244,12 @@ fn get_ref_block(param : &Param)
 
     reporter.stop();
 
-    Ok(if let Some(_) = meta_block {
-        (stats.lock().unwrap().bytes_processed, meta_block)
+    Ok(if     let Some(x) = meta_block {
+        Some((stats.lock().unwrap().bytes_processed, x))
+    } else if let Some(x) = data_block {
+        Some((stats.lock().unwrap().bytes_processed, x))
     } else {
-        (stats.lock().unwrap().bytes_processed, data_block)
+        None
     })
 }
 
@@ -277,29 +279,29 @@ pub fn decode(param         : &Param,
 
     let data_size    = ver_to_data_size(ref_block.get_version()) as u64;
 
-    let data_shards;
-    let parity_shards;
+    let mut data_shards   = None;
+    let mut parity_shards = None;
 
-    if ver_support_rs(ref_block.get_version()) {
+    if ver_supports_rs(ref_block.get_version()) {
         // must be metadata block, and must contain fields `RSD`, `RSP`
         if ref_block.is_data() {
-            return Err(Error::with_message(format!("reference block at {} (0x{:X}) is not a metadata block",
+            return Err(Error::with_message(&format!("reference block at {} (0x{:X}) is not a metadata block",
                                                    ref_block_pos,
                                                    ref_block_pos)));
         } else {
             data_shards = match ref_block.get_RSD().unwrap() {
-                Some(x) => x,
+                Some(x) => Some(x),
                 None    => {
-                    return Err(Error::with_message(format!("reference block at {} (0x{:X}) is a metadata block but does not have RSD field",
+                    return Err(Error::with_message(&format!("reference block at {} (0x{:X}) is a metadata block but does not have RSD field",
                                                            ref_block_pos,
                                                            ref_block_pos)));
                 }
             };
 
             parity_shards = match ref_block.get_RSP().unwrap() {
-                Some(x) => x,
+                Some(x) => Some(x),
                 None    => {
-                    return Err(Error::with_message(format!("reference block at {} (0x{:X}) is a metadata block but does not have RSP field",
+                    return Err(Error::with_message(&format!("reference block at {} (0x{:X}) is a metadata block but does not have RSP field",
                                                            ref_block_pos,
                                                            ref_block_pos)));
                 }
