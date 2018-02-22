@@ -30,12 +30,11 @@ const HASH_FILE_BLOCK_SIZE : usize = 4096;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
     version                     : Version,
-    pub meta_blocks_decoded     : u32,
-    pub meta_par_blocks_decoded : u32,
-    pub data_blocks_decoded     : u32,
-    pub data_par_blocks_decoded : u32,
-    blocks_decode_failed        : u32,
-    total_blocks                : u32,
+    pub meta_blocks_decoded     : u64,
+    pub meta_par_blocks_decoded : u64,
+    pub data_blocks_decoded     : u64,
+    pub data_par_blocks_decoded : u64,
+    pub blocks_decode_failed    : u64,
     start_time                  : f64,
     end_time                    : f64,
     pub recorded_hash           : Option<multihash::HashBytes>,
