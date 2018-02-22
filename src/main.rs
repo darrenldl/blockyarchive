@@ -3,8 +3,9 @@
 #[macro_use]
 extern crate nom;
 
-//#[macro_use]
-//extern crate clap;
+#[macro_use]
+extern crate clap;
+use clap::*;
 
 extern crate time;
 
@@ -77,7 +78,30 @@ use file_writer::FileWriter;
 mod worker;
 
 fn main () {
-    use encode_core::Param;
+    let matches = App::new("rsbx")
+        .version("1.0")
+        .author("Darren Ldl <darrenldldev@gmail.com>")
+        .about("Rust implementation of SeqBox")
+        .subcommand(SubCommand::with_name("encode")
+                    .about("Encode file")
+                    .arg(Arg::with_name("no-meta")
+                         .long("no-meta"))
+                    .arg(Arg::with_name("force")
+                         .short("f")
+                         .long("force")))
+        .subcommand(SubCommand::with_name("decode")
+                    .about("Decode file")
+                    .arg(Arg::with_name("INFILE")
+                         .required(true)
+                         .index(0))
+                    .arg(Arg::with_name("no-meta")
+                         .long("no-meta")))
+        .subcommand(SubCommand::with_name("rescue")
+                    .about("Decode file")
+                    .arg(Arg::with_name("no-meta")))
+        .get_matches();
+
+    /*use encode_core::Param;
     let param = Param::new(sbx_specs::Version::V11,
                            &[0, 1, 2, 3, 4, 5],
                            10,
@@ -90,7 +114,7 @@ fn main () {
     match encode_core::encode_file(&param) {
         Ok(s)  => print!("{}", s),
         Err(e) => print!("{}", e)
-    }
+    }*/
     /*use decode_core::Param;
     let param = Param::new(false,
                            "test.sbx",
