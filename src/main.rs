@@ -3,6 +3,9 @@
 #[macro_use]
 extern crate nom;
 
+//#[macro_use]
+//extern crate clap;
+
 extern crate time;
 
 extern crate pond;
@@ -74,7 +77,7 @@ use file_writer::FileWriter;
 mod worker;
 
 fn main () {
-    /*use encode_core::Param;
+    use encode_core::Param;
     let param = Param::new(sbx_specs::Version::V11,
                            &[0, 1, 2, 3, 4, 5],
                            10,
@@ -87,8 +90,8 @@ fn main () {
     match encode_core::encode_file(&param) {
         Ok(s)  => print!("{}", s),
         Err(e) => print!("{}", e)
-    }*/
-    use decode_core::Param;
+    }
+    /*use decode_core::Param;
     let param = Param::new(false,
                            "test.sbx",
                            "test2",
@@ -96,5 +99,5 @@ fn main () {
     match decode_core::decode_file(&param) {
         Ok(s)  => print!("{}", s),
         Err(e) => print!("{}", e)
-    }
+    }*/
 }
