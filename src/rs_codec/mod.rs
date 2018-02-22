@@ -13,8 +13,6 @@ use std::fmt;
 mod repairer;
 pub use self::repairer::RSRepairer;
 
-mod indexer;
-
 mod test;
 
 use super::Error;
