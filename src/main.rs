@@ -3,7 +3,7 @@
 #[macro_use]
 extern crate nom;
 
-#[macro_use]
+//#[macro_use]
 extern crate clap;
 use clap::*;
 

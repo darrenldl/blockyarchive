@@ -22,7 +22,6 @@ use super::sbx_block;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::{ver_to_block_size,
                        ver_to_data_size,
-                       ver_first_data_seq_num,
                        ver_supports_rs};
 
 const HASH_FILE_BLOCK_SIZE : usize = 4096;
@@ -35,6 +34,7 @@ pub struct Stats {
     pub data_blocks_decoded     : u64,
     pub data_par_blocks_decoded : u64,
     pub blocks_decode_failed    : u64,
+    total_blocks                : u64,
     start_time                  : f64,
     end_time                    : f64,
     pub recorded_hash           : Option<multihash::HashBytes>,
@@ -110,7 +110,7 @@ impl Stats {
                file_metadata : &fs::Metadata) -> Stats {
         let total_blocks =
             file_utils::calc_total_block_count(ref_block.get_version(),
-                                               file_metadata) as u32;
+                                               file_metadata);
         Stats {
             version                 : ref_block.get_version(),
             blocks_decode_failed    : 0,
@@ -272,8 +272,6 @@ pub fn decode(param         : &Param,
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
-    let seq_num_offset = ver_first_data_seq_num(ref_block.get_version()) as u32;
-
     let block_size   = ver_to_block_size(ref_block.get_version());
 
     let data_size    = ver_to_data_size(ref_block.get_version()) as u64;
@@ -342,23 +340,26 @@ pub fn decode(param         : &Param,
                 stats.lock().unwrap().meta_blocks_decoded += 1;
             }
         } else {
-            let write_data =
-                if rs_enabled {
-                    if block.is_parity(data_shards.unwrap(), parity_shards.unwrap()) {
-                        stats.lock().unwrap().data_par_blocks_decoded += 1;
-                        false
-                    } else {
-                        stats.lock().unwrap().data_blocks_decoded += 1;
-                        true
-                    }
+            if rs_enabled {
+                if block.is_parity(data_shards.unwrap(), parity_shards.unwrap()) {
+                    stats.lock().unwrap().data_par_blocks_decoded += 1;
                 } else {
                     stats.lock().unwrap().data_blocks_decoded += 1;
-                    true
+                }
+            } else {
+                stats.lock().unwrap().data_blocks_decoded += 1;
+            }
+
+            let dat_par_shards =
+                if rs_enabled {
+                    Some((data_shards.unwrap(), parity_shards.unwrap()))
+                } else {
+                    None
                 };
 
-            if write_data {
-                // write data block
-                let write_to = (block.get_seq_num() - seq_num_offset) as u64 * data_size;
+            // write data block
+            if let Some(data_index) = block.data_index(dat_par_shards) {
+                let write_to = data_index as u64 * data_size;
 
                 writer.seek(SeekFrom::Start(write_to as u64))?;
 

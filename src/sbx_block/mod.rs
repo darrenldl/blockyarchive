@@ -293,6 +293,35 @@ impl Block {
                                  parity_shards)
     }
 
+    pub fn data_index(&self,
+                      dat_par_shards : Option<(usize, usize)>)
+                      -> Option<u32> {
+        match self.data {
+            Data::Meta(_) => None,
+            Data::Data    => {
+                let data_index =
+                    self.header.seq_num.0
+                    - ver_first_data_seq_num(self.header.version) as u32;
+
+                match dat_par_shards {
+                    None                               => Some(data_index),
+                    Some((data_shards, parity_shards)) => {
+                        if self.is_parity(data_shards, parity_shards) {
+                            None
+                        } else {
+                            let set_index =
+                                data_index / (data_shards + parity_shards) as u32;
+                            let index_in_set =
+                                data_index % (data_shards + parity_shards) as u32;
+
+                            Some(set_index * data_shards as u32 + index_in_set)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     pub fn get_meta_ref_by_id(&self,
                               id : MetadataID)
                               -> Result<Option<&Metadata>, Error> {
