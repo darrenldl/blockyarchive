@@ -29,7 +29,8 @@ use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::SBX_RS_METADATA_PARITY_COUNT;
 use super::sbx_specs::SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM;
 use super::sbx_specs::ver_forces_meta_enabled;
-use super::sbx_specs::{ver_to_block_size,
+use super::sbx_specs::{ver_to_usize,
+                       ver_to_block_size,
                        ver_to_data_size,
                        ver_supports_rs};
 
@@ -63,16 +64,18 @@ impl fmt::Display for Stats {
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
         if rs_enabled {
+            writeln!(f, "Version                                    : {}", ver_to_usize(self.version))?;
             writeln!(f, "Block size used in encoding                : {}", block_size)?;
             writeln!(f, "Data  size used in encoding                : {}", data_size)?;
             writeln!(f, "Number of blocks written                   : {}", blocks_written)?;
-            writeln!(f, "Number of blocks written (metadata)        : {}", meta_blocks_written)?;
+            writeln!(f, "Number of blocks written (metadata only)   : {}", meta_blocks_written)?;
             writeln!(f, "Number of blocks written (metadata parity) : {}", meta_par_blocks_written)?;
-            writeln!(f, "Number of blocks written (data)            : {}", data_blocks_written)?;
+            writeln!(f, "Number of blocks written (data only)       : {}", data_blocks_written)?;
             writeln!(f, "Number of blocks written (data parity)     : {}", data_par_blocks_written)?;
             writeln!(f, "Amount of data encoded (bytes)             : {}", data_bytes_encoded)?;
             writeln!(f, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)
         } else {
+            writeln!(f, "Version                             : {}", ver_to_usize)?;
             writeln!(f, "Block size used in encoding         : {}", block_size)?;
             writeln!(f, "Data  size used in encoding         : {}", data_size)?;
             writeln!(f, "Number of blocks written            : {}", blocks_written)?;

@@ -1,4 +1,4 @@
-/*use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex};
 use std::fs;
 use std::fmt;
 use super::file_utils;
@@ -33,6 +33,12 @@ pub struct Stats {
     end_time                         : f64,
 }
 
+impl fmt::Display for Stats {
+    fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "")
+    }
+}
+
 pub struct Param {
     in_file : String,
     out_dir : String,
@@ -50,4 +56,3 @@ impl Param {
         }
     }
 }
-*/

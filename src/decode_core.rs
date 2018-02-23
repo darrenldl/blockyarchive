@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::fs;
 use std::fmt;
 use super::file_utils;
+use super::misc_utils;
 use std::io::SeekFrom;
 
 use super::progress_report::*;
@@ -38,7 +39,7 @@ pub struct Stats {
     start_time                  : f64,
     end_time                    : f64,
     pub recorded_hash           : Option<multihash::HashBytes>,
-    pub calculated_hash         : Option<multihash::HashBytes>,
+    pub computed_hash           : Option<multihash::HashBytes>,
 }
 
 struct ScanStats {
@@ -57,7 +58,41 @@ struct HashStats {
 
 impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "")
+        let rs_enabled              = ver_supports_rs(self.version);
+        let block_size              = ver_to_block_size(self.version);
+        let meta_blocks_decoded     = self.meta_blocks_decoded;
+        let meta_par_blocks_decoded = self.meta_par_blocks_decoded;
+        let data_blocks_decoded     = self.data_blocks_decoded;
+        let data_par_blocks_decoded = self.data_par_blocks_decoded;
+        let recorded_hash           = &self.recorded_hash;
+        let computed_hash           = &self.computed_hash;
+        let time_elapsed            = (self.end_time - self.start_time) as i64;
+        let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
+
+        if rs_enabled {
+            writeln!(f, "Version : {}", ver_to__usize(self.version))?;
+            writeln!(f, "Block size used in decoding : {}", block_size)?;
+            writeln!(f, "Number of blocks processed : {}", self.units_so_far())?;
+            writeln!(f, "Number of blocks successfully decoded (metadata only) : {}", self.meta_blocks_decoded)?;
+            writeln!(f, "Number of blocks successfully decoded (metadata parity) : {}", self.meta_par_blocks_decoded)?;
+            writeln!(f, "Number of blocks successfully decoded (data only)       : {}", self.data_blocks_decoded)?;
+            writeln!(f, "Number of blocks successfully decoded (data parity)     : {}", self.data_par_blocks_decoded)?;
+            writeln!(f, "Number of blocks failed to decode                       : {}", self.blocks_decode_failed)?;
+            writeln!(f, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)?;
+            match *recorded_hash {
+                None        => { writeln!(f, "Recorded hash : N/A")?; },
+                Some(ref h) => { writeln!(f, "Recorded hash : {}", misc_utils::bytes_to_lower_hex_string(h.1))?; }
+            }
+            match *computed_hash {
+                None        => { writeln!(f, "Hash of output file : N/A")?; },
+                Some(ref h) => { writeln!(f, "Hash of output file : {}", misc_utils::bytes_to_lower_hex_string(h.1))?; }
+            }
+            if *recorded_hash == *computed_hash {
+                
+            }
+        } else {
+            
+        }
     }
 }
 

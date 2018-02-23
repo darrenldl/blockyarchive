@@ -78,7 +78,7 @@ use file_writer::FileWriter;
 mod worker;
 
 fn main () {
-    let matches = App::new("rsbx")
+    /*let matches = App::new("rsbx")
         .version("1.0")
         .author("Darren Ldl <darrenldldev@gmail.com>")
         .about("Rust implementation of SeqBox")
@@ -99,7 +99,7 @@ fn main () {
         .subcommand(SubCommand::with_name("rescue")
                     .about("Decode file")
                     .arg(Arg::with_name("no-meta")))
-        .get_matches();
+        .get_matches();*/
 
     /*use encode_core::Param;
     let param = Param::new(sbx_specs::Version::V11,
