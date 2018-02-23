@@ -41,6 +41,8 @@ Data block is valid if and only if
   2. Scan for valid blocks from start of sbx container to decode and output using reference block's block size as alignment
     - if a block is invalid, nothing is done
     - if a block is valid, and is a metadata block, nothing is done
+    - if a block is valid, and is a metadata parity block, nothing is done
+    - if a block is valid, and is a data parity block, nothing is done
     - if a block is valid, and is a data block, then it will be written to the writepos at output file, where writepos = (sequence number - 1) * block size of reference block in bytes
   3. If possible, truncate output file to remove data padding done for the last block during encoding
     - if reference block is a metadata block, and contains file size field, then the output file will be truncated to that file size
