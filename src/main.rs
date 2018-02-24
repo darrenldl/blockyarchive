@@ -4,7 +4,6 @@
 #[macro_use]
 extern crate nom;
 
-//#[macro_use]
 extern crate clap;
 use clap::*;
 
@@ -81,28 +80,80 @@ use file_writer::FileWriter;
 mod worker;
 
 fn main () {
-    /*let matches = App::new("rsbx")
+    let matches = App::new("rsbx")
         .version("1.0")
         .author("Darren Ldl <darrenldldev@gmail.com>")
         .about("Rust implementation of SeqBox")
         .subcommand(SubCommand::with_name("encode")
                     .about("Encode file")
-                    .arg(Arg::with_name("no-meta")
-                         .long("no-meta"))
+                    .arg(Arg::with_name("INFILE")
+                         .required(true)
+                         .index(1)
+                         .help("File to encode"))
+                    .arg(Arg::with_name("OUT")
+                         .index(2)
+                         .help("Sbx container name (defaults to INFILE.sbx). If OUT is a
+directory(DIR), then the final file will be stored as
+DIR/INFILE.sbx."))
                     .arg(Arg::with_name("force")
                          .short("f")
-                         .long("force")))
+                         .long("force")
+                         .help("Force overwrite even if OUT exists"))
+                    .arg(Arg::with_name("hash")
+                         .long("hash")
+                         .takes_value(true)
+                         .help("Hash function to use, one of (case-insensitive) :
+    sha1
+    sha256 (default)
+    sha512
+    blake2b-512"))
+                    .arg(Arg::with_name("no-meta")
+                         .long("no-meta")
+                         .help("Skip metadata block in the sbx container. Metadata block is
+never skipped for version 11, 12, 13."))
+                    .arg(Arg::with_name("silent")
+                         .short("s")
+                         .long("silent")
+                         .takes_value(true)
+                         .help("One of :
+    0 (show everything)
+    1 (only show progress stats when done)
+    2 (show nothing)
+This only affects progress text printing."))
+                    .arg(Arg::with_name("sbx-version")
+                         .long("sbx-version")
+                         .takes_value(true)
+                         .help("Sbx container version, one of :
+    1  (bs=512  bytes)
+    2  (bs=128  bytes)
+    3  (bs=4096 bytes)
+    11 (bs=512  bytes, Reed-Solomon enabled)
+    12 (bs=128  bytes, Reed-Solomon enabled)
+    13 (bs=4096 bytes, Reed-Solomon enabled)
+where bs=sbx block size."))
+                    .arg(Arg::with_name("uid")
+                         .long("uid")
+                         .takes_value(true)
+                         .help("Alternative file uid in hex (by default uid is randomly generated).
+Uid must be exactly 6 bytes(12 hex digits) in length."))
+        )
         .subcommand(SubCommand::with_name("decode")
                     .about("Decode file")
                     .arg(Arg::with_name("INFILE")
                          .required(true)
-                         .index(0))
+                         .index(1)
+                         .help("File to decode"))
                     .arg(Arg::with_name("no-meta")
-                         .long("no-meta")))
+                         .long("no-meta"))
+                    .arg(Arg::with_name("force")
+                         .short("f")
+                         .long("force"))
+        )
         .subcommand(SubCommand::with_name("rescue")
                     .about("Decode file")
-                    .arg(Arg::with_name("no-meta")))
-        .get_matches();*/
+                    .arg(Arg::with_name("no-meta"))
+        )
+        .get_matches();
 
     /*use encode_core::Param;
     let param = Param::new(sbx_specs::Version::V11,

@@ -63,10 +63,6 @@ impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         let rs_enabled              = ver_supports_rs(self.version);
         let block_size              = ver_to_block_size(self.version);
-        let meta_blocks_decoded     = self.meta_blocks_decoded;
-        let meta_par_blocks_decoded = self.meta_par_blocks_decoded;
-        let data_blocks_decoded     = self.data_blocks_decoded;
-        let data_par_blocks_decoded = self.data_par_blocks_decoded;
         let recorded_hash           = &self.recorded_hash;
         let computed_hash           = &self.computed_hash;
         let time_elapsed            = (self.end_time - self.start_time) as i64;

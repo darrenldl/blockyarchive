@@ -39,12 +39,12 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(param : &Param) -> Stats {
+    pub fn new(file_metadata : &fs::Metadata) -> Stats {
         Stats {
             meta_or_par_blocks_processed : 0,
             data_or_par_blocks_processed : 0,
             bytes_processed              : 0,
-            total_bytes                  : 0,
+            total_bytes                  : file_metadata.len(),
             start_time                   : 0.,
             end_time                     : 0.,
         }
@@ -113,14 +113,14 @@ impl Log for Stats {
         );
 
         match stats_p(input) {
-            IResult::Done(_, Ok((bytes, blocks, meta, data))) => {
+            IResult::Done(_, Ok((bytes, _, meta, data))) => {
                 self.bytes_processed              = bytes;
                 self.meta_or_par_blocks_processed = meta;
                 self.data_or_par_blocks_processed = data;
                 Ok(())
             },
-            IResult::Done(_, Err(_))                          => Err(()),
-            _                                                 => Err(())
+            IResult::Done(_, Err(_))                     => Err(()),
+            _                                            => Err(())
         }
     }
 }
@@ -163,7 +163,8 @@ impl Param {
 
 pub fn rescue_from_file(param : &Param)
                         -> Result<Stats, Error> {
-    let mut stats = Arc::new(Mutex::new(Stats::new(param)));
+    let metadata = file_utils::get_file_metadata(&param.in_file)?;
+    let mut stats = Arc::new(Mutex::new(Stats::new(&metadata)));
 
     let stats = stats.lock().unwrap().clone();
 
