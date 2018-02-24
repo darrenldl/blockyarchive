@@ -79,9 +79,11 @@ use file_writer::FileWriter;
 
 mod worker;
 
+const rsbx_ver_str : &str = "1.0";
+
 fn main () {
     let matches = App::new("rsbx")
-        .version("1.0")
+        .version(rsbx_ver_str)
         .author("Darren Ldl <darrenldldev@gmail.com>")
         .about("Rust implementation of SeqBox")
         .subcommand(SubCommand::with_name("encode")
@@ -120,7 +122,7 @@ never skipped for version 11, 12, 13."))
     1 (only show progress stats when done)
     2 (show nothing)
 This only affects progress text printing."))
-                    .arg(Arg::with_name("sbx-version")
+                    .arg(Arg::with_name("SBX-VERSION")
                          .long("sbx-version")
                          .takes_value(true)
                          .help("Sbx container version, one of :
@@ -142,16 +144,40 @@ Uid must be exactly 6 bytes(12 hex digits) in length."))
                     .arg(Arg::with_name("INFILE")
                          .required(true)
                          .index(1)
-                         .help("File to decode"))
-                    .arg(Arg::with_name("no-meta")
-                         .long("no-meta"))
+                         .help("Sbx container to decode"))
+                    .arg(Arg::with_name("OUT")
+                         .index(2)
+                         .help("Decoded file name. If OUT is not provided, then name stored in sbx
+container is used if present. If OUT is provided and is a
+directory(DIR) then output file is stored as DIR/STORED_NAME. If
+OUT is provided and is not a directory, then it is used directly."))
                     .arg(Arg::with_name("force")
                          .short("f")
-                         .long("force"))
+                         .long("force")
+                         .help("Force overwrite even if OUT exists"))
+                    .arg(Arg::with_name("no-meta")
+                         .long("no-meta")
+                         .help("Use first whatever valid block as reference block. Use this when
+the container does not have metadata block or when you are okay
+with using a data block as reference block."))
+                    .arg(Arg::with_name("silent")
+                         .short("s")
+                         .long("silent")
+                         .takes_value(true)
+                         .help("One of :
+    0 (show everything)
+    1 (only show progress stats when done)
+    2 (show nothing)
+This only affects progress text printing."))
         )
         .subcommand(SubCommand::with_name("rescue")
-                    .about("Decode file")
-                    .arg(Arg::with_name("no-meta"))
+                    .about("Rescue sbx blocks from file/block device")
+        )
+        .subcommand(SubCommand::with_name("repair")
+                    .about("Repair sbx container")
+        )
+        .subcommand(SubCommand::with_name("verify")
+                    .about("Repair sbx container")
         )
         .get_matches();
 
