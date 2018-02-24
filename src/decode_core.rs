@@ -23,7 +23,10 @@ use super::sbx_block;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::{ver_to_block_size,
                        ver_to_data_size,
-                       ver_supports_rs};
+                       ver_supports_rs,
+                       ver_to_usize};
+
+use super::time_utils;
 
 const HASH_FILE_BLOCK_SIZE : usize = 4096;
 
@@ -70,7 +73,7 @@ impl fmt::Display for Stats {
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
         if rs_enabled {
-            writeln!(f, "Version                                                 : {}", ver_to__usize(self.version))?;
+            writeln!(f, "Version                                                 : {}", ver_to_usize(self.version))?;
             writeln!(f, "Block size used in decoding                             : {}", block_size)?;
             writeln!(f, "Number of blocks processed                              : {}", self.units_so_far())?;
             writeln!(f, "Number of blocks successfully decoded (metadata only)   : {}", self.meta_blocks_decoded)?;
@@ -82,39 +85,39 @@ impl fmt::Display for Stats {
             match *recorded_hash {
                 None        => { writeln!(f, "Recorded hash : N/A")?; },
                 Some(ref h) => { writeln!(f, "Recorded hash : {} - {}",
-                                          hash_type_to_string(recorded_hash.0),
-                                          misc_utils::bytes_to_lower_hex_string(h.1))?; }
+                                          hash_type_to_string(h.0),
+                                          misc_utils::bytes_to_lower_hex_string(&h.1))?; }
             }
-            match (*recorded_hash, *computed_hash) {
-                (None,    None)        => {
+            match (recorded_hash, computed_hash) {
+                (&None,    &None)        => {
                     writeln!(f, "Hash of output file : N/A")?; },
-                (Some(_), None)        => {
+                (&Some(_), &None)        => {
                     writeln!(f, "Hash of output file : N/A - recorded hash type is not supported by rsbx")?; },
-                (_,       Some(ref h)) => {
+                (_,        &Some(ref h)) => {
                     writeln!(f, "Hash of output file : {} - {}",
-                             hash_type_to_string(computed_hash.0),
-                             misc_utils::bytes_to_lower_hex_string(h.1))?; }
+                             hash_type_to_string(h.0),
+                             misc_utils::bytes_to_lower_hex_string(&h.1))?; }
             }
-            match (*recorded_hash, *computed_hash) {
-                (Some(recorded_hash), Some(computed_hash)) => {
+            match (recorded_hash, computed_hash) {
+                (&Some(ref recorded_hash), &Some(ref computed_hash)) => {
                     if recorded_hash.1 == computed_hash.1 {
                         writeln!(f, "The output file hash matches the recorded hash")?;
                     } else {
                         writeln!(f, "The output file does NOT match the recorded hash")?;
                     }
                 },
-                (Some _,              None)                => {
+                (&Some(_),                 &None)                    => {
                     writeln!(f, "No hash is available for output file")?;
                 },
-                (None,                Some(_))             => {
+                (&None,                    &Some(_))                 => {
                     writeln!(f, "No recorded hash is available")?;
                 },
-                (None,                None)                => {
+                (&None,                    &None)                    => {
                     writeln!(f, "Neither recorded hash nor output file hash is available")?;
                 }
             }
         } else {
-            writeln!(f, "Version                                          : {}", ver_to__usize(self.version))?;
+            writeln!(f, "Version                                          : {}", ver_to_usize(self.version))?;
             writeln!(f, "Block size used in decoding                      : {}", block_size)?;
             writeln!(f, "Number of blocks processed                       : {}", self.units_so_far())?;
             writeln!(f, "Number of blocks successfully decoded (metadata) : {}", self.meta_blocks_decoded)?;
@@ -124,38 +127,40 @@ impl fmt::Display for Stats {
             match *recorded_hash {
                 None        => { writeln!(f, "Recorded hash : N/A")?; },
                 Some(ref h) => { writeln!(f, "Recorded hash : {} - {}",
-                                          hash_type_to_string(recorded_hash.0),
-                                          misc_utils::bytes_to_lower_hex_string(h.1))?; }
+                                          hash_type_to_string(h.0),
+                                          misc_utils::bytes_to_lower_hex_string(&h.1))?; }
             }
-            match (*recorded_hash, *computed_hash) {
-                (None,    None)        => {
+            match (recorded_hash, computed_hash) {
+                (&None,    &None)        => {
                     writeln!(f, "Hash of output file : N/A")?; },
-                (Some(_), None)        => {
+                (&Some(_), &None)        => {
                     writeln!(f, "Hash of output file : N/A - recorded hash type is not supported by rsbx")?; },
-                (_,       Some(ref h)) => {
+                (_,        &Some(ref h)) => {
                     writeln!(f, "Hash of output file : {} - {}",
-                             hash_type_to_string(computed_hash.0),
-                             misc_utils::bytes_to_lower_hex_string(h.1))?; }
+                             hash_type_to_string(h.0),
+                             misc_utils::bytes_to_lower_hex_string(&h.1))?; }
             }
-            match (*recorded_hash, *computed_hash) {
-                (Some(recorded_hash), Some(computed_hash)) => {
+            match (recorded_hash, computed_hash) {
+                (&Some(ref recorded_hash), &Some(ref computed_hash)) => {
                     if recorded_hash.1 == computed_hash.1 {
                         writeln!(f, "The output file hash matches the recorded hash")?;
                     } else {
                         writeln!(f, "The output file does NOT match the recorded hash")?;
                     }
                 },
-                (Some _,              None)                => {
+                (&Some(_),                 &None)                    => {
                     writeln!(f, "No hash is available for output file")?;
                 },
-                (None,                Some(_))             => {
+                (&None,                    &Some(_))                 => {
                     writeln!(f, "No recorded hash is available")?;
                 },
-                (None,                None)                => {
+                (&None,                    &None)                    => {
                     writeln!(f, "Neither recorded hash nor output file hash is available")?;
                 }
             }
         }
+
+        Ok(())
     }
 }
 
@@ -220,7 +225,7 @@ impl Stats {
             start_time              : 0.,
             end_time                : 0.,
             recorded_hash           : None,
-            calculated_hash         : None,
+            computed_hash           : None,
         }
     }
 }
@@ -535,7 +540,7 @@ pub fn decode_file(param : &Param)
 
     let mut stats = decode(param, ref_block_pos, &ref_block)?;
 
-    stats.calculated_hash = hash(param, &ref_block)?;
+    stats.computed_hash = hash(param, &ref_block)?;
 
     Ok(stats)
 }

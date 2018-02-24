@@ -3,6 +3,9 @@ use super::file_writer::FileWriter;
 use super::general_error::Error;
 use std::fmt;
 
+use std::sync::Arc;
+use std::sync::Mutex;
+
 const LOG_MAX_SIZE : usize = 1024;
 
 pub struct LogHandler<T : 'static + Log + Send> {
@@ -15,6 +18,7 @@ pub enum ErrorKind {
     ParseError,
 }
 
+#[derive(Clone)]
 pub struct LogError {
     kind : ErrorKind,
     path : String,
@@ -39,18 +43,18 @@ impl LogError {
 }
 
 pub trait Log {
-    fn serialise(&self) -> String;
+    fn serialize(&self) -> String;
 
-    fn deserialise(&mut self, &str) -> Result<(), ()>;
+    fn deserialize(&mut self, &[u8]) -> Result<(), ()>;
 
     fn read_from(&mut self, log_file : &str) -> Result<(), Error> {
-        let reader = FileReader::new(log_file)?;
+        let mut reader = FileReader::new(log_file)?;
         let mut buffer : [u8; LOG_MAX_SIZE] = [0; LOG_MAX_SIZE];
         let _len_read = reader.read(&mut buffer)?;
 
-        match self.deserialise(&buffer) {
-            Ok(())  => {},
-            Err(()) => Error::with_message("failed to parse log")
+        match self.deserialize(&buffer) {
+            Ok(())  => Ok(()),
+            Err(()) => Err(Error::with_message("failed to parse log")),
         }
     }
 }

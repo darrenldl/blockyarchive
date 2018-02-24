@@ -25,7 +25,10 @@ use super::sbx_specs::{ver_to_block_size,
                        ver_to_data_size,
                        ver_first_data_seq_num,
                        ver_supports_rs};
+use nom::digit;
+use std::num::ParseIntError;
 
+#[derive(Clone)]
 pub struct Stats {
     pub meta_or_par_blocks_processed : u64,
     pub data_or_par_blocks_processed : u64,
@@ -59,50 +62,65 @@ impl ProgressReport for Stats {
 }
 
 impl Log for Stats {
-    fn serialise(&self) -> String {
+    fn serialize(&self) -> String {
         let mut string = String::with_capacity(200);
-        string.push(&format!("bytes_processed={}\n",
-                             self.bytes_processed));
-        string.push(&format!("blocks_processed={}\n",
-                             self.meta_or_par_blocks_processed
-                             + self.data_or_par_blocks_processed));
-        string.push(&format!("meta_blocks_processed={}\n",
-                             self.meta_or_par_blocks_processed));
-        string.push(&format!("data_blocks_processed={}\n",
-                             self.data_or_par_blocks_processed));
+        string.push_str(&format!("bytes_processed={}\n",
+                                 self.bytes_processed));
+        string.push_str(&format!("blocks_processed={}\n",
+                                 self.meta_or_par_blocks_processed
+                                 + self.data_or_par_blocks_processed));
+        string.push_str(&format!("meta_blocks_processed={}\n",
+                                 self.meta_or_par_blocks_processed));
+        string.push_str(&format!("data_blocks_processed={}\n",
+                                 self.data_or_par_blocks_processed));
+
+        string
     }
 
-    use nom::digit;
-    use std::num::ParseIntError;
+    fn deserialize(&mut self, input : &[u8]) -> Result<(), ()> {
+        use nom::IResult;
 
-    fn deserialise(&mut self, string : &str) -> Result<(), ()> {
-        named!(stats_p Result<(u64, u64, u64, u64), ParseIntError>,
+        fn stats_p_helper(bytes  : &[u8],
+                          blocks : &[u8],
+                          meta   : &[u8],
+                          data   : &[u8])
+                          -> Result<(u64, u64, u64, u64), ParseIntError> {
+            use std::str::from_utf8;
+
+            let bytes  = from_utf8(bytes).unwrap();
+            let blocks = from_utf8(blocks).unwrap();
+            let meta   = from_utf8(meta).unwrap();
+            let data   = from_utf8(data).unwrap();
+
+            Ok((bytes.parse::<u64>()?,
+                blocks.parse::<u64>()?,
+                meta.parse::<u64>()?,
+                data.parse::<u64>()?))
+        }
+
+        named!(stats_p <Result<(u64, u64, u64, u64), ParseIntError>>,
                do_parse!(
-                   tag!("bytes_processed=") >>
-                       bytes_processed  : digit >>
-                       tag!("blocks_processed=") >>
-                       blocks_processed : digit >>
-                       tag!("meta_blocks_processed=") >>
-                       meta_or_par_blocks_processed : digit >>
-                       tag!("data_blocks_processed=") >>
-                       data_or_par_blocks_processed : digit >>
-                       (bytes_processed.parse::<u64>()?,
-                        blocks_processed.parse::<u64>()?,
-                        meta_or_par_blocks_processed.parse::<u64>()?,
-                        data_or_par_blocks_processed.parse::<u64>()?)
+                   _id1 : tag!("bytes_processed=") >>
+                       bytes  : digit >>
+                       _id2   : tag!("blocks_processed=") >>
+                       blocks : digit >>
+                       _id3   : tag!("meta_blocks_processed=") >>
+                       meta   : digit >>
+                       _id4   : tag!("data_blocks_processed=") >>
+                       data   : digit >>
+                       (stats_p_helper(bytes, blocks, meta, data))
                )
         );
 
-        match stats_p(string) {
-            IResult::Done(_, Ok(bytes, blocks, meta, data)) => {
+        match stats_p(input) {
+            IResult::Done(_, Ok((bytes, blocks, meta, data))) => {
                 self.bytes_processed              = bytes;
-                self.blocks_processed             = blocks;
                 self.meta_or_par_blocks_processed = meta;
                 self.data_or_par_blocks_processed = data;
                 Ok(())
             },
-            IResult::Done(_, Err(ParseIntError))            => Err(()),
-            _                                               => Err(())
+            IResult::Done(_, Err(_))                          => Err(()),
+            _                                                 => Err(())
         }
     }
 }
@@ -131,10 +149,10 @@ impl Param {
                silence_level : SilenceLevel) -> Param {
         Param {
             in_file  : String::from(in_file),
-            out_dir  : String::from(out_file),
+            out_dir  : String::from(out_dir),
             log_file : match log_file {
                 None    => None,
-                Some(x) => String::From(x),
+                Some(x) => Some(String::from(x)),
             },
             from_pos,
             to_pos,

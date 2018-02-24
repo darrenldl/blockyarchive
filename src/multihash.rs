@@ -14,6 +14,8 @@ pub enum HashType {
 pub type HashBytes = (HashType, Box<[u8]>);
 
 pub fn hash_type_to_string(hash_type : HashType) -> String {
+    use self::HashType::*;
+
     match hash_type {
         SHA1                  => String::from("SHA1"),
         SHA2_256     | SHA256 => String::from("SHA256"),
@@ -29,7 +31,7 @@ pub fn hash_type_to_string(hash_type : HashType) -> String {
 pub fn string_to_hash_type(string : &str) -> Result<HashType, ()> {
     let string = string.to_lowercase();
 
-    use HashType::*;
+    use self::HashType::*;
 
     if      string == "sha1"                               { Ok(SHA1)         }
     else if string == "sha2-256"     || string == "sha256" { Ok(SHA256)       }
