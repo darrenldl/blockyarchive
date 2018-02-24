@@ -165,7 +165,7 @@ mod parsers {
         ) => {
             named!($name <Metadata>,
                    do_parse!(
-                       _id : tag!($id) >>
+                       tag!($id) >>
                            n : be_u8 >>
                            res : take!(n) >>
                            ($constructor(misc_utils::slice_to_vec(res)

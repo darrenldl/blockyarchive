@@ -11,7 +11,7 @@ impl FileError {
     pub fn new(kind : ErrorKind, path : &str) -> FileError {
         FileError {
             kind,
-            path : String::from(path)
+            path : String::from(path),
         }
     }
 }

@@ -13,6 +13,35 @@ pub enum HashType {
 
 pub type HashBytes = (HashType, Box<[u8]>);
 
+pub fn hash_type_to_string(hash_type : HashType) -> String {
+    match hash_type {
+        SHA1                  => String::from("SHA1"),
+        SHA2_256     | SHA256 => String::from("SHA256"),
+        SHA2_512_256          => String::from("SHA2-512-256"),
+        SHA2_512_512 | SHA512 => String::from("SHA512"),
+        BLAKE2B_256           => String::from("BLAKE2B-256"),
+        BLAKE2B_512           => String::from("BLAKE2B-512"),
+        BLAKE2S_128           => String::from("BLAKE2S-128"),
+        BLAKE2S_256           => String::from("BLAKE2S-256"),
+    }
+}
+
+pub fn string_to_hash_type(string : &str) -> Result<HashType, ()> {
+    let string = string.to_lowercase();
+
+    use HashType::*;
+
+    if      string == "sha1"                               { Ok(SHA1)         }
+    else if string == "sha2-256"     || string == "sha256" { Ok(SHA256)       }
+    else if string == "sha2-512-256"                       { Ok(SHA2_512_256) }
+    else if string == "sha2-512-512" || string == "sha512" { Ok(SHA512)       }
+    else if string == "blake2b-256"                        { Ok(BLAKE2B_256)  }
+    else if string == "blake2b-512"                        { Ok(BLAKE2B_512)  }
+    else if string == "blake2s-128"                        { Ok(BLAKE2S_128)  }
+    else if string == "blake2s-256"                        { Ok(BLAKE2S_256)  }
+    else                                                   { Err(())          }
+}
+
 pub fn hash_bytes_to_bytes(hash_bytes : &HashBytes, buffer : &mut [u8]) {
     let param        = specs::Param::new(hash_bytes.0);
     let digest_bytes = &hash_bytes.1;

@@ -59,6 +59,8 @@ mod integer_utils;
 mod sbx_block;
 mod sbx_specs;
 
+mod log;
+
 mod rs_codec;
 
 mod encode_core;

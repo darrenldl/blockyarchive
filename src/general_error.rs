@@ -1,11 +1,13 @@
 use super::file_error;
 use super::rs_codec;
+use super::log;
 use std::fmt;
 
 #[derive(Clone)]
 pub enum ErrorKind {
     RSError(rs_codec::RSError),
     FileError(file_error::FileError),
+    LogError(log::LogError),
     MessageOnly(String)
 }
 
@@ -34,6 +36,7 @@ impl fmt::Display for Error {
         match self.kind {
             RSError(ref e)     => writeln!(f, "FEC codec error : {}", e),
             FileError(ref e)   => writeln!(f, "File error : {}", e),
+            LogError(ref e)    => writeln!(f, "Log error : {}", e),
             MessageOnly(ref e) => writeln!(f, "Error : {}", e),
         }
     }
