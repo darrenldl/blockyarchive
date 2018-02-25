@@ -175,7 +175,12 @@ impl Log for Stats {
 
 impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "")
+        writeln!(f, "Number of bytes processed             : {}", self.bytes_processed)?;
+        writeln!(f, "Number of blocks processed            : {}",
+                 self.meta_or_par_blocks_processed
+                 + self.data_or_par_blocks_processed)?;
+        writeln!(f, "Number of blocks processed (metadata) : {}", self.meta_or_par_blocks_processed)?;
+        writeln!(f, "Number of blocks processed (data)     : {}", self.data_or_par_blocks_processed)
     }
 }
 
