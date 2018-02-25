@@ -1,6 +1,9 @@
 use std::cell::Cell;
 use std::sync::mpsc::{channel, sync_channel, Sender, SyncSender, Receiver};
 
+use super::sbx_specs::{SBX_SCAN_BLOCK_SIZE};
+use super::integer_utils::IntegerUtils;
+
 #[derive(Debug, PartialEq)]
 pub enum Error {
     InvalidHexString,
@@ -102,4 +105,38 @@ pub fn ignore<T1, T2>(_ : Result<T1, T2>) {}
 pub fn f64_max (v1 : f64, v2 : f64) -> f64 {
     if v1 < v2 { v2 }
     else       { v1 }
+}
+
+pub struct RequiredLenAndSeekTo {
+    pub required_len : u64,
+    pub seek_to      : u64,
+}
+
+pub fn calc_required_len_and_seek_to_from_byte_range
+    (from_byte         : Option<u64>,
+     to_byte           : Option<u64>,
+     force_misalign    : bool,
+     bytes_so_far      : u64,
+     last_possible_pos : u64) -> RequiredLenAndSeekTo
+{
+    let multiple_of = SBX_SCAN_BLOCK_SIZE as u64;
+    let align = |x : u64| -> u64 {
+        if force_misalign { x }
+        else              { u64::round_down_to_multiple(x,
+                                                        multiple_of) }
+    };
+    let from_byte = match from_byte {
+        None    => 0,
+        Some(n) => align(u64::ensure_at_most(n,
+                                             last_possible_pos))
+    };
+    let to_byte = match to_byte {
+        None    => last_possible_pos,
+        Some(n) => u64::ensure_at_most(u64::ensure_at_least(n,
+                                                            from_byte),
+                                       last_possible_pos)
+    };
+    // bytes_so_far only affects seek_to
+    RequiredLenAndSeekTo { required_len : to_byte - from_byte + 1,
+                           seek_to      : align(from_byte + bytes_so_far) }
 }
