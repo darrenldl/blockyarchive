@@ -93,7 +93,7 @@ impl Stats {
         };
         match param.log_file {
             None        => {},
-            Some(ref x) => stats.read_from(x)?,
+            Some(ref x) => stats.read_from_file(x)?,
         }
         Ok(stats)
     }

@@ -52,7 +52,7 @@ pub trait Log {
 
     fn deserialize(&mut self, &[u8]) -> Result<(), ()>;
 
-    fn read_from(&mut self, log_file : &str) -> Result<(), Error> {
+    fn read_from_file(&mut self, log_file : &str) -> Result<(), Error> {
         let mut reader = FileReader::new(log_file)?;
         let mut buffer : [u8; LOG_MAX_SIZE] = [0; LOG_MAX_SIZE];
         let _len_read = reader.read(&mut buffer)?;
@@ -63,12 +63,30 @@ pub trait Log {
         }
     }
 
-    fn write_to(&self, log_file : &str) -> Result<(), Error> {
+    fn write_to_file(&self, log_file : &str) -> Result<(), Error> {
         let mut writer = FileWriter::new(log_file)?;
         let output = self.serialize();
 
         let _len_written = writer.write(output.as_bytes())?;
 
         Ok(())
+    }
+}
+
+impl<T : 'static + Log + Send> LogHandler<T> {
+    pub fn new(log_file : &str,
+               stats    : &Arc<Mutex<T>>) -> LogHandler<T> {
+        LogHandler {
+            log_file : log_file.to_string(),
+            stats    : Arc::clone(stats),
+        }
+    }
+
+    pub fn read_from_file(&self) -> Result<(), Error> {
+        self.stats.lock().unwrap().read_from_file(&self.log_file)
+    }
+
+    pub fn write_to_file(&self) -> Result<(), Error> {
+        self.stats.lock().unwrap().write_to_file(&self.log_file)
     }
 }
