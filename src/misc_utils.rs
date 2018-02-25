@@ -159,9 +159,13 @@ pub fn make_path (path_parts : &[String]) -> String {
         }
     }
 
-    let mut string = String::with_capacity(100);
-    for path in path_parts.iter() {
-        string.push_str(strip_slash(path));
+    let mut string = String::with_capacity(200);
+    let len = path_parts.len();
+    for i in 0..len {
+        string.push_str(strip_slash(&path_parts[i]));
+        if i != len - 1 {
+            string.push('/');
+        }
     }
     string
 }
