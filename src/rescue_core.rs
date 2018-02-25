@@ -194,7 +194,7 @@ impl fmt::Display for Stats {
 pub fn rescue_from_file(param : &Param)
                         -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
-    let mut stats = Arc::new(Mutex::new(Stats::new(param, &metadata)?));
+    let stats = Arc::new(Mutex::new(Stats::new(param, &metadata)?));
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,
@@ -271,7 +271,9 @@ pub fn rescue_from_file(param : &Param)
                                          FileWriterParam { read     : false,
                                                            append   : true,
                                                            buffered : false  })?;
-        writer.append(sbx_block::slice_buf(block.get_version(), &buffer))?;
+        writer.write(sbx_block::slice_buf(block.get_version(), &buffer))?;
+
+
     }
 
     reporter.stop();

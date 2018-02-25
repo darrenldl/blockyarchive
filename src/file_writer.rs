@@ -68,12 +68,6 @@ impl FileWriter {
         }
     }
 
-    pub fn append(&mut self, buf : &[u8]) -> Result<usize, Error> {
-        self.seek(SeekFrom::End(0))?;
-
-        self.write(buf)
-    }
-
     pub fn seek(&mut self, pos : SeekFrom)
                 -> Result<u64, Error> {
         match file_op!(self seek => pos) {
