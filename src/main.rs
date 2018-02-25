@@ -79,11 +79,11 @@ use file_writer::FileWriter;
 
 mod worker;
 
-const rsbx_ver_str : &str = "1.0";
+const RSBX_VER_STR : &str = "1.0";
 
 fn main () {
     let matches = App::new("rsbx")
-        .version(rsbx_ver_str)
+        .version(RSBX_VER_STR)
         .author("Darren Ldl <darrenldldev@gmail.com>")
         .about("Rust implementation of SeqBox")
         .subcommand(SubCommand::with_name("encode")
