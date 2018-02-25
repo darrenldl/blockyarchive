@@ -7,6 +7,12 @@ pub const SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM : usize =
 
 pub const SBX_SCAN_BLOCK_SIZE               : usize = 128;
 
+pub const SBX_FILE_UID_LEN : usize = common_params::FILE_UID_LEN;
+
+pub const SBX_SIGNATURE    : &[u8] = common_params::SIGNATURE;
+
+pub const SBX_HEADER_SIZE  : usize = common_params::HEADER_SIZE;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Version {
     V1,
@@ -67,12 +73,6 @@ mod params_for_v13 {
     pub const BLOCK_SIZE : usize = params_for_v3::BLOCK_SIZE;
     pub const DATA_SIZE  : usize = params_for_v3::DATA_SIZE;
 }
-
-pub const SBX_FILE_UID_LEN : usize = common_params::FILE_UID_LEN;
-
-pub const SBX_SIGNATURE    : &[u8] = common_params::SIGNATURE;
-
-pub const SBX_HEADER_SIZE  : usize = common_params::HEADER_SIZE;
 
 pub fn ver_to_usize (version : Version) -> usize {
     use self::Version::*;
