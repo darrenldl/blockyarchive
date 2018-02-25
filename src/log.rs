@@ -3,14 +3,27 @@ use super::file_writer::FileWriter;
 use super::Error;
 use std::fmt;
 
+use std::time::Duration;
+
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
+use std::thread::JoinHandle;
+use super::time_utils;
+
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use std::thread;
+
 const LOG_MAX_SIZE : usize = 1024;
 
+const LOG_WRITE_INTERVAL_IN_MILLISEC : u64 = 1000;
+
 pub struct LogHandler<T : 'static + Log + Send> {
-    log_file : String,
-    stats    : Arc<Mutex<T>>,
+    log_file   : String,
+    stats      : Arc<Mutex<T>>,
+    runner     : JoinHandle<()>,
+    write_flag : Arc<AtomicBool>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -76,9 +89,20 @@ pub trait Log {
 impl<T : 'static + Log + Send> LogHandler<T> {
     pub fn new(log_file : &str,
                stats    : &Arc<Mutex<T>>) -> LogHandler<T> {
+        let write_flag = Arc::new(AtomicBool::new(true));
+        let runner_write_flag = Arc::clone(&write_flag);
+        let runner = thread::spawn(move || {
+            loop {
+                runner_write_flag.store(true, Ordering::Relaxed);
+
+                thread::sleep(Duration::from_millis(LOG_WRITE_INTERVAL_IN_MILLISEC));
+            }
+        });
         LogHandler {
             log_file : log_file.to_string(),
             stats    : Arc::clone(stats),
+            runner,
+            write_flag,
         }
     }
 
@@ -86,7 +110,13 @@ impl<T : 'static + Log + Send> LogHandler<T> {
         self.stats.lock().unwrap().read_from_file(&self.log_file)
     }
 
-    pub fn write_to_file(&self) -> Result<(), Error> {
-        self.stats.lock().unwrap().write_to_file(&self.log_file)
+    pub fn write_to_file(&mut self, force_write : bool) -> Result<(), Error> {
+        if force_write || self.write_flag.load(Ordering::Relaxed) {
+            self.write_flag.store(false, Ordering::Relaxed);
+
+            self.stats.lock().unwrap().write_to_file(&self.log_file)?;
+        }
+
+        Ok(())
     }
 }
