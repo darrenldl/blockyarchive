@@ -48,9 +48,15 @@ impl FileWriter {
 
     pub fn write(&mut self, buf : &[u8]) -> Result<usize, Error> {
         match file_op!(self write => buf) {
-            Ok(len_wrote) => Ok(len_wrote),
-            Err(e)        => Err(to_err(FileError::new(e.kind(), &self.path)))
+            Ok(len_written) => Ok(len_written),
+            Err(e)          => Err(to_err(FileError::new(e.kind(), &self.path)))
         }
+    }
+
+    pub fn append(&mut self, buf : &[u8]) -> Result<usize, Error> {
+        self.seek(SeekFrom::End(0))?;
+
+        self.write(buf)
     }
 
     pub fn seek(&mut self, pos : SeekFrom)
