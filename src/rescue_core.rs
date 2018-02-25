@@ -81,19 +81,21 @@ pub struct Stats {
 
 impl Stats {
     pub fn new(param         : &Param,
-               file_metadata : &fs::Metadata) -> Stats {
-        let from_pos = match param.from_pos {
-            None    => 0,
-            Some(x) => x,
-        };
-        Stats {
+               file_metadata : &fs::Metadata)
+               -> Result<Stats, Error> {
+        let mut stats = Stats {
             meta_or_par_blocks_processed : 0,
             data_or_par_blocks_processed : 0,
-            bytes_processed              : u64::round_down_to_multiple(from_pos, SBX_SCAN_BLOCK_SIZE as u64),
+            bytes_processed              : 0,
             total_bytes                  : file_metadata.len(),
             start_time                   : 0.,
             end_time                     : 0.,
+        };
+        match param.log_file {
+            None        => {},
+            Some(ref x) => stats.read_from(x)?,
         }
+        Ok(stats)
     }
 }
 
@@ -160,8 +162,7 @@ impl Log for Stats {
 
         match stats_p(input) {
             IResult::Done(_, Ok((bytes, _, meta, data))) => {
-                self.bytes_processed              =
-                    u64::round_down_to_multiple(bytes, SBX_SCAN_BLOCK_SIZE as u64);
+                self.bytes_processed              = bytes;
                 self.meta_or_par_blocks_processed = meta;
                 self.data_or_par_blocks_processed = data;
                 Ok(())
@@ -181,7 +182,7 @@ impl fmt::Display for Stats {
 pub fn rescue_from_file(param : &Param)
                         -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
-    let mut stats = Arc::new(Mutex::new(Stats::new(param, &metadata)));
+    let mut stats = Arc::new(Mutex::new(Stats::new(param, &metadata)?));
 
     let stats = stats.lock().unwrap().clone();
 

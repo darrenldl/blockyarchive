@@ -1,6 +1,6 @@
 use super::file_reader::FileReader;
 use super::file_writer::FileWriter;
-use super::general_error::Error;
+use super::Error;
 use std::fmt;
 
 use std::sync::Arc;
@@ -42,6 +42,11 @@ impl LogError {
     }
 }
 
+pub fn to_err(e : LogError) -> super::Error {
+    use super::{Error, ErrorKind};
+    Error::new(ErrorKind::LogError(e))
+}
+
 pub trait Log {
     fn serialize(&self) -> String;
 
@@ -54,7 +59,16 @@ pub trait Log {
 
         match self.deserialize(&buffer) {
             Ok(())  => Ok(()),
-            Err(()) => Err(Error::with_message("failed to parse log")),
+            Err(()) => Err(to_err(LogError::new(ErrorKind::ParseError, log_file))),
         }
+    }
+
+    fn write_to(&self, log_file : &str) -> Result<(), Error> {
+        let mut writer = FileWriter::new(log_file)?;
+        let output = self.serialize();
+
+        let _len_written = writer.write(output.as_bytes())?;
+
+        Ok(())
     }
 }
