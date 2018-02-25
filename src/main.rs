@@ -204,4 +204,18 @@ This only affects progress text printing."))
         Ok(s)  => print!("{}", s),
         Err(e) => print!("{}", e)
     }*/
+    use rescue_core::Param;
+    let param = Param::new("test.sbx",
+                           "abcd/",
+                           None,
+                           None,
+                           None,
+                           false,
+                           None,
+                           None,
+                           progress_report::SilenceLevel::L0);
+    match rescue_core::rescue_from_file(&param) {
+        Ok(s)  => print!("{}", s),
+        Err(e) => print!("{}", e),
+    }
 }

@@ -4,6 +4,8 @@ use std::fmt;
 use super::file_utils;
 use std::io::SeekFrom;
 
+use super::misc_utils;
+
 use super::progress_report::*;
 use super::log::*;
 
@@ -38,7 +40,7 @@ pub struct Param {
     to_pos          : Option<u64>,
     force_misalign  : bool,
     only_pick_block : Option<BlockType>,
-    only_pick_uid   : [u8; SBX_FILE_UID_LEN],
+    only_pick_uid   : Option<[u8; SBX_FILE_UID_LEN]>,
     silence_level   : SilenceLevel,
 }
 
@@ -50,7 +52,7 @@ impl Param {
                to_pos          : Option<u64>,
                force_misalign  : bool,
                only_pick_block : Option<BlockType>,
-               only_pick_uid   : &[u8; SBX_FILE_UID_LEN],
+               only_pick_uid   : Option<&[u8; SBX_FILE_UID_LEN]>,
                silence_level   : SilenceLevel) -> Param {
         Param {
             in_file  : String::from(in_file),
@@ -63,7 +65,10 @@ impl Param {
             to_pos,
             force_misalign,
             only_pick_block,
-            only_pick_uid : only_pick_uid.clone(),
+            only_pick_uid : match only_pick_uid {
+                None    => None,
+                Some(x) => Some(x.clone())
+            },
             silence_level,
         }
     }
@@ -200,10 +205,69 @@ pub fn rescue_from_file(param : &Param)
                                          "bytes",
                                          param.silence_level);
 
+    let mut block = Block::dummy();
+
+    let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
+        [0; SBX_LARGEST_BLOCK_SIZE];
+
+    let mut path_buf : [String; 2] = [param.out_dir.clone(), String::from("")];
+
+    reporter.start();
+
     loop {
-        // scan at 128 chunk size
-        break;
+        { // scan at 128 chunk size
+            let len_read = reader.read(&mut buffer[0..SBX_SCAN_BLOCK_SIZE])?;
+
+            stats.lock().unwrap().bytes_processed += len_read as u64;
+
+            if len_read < SBX_SCAN_BLOCK_SIZE {
+                break;
+            }
+
+            match block.sync_from_buffer_header_only(&buffer[0..SBX_SCAN_BLOCK_SIZE]) {
+                Ok(()) => {},
+                Err(_) => { continue; }
+            }
+        }
+
+        { // get remaining bytes of block if necessary
+            let block_size = ver_to_block_size(block.get_version());
+
+            let remaining_size = block_size - SBX_SCAN_BLOCK_SIZE;
+
+            let len_read = reader.read(&mut buffer[SBX_SCAN_BLOCK_SIZE..block_size])?;
+
+            stats.lock().unwrap().bytes_processed += len_read as u64;
+
+            if len_read < remaining_size {
+                break;
+            }
+
+            match block.sync_from_buffer(&buffer[0..block_size]) {
+                Ok(()) => {},
+                Err(_) => { continue; }
+            }
+        }
+
+        // update stats
+        match block.block_type() {
+            BlockType::Meta => {
+                stats.lock().unwrap().meta_or_par_blocks_processed += 1;
+            },
+            BlockType::Data => {
+                stats.lock().unwrap().data_or_par_blocks_processed += 1;
+            }
+        }
+
+        // write block out
+        let uid_str = misc_utils::bytes_to_upper_hex_string(&block.get_file_uid());
+        path_buf[1] = uid_str;
+        let path    = misc_utils::make_path(&path_buf);
+        let mut writer = FileWriter::new(&path, false)?;
+        writer.append(sbx_block::slice_buf(block.get_version(), &buffer))?;
     }
+
+    reporter.stop();
 
     let stats = stats.lock().unwrap().clone();
 
