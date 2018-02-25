@@ -117,7 +117,7 @@ impl<T : 'static + Log + Send> LogHandler<T> {
         self.stats.lock().unwrap().read_from_file(&self.log_file)
     }
 
-    pub fn write_to_file(&mut self, force_write : bool) -> Result<(), Error> {
+    pub fn write_to_file(&self, force_write : bool) -> Result<(), Error> {
         if force_write || self.write_flag.load(Ordering::Relaxed) {
             self.write_flag.store(false, Ordering::Relaxed);
 

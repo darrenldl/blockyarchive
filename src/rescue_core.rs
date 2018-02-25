@@ -273,10 +273,17 @@ pub fn rescue_from_file(param : &Param)
                                                            buffered : false  })?;
         writer.write(sbx_block::slice_buf(block.get_version(), &buffer))?;
 
-
+        // update log file
+        if let Some(ref lg) = log_handler {
+            lg.write_to_file(false)?;
+        }
     }
 
     reporter.stop();
+
+    if let Some(ref lg) = log_handler {
+        lg.write_to_file(true)?;
+    }
 
     let stats = stats.lock().unwrap().clone();
 
