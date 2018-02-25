@@ -21,6 +21,7 @@ use super::sbx_specs::Version;
 use super::sbx_block::{Block, BlockType};
 use super::sbx_block;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
+use super::sbx_specs::SBX_FILE_UID_LEN;
 use super::sbx_specs::{ver_to_block_size,
                        ver_to_data_size,
                        ver_first_data_seq_num,
@@ -28,6 +29,45 @@ use super::sbx_specs::{ver_to_block_size,
 use nom::digit;
 use std::num::ParseIntError;
 use super::integer_utils::IntegerUtils;
+
+pub struct Param {
+    in_file         : String,
+    out_dir         : String,
+    log_file        : Option<String>,
+    from_pos        : Option<u64>,
+    to_pos          : Option<u64>,
+    force_misalign  : bool,
+    only_pick_block : Option<BlockType>,
+    only_pick_uid   : [u8; SBX_FILE_UID_LEN],
+    silence_level   : SilenceLevel,
+}
+
+impl Param {
+    pub fn new(in_file         : &str,
+               out_dir         : &str,
+               log_file        : Option<&str>,
+               from_pos        : Option<u64>,
+               to_pos          : Option<u64>,
+               force_misalign  : bool,
+               only_pick_block : Option<BlockType>,
+               only_pick_uid   : &[u8; SBX_FILE_UID_LEN],
+               silence_level   : SilenceLevel) -> Param {
+        Param {
+            in_file  : String::from(in_file),
+            out_dir  : String::from(out_dir),
+            log_file : match log_file {
+                None    => None,
+                Some(x) => Some(String::from(x)),
+            },
+            from_pos,
+            to_pos,
+            force_misalign,
+            only_pick_block,
+            only_pick_uid : only_pick_uid.clone(),
+            silence_level,
+        }
+    }
+}
 
 #[derive(Clone)]
 pub struct Stats {
@@ -40,16 +80,16 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(file_metadata : &fs::Metadata,
-               skip_to       : Option<u64>) -> Stats {
-        let skip_to = match skip_to {
+    pub fn new(param         : &Param,
+               file_metadata : &fs::Metadata) -> Stats {
+        let from_pos = match param.from_pos {
             None    => 0,
             Some(x) => x,
         };
         Stats {
             meta_or_par_blocks_processed : 0,
             data_or_par_blocks_processed : 0,
-            bytes_processed              : u64::round_down_to_multiple(skip_to, SBX_SCAN_BLOCK_SIZE as u64),
+            bytes_processed              : u64::round_down_to_multiple(from_pos, SBX_SCAN_BLOCK_SIZE as u64),
             total_bytes                  : file_metadata.len(),
             start_time                   : 0.,
             end_time                     : 0.,
@@ -120,7 +160,8 @@ impl Log for Stats {
 
         match stats_p(input) {
             IResult::Done(_, Ok((bytes, _, meta, data))) => {
-                self.bytes_processed              = u64::round_down_to_multiple(bytes, SBX_SCAN_BLOCK_SIZE as u64);
+                self.bytes_processed              =
+                    u64::round_down_to_multiple(bytes, SBX_SCAN_BLOCK_SIZE as u64);
                 self.meta_or_par_blocks_processed = meta;
                 self.data_or_par_blocks_processed = data;
                 Ok(())
@@ -137,40 +178,10 @@ impl fmt::Display for Stats {
     }
 }
 
-pub struct Param {
-    in_file  : String,
-    out_dir  : String,
-    log_file : Option<String>,
-    from_pos : Option<u64>,
-    to_pos   : Option<u64>,
-    silence_level : SilenceLevel,
-}
-
-impl Param {
-    pub fn new(in_file  : &str,
-               out_dir  : &str,
-               log_file : Option<&str>,
-               from_pos : Option<u64>,
-               to_pos   : Option<u64>,
-               silence_level : SilenceLevel) -> Param {
-        Param {
-            in_file  : String::from(in_file),
-            out_dir  : String::from(out_dir),
-            log_file : match log_file {
-                None    => None,
-                Some(x) => Some(String::from(x)),
-            },
-            from_pos,
-            to_pos,
-            silence_level,
-        }
-    }
-}
-
 pub fn rescue_from_file(param : &Param)
                         -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
-    let mut stats = Arc::new(Mutex::new(Stats::new(&metadata, None)));
+    let mut stats = Arc::new(Mutex::new(Stats::new(param, &metadata)));
 
     let stats = stats.lock().unwrap().clone();
 
