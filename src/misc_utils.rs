@@ -140,3 +140,28 @@ pub fn calc_required_len_and_seek_to_from_byte_range
     RequiredLenAndSeekTo { required_len : to_byte - from_byte + 1,
                            seek_to      : align(from_byte + bytes_so_far) }
 }
+
+pub fn make_path (path_parts : &[String]) -> String {
+    fn strip_slash(string : &str) -> &str {
+        let str_len = string.len();
+        match str_len {
+            0 => string,
+            1 => { if &string[0..1] == "/" { ""     }
+                   else                    { string } },
+            _ => { let char_last     = &string[str_len - 1..];
+                   let char_2nd_last = &string[str_len - 2..];
+                   if char_last == "/" && char_2nd_last != "\\" {
+                       &string[0..str_len - 1]
+                   } else {
+                       string
+                   }
+            }
+        }
+    }
+
+    let mut string = String::with_capacity(100);
+    for path in path_parts.iter() {
+        string.push_str(strip_slash(path));
+    }
+    string
+}
