@@ -1,9 +1,9 @@
-use std::io::ErrorKind;
+pub use std::io::ErrorKind;
 use std::fmt;
 
 #[derive(Clone)]
 pub struct FileError {
-    kind : ErrorKind,
+    pub kind : ErrorKind,
     path : String,
 }
 

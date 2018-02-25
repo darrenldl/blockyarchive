@@ -98,10 +98,6 @@ impl Stats {
             start_time                   : 0.,
             end_time                     : 0.,
         };
-        match param.log_file {
-            None        => {},
-            Some(ref x) => stats.read_from_file(x)?,
-        }
         Ok(stats)
     }
 }
@@ -114,6 +110,48 @@ impl ProgressReport for Stats {
     fn units_so_far(&self)       -> u64      { self.bytes_processed }
 
     fn total_units(&self)        -> u64      { self.total_bytes }
+}
+
+mod parsers {
+    use nom::IResult;
+    use nom::digit;
+    use std::num::ParseIntError;
+
+    type StatsParseResult = Result<(u64, u64, u64, u64), ParseIntError>;
+
+    pub fn parse_digits(bytes  : &[u8],
+                        blocks : &[u8],
+                        meta   : &[u8],
+                        data   : &[u8])
+                        -> StatsParseResult {
+        use std::str::from_utf8;
+
+        let bytes  = from_utf8(bytes).unwrap();
+        let blocks = from_utf8(blocks).unwrap();
+        let meta   = from_utf8(meta).unwrap();
+        let data   = from_utf8(data).unwrap();
+
+        println!("test3");
+
+        Ok((bytes.parse::<u64>()?,
+            blocks.parse::<u64>()?,
+            meta.parse::<u64>()?,
+            data.parse::<u64>()?))
+    }
+
+    named!(pub stats_p <(&[u8], &[u8], &[u8], &[u8])>,
+           do_parse!(
+               _id1 : tag!(b"bytes=") >>
+                   bytes  : digit >>
+                   _id2   : tag!(b"blocks=") >>
+                   blocks : digit >>
+                   _id3   : tag!(b"meta=") >>
+                   meta   : digit >>
+                   _id4   : tag!(b"data=") >>
+                   data   : digit >>
+                   ((bytes, blocks, meta, data))
+           )
+    );
 }
 
 impl Log for Stats {
@@ -135,47 +173,21 @@ impl Log for Stats {
     fn deserialize(&mut self, input : &[u8]) -> Result<(), ()> {
         use nom::IResult;
 
-        fn stats_p_helper(bytes  : &[u8],
-                          blocks : &[u8],
-                          meta   : &[u8],
-                          data   : &[u8])
-                          -> Result<(u64, u64, u64, u64), ParseIntError> {
-            use std::str::from_utf8;
-
-            let bytes  = from_utf8(bytes).unwrap();
-            let blocks = from_utf8(blocks).unwrap();
-            let meta   = from_utf8(meta).unwrap();
-            let data   = from_utf8(data).unwrap();
-
-            Ok((bytes.parse::<u64>()?,
-                blocks.parse::<u64>()?,
-                meta.parse::<u64>()?,
-                data.parse::<u64>()?))
-        }
-
-        named!(stats_p <Result<(u64, u64, u64, u64), ParseIntError>>,
-               do_parse!(
-                   _id1 : tag!("bytes_processed=") >>
-                       bytes  : digit >>
-                       _id2   : tag!("blocks_processed=") >>
-                       blocks : digit >>
-                       _id3   : tag!("meta_blocks_processed=") >>
-                       meta   : digit >>
-                       _id4   : tag!("data_blocks_processed=") >>
-                       data   : digit >>
-                       (stats_p_helper(bytes, blocks, meta, data))
-               )
-        );
-
-        match stats_p(input) {
-            IResult::Done(_, Ok((bytes, _, meta, data))) => {
-                self.bytes_processed              = bytes;
-                self.meta_or_par_blocks_processed = meta;
-                self.data_or_par_blocks_processed = data;
+        match parsers::stats_p(b"bytes0blocks=1meta=2data=3") {
+            IResult::Done(_, (bytes, blocks, meta, data)) => {
+                println!("parsed");
+                /*match parsers::parse_digits(bytes, blocks, meta, data) {
+                    Ok((bytes, _, meta, data)) => {
+                        self.bytes_processed              = bytes;
+                        self.meta_or_par_blocks_processed = meta;
+                        self.data_or_par_blocks_processed = data;
+                        Ok(())
+                    },
+                    Err(_) => Err(()),
+                }*/
                 Ok(())
             },
-            IResult::Done(_, Err(_))                     => Err(()),
-            _                                            => Err(())
+            _                                             => Err(())
         }
     }
 }
@@ -215,6 +227,13 @@ pub fn rescue_from_file(param : &Param)
         [0; SBX_LARGEST_BLOCK_SIZE];
 
     let mut path_buf : [String; 2] = [param.out_dir.clone(), String::from("")];
+
+    // read from log file if it exists
+    if let Some(ref lg) = log_handler {
+        lg.read_from_file()?;
+    }
+
+    println!("bytes processed : {}", stats.lock().unwrap().bytes_processed);
 
     reporter.start();
 

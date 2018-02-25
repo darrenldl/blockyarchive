@@ -13,7 +13,7 @@ pub enum ErrorKind {
 
 #[derive(Clone)]
 pub struct Error {
-    kind : ErrorKind
+    pub kind : ErrorKind
 }
 
 impl Error {

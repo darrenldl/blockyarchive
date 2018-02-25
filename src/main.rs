@@ -205,7 +205,7 @@ This only affects progress text printing."))
     use rescue_core::Param;
     let param = Param::new("test.sbx",
                            "abcd/",
-                           None,
+                           Some("rescue_log"),
                            None,
                            None,
                            false,

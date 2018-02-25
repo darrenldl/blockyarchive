@@ -74,6 +74,9 @@ pub trait Log {
         let mut buffer : [u8; LOG_MAX_SIZE] = [0; LOG_MAX_SIZE];
         let _len_read = reader.read(&mut buffer)?;
 
+        println!("test1");
+        println!("len_read : {}", _len_read);
+
         match self.deserialize(&buffer) {
             Ok(())  => Ok(()),
             Err(()) => Err(to_err(LogError::new(ErrorKind::ParseError, log_file))),
@@ -114,7 +117,18 @@ impl<T : 'static + Log + Send> LogHandler<T> {
     }
 
     pub fn read_from_file(&self) -> Result<(), Error> {
-        self.stats.lock().unwrap().read_from_file(&self.log_file)
+        use super::{Error, ErrorKind};
+        use super::file_error;
+        let res = self.stats.lock().unwrap().read_from_file(&self.log_file);
+
+        if let Err(ref e) = res {
+            if let ErrorKind::FileError(ref fe) = e.kind {
+                if let file_error::ErrorKind::NotFound = fe.kind {
+                    return Ok(());
+                }
+            }
+        }
+        res
     }
 
     pub fn write_to_file(&self, force_write : bool) -> Result<(), Error> {
