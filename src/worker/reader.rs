@@ -28,7 +28,7 @@ pub fn make_reader(block_size    : usize,
 
     let counter       = Arc::clone(counter);
     let shutdown_flag = Arc::clone(shutdown_flag);
-    let reader_res    = FileReader::new(in_file);
+    let reader_res    = FileReader::new(in_file, true);
 
     Ok(thread::spawn(move || {
         let mut reader = match reader_res {

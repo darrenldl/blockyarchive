@@ -7,7 +7,7 @@ use super::sbx_specs::ver_to_block_size;
 use super::file_reader::FileReader;
 
 pub fn get_file_metadata(file : &str) -> Result<fs::Metadata, Error> {
-    let reader = FileReader::new(file)?;
+    let reader = FileReader::new(file, false)?;
     reader.metadata()
 }
 

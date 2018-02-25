@@ -10,19 +10,50 @@ use std::fs::Metadata;
 
 const READ_RETRIES : usize = 5;
 
+macro_rules! file_op {
+    (
+        $self:ident $op:ident => $input:expr
+    ) => {{
+        use self::FileHandle::*;
+        match $self.file {
+            Buffered(ref mut f)   => f.$op($input),
+            Unbuffered(ref mut f) => f.$op($input),
+        }
+    }};
+    (
+        $self:ident get_metadata
+    ) => {{
+        use self::FileHandle::*;
+        match $self.file {
+            Buffered(ref f)   => f.get_ref().metadata(),
+            Unbuffered(ref f) => f.metadata(),
+        }
+    }}
+}
+
+enum FileHandle {
+    Buffered(BufReader<File>),
+    Unbuffered(File),
+}
+
 pub struct FileReader {
-    file : BufReader<File>,
+    file : FileHandle,
     path : String,
 }
 
 impl FileReader {
-    pub fn new(path : &str) -> Result<FileReader, Error> {
+    pub fn new(path : &str, buffered : bool) -> Result<FileReader, Error> {
         let file = match File::open(path) {
             Ok(f)  => f,
             Err(e) => { return Err(to_err(FileError::new(e.kind(), path))); }
         };
         Ok (FileReader {
-            file : BufReader::new(file),
+            file :
+            if buffered {
+                FileHandle::Buffered(BufReader::new(file))
+            } else {
+                FileHandle::Unbuffered(file)
+            },
             path : String::from(path)
         })
     }
@@ -31,7 +62,7 @@ impl FileReader {
         let mut len_read = 0;
         let mut tries    = 0;
         while len_read < buf.len() && tries < READ_RETRIES {
-            match self.file.read(&mut buf[len_read..]) {
+            match file_op!(self read => &mut buf[len_read..]) {
                 Ok(len) => { len_read += len; },
                 Err(e)  => { return Err(to_err(FileError::new(e.kind(), &self.path))); }
             }
@@ -44,21 +75,21 @@ impl FileReader {
 
     pub fn seek(&mut self, pos : SeekFrom)
                 -> Result<u64, Error> {
-        match self.file.seek(pos) {
+        match file_op!(self seek => pos) {
             Ok(pos) => Ok(pos),
             Err(e)  => Err(to_err(FileError::new(e.kind(), &self.path)))
         }
     }
 
     pub fn cur_pos(&mut self) -> Result<u64, Error> {
-        match self.file.seek(SeekFrom::Current(0)) {
+        match file_op!(self seek => SeekFrom::Current(0)) {
             Ok(pos) => Ok(pos),
             Err(e)  => Err(to_err(FileError::new(e.kind(), &self.path)))
         }
     }
 
     pub fn metadata(&self) -> Result<Metadata, Error> {
-        match self.file.get_ref().metadata() {
+        match file_op!(self get_metadata) {
             Ok(data) => Ok(data),
             Err(e)   => Err(to_err(FileError::new(e.kind(), &self.path)))
         }

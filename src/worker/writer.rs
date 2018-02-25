@@ -31,7 +31,7 @@ pub fn make_writer(read_start    : Option<usize>,
 
     let counter       = Arc::clone(counter);
     let shutdown_flag = Arc::clone(shutdown_flag);
-    let writer_res    = FileWriter::new(out_file);
+    let writer_res    = FileWriter::new(out_file, true);
 
     Ok(thread::spawn(move || {
         let mut writer = match writer_res {

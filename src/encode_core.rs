@@ -249,8 +249,8 @@ pub fn encode_file(param : &Param)
                                          param.silence_level);
 
     // setup file reader and writer
-    let mut reader = FileReader::new(&param.in_file)?;
-    let mut writer = FileWriter::new(&param.out_file)?;
+    let mut reader = FileReader::new(&param.in_file, true)?;
+    let mut writer = FileWriter::new(&param.out_file, true)?;
 
     // set up hash state
     let mut hash_ctx =

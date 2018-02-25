@@ -268,7 +268,7 @@ fn get_ref_block(param : &Param)
     let stats = Arc::new(Mutex::new(ScanStats::new(&metadata)));
 
     let reporter = ProgressReporter::new(&stats,
-                                         "Scan progress",
+                                         "Reference block scanning progress",
                                          "bytes",
                                          param.silence_level);
 
@@ -280,7 +280,7 @@ fn get_ref_block(param : &Param)
     let mut meta_block = None;
     let mut data_block = None;
 
-    let mut reader = FileReader::new(&param.in_file)?;
+    let mut reader = FileReader::new(&param.in_file, true)?;
 
     reporter.start();
 
@@ -357,8 +357,8 @@ pub fn decode(param         : &Param,
               -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
-    let mut reader = FileReader::new(&param.in_file)?;
-    let mut writer = FileWriter::new(&param.out_file)?;
+    let mut reader = FileReader::new(&param.in_file, true)?;
+    let mut writer = FileWriter::new(&param.out_file, true)?;
 
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
 
@@ -494,14 +494,14 @@ fn hash(param     : &Param,
             }
         };
 
-    let mut reader = FileReader::new(&param.out_file)?;
+    let mut reader = FileReader::new(&param.out_file, true)?;
 
     let metadata = reader.metadata()?;
 
     let stats = Arc::new(Mutex::new(HashStats::new(&metadata)));
 
     let reporter = ProgressReporter::new(&stats,
-                                         "Hash progress",
+                                         "Output file hashing progress",
                                          "bytes",
                                          param.silence_level);
 

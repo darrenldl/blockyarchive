@@ -189,6 +189,22 @@ pub fn rescue_from_file(param : &Param)
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let mut stats = Arc::new(Mutex::new(Stats::new(param, &metadata)?));
 
+    let mut reader = FileReader::new(&param.in_file, true)?;
+
+    let log_handler = match param.log_file {
+        None        => None,
+        Some(ref f) => Some(LogHandler::new(f, &stats)),
+    };
+    let reporter = ProgressReporter::new(&stats,
+                                         "Data rescue progress",
+                                         "bytes",
+                                         param.silence_level);
+
+    loop {
+        // scan at 128 chunk size
+        break;
+    }
+
     let stats = stats.lock().unwrap().clone();
 
     Ok(stats)
