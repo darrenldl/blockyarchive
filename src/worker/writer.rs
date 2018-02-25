@@ -1,5 +1,6 @@
 use super::super::Error;
-use super::super::FileWriter;
+use super::super::file_writer::FileWriter;
+use super::super::file_writer::FileWriterParam;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
@@ -31,7 +32,10 @@ pub fn make_writer(read_start    : Option<usize>,
 
     let counter       = Arc::clone(counter);
     let shutdown_flag = Arc::clone(shutdown_flag);
-    let writer_res    = FileWriter::new(out_file, true);
+    let writer_res    = FileWriter::new(out_file,
+                                        FileWriterParam { read     : false,
+                                                          append   : false,
+                                                          buffered : true   });
 
     Ok(thread::spawn(move || {
         let mut writer = match writer_res {

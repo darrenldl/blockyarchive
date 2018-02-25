@@ -8,7 +8,9 @@ use std::io::SeekFrom;
 use super::progress_report::*;
 
 use super::file_reader::FileReader;
+use super::file_reader::FileReaderParam;
 use super::file_writer::FileWriter;
+use super::file_writer::FileWriterParam;
 
 use super::sbx_specs::SBX_SCAN_BLOCK_SIZE;
 
@@ -280,7 +282,9 @@ fn get_ref_block(param : &Param)
     let mut meta_block = None;
     let mut data_block = None;
 
-    let mut reader = FileReader::new(&param.in_file, true)?;
+    let mut reader = FileReader::new(&param.in_file,
+                                     FileReaderParam { write    : false,
+                                                       buffered : true   })?;
 
     reporter.start();
 
@@ -357,8 +361,13 @@ pub fn decode(param         : &Param,
               -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
-    let mut reader = FileReader::new(&param.in_file, true)?;
-    let mut writer = FileWriter::new(&param.out_file, true)?;
+    let mut reader = FileReader::new(&param.in_file,
+                                     FileReaderParam { write    : false,
+                                                       buffered : true   })?;
+    let mut writer = FileWriter::new(&param.out_file,
+                                     FileWriterParam { read     : false,
+                                                       append   : false,
+                                                       buffered : true   })?;
 
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
 
@@ -494,7 +503,9 @@ fn hash(param     : &Param,
             }
         };
 
-    let mut reader = FileReader::new(&param.out_file, true)?;
+    let mut reader = FileReader::new(&param.out_file,
+                                     FileReaderParam { write    : false,
+                                                       buffered : true   })?;
 
     let metadata = reader.metadata()?;
 

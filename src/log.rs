@@ -1,5 +1,7 @@
 use super::file_reader::FileReader;
+use super::file_reader::FileReaderParam;
 use super::file_writer::FileWriter;
+use super::file_writer::FileWriterParam;
 use super::Error;
 use std::fmt;
 
@@ -66,7 +68,9 @@ pub trait Log {
     fn deserialize(&mut self, &[u8]) -> Result<(), ()>;
 
     fn read_from_file(&mut self, log_file : &str) -> Result<(), Error> {
-        let mut reader = FileReader::new(log_file, false)?;
+        let mut reader = FileReader::new(log_file,
+                                         FileReaderParam { write    : false,
+                                                           buffered : false  })?;
         let mut buffer : [u8; LOG_MAX_SIZE] = [0; LOG_MAX_SIZE];
         let _len_read = reader.read(&mut buffer)?;
 
@@ -77,7 +81,10 @@ pub trait Log {
     }
 
     fn write_to_file(&self, log_file : &str) -> Result<(), Error> {
-        let mut writer = FileWriter::new(log_file, false)?;
+        let mut writer = FileWriter::new(log_file,
+                                         FileWriterParam { read     : false,
+                                                           append   : false,
+                                                           buffered : false  })?;
         let output = self.serialize();
 
         let _len_written = writer.write(output.as_bytes())?;

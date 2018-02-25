@@ -73,9 +73,7 @@ mod sort_core;
 mod progress_report;
 
 mod file_reader;
-use file_reader::FileReader;
 mod file_writer;
-use file_writer::FileWriter;
 
 mod worker;
 

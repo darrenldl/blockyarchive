@@ -6,6 +6,7 @@ use std::io::BufWriter;
 use std::io::SeekFrom;
 use std::fs::File;
 use std::io::Seek;
+use std::fs::OpenOptions;
 
 macro_rules! file_op {
     (
@@ -19,6 +20,12 @@ macro_rules! file_op {
     }}
 }
 
+pub struct FileWriterParam {
+    pub read     : bool,
+    pub append   : bool,
+    pub buffered : bool,
+}
+
 enum FileHandle {
     Buffered(BufWriter<File>),
     Unbuffered(File),
@@ -30,14 +37,22 @@ pub struct FileWriter {
 }
 
 impl FileWriter {
-    pub fn new(path : &str, buffered : bool) -> Result<FileWriter, Error> {
-        let file = match File::create(&path) {
+    pub fn new(path  : &str,
+               param : FileWriterParam) -> Result<FileWriter, Error> {
+        let file =
+            OpenOptions::new()
+            .append(param.append)
+            .read(param.read)
+            .write(true)
+            .create(true)
+            .open(&path);
+        let file = match file {
             Ok(f) => f,
             Err(e) => { return Err(to_err(FileError::new(e.kind(), path))); }
         };
         Ok (FileWriter {
             file :
-            if buffered {
+            if param.buffered {
                 FileHandle::Buffered(BufWriter::new(file))
             } else {
                 FileHandle::Unbuffered(file)

@@ -10,7 +10,9 @@ use super::progress_report::*;
 use super::log::*;
 
 use super::file_reader::FileReader;
+use super::file_reader::FileReaderParam;
 use super::file_writer::FileWriter;
+use super::file_writer::FileWriterParam;
 
 use super::sbx_specs::SBX_SCAN_BLOCK_SIZE;
 
@@ -194,7 +196,9 @@ pub fn rescue_from_file(param : &Param)
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let mut stats = Arc::new(Mutex::new(Stats::new(param, &metadata)?));
 
-    let mut reader = FileReader::new(&param.in_file, true)?;
+    let mut reader = FileReader::new(&param.in_file,
+                                     FileReaderParam { write    : false,
+                                                       buffered : true   })?;
 
     let log_handler = match param.log_file {
         None        => None,
@@ -263,7 +267,10 @@ pub fn rescue_from_file(param : &Param)
         let uid_str = misc_utils::bytes_to_upper_hex_string(&block.get_file_uid());
         path_buf[1] = uid_str;
         let path    = misc_utils::make_path(&path_buf);
-        let mut writer = FileWriter::new(&path, false)?;
+        let mut writer = FileWriter::new(&path,
+                                         FileWriterParam { read     : false,
+                                                           append   : true,
+                                                           buffered : false  })?;
         writer.append(sbx_block::slice_buf(block.get_version(), &buffer))?;
     }
 

@@ -1,5 +1,6 @@
 use super::super::Error;
-use super::super::FileReader;
+use super::super::file_reader::FileReader;
+use super::super::file_reader::FileReaderParam;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
@@ -28,7 +29,9 @@ pub fn make_reader(block_size    : usize,
 
     let counter       = Arc::clone(counter);
     let shutdown_flag = Arc::clone(shutdown_flag);
-    let reader_res    = FileReader::new(in_file, true);
+    let reader_res    = FileReader::new(in_file,
+                                        FileReaderParam { write    : false,
+                                                          buffered : true   });
 
     Ok(thread::spawn(move || {
         let mut reader = match reader_res {

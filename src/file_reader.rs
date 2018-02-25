@@ -7,6 +7,7 @@ use std::io::SeekFrom;
 use std::fs::File;
 use std::io::Seek;
 use std::fs::Metadata;
+use std::fs::OpenOptions;
 
 const READ_RETRIES : usize = 5;
 
@@ -31,6 +32,11 @@ macro_rules! file_op {
     }}
 }
 
+pub struct FileReaderParam {
+    pub write    : bool,
+    pub buffered : bool,
+}
+
 enum FileHandle {
     Buffered(BufReader<File>),
     Unbuffered(File),
@@ -42,14 +48,20 @@ pub struct FileReader {
 }
 
 impl FileReader {
-    pub fn new(path : &str, buffered : bool) -> Result<FileReader, Error> {
-        let file = match File::open(path) {
+    pub fn new(path  : &str,
+               param : FileReaderParam) -> Result<FileReader, Error> {
+        let file =
+            OpenOptions::new()
+            .write(param.write)
+            .read(true)
+            .open(&path);
+        let file = match file {
             Ok(f)  => f,
             Err(e) => { return Err(to_err(FileError::new(e.kind(), path))); }
         };
         Ok (FileReader {
             file :
-            if buffered {
+            if param.buffered {
                 FileHandle::Buffered(BufReader::new(file))
             } else {
                 FileHandle::Unbuffered(file)

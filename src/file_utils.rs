@@ -5,9 +5,12 @@ use super::sbx_specs::ver_to_data_size;
 use super::sbx_specs::ver_to_block_size;
 
 use super::file_reader::FileReader;
+use super::file_reader::FileReaderParam;
 
 pub fn get_file_metadata(file : &str) -> Result<fs::Metadata, Error> {
-    let reader = FileReader::new(file, false)?;
+    let reader = FileReader::new(file,
+                                 FileReaderParam { write    : false,
+                                                   buffered : false  })?;
     reader.metadata()
 }
 
