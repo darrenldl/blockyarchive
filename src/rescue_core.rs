@@ -230,13 +230,14 @@ pub fn rescue_from_file(param : &Param)
     // read from log file if it exists
     log_handler.read_from_file()?;
 
-    let ctrlc_handler_log_handler = Arc::clone(&log_handler);
+    { // setup Ctrl-C handler
+        let ctrlc_handler_log_handler = Arc::clone(&log_handler);
 
-    ctrlc::set_handler(move || {
-        match ctrlc_handler_log_handler.write_to_file(true) {
-            _ => {},
-        }
-    }).expect("Failed to set Ctrl-C handler");
+        ctrlc::set_handler(move || {
+            match ctrlc_handler_log_handler.write_to_file(true) {
+                _ => {},
+            }
+        }).expect("Failed to set Ctrl-C handler"); }
 
     // calulate length to read and position to seek to
     let RequiredLenAndSeekTo { required_len, seek_to } =
