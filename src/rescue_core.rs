@@ -89,10 +89,9 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(param         : &Param,
-               file_metadata : &fs::Metadata)
+    pub fn new(file_metadata : &fs::Metadata)
                -> Result<Stats, Error> {
-        let mut stats = Stats {
+        let stats = Stats {
             meta_or_par_blocks_processed : 0,
             data_or_par_blocks_processed : 0,
             bytes_processed              : 0,
@@ -204,7 +203,7 @@ impl fmt::Display for Stats {
 pub fn rescue_from_file(param : &Param)
                         -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
-    let stats = Arc::new(Mutex::new(Stats::new(param, &metadata)?));
+    let stats = Arc::new(Mutex::new(Stats::new(&metadata)?));
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,
@@ -237,7 +236,7 @@ pub fn rescue_from_file(param : &Param)
         match ctrlc_handler_log_handler.write_to_file(true) {
             _ => {},
         }
-    }).unwrap();
+    }).expect("Failed to set Ctrl-C handler");
 
     // calulate length to read and position to seek to
     let RequiredLenAndSeekTo { required_len, seek_to } =

@@ -107,7 +107,6 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
         let active_flag             = Arc::new(AtomicBool::new(true));
         let runner_stats            = Arc::clone(&stats);
         let runner_start_barrier    = Arc::clone(&start_barrier);
-        let runner_start_flag       = Arc::clone(&start_flag);
         let runner_shutdown_flag    = Arc::clone(&shutdown_flag);
         let runner_shutdown_barrier = Arc::clone(&shutdown_barrier);
         let runner_active_flag      = Arc::clone(&active_flag);
