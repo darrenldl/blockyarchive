@@ -230,6 +230,7 @@ pub fn rescue_from_file(param : &Param)
     // read from log file if it exists
     log_handler.read_from_file()?;
 
+    // calulate length to read and position to seek to
     let RequiredLenAndSeekTo { required_len, seek_to } =
         misc_utils::calc_required_len_and_seek_to_from_byte_range(param.from_pos,
                                                                   param.to_pos,
@@ -237,6 +238,7 @@ pub fn rescue_from_file(param : &Param)
                                                                   stats.lock().unwrap().bytes_processed,
                                                                   metadata.len());
 
+    // seek to calculated position
     reader.seek(SeekFrom::Start(seek_to))?;
 
     loop {
