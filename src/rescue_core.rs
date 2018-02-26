@@ -140,10 +140,14 @@ mod parsers {
 
     named!(pub stats_p <StatsParseResult>,
            do_parse!(
-               _id : tag!(b"bytes_processed=") >> bytes  : digit >> _n : newline >>
-                   _id : tag!(b"blocks=")      >> blocks : digit >> _n : newline >>
-                   _id : tag!(b"meta=")        >> meta   : digit >> _n : newline >>
-                   _id : tag!(b"data=")        >> data   : digit >> _n : newline >>
+               _id : tag!(b"bytes_processed=") >>
+                   bytes  : digit >> _n : newline >>
+                   _id : tag!(b"blocks_processed=") >>
+                   blocks : digit >> _n : newline >>
+                   _id : tag!(b"meta_blocks_processed=") >>
+                   meta   : digit >> _n : newline >>
+                   _id : tag!(b"data_blocks_processed=") >>
+                   data   : digit >> _n : newline >>
                    (parse_digits(bytes, blocks, meta, data))
            )
     );
@@ -167,10 +171,11 @@ impl Log for Stats {
 
     fn deserialize(&mut self, input : &[u8]) -> Result<(), ()> {
         use nom::IResult;
+        use std::cmp::min;
 
-        match parsers::stats_p(b"bytes0blocks=1meta=2data=3") {
+        match parsers::stats_p(input) {
             IResult::Done(_, Ok((bytes, _, meta, data))) => {
-                self.bytes_processed              = bytes;
+                self.bytes_processed              = min(self.total_bytes, bytes);
                 self.meta_or_par_blocks_processed = meta;
                 self.data_or_par_blocks_processed = data;
                 Ok(())
@@ -222,6 +227,9 @@ pub fn rescue_from_file(param : &Param)
     if let Some(ref lg) = log_handler {
         lg.read_from_file()?;
     }
+
+    // seek to position according to stats
+    reader.seek(SeekFrom::Start(stats.lock().unwrap().bytes_processed))?;
 
     loop {
         { // scan at 128 chunk size

@@ -319,7 +319,6 @@ fn make_message (context      : &Context,
         }
     }
 
-
     let units_remaining        = total_units - units_so_far;
     let percent                = helper::calc_percent(units_so_far, total_units);
     let cur_time               = time_utils::get_time_now();
