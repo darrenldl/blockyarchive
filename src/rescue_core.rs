@@ -4,6 +4,8 @@ use std::fmt;
 use super::file_utils;
 use std::io::SeekFrom;
 use super::ctrlc;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 
 use super::misc_utils;
 use super::misc_utils::RequiredLenAndSeekTo;
@@ -218,6 +220,8 @@ pub fn rescue_from_file(param : &Param)
                                                   "bytes",
                                                   param.silence_level));
 
+    let loop_stop_flag = Arc::new(AtomicBool::new(false));
+
     let mut block = Block::dummy();
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
@@ -231,14 +235,11 @@ pub fn rescue_from_file(param : &Param)
     log_handler.read_from_file()?;
 
     { // setup Ctrl-C handler
-        let log_handler = Arc::clone(&log_handler);
-        let reporter    = Arc::clone(&reporter);
+        let loop_stop_flag = Arc::clone(&loop_stop_flag);
 
         ctrlc::set_handler(move || {
-            match log_handler.write_to_file(true) {
-                _ => {},
-            }
-            reporter.stop();
+            println!("Interrupted");
+            loop_stop_flag.store(true, Ordering::Relaxed);
         }).expect("Failed to set Ctrl-C handler"); }
 
     // calulate length to read and position to seek to
@@ -253,6 +254,10 @@ pub fn rescue_from_file(param : &Param)
     reader.seek(SeekFrom::Start(seek_to))?;
 
     loop {
+        if loop_stop_flag.load(Ordering::Relaxed) {
+            break;
+        }
+
         if stats.lock().unwrap().bytes_processed > required_len {
             break;
         }
