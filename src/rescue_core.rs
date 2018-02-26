@@ -5,6 +5,7 @@ use super::file_utils;
 use std::io::SeekFrom;
 
 use super::misc_utils;
+use super::misc_utils::RequiredLenAndSeekTo;
 
 use super::progress_report::*;
 use super::log::*;
@@ -175,7 +176,10 @@ impl Log for Stats {
 
         match parsers::stats_p(input) {
             IResult::Done(_, Ok((bytes, _, meta, data))) => {
-                self.bytes_processed              = min(self.total_bytes, bytes);
+                self.bytes_processed              =
+                    u64::round_down_to_multiple(
+                        u64::ensure_at_most(self.total_bytes, bytes),
+                        SBX_SCAN_BLOCK_SIZE as u64);
                 self.meta_or_par_blocks_processed = meta;
                 self.data_or_par_blocks_processed = data;
                 Ok(())
@@ -226,10 +230,20 @@ pub fn rescue_from_file(param : &Param)
     // read from log file if it exists
     log_handler.read_from_file()?;
 
-    // seek to position according to stats
-    reader.seek(SeekFrom::Start(stats.lock().unwrap().bytes_processed))?;
+    let RequiredLenAndSeekTo { required_len, seek_to } =
+        misc_utils::calc_required_len_and_seek_to_from_byte_range(param.from_pos,
+                                                                  param.to_pos,
+                                                                  false,
+                                                                  stats.lock().unwrap().bytes_processed,
+                                                                  metadata.len());
+
+    reader.seek(SeekFrom::Start(seek_to))?;
 
     loop {
+        if stats.lock().unwrap().bytes_processed > required_len {
+            break;
+        }
+
         { // scan at 128 chunk size
             let len_read = reader.read(&mut buffer[0..SBX_SCAN_BLOCK_SIZE])?;
 
