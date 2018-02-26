@@ -3,6 +3,7 @@ use std::fs;
 use std::fmt;
 use super::file_utils;
 use std::io::SeekFrom;
+use super::ctrlc;
 
 use super::misc_utils;
 use super::misc_utils::RequiredLenAndSeekTo;
@@ -209,10 +210,10 @@ pub fn rescue_from_file(param : &Param)
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
 
-    let log_handler = match param.log_file {
+    let log_handler = Arc::new(match param.log_file {
         None        => LogHandler::new(None,    &stats),
         Some(ref f) => LogHandler::new(Some(f), &stats),
-    };
+    });
     let reporter = ProgressReporter::new(&stats,
                                          "Data rescue progress",
                                          "bytes",
@@ -229,6 +230,14 @@ pub fn rescue_from_file(param : &Param)
 
     // read from log file if it exists
     log_handler.read_from_file()?;
+
+    let ctrlc_handler_log_handler = Arc::clone(&log_handler);
+
+    ctrlc::set_handler(move || {
+        match ctrlc_handler_log_handler.write_to_file(true) {
+            _ => {},
+        }
+    }).unwrap();
 
     // calulate length to read and position to seek to
     let RequiredLenAndSeekTo { required_len, seek_to } =
