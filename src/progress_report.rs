@@ -281,21 +281,21 @@ pub fn string_to_silence_level(string : &str) -> Result<SilenceLevel, ()> {
     else                  { Err(()) }
 }
 
-fn make_message (context      : &Context,
-                 start_time   : f64,
-                 end_time     : f64,
-                 units_so_far : u64,
-                 total_units  : u64,
-                 elements     : &[ProgressElement])
-                 -> String {
-    fn make_string_for_element (percent      : usize,
-                                cur_rate     : f64,
-                                avg_rate     : f64,
-                                unit         : String,
-                                time_used    : f64,
-                                time_left    : f64,
-                                element      : &ProgressElement)
-                                -> String {
+fn make_message(context      : &Context,
+                start_time   : f64,
+                end_time     : f64,
+                units_so_far : u64,
+                total_units  : u64,
+                elements     : &[ProgressElement])
+                -> String {
+    fn make_string_for_element(percent      : usize,
+                               cur_rate     : f64,
+                               avg_rate     : f64,
+                               unit         : String,
+                               time_used    : f64,
+                               time_left    : f64,
+                               element      : &ProgressElement)
+                               -> String {
         use self::ProgressElement::*;
         match *element {
             Percentage       => format!("{:3}%", percent),
