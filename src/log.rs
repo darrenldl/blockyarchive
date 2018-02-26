@@ -43,7 +43,7 @@ impl fmt::Display for LogError {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorKind::*;
         match self.kind {
-            ParseError => writeln!(f, "failed to parse log file \"{}\"", self.path),
+            ParseError => write!(f, "failed to parse log file \"{}\"", self.path),
         }
     }
 }
@@ -73,9 +73,6 @@ pub trait Log {
                                                            buffered : false  })?;
         let mut buffer : [u8; LOG_MAX_SIZE] = [0; LOG_MAX_SIZE];
         let _len_read = reader.read(&mut buffer)?;
-
-        println!("test1");
-        println!("len_read : {}", _len_read);
 
         match self.deserialize(&buffer) {
             Ok(())  => Ok(()),
