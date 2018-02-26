@@ -146,8 +146,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
     }
 
     pub fn start(&self) {
-        if !self.start_flag.load(Ordering::Relaxed) {
-            self.start_flag.store(true, Ordering::Relaxed);
+        if !self.start_flag.swap(true, Ordering::Relaxed) {
 
             self.stats.lock().unwrap().set_start_time();
 
@@ -174,9 +173,8 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
 
     pub fn stop(&self) {
         if self.start_flag.load(Ordering::Relaxed)
-            && !self.shutdown_flag.load(Ordering::Relaxed) {
-            self.shutdown_flag.store(true, Ordering::Relaxed);
-
+            && !self.shutdown_flag.swap(true, Ordering::Relaxed)
+        {
             self.stats.lock().unwrap().set_end_time();
 
             self.shutdown_barrier.wait();
