@@ -115,6 +115,7 @@ impl ProgressReport for Stats {
 mod parsers {
     use nom::IResult;
     use nom::digit;
+    use nom::newline;
     use std::num::ParseIntError;
 
     type StatsParseResult = Result<(u64, u64, u64, u64), ParseIntError>;
@@ -137,17 +138,13 @@ mod parsers {
             data.parse::<u64>()?))
     }
 
-    named!(pub stats_p <(&[u8], &[u8], &[u8], &[u8])>,
+    named!(pub stats_p <StatsParseResult>,
            do_parse!(
-               _id1 : tag!(b"bytes=") >>
-                   bytes  : digit >>
-                   _id2   : tag!(b"blocks=") >>
-                   blocks : digit >>
-                   _id3   : tag!(b"meta=") >>
-                   meta   : digit >>
-                   _id4   : tag!(b"data=") >>
-                   data   : digit >>
-                   ((bytes, blocks, meta, data))
+               _id : tag!(b"bytes_processed=") >> bytes  : digit >> _n : newline >>
+                   _id : tag!(b"blocks=")      >> blocks : digit >> _n : newline >>
+                   _id : tag!(b"meta=")        >> meta   : digit >> _n : newline >>
+                   _id : tag!(b"data=")        >> data   : digit >> _n : newline >>
+                   (parse_digits(bytes, blocks, meta, data))
            )
     );
 }
@@ -172,16 +169,11 @@ impl Log for Stats {
         use nom::IResult;
 
         match parsers::stats_p(b"bytes0blocks=1meta=2data=3") {
-            IResult::Done(_, (bytes, blocks, meta, data)) => {
-                match parsers::parse_digits(bytes, blocks, meta, data) {
-                    Ok((bytes, _, meta, data)) => {
-                        self.bytes_processed              = bytes;
-                        self.meta_or_par_blocks_processed = meta;
-                        self.data_or_par_blocks_processed = data;
-                        Ok(())
-                    },
-                    Err(_) => Err(()),
-                }
+            IResult::Done(_, Ok((bytes, _, meta, data))) => {
+                self.bytes_processed              = bytes;
+                self.meta_or_par_blocks_processed = meta;
+                self.data_or_par_blocks_processed = data;
+                Ok(())
             },
             _                                             => Err(())
         }
