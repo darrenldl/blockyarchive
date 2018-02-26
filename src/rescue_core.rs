@@ -213,10 +213,10 @@ pub fn rescue_from_file(param : &Param)
         None        => LogHandler::new(None,    &stats),
         Some(ref f) => LogHandler::new(Some(f), &stats),
     });
-    let reporter = ProgressReporter::new(&stats,
-                                         "Data rescue progress",
-                                         "bytes",
-                                         param.silence_level);
+    let reporter = Arc::new(ProgressReporter::new(&stats,
+                                                  "Data rescue progress",
+                                                  "bytes",
+                                                  param.silence_level));
 
     let mut block = Block::dummy();
 
@@ -231,12 +231,14 @@ pub fn rescue_from_file(param : &Param)
     log_handler.read_from_file()?;
 
     { // setup Ctrl-C handler
-        let ctrlc_handler_log_handler = Arc::clone(&log_handler);
+        let log_handler = Arc::clone(&log_handler);
+        let reporter    = Arc::clone(&reporter);
 
         ctrlc::set_handler(move || {
-            match ctrlc_handler_log_handler.write_to_file(true) {
+            match log_handler.write_to_file(true) {
                 _ => {},
             }
+            reporter.stop();
         }).expect("Failed to set Ctrl-C handler"); }
 
     // calulate length to read and position to seek to
