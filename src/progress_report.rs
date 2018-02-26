@@ -74,6 +74,7 @@ impl Context {
 
 pub struct ProgressReporter<T : 'static + ProgressReport + Send> {
     start_barrier    : Arc<Barrier>,
+    start_flag       : Arc<AtomicBool>,
     shutdown_flag    : Arc<AtomicBool>,
     shutdown_barrier : Arc<Barrier>,
     runner           : JoinHandle<()>,
@@ -100,11 +101,13 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
                                                 vec![TimeUsedLong,
                                                      AverageRateLong]);
         let start_barrier           = Arc::new(Barrier::new(2));
+        let start_flag              = Arc::new(AtomicBool::new(false));
         let shutdown_flag           = Arc::new(AtomicBool::new(false));
         let shutdown_barrier        = Arc::new(Barrier::new(2));
         let active_flag             = Arc::new(AtomicBool::new(true));
         let runner_stats            = Arc::clone(&stats);
         let runner_start_barrier    = Arc::clone(&start_barrier);
+        let runner_start_flag       = Arc::clone(&start_flag);
         let runner_shutdown_flag    = Arc::clone(&shutdown_flag);
         let runner_shutdown_barrier = Arc::clone(&shutdown_barrier);
         let runner_active_flag      = Arc::clone(&active_flag);
@@ -133,6 +136,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
         });
         ProgressReporter {
             start_barrier,
+            start_flag,
             shutdown_flag,
             shutdown_barrier,
             runner,
@@ -142,9 +146,13 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
     }
 
     pub fn start(&self) {
-        self.stats.lock().unwrap().set_start_time();
+        if !self.start_flag.load(Ordering::Relaxed) {
+            self.start_flag.store(true, Ordering::Relaxed);
 
-        self.start_barrier.wait();
+            self.stats.lock().unwrap().set_start_time();
+
+            self.start_barrier.wait();
+        }
     }
 
     pub fn pause(&self) {
@@ -165,7 +173,8 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
     }
 
     pub fn stop(&self) {
-        if !self.shutdown_flag.load(Ordering::Relaxed) {
+        if self.start_flag.load(Ordering::Relaxed)
+            && !self.shutdown_flag.load(Ordering::Relaxed) {
             self.shutdown_flag.store(true, Ordering::Relaxed);
 
             self.stats.lock().unwrap().set_end_time();
