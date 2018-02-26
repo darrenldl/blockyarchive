@@ -139,9 +139,7 @@ impl<T : 'static + Log + Send> LogHandler<T> {
     }
 
     pub fn write_to_file(&self, force_write : bool) -> Result<(), Error> {
-        if force_write || self.write_flag.load(Ordering::Relaxed) {
-            self.write_flag.store(false, Ordering::Relaxed);
-
+        if force_write || self.write_flag.swap(false, Ordering::SeqCst) {
             match self.log_file {
                 None        => {},
                 Some(ref x) => self.stats.lock().unwrap().write_to_file(x)?,
