@@ -22,7 +22,7 @@ const LOG_MAX_SIZE : usize = 1024;
 const LOG_WRITE_INTERVAL_IN_MILLISEC : u64 = 1000;
 
 pub struct LogHandler<T : 'static + Log + Send> {
-    log_file   : String,
+    log_file   : Option<String>,
     stats      : Arc<Mutex<T>>,
     runner     : JoinHandle<()>,
     write_flag : Arc<AtomicBool>,
@@ -94,8 +94,12 @@ pub trait Log {
 }
 
 impl<T : 'static + Log + Send> LogHandler<T> {
-    pub fn new(log_file : &str,
+    pub fn new(log_file : Option<&str>,
                stats    : &Arc<Mutex<T>>) -> LogHandler<T> {
+        let log_file = match log_file {
+            None         => None,
+            Some(ref lg) => Some(lg.to_string()),
+        };
         let write_flag = Arc::new(AtomicBool::new(true));
         let runner_write_flag = Arc::clone(&write_flag);
         let runner = thread::spawn(move || {
@@ -106,7 +110,7 @@ impl<T : 'static + Log + Send> LogHandler<T> {
             }
         });
         LogHandler {
-            log_file : log_file.to_string(),
+            log_file,
             stats    : Arc::clone(stats),
             runner,
             write_flag,
@@ -116,23 +120,32 @@ impl<T : 'static + Log + Send> LogHandler<T> {
     pub fn read_from_file(&self) -> Result<(), Error> {
         use super::{Error, ErrorKind};
         use super::file_error;
-        let res = self.stats.lock().unwrap().read_from_file(&self.log_file);
 
-        if let Err(ref e) = res {
-            if let ErrorKind::FileError(ref fe) = e.kind {
-                if let file_error::ErrorKind::NotFound = fe.kind {
-                    return Ok(());
+        match self.log_file {
+            None         => Ok(()),
+            Some(ref lg) => {
+                let res = self.stats.lock().unwrap().read_from_file(lg);
+
+                if let Err(ref e) = res {
+                    if let ErrorKind::FileError(ref fe) = e.kind {
+                        if let file_error::ErrorKind::NotFound = fe.kind {
+                            return Ok(());
+                        }
+                    }
                 }
+                res
             }
         }
-        res
     }
 
     pub fn write_to_file(&self, force_write : bool) -> Result<(), Error> {
         if force_write || self.write_flag.load(Ordering::Relaxed) {
             self.write_flag.store(false, Ordering::Relaxed);
 
-            self.stats.lock().unwrap().write_to_file(&self.log_file)?;
+            match self.log_file {
+                None        => {},
+                Some(ref x) => self.stats.lock().unwrap().write_to_file(x)?,
+            }
         }
 
         Ok(())

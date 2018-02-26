@@ -206,8 +206,8 @@ pub fn rescue_from_file(param : &Param)
                                                        buffered : true   })?;
 
     let log_handler = match param.log_file {
-        None        => None,
-        Some(ref f) => Some(LogHandler::new(f, &stats)),
+        None        => LogHandler::new(None,    &stats),
+        Some(ref f) => LogHandler::new(Some(f), &stats),
     };
     let reporter = ProgressReporter::new(&stats,
                                          "Data rescue progress",
@@ -224,9 +224,7 @@ pub fn rescue_from_file(param : &Param)
     reporter.start();
 
     // read from log file if it exists
-    if let Some(ref lg) = log_handler {
-        lg.read_from_file()?;
-    }
+    log_handler.read_from_file()?;
 
     // seek to position according to stats
     reader.seek(SeekFrom::Start(stats.lock().unwrap().bytes_processed))?;
@@ -287,16 +285,12 @@ pub fn rescue_from_file(param : &Param)
         writer.write(sbx_block::slice_buf(block.get_version(), &buffer))?;
 
         // update log file
-        if let Some(ref lg) = log_handler {
-            lg.write_to_file(false)?;
-        }
+        log_handler.write_to_file(false)?;
     }
 
     reporter.stop();
 
-    if let Some(ref lg) = log_handler {
-        lg.write_to_file(true)?;
-    }
+    log_handler.write_to_file(true)?;
 
     let stats = stats.lock().unwrap().clone();
 
