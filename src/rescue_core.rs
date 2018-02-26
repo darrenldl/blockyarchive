@@ -131,8 +131,6 @@ mod parsers {
         let meta   = from_utf8(meta).unwrap();
         let data   = from_utf8(data).unwrap();
 
-        println!("test3");
-
         Ok((bytes.parse::<u64>()?,
             blocks.parse::<u64>()?,
             meta.parse::<u64>()?,
@@ -175,8 +173,7 @@ impl Log for Stats {
 
         match parsers::stats_p(b"bytes0blocks=1meta=2data=3") {
             IResult::Done(_, (bytes, blocks, meta, data)) => {
-                println!("parsed");
-                /*match parsers::parse_digits(bytes, blocks, meta, data) {
+                match parsers::parse_digits(bytes, blocks, meta, data) {
                     Ok((bytes, _, meta, data)) => {
                         self.bytes_processed              = bytes;
                         self.meta_or_par_blocks_processed = meta;
@@ -184,8 +181,7 @@ impl Log for Stats {
                         Ok(())
                     },
                     Err(_) => Err(()),
-                }*/
-                Ok(())
+                }
             },
             _                                             => Err(())
         }
@@ -228,14 +224,12 @@ pub fn rescue_from_file(param : &Param)
 
     let mut path_buf : [String; 2] = [param.out_dir.clone(), String::from("")];
 
+    reporter.start();
+
     // read from log file if it exists
     if let Some(ref lg) = log_handler {
         lg.read_from_file()?;
     }
-
-    println!("bytes processed : {}", stats.lock().unwrap().bytes_processed);
-
-    reporter.start();
 
     loop {
         { // scan at 128 chunk size
