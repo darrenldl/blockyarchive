@@ -222,6 +222,12 @@ not specified, defaults to the start of file. Negative values are
 treated as 0. If FROM-BYTE exceeds the largest possible
 position(file size - 1), then it will be treated as (file size - 1).
 The rounding procedure is applied after all auto-adjustments."))
+                    .arg(Arg::with_name("TO-BYTE")
+                         .long("to")
+                         .takes_value(true)
+                         .help("Last position to try to decode a block. If not specified, defaults
+to the end of file. Negative values are treated as 0. If TO-BYTE is
+smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
         )
         .subcommand(SubCommand::with_name("repair")
                     .about("Repair sbx container")
