@@ -58,7 +58,7 @@ mod file_utils;
 mod rand_utils;
 mod time_utils;
 mod integer_utils;
-//mod block_utils;
+mod block_utils;
 
 mod sbx_block;
 mod sbx_specs;

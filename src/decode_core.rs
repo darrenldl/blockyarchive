@@ -29,6 +29,7 @@ use super::sbx_specs::{ver_to_block_size,
                        ver_to_usize};
 
 use super::time_utils;
+use super::block_utils;
 
 const HASH_FILE_BLOCK_SIZE : usize = 4096;
 
@@ -289,39 +290,15 @@ fn get_ref_block(param : &Param)
     reporter.start();
 
     loop {
-        { // scan at 128 chunk size
-            let len_read = reader.read(&mut buffer[0..SBX_SCAN_BLOCK_SIZE])?;
+        let lazy_read_res = block_utils::read_block_lazily(&mut block,
+                                                           &mut buffer,
+                                                           &mut reader)?;
 
-            stats.lock().unwrap().bytes_processed += len_read as u64;
+        stats.lock().unwrap().bytes_processed += lazy_read_res.len_read as u64;
 
-            if len_read < SBX_SCAN_BLOCK_SIZE {
-                break;
-            }
+        if lazy_read_res.eof     { break; }
 
-            match block.sync_from_buffer_header_only(&buffer[0..SBX_SCAN_BLOCK_SIZE]) {
-                Ok(()) => {},
-                Err(_) => { continue; }
-            }
-        }
-
-        { // get remaining bytes of block if necessary
-            let block_size = ver_to_block_size(block.get_version());
-
-            let remaining_size = block_size - SBX_SCAN_BLOCK_SIZE;
-
-            let len_read = reader.read(&mut buffer[SBX_SCAN_BLOCK_SIZE..block_size])?;
-
-            stats.lock().unwrap().bytes_processed += len_read as u64;
-
-            if len_read < remaining_size {
-                break;
-            }
-
-            match block.sync_from_buffer(&buffer[0..block_size]) {
-                Ok(()) => {},
-                Err(_) => { continue; }
-            }
-        }
+        if !lazy_read_res.usable { continue; }
 
         match block.block_type() {
             BlockType::Meta => {

@@ -6,9 +6,9 @@ use super::sbx_specs::ver_to_block_size;
 use super::Error;
 
 pub struct ReadResult {
-    len_read : usize,
-    usable   : bool,
-    eof      : bool,
+    pub len_read : usize,
+    pub usable   : bool,
+    pub eof      : bool,
 }
 
 /*pub fn find_block<T>(pred   : T,
