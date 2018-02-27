@@ -58,6 +58,8 @@ mod file_utils;
 mod rand_utils;
 mod time_utils;
 mod integer_utils;
+mod block_utils;
+
 mod sbx_block;
 mod sbx_specs;
 
@@ -172,6 +174,19 @@ This only affects progress text printing."))
         )
         .subcommand(SubCommand::with_name("rescue")
                     .about("Rescue sbx blocks from file/block device")
+                    .arg(Arg::with_name("INFILE")
+                         .required(true)
+                         .index(1)
+                         .help("File/block device to rescue sbx data from"))
+                    .arg(Arg::with_name("OUTDIR")
+                         .required(true)
+                         .index(2)
+                         .help("Directory to store rescued data"))
+                    .arg(Arg::with_name("LOGFILE")
+                         .index(3)
+                         .help("Log file to keep track of the progress to survive interruptions.
+Note that you should use the same log file for the same file and
+range specified in the initial run."))
                     .arg(Arg::with_name("force-misalign")
                          .long("force-misalign")
                          .help("Disable automatic rounding down of FROM-BYTE. This is not normally
