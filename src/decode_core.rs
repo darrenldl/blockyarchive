@@ -369,6 +369,16 @@ pub fn decode(param         : &Param,
 
     reporter.stop();
 
+    // truncate file possibly
+    if ref_block.is_meta() {
+        match ref_block.get_FSZ().unwrap() {
+            None    => {},
+            Some(x) => {
+                writer.set_len(x)?;
+            }
+        }
+    }
+
     let res = stats.lock().unwrap().clone();
 
     Ok(res)
