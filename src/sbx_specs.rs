@@ -74,7 +74,7 @@ mod params_for_v13 {
     pub const DATA_SIZE  : usize = params_for_v3::DATA_SIZE;
 }
 
-pub fn ver_to_usize (version : Version) -> usize {
+pub fn ver_to_usize(version : Version) -> usize {
     use self::Version::*;
     match version {
         V1  => 1,
@@ -86,7 +86,18 @@ pub fn ver_to_usize (version : Version) -> usize {
     }
 }
 
-pub fn ver_to_block_size (version : Version) -> usize {
+pub fn string_to_ver(string : &str) -> Result<Version, ()> {
+    use self::Version::*;
+    if      string ==  "1" { Ok(V1) }
+    else if string ==  "2" { Ok(V2) }
+    else if string ==  "3" { Ok(V3) }
+    else if string == "11" { Ok(V11) }
+    else if string == "12" { Ok(V12) }
+    else if string == "13" { Ok(V13) }
+    else                   { Err(()) }
+}
+
+pub fn ver_to_block_size(version : Version) -> usize {
     use self::Version::*;
     match version {
         V1  => params_for_v1::BLOCK_SIZE,
@@ -98,7 +109,7 @@ pub fn ver_to_block_size (version : Version) -> usize {
     }
 }
 
-pub fn ver_to_data_size (version : Version) -> usize {
+pub fn ver_to_data_size(version : Version) -> usize {
     use self::Version::*;
     match version {
         V1  => params_for_v1::DATA_SIZE,
