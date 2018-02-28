@@ -326,7 +326,7 @@ impl Block {
                               id : MetadataID)
                               -> Result<Option<&Metadata>, Error> {
         match self.data {
-            Data::Data        => Err(Error::IncorrectBlockType),
+            Data::Data           => Err(Error::IncorrectBlockType),
             Data::Meta(ref meta) => {
                 Ok(metadata::get_meta_ref_by_id(id, meta))
             }

@@ -75,8 +75,8 @@ impl fmt::Display for Stats {
             writeln!(f, "Number of blocks failed to decode                       : {}", self.blocks_decode_failed)?;
             writeln!(f, "Time elapsed                                            : {:02}:{:02}:{:02}", hour, minute, second)?;
             match *recorded_hash {
-                None        => { writeln!(f, "Recorded hash : N/A")?; },
-                Some(ref h) => { writeln!(f, "Recorded hash : {} - {}",
+                None        => { writeln!(f, "Recorded hash                      : N/A")?; },
+                Some(ref h) => { writeln!(f, "Recorded hash                      : {} - {}",
                                           hash_type_to_string(h.0),
                                           misc_utils::bytes_to_lower_hex_string(&h.1))?; }
             }
@@ -270,6 +270,15 @@ pub fn decode(param         : &Param,
 
     let rs_enabled;
 
+    // get hash possibly
+    if ref_block.is_meta() {
+        match ref_block.get_HSH().unwrap() {
+            None    => {},
+            Some(x) => { stats.lock().unwrap().recorded_hash = Some(x); }
+        }
+    }
+
+    // deal with RS related stuff
     if ver_supports_rs(ref_block.get_version()) {
         // must be metadata block, and must contain fields `RSD`, `RSP`
         if ref_block.is_data() {
