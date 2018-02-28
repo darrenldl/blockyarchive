@@ -5,7 +5,7 @@ use super::sbx_specs::{SBX_SCAN_BLOCK_SIZE};
 use super::integer_utils::IntegerUtils;
 
 #[derive(Debug, PartialEq)]
-pub enum Error {
+pub enum HexError {
     InvalidHexString,
     InvalidLen
 }
@@ -29,12 +29,12 @@ fn hex_char_to_value(chr : u8) -> u8 {
     else { panic!() }
 }
 
-pub fn hex_string_to_bytes(string : &str) -> Result<Box<[u8]>, Error> {
+pub fn hex_string_to_bytes(string : &str) -> Result<Box<[u8]>, HexError> {
     if string.len() % 2 == 0 {
         let string = string.as_bytes();
         for c in string {
             if !is_valid_hex_char(*c) {
-                return Err(Error::InvalidHexString) }
+                return Err(HexError::InvalidHexString); }
         }
 
         let mut result = Vec::with_capacity(string.len() % 2);
@@ -48,7 +48,7 @@ pub fn hex_string_to_bytes(string : &str) -> Result<Box<[u8]>, Error> {
         Ok(result.into_boxed_slice())
     }
     else {
-        Err(Error::InvalidLen)
+        Err(HexError::InvalidLen)
     }
 }
 
