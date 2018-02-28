@@ -87,6 +87,7 @@ impl FileWriter {
             OpenOptions::new()
             .append(param.append)
             .read(read_enabled)
+            .truncate(true)
             .write(true)
             .create(true)
             .open(&path);
