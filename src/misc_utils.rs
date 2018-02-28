@@ -141,7 +141,7 @@ pub fn calc_required_len_and_seek_to_from_byte_range
                            seek_to      : align(from_byte + bytes_so_far) }
 }
 
-pub fn make_path (path_parts : &[String]) -> String {
+pub fn make_path(path_parts : &[String]) -> String {
     fn strip_slash(string : &str) -> &str {
         let str_len = string.len();
         match str_len {
