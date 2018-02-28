@@ -268,6 +268,8 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
     if      let Some(matches) = matches.subcommand_matches("encode") {
         use encode_core::Param;
         use sbx_specs::SBX_FILE_UID_LEN;
+        use sbx_specs::Version;
+        use sbx_specs::string_to_ver;
 
         // compute uid
         let mut uid : [u8; SBX_FILE_UID_LEN] = [0; SBX_FILE_UID_LEN];
@@ -300,7 +302,20 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
             }
         }
 
-        let param = Param::new(sbx_specs::Version::V11,
+        // compute version
+        let mut version : Version =
+            match matches.value_of("sbx_version") {
+                None    => Version::V1,
+                Some(x) => match string_to_ver(&x) {
+                    Ok(v)   => v,
+                    Err(()) => {
+                        println!("Invalid version string");
+                        return;
+                    }
+                }
+            };
+
+        let param = Param::new(version,
                                &uid,
                                10,
                                2,
