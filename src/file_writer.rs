@@ -9,6 +9,17 @@ use std::fs::File;
 use std::io::Seek;
 use std::fs::OpenOptions;
 
+macro_rules! flush {
+    (
+        $self:ident => $file:expr
+    ) => {{
+        match $file.flush() {
+            Ok(_)  => {},
+            Err(e) => { return Err(to_err(FileError::new(e.kind(), &$self.path))); },
+        }
+    }}
+}
+
 macro_rules! file_op {
     (
         $self:ident read => $input:expr
@@ -16,16 +27,27 @@ macro_rules! file_op {
         use self::FileHandle::*;
         match $self.file {
             Buffered(ref mut f)   => {
-                // write buffered content
-                match f.flush() {
-                    Ok(_)  => {},
-                    Err(e) => { return Err(to_err(FileError::new(e.kind(), &$self.path))); },
-                }
+                flush!($self => f);
 
                 f.get_mut().read($input)
             },
             Unbuffered(ref mut f) => {
                 f.read($input)
+            },
+        }
+    }};
+    (
+        $self:ident set_len => $input:expr
+    ) => {{
+        use self::FileHandle::*;
+        match $self.file {
+            Buffered(ref mut f)   => {
+                flush!($self => f);
+
+                f.get_ref().set_len($input)
+            },
+            Unbuffered(ref mut f) => {
+                f.set_len($input)
             },
         }
     }};
@@ -99,6 +121,13 @@ impl FileWriter {
         match file_op!(self read => buf) {
             Ok(len) => Ok(len),
             Err(e)  => Err(to_err(FileError::new(e.kind(), &self.path)))
+        }
+    }
+
+    pub fn set_len(&mut self, size : u64) -> Result<(), Error> {
+        match file_op!(self set_len => size) {
+            Ok(_)  => Ok(()),
+            Err(e) => Err(to_err(FileError::new(e.kind(), &self.path)))
         }
     }
 
