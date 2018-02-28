@@ -48,13 +48,6 @@ pub struct Stats {
     pub computed_hash           : Option<multihash::HashBytes>,
 }
 
-struct ScanStats {
-    pub bytes_processed : u64,
-    pub total_bytes     : u64,
-    start_time          : f64,
-    end_time            : f64,
-}
-
 struct HashStats {
     pub bytes_processed : u64,
     pub total_bytes     : u64,
@@ -185,17 +178,6 @@ impl Param {
     }
 }
 
-impl ScanStats {
-    pub fn new(file_metadata : &fs::Metadata) -> ScanStats {
-        ScanStats {
-            bytes_processed : 0,
-            total_bytes     : file_metadata.len(),
-            start_time      : 0.,
-            end_time        : 0.,
-        }
-    }
-}
-
 impl HashStats {
     pub fn new(file_metadata : &fs::Metadata) -> HashStats {
         HashStats {
@@ -229,16 +211,6 @@ impl Stats {
     }
 }
 
-impl ProgressReport for ScanStats {
-    fn start_time_mut(&mut self) -> &mut f64 { &mut self.start_time }
-
-    fn end_time_mut(&mut self)   -> &mut f64 { &mut self.end_time }
-
-    fn units_so_far(&self)       -> u64      { self.bytes_processed }
-
-    fn total_units(&self)        -> u64      { self.total_bytes }
-}
-
 impl ProgressReport for HashStats {
     fn start_time_mut(&mut self) -> &mut f64 { &mut self.start_time }
 
@@ -262,74 +234,6 @@ impl ProgressReport for Stats {
     }
 
     fn total_units(&self)        -> u64      { self.total_blocks as u64 }
-}
-
-fn get_ref_block(param : &Param)
-                 -> Result<Option<(u64, Block)>, Error> {
-    let metadata = file_utils::get_file_metadata(&param.in_file)?;
-
-    let stats = Arc::new(Mutex::new(ScanStats::new(&metadata)));
-
-    let reporter = ProgressReporter::new(&stats,
-                                         "Reference block scanning progress",
-                                         "bytes",
-                                         param.silence_level);
-
-    let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
-        [0; SBX_LARGEST_BLOCK_SIZE];
-
-    let mut block = Block::dummy();
-
-    let mut meta_block = None;
-    let mut data_block = None;
-
-    let mut reader = FileReader::new(&param.in_file,
-                                     FileReaderParam { write    : false,
-                                                       buffered : true   })?;
-
-    reporter.start();
-
-    loop {
-        let lazy_read_res = block_utils::read_block_lazily(&mut block,
-                                                           &mut buffer,
-                                                           &mut reader)?;
-
-        stats.lock().unwrap().bytes_processed += lazy_read_res.len_read as u64;
-
-        if lazy_read_res.eof     { break; }
-
-        if !lazy_read_res.usable { continue; }
-
-        match block.block_type() {
-            BlockType::Meta => {
-                if let None = meta_block {
-                    meta_block = Some(block.clone());
-                }
-            },
-            BlockType::Data => {
-                if let None = data_block {
-                    data_block = Some(block.clone());
-                }
-            }
-        }
-
-        if param.no_meta {
-            if let Some(_) = meta_block { break; }
-            if let Some(_) = data_block { break; }
-        } else {
-            if let Some(_) = meta_block { break; }
-        }
-    }
-
-    reporter.stop();
-
-    Ok(if     let Some(x) = meta_block {
-        Some((stats.lock().unwrap().bytes_processed, x))
-    } else if let Some(x) = data_block {
-        Some((stats.lock().unwrap().bytes_processed, x))
-    } else {
-        None
-    })
 }
 
 pub fn decode(param         : &Param,
@@ -517,7 +421,9 @@ fn hash(param     : &Param,
 pub fn decode_file(param : &Param)
                    -> Result<Stats, Error> {
     let (ref_block_pos, ref_block) =
-        match get_ref_block(param)? {
+        match block_utils::get_ref_block(&param.in_file,
+                                         param.no_meta,
+                                         param.silence_level)? {
             None => { return Err(Error::with_message("failed to find reference block")); },
             Some(x) => x,
         };
