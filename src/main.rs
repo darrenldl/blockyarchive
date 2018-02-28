@@ -267,10 +267,41 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
 
     if      let Some(matches) = matches.subcommand_matches("encode") {
         use encode_core::Param;
+        use sbx_specs::SBX_FILE_UID_LEN;
 
+        // compute uid
+        let mut uid : [u8; SBX_FILE_UID_LEN] = [0; SBX_FILE_UID_LEN];
+        {
+            match matches.value_of("uid") {
+                None    => { rand_utils::fill_random_bytes(&mut uid); },
+                Some(x) => {
+                    use misc_utils::HexError::*;
+                    match misc_utils::hex_string_to_bytes(x) {
+                        Ok(x) => {
+                            if x.len() != SBX_FILE_UID_LEN {
+                                println!("UID must be {} bytes({} hex characters) in length",
+                                         SBX_FILE_UID_LEN,
+                                         SBX_FILE_UID_LEN * 2);
+                                return;
+                            }
+
+                            uid.copy_from_slice(&x);
+                        },
+                        Err(InvalidHexString) => {
+                            println!("UID provided is not a valid hex string");
+                            return;
+                        },
+                        Err(InvalidLen) => {
+                            println!("UID provided does not have the correct number of hex digits");
+                            return;
+                        }
+                    }
+                }
+            }
+        }
 
         let param = Param::new(sbx_specs::Version::V11,
-                               &[0, 1, 2, 3, 4, 5],
+                               &uid,
                                10,
                                2,
                                matches.is_present("no_meta"),
