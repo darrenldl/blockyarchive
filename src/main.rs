@@ -90,11 +90,13 @@ fn main () {
         .about("Rust implementation of SeqBox")
         .subcommand(SubCommand::with_name("encode")
                     .about("Encode file")
-                    .arg(Arg::with_name("INFILE")
+                    .arg(Arg::with_name("in_file")
+                         .value_name("INFILE")
                          .required(true)
                          .index(1)
                          .help("File to encode"))
-                    .arg(Arg::with_name("OUT")
+                    .arg(Arg::with_name("out_file")
+                         .value_name("OUT")
                          .index(2)
                          .help("Sbx container name (defaults to INFILE.sbx). If OUT is a
 directory(DIR), then the final file will be stored as
@@ -103,19 +105,23 @@ DIR/INFILE.sbx."))
                          .short("f")
                          .long("force")
                          .help("Force overwrite even if OUT exists"))
-                    .arg(Arg::with_name("HASH")
+                    .arg(Arg::with_name("hash_type")
+                         .value_name("HASH-TYPE")
                          .long("hash")
                          .takes_value(true)
+                         .default_value("sha256")
                          .help("Hash function to use, one of (case-insensitive) :
     sha1
     sha256 (default)
     sha512
     blake2b-512"))
-                    .arg(Arg::with_name("no-meta")
+                    .arg(Arg::with_name("no_meta")
                          .long("no-meta")
                          .help("Skip metadata block in the sbx container. Metadata block is
-never skipped for version 11, 12, 13."))
-                    .arg(Arg::with_name("SILENCE-LEVEL")
+never skipped for version 11, 12, 13.
+This means this option does nothing for version 11, 12, 13."))
+                    .arg(Arg::with_name("silence_level")
+                         .value_name("LEVEL")
                          .short("s")
                          .long("silent")
                          .takes_value(true)
@@ -124,9 +130,11 @@ never skipped for version 11, 12, 13."))
     1 (only show progress stats when done)
     2 (show nothing)
 This only affects progress text printing."))
-                    .arg(Arg::with_name("SBX-VERSION")
+                    .arg(Arg::with_name("sbx_version")
+                         .value_name("SBX-VERSION")
                          .long("sbx-version")
                          .takes_value(true)
+                         .default_value("1")
                          .help("Sbx container version, one of :
     1  (bs=512  bytes)
     2  (bs=128  bytes)
@@ -135,15 +143,22 @@ This only affects progress text printing."))
     12 (bs=128  bytes, Reed-Solomon enabled)
     13 (bs=4096 bytes, Reed-Solomon enabled)
 where bs=sbx block size."))
-                    .arg(Arg::with_name("UID-HEX")
+                    .arg(Arg::with_name("uid")
+                         .value_name("UID-HEX")
                          .long("uid")
                          .takes_value(true)
                          .help("Alternative file uid in hex (by default uid is randomly generated).
 Uid must be exactly 6 bytes(12 hex digits) in length."))
+                    .arg(Arg::with_name("rs_data")
+                         .value_name("SHARD")
+                         .long("rs-data")
+                         .takes_value(true)
+                         .help("Reed-Solomon data shard count"))
         )
         .subcommand(SubCommand::with_name("decode")
                     .about("Decode file")
-                    .arg(Arg::with_name("INFILE")
+                    .arg(Arg::with_name("in_file")
+                         .value_name("INFILE")
                          .required(true)
                          .index(1)
                          .help("Sbx container to decode"))
@@ -157,12 +172,13 @@ OUT is provided and is not a directory, then it is used directly."))
                          .short("f")
                          .long("force")
                          .help("Force overwrite even if OUT exists"))
-                    .arg(Arg::with_name("no-meta")
+                    .arg(Arg::with_name("no_meta")
                          .long("no-meta")
                          .help("Use first whatever valid block as reference block. Use this when
 the container does not have metadata block or when you are okay
 with using a data block as reference block."))
-                    .arg(Arg::with_name("SILENCE-LEVEL")
+                    .arg(Arg::with_name("silence_level")
+                         .value_name("LEVEL")
                          .short("s")
                          .long("silent")
                          .takes_value(true)
@@ -174,36 +190,42 @@ This only affects progress text printing."))
         )
         .subcommand(SubCommand::with_name("rescue")
                     .about("Rescue sbx blocks from file/block device")
-                    .arg(Arg::with_name("INFILE")
+                    .arg(Arg::with_name("in_file")
+                         .value_name("INFILE")
                          .required(true)
                          .index(1)
                          .help("File/block device to rescue sbx data from"))
-                    .arg(Arg::with_name("OUTDIR")
+                    .arg(Arg::with_name("out_dir")
+                         .value_name("OUTDIR")
                          .required(true)
                          .index(2)
                          .help("Directory to store rescued data"))
-                    .arg(Arg::with_name("LOGFILE")
+                    .arg(Arg::with_name("log_file")
+                         .value_name("LOGFILE")
                          .index(3)
                          .help("Log file to keep track of the progress to survive interruptions.
 Note that you should use the same log file for the same file and
 range specified in the initial run."))
-                    .arg(Arg::with_name("force-misalign")
+                    .arg(Arg::with_name("force_misalign")
                          .long("force-misalign")
                          .help("Disable automatic rounding down of FROM-BYTE. This is not normally
 used and is only intended for data recovery or related purposes."))
-                    .arg(Arg::with_name("BLOCK-TYPE")
+                    .arg(Arg::with_name("block_type")
+                         .value_name("TYPE")
                          .long("only-pick-block")
                          .takes_value(true)
                          .help("Only pick BLOCK-TYPE of blocks, one of :
     any
     meta
     data"))
-                    .arg(Arg::with_name("UID-HEX")
+                    .arg(Arg::with_name("uid")
+                         .value_name("UID-HEX")
                          .long("only-pick-uid")
                          .takes_value(true)
                          .help("Only pick blocks with UID-HEX as uid. Uid must be exactly 6
 bytes(12 hex digits) in length."))
-                    .arg(Arg::with_name("SILENCE-LEVEL")
+                    .arg(Arg::with_name("silence_level")
+                         .value_name("LEVEL")
                          .short("s")
                          .long("silent")
                          .takes_value(true)
@@ -212,8 +234,10 @@ bytes(12 hex digits) in length."))
     1 (only show progress stats when done)
     2 (show nothing)
 This only affects progress text printing."))
-                    .arg(Arg::with_name("FROM-BYTE")
+                    .arg(Arg::with_name("from_byte")
+                         .value_name("FROM-BYTE")
                          .long("from")
+                         .visible_alias("skip-to")
                          .takes_value(true)
                          .help("Start from byte FROM-BYTE. The position is automatically rounded
 down to the closest multiple of 128 bytes, after adding the bytes
@@ -222,12 +246,16 @@ not specified, defaults to the start of file. Negative values are
 treated as 0. If FROM-BYTE exceeds the largest possible
 position(file size - 1), then it will be treated as (file size - 1).
 The rounding procedure is applied after all auto-adjustments."))
-                    .arg(Arg::with_name("TO-BYTE")
+                    .arg(Arg::with_name("to_byte")
+                         .value_name("TO-BYTE")
                          .long("to")
                          .takes_value(true)
                          .help("Last position to try to decode a block. If not specified, defaults
 to the end of file. Negative values are treated as 0. If TO-BYTE is
 smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
+        )
+        .subcommand(SubCommand::with_name("show")
+                    .about("Search for and print metadata in file")
         )
         .subcommand(SubCommand::with_name("repair")
                     .about("Repair sbx container")
@@ -237,41 +265,55 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
         )
         .get_matches();
 
-    /*use encode_core::Param;
-    let param = Param::new(sbx_specs::Version::V11,
-                           &[0, 1, 2, 3, 4, 5],
-                           10,
-                           2,
-                           true,
-                           multihash::HashType::SHA256,
-                           "test",
-                           "test.sbx",
-                           progress_report::SilenceLevel::L0);
-    match encode_core::encode_file(&param) {
-        Ok(s)  => print!("{}", s),
-        Err(e) => print!("{}", e)
-    }*/
-    /*use decode_core::Param;
-    let param = Param::new(false,
-                           "test.sbx",
-                           "test2",
-                           progress_report::SilenceLevel::L0);
-    match decode_core::decode_file(&param) {
-        Ok(s)  => print!("{}", s),
-        Err(e) => print!("{}", e)
-    }*/
-    use rescue_core::Param;
-    let param = Param::new("test.sbx",
-                           "abcd/",
-                           Some("rescue_log"),
-                           None,
-                           None,
-                           false,
-                           None,
-                           None,
-                           progress_report::SilenceLevel::L0);
-    match rescue_core::rescue_from_file(&param) {
-        Ok(s)  => print!("{}", s),
-        Err(e) => print!("{}", e),
+    if      let Some(matches) = matches.subcommand_matches("encode") {
+        use encode_core::Param;
+
+
+        let param = Param::new(sbx_specs::Version::V11,
+                               &[0, 1, 2, 3, 4, 5],
+                               10,
+                               2,
+                               matches.is_present("no_meta"),
+                               multihash::HashType::SHA256,
+                               "test",
+                               "test.sbx",
+                               progress_report::SilenceLevel::L0);
+        match encode_core::encode_file(&param) {
+            Ok(s)  => print!("{}", s),
+            Err(e) => print!("{}", e)
+        }
+    }
+    else if let Some(matches) = matches.subcommand_matches("decode") {
+        use decode_core::Param;
+        let param = Param::new(false,
+                               "test.sbx",
+                               "test2",
+                               progress_report::SilenceLevel::L0);
+        match decode_core::decode_file(&param) {
+            Ok(s)  => print!("{}", s),
+            Err(e) => print!("{}", e)
+        }
+    }
+    else if let Some(matches) = matches.subcommand_matches("rescue") {
+        use rescue_core::Param;
+        let param = Param::new("test.sbx",
+                               "abcd/",
+                               Some("rescue_log"),
+                               None,
+                               None,
+                               false,
+                               None,
+                               None,
+                               progress_report::SilenceLevel::L0);
+        match rescue_core::rescue_from_file(&param) {
+            Ok(s)  => print!("{}", s),
+            Err(e) => print!("{}", e),
+        }
+    }
+    else if let Some(matches) = matches.subcommand_matches("show") {
+    }
+    else if let Some(matches) = matches.subcommand_matches("repair") {
+    }
+    else if let Some(matches) = matches.subcommand_matches("verify") {
     }
 }
