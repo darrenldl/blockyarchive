@@ -66,7 +66,7 @@ impl fmt::Display for Stats {
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
         if rs_enabled {
-            writeln!(f, "Version                                    : {}", ver_to_usize(self.version))?;
+            writeln!(f, "Version                                    : v{}", ver_to_usize(self.version))?;
             writeln!(f, "Block size used in encoding                : {}", block_size)?;
             writeln!(f, "Data  size used in encoding                : {}", data_size)?;
             writeln!(f, "Number of blocks written                   : {}", blocks_written)?;
@@ -77,7 +77,7 @@ impl fmt::Display for Stats {
             writeln!(f, "Amount of data encoded (bytes)             : {}", data_bytes_encoded)?;
             writeln!(f, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)
         } else {
-            writeln!(f, "Version                             : {}", ver_to_usize(self.version))?;
+            writeln!(f, "Version                             : v{}", ver_to_usize(self.version))?;
             writeln!(f, "Block size used in encoding         : {}", block_size)?;
             writeln!(f, "Data  size used in encoding         : {}", data_size)?;
             writeln!(f, "Number of blocks written            : {}", blocks_written)?;

@@ -65,7 +65,7 @@ impl fmt::Display for Stats {
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
         if rs_enabled {
-            writeln!(f,                      "Version                                                 : {}", ver_to_usize(self.version))?;
+            writeln!(f,                      "Version                                                 : v{}", ver_to_usize(self.version))?;
             writeln!(f,                      "Block size used in decoding                             : {}", block_size)?;
             writeln!(f,                      "Number of blocks processed                              : {}", self.units_so_far())?;
             writeln!(f,                      "Number of blocks successfully decoded (metadata only)   : {}", self.meta_blocks_decoded)?;
@@ -109,7 +109,7 @@ impl fmt::Display for Stats {
                 }
             }
         } else {
-            writeln!(f,                      "Version                                          : {}", ver_to_usize(self.version))?;
+            writeln!(f,                      "Version                                          : v{}", ver_to_usize(self.version))?;
             writeln!(f,                      "Block size used in decoding                      : {}", block_size)?;
             writeln!(f,                      "Number of blocks processed                       : {}", self.units_so_far())?;
             writeln!(f,                      "Number of blocks successfully decoded (metadata) : {}", self.meta_blocks_decoded)?;
