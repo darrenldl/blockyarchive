@@ -117,8 +117,8 @@ impl fmt::Display for Stats {
             writeln!(f, "Number of blocks failed to decode                : {}", self.blocks_decode_failed)?;
             writeln!(f, "Time elapsed                                     : {:02}:{:02}:{:02}", hour, minute, second)?;
             match *recorded_hash {
-                None        => { writeln!(f, "Recorded hash : N/A")?; },
-                Some(ref h) => { writeln!(f, "Recorded hash : {} - {}",
+                None        => { writeln!(f, "Recorded hash               : N/A")?; },
+                Some(ref h) => { writeln!(f, "Recorded hash               : {} - {}",
                                           hash_type_to_string(h.0),
                                           misc_utils::bytes_to_lower_hex_string(&h.1))?; }
             }
