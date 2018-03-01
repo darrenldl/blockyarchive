@@ -93,7 +93,7 @@ Data block is valid if and only if
 2. Metadata of collected list of metadata blocks are displayed
 
 ## Repair workflow
-1. Load metadata block and the 2 parity blocks, repair any of the 3 blocks if necessary
+1. Load metadata block and the 3 parity blocks, repair any of the 4 blocks if necessary
 2. Load up to M + N blocks sequentially, where M is the number of data shards and N is the number of parity shards
 3. Check CRC of all blocks and record invalid blocks
 4. Reconstruct the invalid blocks if possible
