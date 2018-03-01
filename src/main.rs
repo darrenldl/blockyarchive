@@ -351,7 +351,7 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
                 Some(x) => match string_to_ver(&x) {
                     Ok(v)   => v,
                     Err(()) => {
-                        exit_with_msg!(usr => "Invalid version string");
+                        exit_with_msg!(usr => "Invalid SBX version");
                     }
                 }
             };
@@ -414,10 +414,32 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
         let out_file = match matches.value_of("out_file") {
             None    => format!("{}.sbx", in_file),
             Some(x) => {
+                let x =
+                    if file_utils::check_if_file_is_dir(x) {
+                        format!("{}/{}.sbx", x, in_file)
+                    } else {
+                        String::from(x)
+                    };
                 if !force_write {
-                    exit_if_file!(exists x => "File \"{}\" already exists", x);
+                    exit_if_file!(exists &x => "File \"{}\" already exists", x);
                 }
-                String::from(x)
+                x
+            }
+        };
+
+        let hash_type = match matches.value_of("hash_type") {
+            None    => multihash::HashType::SHA256,
+            Some(x) => match multihash::string_to_hash_type(x) {
+                Ok(x)  => x,
+                Err(_) => exit_with_msg!(usr => "Invalid hash type")
+            }
+        };
+
+        let silence_level = match matches.value_of("silence_level") {
+            None    => progress_report::SilenceLevel::L0,
+            Some(x) => match progress_report::string_to_silence_level(x) {
+                Ok(x)  => x,
+                Err(_) => exit_with_msg!(usr => "Invalid silence level")
             }
         };
 
@@ -429,7 +451,7 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
                                multihash::HashType::SHA256,
                                in_file,
                                &out_file,
-                               progress_report::SilenceLevel::L0);
+                               silence_level);
         match encode_core::encode_file(&param) {
             Ok(s)  => exit_with_msg!(ok => "{}", s),
             Err(e) => exit_with_msg!(op => "{}", e)

@@ -7,6 +7,8 @@ use super::sbx_specs::ver_to_block_size;
 use super::file_reader::FileReader;
 use super::file_reader::FileReaderParam;
 
+use std::path::Path;
+
 pub fn get_file_metadata(file : &str) -> Result<fs::Metadata, Error> {
     let reader = FileReader::new(file,
                                  FileReaderParam { write    : false,
@@ -15,8 +17,11 @@ pub fn get_file_metadata(file : &str) -> Result<fs::Metadata, Error> {
 }
 
 pub fn check_if_file_exists(file : &str) -> bool {
-    use std::path::Path;
     Path::new(file).exists()
+}
+
+pub fn check_if_file_is_dir(file : &str) -> bool {
+    Path::new(file).is_dir()
 }
 
 pub fn calc_data_chunk_count(version  : Version,
