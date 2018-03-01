@@ -127,7 +127,7 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
                            log_file,
                            from_pos,
                            to_pos,
-                           false,
+                           matches.is_present("force_misalign"),
                            block_type,
                            uid,
                            silence_level);
