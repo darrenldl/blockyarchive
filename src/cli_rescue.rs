@@ -47,16 +47,7 @@ used and is only intended for data recovery or related purposes."))
              .takes_value(true)
              .help("Only pick blocks with UID-HEX as uid. Uid must be exactly 6
 bytes(12 hex digits) in length."))
-        .arg(Arg::with_name("silence_level")
-             .value_name("LEVEL")
-             .short("s")
-             .long("silent")
-             .takes_value(true)
-             .help("One of :
-    0 (show everything)
-    1 (only show progress stats when done)
-    2 (show nothing)
-This only affects progress text printing."))
+        .arg(silence_level_arg())
         .arg(Arg::with_name("from_byte")
              .value_name("FROM-BYTE")
              .long("from")
@@ -79,15 +70,30 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
 }
 
 pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let param = Param::new("test.sbx",
-                           "abcd/",
-                           Some("rescue_log"),
+    let silence_level = get_silence_level!(matches);
+
+    let in_file  = matches.value_of("in_file").unwrap();
+    exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
+    let out_dir = matches.value_of("out_dir").unwrap();
+
+    if !file_utils::check_if_file_exists(out_dir) {
+        exit_with_msg!(usr => "Directory \"{}\" does not exist", out_dir);
+    }
+    if !file_utils::check_if_file_is_dir(out_dir) {
+        exit_with_msg!(usr => "\"{}\" is not a directory", out_dir);
+    }
+
+    let log_file = matches.value_of("log_file");
+
+    let param = Param::new(in_file,
+                           out_dir,
+                           log_file,
                            None,
                            None,
                            false,
                            None,
                            None,
-                           progress_report::SilenceLevel::L0);
+                           silence_level);
     match rescue_core::rescue_from_file(&param) {
         Ok(s)  => exit_with_msg!(ok => "{}", s),
         Err(e) => exit_with_msg!(op => "{}", e)
