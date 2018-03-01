@@ -14,6 +14,11 @@ pub fn get_file_metadata(file : &str) -> Result<fs::Metadata, Error> {
     reader.metadata()
 }
 
+pub fn check_if_file_exists(file : &str) -> bool {
+    use std::path::Path;
+    Path::new(file).exists()
+}
+
 pub fn calc_data_chunk_count(version  : Version,
                              metadata : &fs::Metadata) -> u64 {
     let data_size = ver_to_data_size(version) as u64;

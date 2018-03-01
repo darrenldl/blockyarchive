@@ -81,15 +81,13 @@ mod file_writer;
 
 mod worker;
 
-use std::str::FromStr;
-
 const RSBX_VER_STR : &str = "1.0";
 
 macro_rules! exit_with_msg {
     (
         ok => $($x:expr),*
     ) => {{
-        println!($($x),*);
+        print!($($x),*);
         return 0;
     }};
     (
@@ -101,12 +99,32 @@ macro_rules! exit_with_msg {
     (
         op => $($x:expr),*
     ) => {{
-        println!($($x),*);
+        print!($($x),*);
         return 2;
     }}
 }
 
+macro_rules! exit_if_file {
+    (
+        exists $file:expr => $($x:expr),*
+    ) => {{
+        if file_utils::check_if_file_exists($file) {
+            exit_with_msg!(usr => $($x),*);
+        }
+    }};
+    (
+        not_exists $file:expr => $($x:expr),*
+    ) => {{
+        if !file_utils::check_if_file_exists($file) {
+            exit_with_msg!(usr => $($x),*);
+        }
+    }}
+}
+
 fn real_main () -> i32 {
+    use std::str::FromStr;
+    use std::path::Path;
+
     let matches = App::new("rsbx")
         .version(RSBX_VER_STR)
         .author("Darren Ldl <darrenldldev@gmail.com>")
@@ -386,8 +404,22 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
                 }
                 (data_shards, parity_shards)
             } else {
-                (0, 0) // use whatever value
+                (1, 1) // use dummy values
             };
+
+        let force_write = matches.is_present("force");
+
+        let in_file  = matches.value_of("in_file").unwrap();
+        exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
+        let out_file = match matches.value_of("out_file") {
+            None    => format!("{}.sbx", in_file),
+            Some(x) => {
+                if !force_write {
+                    exit_if_file!(exists x => "File \"{}\" already exists", x);
+                }
+                String::from(x)
+            }
+        };
 
         let param = Param::new(version,
                                &uid,
@@ -395,8 +427,8 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
                                rs_parity,
                                matches.is_present("no_meta"),
                                multihash::HashType::SHA256,
-                               "test",
-                               "test.sbx",
+                               in_file,
+                               &out_file,
                                progress_report::SilenceLevel::L0);
         match encode_core::encode_file(&param) {
             Ok(s)  => exit_with_msg!(ok => "{}", s),
