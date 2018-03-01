@@ -164,8 +164,7 @@ fn real_main () -> i32 {
         return 0;
     }
     else {
-        println!("Invoke with -h or --help for help message");
-        return 0;
+        exit_with_msg!(ok => "Invoke with -h or --help for help message");
     }
 }
 
