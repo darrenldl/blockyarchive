@@ -51,7 +51,7 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
                            matches.is_present("force"),
                            in_file,
                            out_file,
-                           progress_report::SilenceLevel::L0);
+                           silence_level);
     match decode_core::decode_file(&param) {
         Ok(s)  => exit_with_msg!(ok => "{}", s),
         Err(e) => exit_with_msg!(op => "{}", e)
