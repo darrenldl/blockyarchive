@@ -122,6 +122,11 @@ macro_rules! exit_if_file {
 }
 
 mod cli_encode;
+mod cli_decode;
+mod cli_rescue;
+mod cli_show;
+mod cli_repair;
+mod cli_check;
 
 fn real_main () -> i32 {
     use std::str::FromStr;
