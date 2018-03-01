@@ -139,15 +139,9 @@ fn real_main () -> i32 {
         .subcommand(cli_encode::sub_command())
         .subcommand(cli_decode::sub_command())
         .subcommand(cli_rescue::sub_command())
-        .subcommand(SubCommand::with_name("show")
-                    .about("Search for and print metadata in file")
-        )
-        .subcommand(SubCommand::with_name("repair")
-                    .about("Repair sbx container")
-        )
-        .subcommand(SubCommand::with_name("check")
-                    .about("Repair sbx container")
-        )
+        .subcommand(cli_show::sub_command())
+        .subcommand(cli_repair::sub_command())
+        .subcommand(cli_check::sub_command())
         .get_matches();
 
     if      let Some(matches) = matches.subcommand_matches("encode") {
