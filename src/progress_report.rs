@@ -114,13 +114,13 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             runner_start_barrier.wait();
 
             loop {
-                if runner_shutdown_flag.load(Ordering::Relaxed) {
+                if runner_shutdown_flag.load(Ordering::SeqCst) {
                     break;
                 }
 
                 thread::sleep(Duration::from_millis(300));
 
-                if runner_active_flag.load(Ordering::Relaxed) {
+                if runner_active_flag.load(Ordering::SeqCst) {
                     print_progress::<T>(&mut context,
                                         &mut runner_stats.lock().unwrap(),
                                         false);
@@ -154,15 +154,6 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
     }
 
     pub fn pause(&self) {
-        let units_so_far = self.stats.lock().unwrap().units_so_far();
-        let total_units  = self.stats.lock().unwrap().total_units();
-
-        let percent = helper::calc_percent(units_so_far, total_units);
-
-        if percent < 100 {
-            println!();
-        }
-
         self.active_flag.store(false, Ordering::SeqCst);
     }
 
