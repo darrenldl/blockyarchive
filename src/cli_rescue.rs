@@ -12,7 +12,7 @@ use super::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("rescue")
-        .about("Rescue sbx blocks from file/block device")
+        .about("Rescue SBX blocks from file/block device")
         .arg(Arg::with_name("in_file")
              .value_name("INFILE")
              .required(true)

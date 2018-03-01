@@ -12,5 +12,5 @@ use super::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("repair")
-        .about("Repair sbx container")
+        .about("Repair SBX container")
 }

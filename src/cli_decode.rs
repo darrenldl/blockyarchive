@@ -12,7 +12,7 @@ use super::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("decode")
-        .about("Decode file")
+        .about("Decode SBX container")
         .arg(Arg::with_name("in_file")
              .value_name("INFILE")
              .required(true)

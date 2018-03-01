@@ -127,6 +127,7 @@ mod cli_rescue;
 mod cli_show;
 mod cli_repair;
 mod cli_check;
+mod cli_sort;
 
 fn real_main () -> i32 {
     use std::str::FromStr;

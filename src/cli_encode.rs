@@ -116,7 +116,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
     }
 
     // compute version
-    let mut version : Version =
+    let version : Version =
         match matches.value_of("sbx_version") {
             None    => Version::V1,
             Some(x) => match string_to_ver(&x) {
