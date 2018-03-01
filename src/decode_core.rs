@@ -28,6 +28,8 @@ use super::sbx_specs::{ver_to_block_size,
                        ver_supports_rs,
                        ver_to_usize};
 
+use std::str::from_utf8;
+
 use super::time_utils;
 use super::block_utils;
 
@@ -158,21 +160,27 @@ impl fmt::Display for Stats {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {
-    no_meta  : bool,
-    in_file  : String,
-    out_file : String,
+    no_meta       : bool,
+    force_write   : bool,
+    in_file       : String,
+    out_file      : Option<String>,
     silence_level : SilenceLevel
 }
 
 impl Param {
-    pub fn new(no_meta  : bool,
-               in_file  : &str,
-               out_file : &str,
+    pub fn new(no_meta       : bool,
+               force_write   : bool,
+               in_file       : &str,
+               out_file      : Option<&str>,
                silence_level : SilenceLevel) -> Param {
         Param {
             no_meta,
+            force_write,
             in_file  : String::from(in_file),
-            out_file : String::from(out_file),
+            out_file : match out_file {
+                None    => None,
+                Some(x) => Some(String::from(x))
+            },
             silence_level,
         }
     }
@@ -245,7 +253,11 @@ pub fn decode(param         : &Param,
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
-    let mut writer = FileWriter::new(&param.out_file,
+    let out_file : &str = match param.out_file {
+        None        => panic!(),
+        Some(ref x) => x,
+    };
+    let mut writer = FileWriter::new(out_file,
                                      FileWriterParam { read     : false,
                                                        append   : false,
                                                        buffered : true   })?;
@@ -407,7 +419,7 @@ fn hash(param     : &Param,
             }
         };
 
-    let mut reader = FileReader::new(&param.out_file,
+    let mut reader = FileReader::new(&param.out_file.clone().unwrap(),
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
 
@@ -451,9 +463,62 @@ pub fn decode_file(param : &Param)
             Some(x) => x,
         };
 
-    let mut stats = decode(param, ref_block_pos, &ref_block)?;
+    // get FNM of ref_block
+    let recorded_file_name : Option<String> =
+        if ref_block.is_data() {
+            None
+        } else {
+            match ref_block.get_FNM().unwrap() {
+                None    => None,
+                Some(x) => {
+                    match from_utf8(&x) {
+                        Ok(x)  => Some(String::from(x)),
+                        Err(_) => { return Err(Error::with_message("Recorded file name is not a valid UTF-8 string")); }
+                    }
+                }
+            }
+        };
 
-    stats.computed_hash = hash(param, &ref_block)?;
+    // compute output file name
+    let out_file_path : String = match param.out_file {
+        None => {
+            match recorded_file_name {
+                None    => { return Err(Error::with_message("No original file name was found in SBX container and no output file name/path was provided")); },
+                Some(x) => x.clone()
+            }
+        },
+        Some(ref out) => {
+            if file_utils::check_if_file_is_dir(&out) {
+                match recorded_file_name {
+                    None    => { return Err(Error::with_message("No original file name was found in SBX container and output file name/path is a directory")); }
+                    Some(x) => {
+                        misc_utils::make_path(&[&out, &x])
+                    }
+                }
+            } else {
+                out.clone()
+            }
+        }
+    };
+
+    // check if can write out
+    if !param.force_write {
+        if file_utils::check_if_file_exists(&out_file_path) {
+            return Err(Error::with_message(&format!("File : {} already exists",
+                                                    out_file_path)));
+        }
+    }
+
+    // regenerate param
+    let param = Param::new(param.no_meta,
+                           param.force_write,
+                           &param.in_file,
+                           Some(&out_file_path),
+                           param.silence_level);
+
+    let mut stats = decode(&param, ref_block_pos, &ref_block)?;
+
+    stats.computed_hash = hash(&param, &ref_block)?;
 
     Ok(stats)
 }

@@ -121,6 +121,20 @@ macro_rules! exit_if_file {
     }}
 }
 
+macro_rules! get_silence_level {
+    (
+        $matches:expr
+    ) => {{
+        match $matches.value_of("silence_level") {
+            None    => progress_report::SilenceLevel::L0,
+            Some(x) => match progress_report::string_to_silence_level(x) {
+                Ok(x)  => x,
+                Err(_) => exit_with_msg!(usr => "Invalid silence level")
+            }
+        }
+    }}
+}
+
 mod cli_encode;
 mod cli_decode;
 mod cli_rescue;
@@ -128,6 +142,19 @@ mod cli_show;
 mod cli_repair;
 mod cli_check;
 mod cli_sort;
+
+fn silence_level_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("silence_level")
+    .value_name("LEVEL")
+    .short("s")
+    .long("silent")
+    .takes_value(true)
+    .help("One of :
+    0 (show everything)
+    1 (only show progress stats when done)
+    2 (show nothing)
+This only affects progress text printing.")
+}
 
 fn real_main () -> i32 {
     use std::str::FromStr;

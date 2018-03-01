@@ -43,16 +43,7 @@ DIR/INFILE.sbx."))
              .help("Skip metadata block in the SBX container. Metadata block is
 never skipped for version 11, 12, 13.
 This means this option does nothing for version 11, 12, 13."))
-        .arg(Arg::with_name("silence_level")
-             .value_name("LEVEL")
-             .short("s")
-             .long("silent")
-             .takes_value(true)
-             .help("One of :
-    0 (show everything)
-    1 (only show progress stats when done)
-    2 (show nothing)
-This only affects progress text printing."))
+        .arg(silence_level_arg())
         .arg(Arg::with_name("sbx_version")
              .value_name("SBX-VERSION")
              .long("sbx-version")
@@ -206,13 +197,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
         }
     };
 
-    let silence_level = match matches.value_of("silence_level") {
-        None    => progress_report::SilenceLevel::L0,
-        Some(x) => match progress_report::string_to_silence_level(x) {
-            Ok(x)  => x,
-            Err(_) => exit_with_msg!(usr => "Invalid silence level")
-        }
-    };
+    let silence_level = get_silence_level!(matches);
 
     let param = Param::new(version,
                            &uid,

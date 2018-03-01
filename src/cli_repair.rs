@@ -13,4 +13,10 @@ use super::*;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("repair")
         .about("Repair SBX container")
+        .arg(Arg::with_name("file")
+             .value_name("FILE")
+             .required(true)
+             .index(1)
+             .help("SBX container to repair"))
+        .arg(silence_level_arg())
 }
