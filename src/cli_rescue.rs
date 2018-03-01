@@ -48,7 +48,7 @@ used and is only intended for data recovery or related purposes."))
              .help("Only pick blocks with UID-HEX as uid. Uid must be exactly 6
 bytes(12 hex digits) in length."))
         .arg(silence_level_arg())
-        .arg(Arg::with_name("from_byte")
+        .arg(Arg::with_name("from_pos")
              .value_name("FROM-BYTE")
              .long("from")
              .visible_alias("skip-to")
@@ -60,7 +60,7 @@ not specified, defaults to the start of file. Negative values are
 treated as 0. If FROM-BYTE exceeds the largest possible
 position(file size - 1), then it will be treated as (file size - 1).
 The rounding procedure is applied after all auto-adjustments."))
-        .arg(Arg::with_name("to_byte")
+        .arg(Arg::with_name("to_pos")
              .value_name("TO-BYTE")
              .long("to")
              .takes_value(true)
@@ -91,6 +91,22 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
         }
     };
 
+    let from_pos = match matches.value_of("from_pos") {
+        None    => None,
+        Some(x) => match u64::from_str(x) {
+            Ok(x)  => Some(x),
+            Err(_) => exit_with_msg!(usr => "Invalid from position")
+        }
+    };
+
+    let to_pos = match matches.value_of("to_pos") {
+        None    => None,
+        Some(x) => match u64::from_str(x) {
+            Ok(x)  => Some(x),
+            Err(_) => exit_with_msg!(usr => "Invalid to position")
+        }
+    };
+
     let silence_level = get_silence_level!(matches);
 
     let in_file  = matches.value_of("in_file").unwrap();
@@ -109,8 +125,8 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
     let param = Param::new(in_file,
                            out_dir,
                            log_file,
-                           None,
-                           None,
+                           from_pos,
+                           to_pos,
                            false,
                            block_type,
                            uid,
