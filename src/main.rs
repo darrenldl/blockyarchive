@@ -81,6 +81,8 @@ mod file_writer;
 
 mod worker;
 
+use std::str::FromStr;
+
 const RSBX_VER_STR : &str = "1.0";
 
 macro_rules! exit_with_msg {
@@ -281,7 +283,7 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
         .subcommand(SubCommand::with_name("repair")
                     .about("Repair sbx container")
         )
-        .subcommand(SubCommand::with_name("verify")
+        .subcommand(SubCommand::with_name("check")
                     .about("Repair sbx container")
         )
         .get_matches();
@@ -347,13 +349,27 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
                     None    => {
                         exit_with_msg!(usr => "Reed-Solomon erasure code data shard count must be specified for version {}", ver_usize);
                     },
-                    Some(x) => x
+                    Some(x) => {
+                        match usize::from_str(&x) {
+                            Ok(x)  => x,
+                            Err(_) => {
+                                exit_with_msg!(usr => "Failed to parse Reed-Solomon erasure code data shard count");
+                            }
+                        }
+                    }
                 };
                 let parity_shards = match matches.value_of("rs_parity") {
                     None    => {
                         exit_with_msg!(usr => "Reed-Solomon erasure code parity shard count must be specified for version {}", ver_usize);
                     },
-                    Some(x) => x
+                    Some(x) => {
+                        match usize::from_str(&x) {
+                            Ok(x)  => x,
+                            Err(_) => {
+                                exit_with_msg!(usr => "Failed to parse Reed-Solomon erasure code parity shard count");
+                            }
+                        }
+                    }
                 };
                 match ReedSolomon::new(data_shards, parity_shards) {
                     Ok(_)                          => {},
@@ -415,10 +431,16 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
         }
     }
     else if let Some(matches) = matches.subcommand_matches("show") {
+        return 0;
     }
     else if let Some(matches) = matches.subcommand_matches("repair") {
+        return 0;
     }
-    else if let Some(matches) = matches.subcommand_matches("verify") {
+    else if let Some(matches) = matches.subcommand_matches("check") {
+        return 0;
+    }
+    else {
+        exit_with_msg!(usr => "Please specify subcommand");
     }
 }
 
