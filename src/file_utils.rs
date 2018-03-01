@@ -16,6 +16,12 @@ pub fn get_file_metadata(file : &str) -> Result<fs::Metadata, Error> {
     reader.metadata()
 }
 
+pub fn get_file_size(file : &str) -> Result<u64, Error> {
+    let metadata = get_file_metadata(file)?;
+
+    Ok(metadata.len())
+}
+
 pub fn check_if_file_exists(file : &str) -> bool {
     Path::new(file).exists()
 }

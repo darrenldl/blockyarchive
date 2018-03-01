@@ -34,7 +34,8 @@ use super::sbx_specs::ver_forces_meta_enabled;
 use super::sbx_specs::{ver_to_usize,
                        ver_to_block_size,
                        ver_to_data_size,
-                       ver_supports_rs};
+                       ver_supports_rs,
+                       ver_to_max_data_file_size};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
@@ -240,6 +241,27 @@ fn block_sync_and_write(block  : &mut Block,
 
 pub fn encode_file(param : &Param)
                    -> Result<Stats, Error> {
+    // setup file reader and writer
+    let mut reader = FileReader::new(&param.in_file,
+                                     FileReaderParam { write    : false,
+                                                       buffered : true   })?;
+    let mut writer = FileWriter::new(&param.out_file,
+                                     FileWriterParam { read     : false,
+                                                       append   : false,
+                                                       buffered : true   })?;
+
+    { // check if in file size exceeds maximum
+        let in_file_size     = reader.metadata()?.len();
+        let max_in_file_size = ver_to_max_data_file_size(param.version);
+
+        if in_file_size > max_in_file_size {
+            return Err(Error::with_message(&format!("File size of \"{}\" exceeds the maximum supported file size, size : {}, max : {}",
+                                                    &param.in_file,
+                                                    in_file_size,
+                                                    max_in_file_size)));
+        }
+    }
+
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
     // setup stats
@@ -250,15 +272,6 @@ pub fn encode_file(param : &Param)
                                          "Data encoding progress",
                                          "chunks",
                                          param.silence_level);
-
-    // setup file reader and writer
-    let mut reader = FileReader::new(&param.in_file,
-                                     FileReaderParam { write    : false,
-                                                       buffered : true   })?;
-    let mut writer = FileWriter::new(&param.out_file,
-                                     FileWriterParam { read     : false,
-                                                       append   : false,
-                                                       buffered : true   })?;
 
     // set up hash state
     let mut hash_ctx =
