@@ -490,7 +490,8 @@ pub fn decode_file(param : &Param)
         Some(ref out) => {
             if file_utils::check_if_file_is_dir(&out) {
                 match recorded_file_name {
-                    None    => { return Err(Error::with_message("No original file name was found in SBX container and output file name/path is a directory")); }
+                    None    => { return Err(Error::with_message(&format!("No original file name was found in SBX container and \"{}\" is a directory",
+                                                                         &out))); }
                     Some(x) => {
                         misc_utils::make_path(&[&out, &x])
                     }
@@ -504,7 +505,7 @@ pub fn decode_file(param : &Param)
     // check if can write out
     if !param.force_write {
         if file_utils::check_if_file_exists(&out_file_path) {
-            return Err(Error::with_message(&format!("File : {} already exists",
+            return Err(Error::with_message(&format!("File \"{}\" already exists",
                                                     out_file_path)));
         }
     }

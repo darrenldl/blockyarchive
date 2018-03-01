@@ -18,7 +18,8 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .required(true)
              .index(1)
              .help("SBX container to decode"))
-        .arg(Arg::with_name("OUT")
+        .arg(Arg::with_name("out_file")
+             .value_name("OUT")
              .index(2)
              .help("Decoded file name. If OUT is not provided, then name stored in sbx
 container is used if present. If OUT is provided and is a
