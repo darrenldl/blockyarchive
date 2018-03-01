@@ -230,8 +230,6 @@ pub fn rescue_from_file(param : &Param)
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
         [0; SBX_LARGEST_BLOCK_SIZE];
 
-    let mut path_buf : [String; 2] = [param.out_dir.clone(), String::from("")];
-
     reporter.start();
 
     // read from log file if it exists
@@ -287,8 +285,7 @@ pub fn rescue_from_file(param : &Param)
 
         // write block out
         let uid_str = misc_utils::bytes_to_upper_hex_string(&block.get_file_uid());
-        path_buf[1] = uid_str;
-        let path    = misc_utils::make_path(&path_buf);
+        let path    = misc_utils::make_path(&[&param.out_dir, &uid_str]);
         let mut writer = FileWriter::new(&path,
                                          FileWriterParam { read     : false,
                                                            append   : true,
