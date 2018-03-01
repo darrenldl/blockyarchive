@@ -83,7 +83,28 @@ mod worker;
 
 const RSBX_VER_STR : &str = "1.0";
 
-fn main () {
+macro_rules! exit_with_msg {
+    (
+        ok => $($x:expr),*
+    ) => {{
+        println!($($x),*);
+        return 0;
+    }};
+    (
+        usr => $($x:expr),*
+    ) => {{
+        println!($($x),*);
+        return 1;
+    }};
+    (
+        op => $($x:expr),*
+    ) => {{
+        println!($($x),*);
+        return 2;
+    }}
+}
+
+fn real_main () -> i32 {
     let matches = App::new("rsbx")
         .version(RSBX_VER_STR)
         .author("Darren Ldl <darrenldldev@gmail.com>")
@@ -283,23 +304,20 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
                     match misc_utils::hex_string_to_bytes(x) {
                         Ok(x) => {
                             if x.len() != SBX_FILE_UID_LEN {
-                                println!("UID must be {} bytes({} hex characters) in length",
-                                         SBX_FILE_UID_LEN,
-                                         SBX_FILE_UID_LEN * 2);
-                                return;
+                                exit_with_msg!(usr => "UID must be {} bytes({} hex characters) in length",
+                                               SBX_FILE_UID_LEN,
+                                               SBX_FILE_UID_LEN * 2);
                             }
 
                             uid.copy_from_slice(&x);
                         },
                         Err(InvalidHexString) => {
-                            println!("UID provided is not a valid hex string");
-                            return;
+                            exit_with_msg!(usr => "UID provided is not a valid hex string");
                         },
                         Err(InvalidLen) => {
-                            println!("UID provided does not have the correct number of hex digits, provided : {}, need : {}",
-                                     x.len(),
-                                     SBX_FILE_UID_LEN * 2);
-                            return;
+                            exit_with_msg!(usr => "UID provided does not have the correct number of hex digits, provided : {}, need : {}",
+                                           x.len(),
+                                           SBX_FILE_UID_LEN * 2);
                         }
                     }
                 }
@@ -313,41 +331,60 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
                 Some(x) => match string_to_ver(&x) {
                     Ok(v)   => v,
                     Err(()) => {
-                        println!("Invalid version string");
-                        return;
+                        exit_with_msg!(usr => "Invalid version string");
                     }
                 }
             };
 
         let ver_usize = ver_to_usize(version);
 
-        let mut rs_data   = 0;
-        let mut rs_parity = 0;
-        /*if ver_supports_rs(version) {
-            // deal with RS related options
-            match matches.value_of("rs_data") {
-                None    => {
-                    println!("Reed-Solomon erasure code data shard count must be specified for version {}", ver_usize);
-                    return;
-                },
-                Some(x) => {
-                    println!("Reed");
+        let (rs_data, rs_parity) =
+            if ver_supports_rs(version) {
+                use reed_solomon_erasure::ReedSolomon;
+                use reed_solomon_erasure::Error;
+                // deal with RS related options
+                let data_shards = match matches.value_of("rs_data") {
+                    None    => {
+                        exit_with_msg!(usr => "Reed-Solomon erasure code data shard count must be specified for version {}", ver_usize);
+                    },
+                    Some(x) => x
+                };
+                let parity_shards = match matches.value_of("rs_parity") {
+                    None    => {
+                        exit_with_msg!(usr => "Reed-Solomon erasure code parity shard count must be specified for version {}", ver_usize);
+                    },
+                    Some(x) => x
+                };
+                match ReedSolomon::new(data_shards, parity_shards) {
+                    Ok(_)                          => {},
+                    Err(Error::TooFewDataShards)   => {
+                        exit_with_msg!(usr => "Too few data shards for Reed-Solomon erasure code");
+                    },
+                    Err(Error::TooFewParityShards) => {
+                        exit_with_msg!(usr => "Too few parity shards for Reed-Solomon erasure code");
+                    },
+                    Err(Error::TooManyShards)      => {
+                        exit_with_msg!(usr => "Too many shards for Reed-Solomon erasure code");
+                    },
+                    Err(_)                         => { panic!(); }
                 }
-            }
-        }*/
+                (data_shards, parity_shards)
+            } else {
+                (0, 0) // use whatever value
+            };
 
         let param = Param::new(version,
                                &uid,
-                               10,
-                               2,
+                               rs_data,
+                               rs_parity,
                                matches.is_present("no_meta"),
                                multihash::HashType::SHA256,
                                "test",
                                "test.sbx",
                                progress_report::SilenceLevel::L0);
         match encode_core::encode_file(&param) {
-            Ok(s)  => print!("{}", s),
-            Err(e) => print!("{}", e)
+            Ok(s)  => exit_with_msg!(ok => "{}", s),
+            Err(e) => exit_with_msg!(op => "{}", e)
         }
     }
     else if let Some(matches) = matches.subcommand_matches("decode") {
@@ -357,8 +394,8 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
                                "test2",
                                progress_report::SilenceLevel::L0);
         match decode_core::decode_file(&param) {
-            Ok(s)  => print!("{}", s),
-            Err(e) => print!("{}", e)
+            Ok(s)  => exit_with_msg!(ok => "{}", s),
+            Err(e) => exit_with_msg!(op => "{}", e)
         }
     }
     else if let Some(matches) = matches.subcommand_matches("rescue") {
@@ -373,8 +410,8 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
                                None,
                                progress_report::SilenceLevel::L0);
         match rescue_core::rescue_from_file(&param) {
-            Ok(s)  => print!("{}", s),
-            Err(e) => print!("{}", e),
+            Ok(s)  => exit_with_msg!(ok => "{}", s),
+            Err(e) => exit_with_msg!(op => "{}", e)
         }
     }
     else if let Some(matches) = matches.subcommand_matches("show") {
@@ -383,4 +420,8 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
     }
     else if let Some(matches) = matches.subcommand_matches("verify") {
     }
+}
+
+fn main() {
+    std::process::exit(real_main())
 }
