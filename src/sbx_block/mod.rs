@@ -49,6 +49,7 @@ pub enum Error {
     InsufficientBufferSize,
     IncorrectBufferSize,
     TooMuchMetaData,
+    InvalidCRC,
     ParseError
 }
 
@@ -463,6 +464,8 @@ impl Block {
 
         check_buffer!(self, buffer);
 
+        self.enforce_crc(buffer)?;
+
         match self.data {
             Data::Meta(ref mut meta) => {
                 if self.header.seq_num.0 == 0 {
@@ -483,5 +486,15 @@ impl Block {
                       buffer : &[u8])
                       -> Result<bool, Error> {
         Ok(self.header.crc == self.calc_crc(buffer)?)
+    }
+
+    pub fn enforce_crc(&self,
+                       buffer : &[u8])
+                       -> Result<(), Error> {
+        if self.verify_crc(buffer)? {
+            Ok(())
+        } else {
+            Err(Error::InvalidCRC)
+        }
     }
 }
