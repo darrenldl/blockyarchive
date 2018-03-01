@@ -1,5 +1,11 @@
 # Specification of rust-SeqBox
 
+## Exit code
+Rsbx returns
+- 0 if no errors occured
+- 1 if error is detected in user input(i.e. parameters provided)
+- 2 if error is detected during operation
+
 ## Error handling behaviour in general
   - Rsbx does **not** remove the generated file(s) even in case of failure
     - This applies to encoding, decoding, rescuing (showing does not generate any files)
