@@ -10,6 +10,80 @@ use std::path::Path;
 
 use super::*;
 
+pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name("encode")
+        .about("Encode file")
+        .arg(Arg::with_name("in_file")
+             .value_name("INFILE")
+             .required(true)
+             .index(1)
+             .help("File to encode"))
+        .arg(Arg::with_name("out_file")
+             .value_name("OUT")
+             .index(2)
+             .help("SBX container name (defaults to INFILE.sbx). If OUT is a
+directory(DIR), then the final file will be stored as
+DIR/INFILE.sbx."))
+                    .arg(Arg::with_name("force")
+                         .short("f")
+                         .long("force")
+                         .help("Force overwrite even if OUT exists"))
+                    .arg(Arg::with_name("hash_type")
+                         .value_name("HASH-TYPE")
+                         .long("hash")
+                         .takes_value(true)
+                         .default_value("sha256")
+                         .help("Hash function to use, one of (case-insensitive) :
+    sha1
+    sha256 (default)
+    sha512
+    blake2b-512"))
+                    .arg(Arg::with_name("no_meta")
+                         .long("no-meta")
+                         .help("Skip metadata block in the SBX container. Metadata block is
+never skipped for version 11, 12, 13.
+This means this option does nothing for version 11, 12, 13."))
+                    .arg(Arg::with_name("silence_level")
+                         .value_name("LEVEL")
+                         .short("s")
+                         .long("silent")
+                         .takes_value(true)
+                         .help("One of :
+    0 (show everything)
+    1 (only show progress stats when done)
+    2 (show nothing)
+This only affects progress text printing."))
+                    .arg(Arg::with_name("sbx_version")
+                         .value_name("SBX-VERSION")
+                         .long("sbx-version")
+                         .takes_value(true)
+                         .default_value("1")
+                         .help("Sbx container version, one of :
+    1  (bs=512  bytes)
+    2  (bs=128  bytes)
+    3  (bs=4096 bytes)
+    11 (bs=512  bytes, Reed-Solomon enabled)
+    12 (bs=128  bytes, Reed-Solomon enabled)
+    13 (bs=4096 bytes, Reed-Solomon enabled)
+where bs=sbx block size."))
+                    .arg(Arg::with_name("uid")
+                         .value_name("UID-HEX")
+                         .long("uid")
+                         .takes_value(true)
+                         .help("Alternative file uid in hex (by default uid is randomly generated).
+Uid must be exactly 6 bytes(12 hex digits) in length."))
+                    .arg(Arg::with_name("rs_data")
+                         .value_name("SHARD")
+                         .long("rs-data")
+                         .takes_value(true)
+                         .help("Reed-Solomon data shard count"))
+                    .arg(Arg::with_name("rs_parity")
+                         .value_name("SHARD")
+                         .long("rs-parity")
+                         .takes_value(true)
+                         .help("Reed-Solomon parity shard count"))
+}
+
 pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
     // compute uid
     let mut uid : [u8; SBX_FILE_UID_LEN] = [0; SBX_FILE_UID_LEN];
