@@ -146,7 +146,7 @@ fn real_main () -> i32 {
                     .arg(Arg::with_name("out_file")
                          .value_name("OUT")
                          .index(2)
-                         .help("Sbx container name (defaults to INFILE.sbx). If OUT is a
+                         .help("SBX container name (defaults to INFILE.sbx). If OUT is a
 directory(DIR), then the final file will be stored as
 DIR/INFILE.sbx."))
                     .arg(Arg::with_name("force")
@@ -165,7 +165,7 @@ DIR/INFILE.sbx."))
     blake2b-512"))
                     .arg(Arg::with_name("no_meta")
                          .long("no-meta")
-                         .help("Skip metadata block in the sbx container. Metadata block is
+                         .help("Skip metadata block in the SBX container. Metadata block is
 never skipped for version 11, 12, 13.
 This means this option does nothing for version 11, 12, 13."))
                     .arg(Arg::with_name("silence_level")
@@ -202,6 +202,11 @@ Uid must be exactly 6 bytes(12 hex digits) in length."))
                          .long("rs-data")
                          .takes_value(true)
                          .help("Reed-Solomon data shard count"))
+                    .arg(Arg::with_name("rs_parity")
+                         .value_name("SHARD")
+                         .long("rs-parity")
+                         .takes_value(true)
+                         .help("Reed-Solomon parity shard count"))
         )
         .subcommand(SubCommand::with_name("decode")
                     .about("Decode file")
