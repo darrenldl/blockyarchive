@@ -141,7 +141,7 @@ pub fn calc_required_len_and_seek_to_from_byte_range
                            seek_to      : align(from_byte + bytes_so_far) }
 }
 
-pub fn make_path(path_parts : &[String]) -> String {
+pub fn make_path(path_parts : &[&str]) -> String {
     fn strip_slash(string : &str) -> &str {
         let str_len = string.len();
         match str_len {
@@ -162,7 +162,7 @@ pub fn make_path(path_parts : &[String]) -> String {
     let mut string = String::with_capacity(200);
     let len = path_parts.len();
     for i in 0..len {
-        string.push_str(strip_slash(&path_parts[i]));
+        string.push_str(strip_slash(path_parts[i]));
         if i != len - 1 {
             string.push('/');
         }

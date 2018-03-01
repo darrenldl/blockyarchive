@@ -416,7 +416,7 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
             Some(x) => {
                 let x =
                     if file_utils::check_if_file_is_dir(x) {
-                        format!("{}/{}.sbx", x, in_file)
+                        misc_utils::make_path(&[x, in_file])
                     } else {
                         String::from(x)
                     };
