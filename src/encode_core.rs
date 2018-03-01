@@ -232,9 +232,10 @@ fn block_sync_and_write(block  : &mut Block,
 
     writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
 
-    block.add1_seq_num();
-
-    Ok(())
+    match block.add1_seq_num() {
+        Ok(_)  => Ok(()),
+        Err(_) => Err(Error::with_message("Block seq num already at max, addition causes overflow. This might be due to file size has changed during the encoding"))
+    }
 }
 
 pub fn encode_file(param : &Param)

@@ -20,8 +20,6 @@ use self::crc::*;
 
 use super::multihash;
 
-use std::num::Wrapping;
-
 macro_rules! make_meta_getter {
     (
         $func_name:ident => $meta_id:ident => $ret_type:ty
@@ -50,6 +48,7 @@ pub enum Error {
     IncorrectBufferSize,
     TooMuchMetaData,
     InvalidCRC,
+    SeqNumOverflow,
     ParseError
 }
 
@@ -243,25 +242,32 @@ impl Block {
     }
 
     pub fn get_seq_num(&self) -> u32 {
-        self.header.seq_num.0
+        self.header.seq_num
     }
 
     pub fn set_seq_num(&mut self,
                        seq_num : u32) {
-        self.header.seq_num.0 = seq_num;
+        self.header.seq_num = seq_num;
 
         self.switch_block_type_to_match_header();
     }
 
     pub fn add_seq_num(&mut self,
-                       val : u32) {
-        self.header.seq_num += Wrapping(val);
+                       val : u32)
+                       -> Result<(), Error> {
+        match self.header.seq_num.checked_add(val) {
+            None    => { return Err(Error::SeqNumOverflow); },
+            Some(x) => { self.header.seq_num = x; }
+        }
 
         self.switch_block_type_to_match_header();
+
+        Ok(())
     }
 
-    pub fn add1_seq_num(&mut self) {
-        self.add_seq_num(1);
+    pub fn add1_seq_num(&mut self)
+                        -> Result<(), Error> {
+        self.add_seq_num(1)
     }
 
     pub fn block_type(&self) -> BlockType {
@@ -301,7 +307,7 @@ impl Block {
             Data::Meta(_) => None,
             Data::Data    => {
                 let data_index =
-                    self.header.seq_num.0
+                    self.header.seq_num
                     - ver_first_data_seq_num(self.header.version) as u32;
 
                 match dat_par_shards {
@@ -468,7 +474,7 @@ impl Block {
 
         match self.data {
             Data::Meta(ref mut meta) => {
-                if self.header.seq_num.0 == 0 {
+                if self.header.seq_num == 0 {
                     meta.clear();
                     let res = metadata::from_bytes(slice_buf!(data => self, buffer))?;
                     for r in res.into_iter() {

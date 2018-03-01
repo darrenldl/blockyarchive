@@ -267,9 +267,11 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
 
     if      let Some(matches) = matches.subcommand_matches("encode") {
         use encode_core::Param;
-        use sbx_specs::SBX_FILE_UID_LEN;
-        use sbx_specs::Version;
-        use sbx_specs::string_to_ver;
+        use sbx_specs::{SBX_FILE_UID_LEN,
+                        Version,
+                        string_to_ver,
+                        ver_supports_rs,
+                        ver_to_usize};
 
         // compute uid
         let mut uid : [u8; SBX_FILE_UID_LEN] = [0; SBX_FILE_UID_LEN];
@@ -294,7 +296,9 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
                             return;
                         },
                         Err(InvalidLen) => {
-                            println!("UID provided does not have the correct number of hex digits");
+                            println!("UID provided does not have the correct number of hex digits, provided : {}, need : {}",
+                                     x.len(),
+                                     SBX_FILE_UID_LEN * 2);
                             return;
                         }
                     }
@@ -314,6 +318,23 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
                     }
                 }
             };
+
+        let ver_usize = ver_to_usize(version);
+
+        let mut rs_data   = 0;
+        let mut rs_parity = 0;
+        /*if ver_supports_rs(version) {
+            // deal with RS related options
+            match matches.value_of("rs_data") {
+                None    => {
+                    println!("Reed-Solomon erasure code data shard count must be specified for version {}", ver_usize);
+                    return;
+                },
+                Some(x) => {
+                    println!("Reed");
+                }
+            }
+        }*/
 
         let param = Param::new(version,
                                &uid,
