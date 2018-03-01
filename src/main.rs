@@ -448,7 +448,7 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
                                rs_data,
                                rs_parity,
                                matches.is_present("no_meta"),
-                               multihash::HashType::SHA256,
+                               hash_type,
                                in_file,
                                &out_file,
                                silence_level);
