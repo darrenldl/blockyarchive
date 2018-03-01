@@ -1,5 +1,5 @@
 use super::clap::ArgMatches;
-use super::encode_core::Param;
+use super::decode_core::Param;
 use super::sbx_specs::{SBX_FILE_UID_LEN,
                        Version,
                        string_to_ver,
@@ -43,4 +43,15 @@ with using a data block as reference block."))
     1 (only show progress stats when done)
     2 (show nothing)
 This only affects progress text printing."))
+}
+
+pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
+    let param = Param::new(false,
+                           "test.sbx",
+                           "test2",
+                           progress_report::SilenceLevel::L0);
+    match decode_core::decode_file(&param) {
+        Ok(s)  => exit_with_msg!(ok => "{}", s),
+        Err(e) => exit_with_msg!(op => "{}", e)
+    }
 }
