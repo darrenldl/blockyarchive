@@ -303,10 +303,10 @@ pub fn encode_file(param : &Param)
                 block_sync_and_write(&mut block,
                                      p,
                                      &mut writer)?;
+
+                stats.lock().unwrap().meta_par_blocks_written += 1;
             }
         }
-
-        stats.lock().unwrap().meta_par_blocks_written += SBX_RS_METADATA_PARITY_COUNT as u32;
     }
 
     loop {
