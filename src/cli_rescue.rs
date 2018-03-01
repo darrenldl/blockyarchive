@@ -70,6 +70,27 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
 }
 
 pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
+    use sbx_block::BlockType;
+    let mut temp_uid = [0; SBX_FILE_UID_LEN];
+    let uid : Option<&[u8; SBX_FILE_UID_LEN]> = {
+        match matches.value_of("uid") {
+            None    => None ,
+            Some(x) => { parse_uid!(temp_uid, x); Some(&temp_uid) }
+        }
+    };
+
+    let block_type = match matches.value_of("block_type") {
+        None    => None,
+        Some(x) => {
+            if      x == "any"  { None }
+            else if x == "meta" { Some(BlockType::Meta) }
+            else if x == "data" { Some(BlockType::Data) }
+            else                {
+                exit_with_msg!(usr => "Invalid block type");
+            }
+        }
+    };
+
     let silence_level = get_silence_level!(matches);
 
     let in_file  = matches.value_of("in_file").unwrap();
@@ -91,8 +112,8 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
                            None,
                            None,
                            false,
-                           None,
-                           None,
+                           block_type,
+                           uid,
                            silence_level);
     match rescue_core::rescue_from_file(&param) {
         Ok(s)  => exit_with_msg!(ok => "{}", s),

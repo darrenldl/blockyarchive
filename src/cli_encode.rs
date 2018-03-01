@@ -81,28 +81,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
     {
         match matches.value_of("uid") {
             None    => { rand_utils::fill_random_bytes(&mut uid); },
-            Some(x) => {
-                use misc_utils::HexError::*;
-                match misc_utils::hex_string_to_bytes(x) {
-                    Ok(x) => {
-                        if x.len() != SBX_FILE_UID_LEN {
-                            exit_with_msg!(usr => "UID must be {} bytes({} hex characters) in length",
-                                           SBX_FILE_UID_LEN,
-                                           SBX_FILE_UID_LEN * 2);
-                        }
-
-                        uid.copy_from_slice(&x);
-                    },
-                    Err(InvalidHexString) => {
-                        exit_with_msg!(usr => "UID provided is not a valid hex string");
-                    },
-                    Err(InvalidLen) => {
-                        exit_with_msg!(usr => "UID provided does not have the correct number of hex digits, provided : {}, need : {}",
-                                       x.len(),
-                                       SBX_FILE_UID_LEN * 2);
-                    }
-                }
-            }
+            Some(x) => { parse_uid!(uid, x); }
         }
     }
 

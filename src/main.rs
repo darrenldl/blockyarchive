@@ -135,6 +135,33 @@ macro_rules! get_silence_level {
     }}
 }
 
+macro_rules! parse_uid {
+    (
+        $buf:expr, $uid:expr
+    ) => {{
+        use misc_utils::HexError::*;
+        match misc_utils::hex_string_to_bytes($uid) {
+            Ok(x) => {
+                if x.len() != SBX_FILE_UID_LEN {
+                    exit_with_msg!(usr => "UID must be {} bytes({} hex characters) in length",
+                                   SBX_FILE_UID_LEN,
+                                   SBX_FILE_UID_LEN * 2);
+                }
+
+                $buf.copy_from_slice(&x);
+            },
+            Err(InvalidHexString) => {
+                exit_with_msg!(usr => "UID provided is not a valid hex string");
+            },
+            Err(InvalidLen) => {
+                exit_with_msg!(usr => "UID provided does not have the correct number of hex digits, provided : {}, need : {}",
+                               $uid.len(),
+                               SBX_FILE_UID_LEN * 2);
+            }
+        }
+    }}
+}
+
 mod cli_encode;
 mod cli_decode;
 mod cli_rescue;
