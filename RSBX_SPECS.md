@@ -122,6 +122,7 @@ Data block is valid if and only if
   - For version 1, that means  496 * 2^32 - 1 =  ~1.9375 TiB, where 496 is data size, obtained via 512(block size) - 16(header size)
   - For version 2, that means  112 * 2^32 - 1 =  ~0.4375 TiB, where 112 is data size, obtained via 128(block size) - 16(header size)
   - For version 3, that means 4080 * 2^32 - 1 = ~15.9375 TiB, where 4080 is data size, obtained via 4096(block size) - 16(header size)
+- If the file size changes during encoding to beyond the threshold, then the sequence number will wrap around and cause incorrect encoding
 
 ## To successfully decode a sbx container
 - At least one valid data block for each position must exist
