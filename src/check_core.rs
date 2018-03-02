@@ -87,7 +87,8 @@ impl ProgressReport for Stats {
 
     fn units_so_far(&self)       -> u64      {
         (self.meta_or_par_blocks_decoded
-         + self.data_or_par_blocks_decoded) as u64
+         + self.data_or_par_blocks_decoded
+         + self.blocks_decode_failed) as u64
     }
 
     fn total_units(&self)        -> u64      { self.total_blocks as u64 }
@@ -95,7 +96,6 @@ impl ProgressReport for Stats {
 
 impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
-        let rs_enabled             = ver_uses_rs(self.version);
         let block_size             = ver_to_block_size(self.version);
         let time_elapsed           = (self.end_time - self.start_time) as i64;
         let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);

@@ -238,7 +238,8 @@ impl ProgressReport for Stats {
         (self.meta_blocks_decoded
          + self.meta_par_blocks_decoded
          + self.data_blocks_decoded
-         + self.data_par_blocks_decoded) as u64
+         + self.data_par_blocks_decoded
+         + self.blocks_decode_failed) as u64
     }
 
     fn total_units(&self)        -> u64      { self.total_blocks as u64 }
