@@ -462,6 +462,7 @@ pub fn decode_file(param : &Param)
             Some(x) => x,
         };
 
+    println!();
     if ref_block.is_meta() {
         println!("Using metadata block as reference, located at byte {} (0x{:X})",
                  ref_block_pos,
@@ -471,6 +472,7 @@ pub fn decode_file(param : &Param)
                  ref_block_pos,
                  ref_block_pos);
     }
+    println!();
 
     // get FNM of ref_block
     let recorded_file_name : Option<String> =
