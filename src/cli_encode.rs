@@ -3,7 +3,7 @@ use super::encode_core::Param;
 use super::sbx_specs::{SBX_FILE_UID_LEN,
                        Version,
                        string_to_ver,
-                       ver_supports_rs,
+                       ver_uses_rs,
                        ver_to_usize};
 use std::str::FromStr;
 use std::path::Path;
@@ -100,7 +100,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
     let ver_usize = ver_to_usize(version);
 
     let (rs_data, rs_parity) =
-        if ver_supports_rs(version) {
+        if ver_uses_rs(version) {
             use reed_solomon_erasure::ReedSolomon;
             use reed_solomon_erasure::Error;
             // deal with RS related options

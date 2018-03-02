@@ -3,7 +3,6 @@ use super::rescue_core::Param;
 use super::sbx_specs::{SBX_FILE_UID_LEN,
                        Version,
                        string_to_ver,
-                       ver_supports_rs,
                        ver_to_usize};
 use std::str::FromStr;
 use std::path::Path;

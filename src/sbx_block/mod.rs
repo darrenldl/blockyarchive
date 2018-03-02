@@ -14,7 +14,7 @@ use super::sbx_specs::{Version,
                        SBX_FILE_UID_LEN,
                        ver_to_block_size,
                        ver_first_data_seq_num,
-                       ver_supports_rs,
+                       ver_uses_rs,
                        SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM};
 use self::crc::*;
 
@@ -294,7 +294,7 @@ impl Block {
     pub fn is_parity(&self,
                      data_shards   : usize,
                      parity_shards : usize) -> bool {
-        ver_supports_rs(self.header.version)
+        ver_uses_rs(self.header.version)
             && seq_num_is_parity(self.get_seq_num(),
                                  data_shards,
                                  parity_shards)
@@ -477,7 +477,7 @@ impl Block {
                 // parse if it is metadata and not parity block
                 // or if it is a RS parity block
                 if self.header.seq_num == 0
-                    || ver_supports_rs(self.header.version) {
+                    || ver_uses_rs(self.header.version) {
                     meta.clear();
                     let res = metadata::from_bytes(slice_buf!(data => self, buffer))?;
                     for r in res.into_iter() {

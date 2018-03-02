@@ -124,7 +124,7 @@ pub fn ver_to_data_size(version : Version) -> usize {
     }
 }
 
-pub fn ver_supports_rs(version : Version) -> bool {
+pub fn ver_uses_rs(version : Version) -> bool {
     use self::Version::*;
     match version {
         V1  | V2  | V3  => false,
@@ -141,13 +141,13 @@ pub fn ver_forces_meta_enabled(version : Version) -> bool {
 }
 
 pub fn ver_first_data_seq_num(version : Version) -> u32 {
-    if ver_supports_rs(version) { SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32 }
+    if ver_uses_rs(version) { SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32 }
     else                        { 1 }
 }
 
 pub fn ver_to_max_data_block_count(version : Version) -> u32 {
     let meta_block_count =
-        if ver_supports_rs(version) {
+        if ver_uses_rs(version) {
             SBX_RS_ENABLED_METADATA_COUNT as u32
         } else {
             1

@@ -25,10 +25,7 @@ use super::sbx_specs::Version;
 use super::sbx_block::{Block, BlockType};
 use super::sbx_block;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-use super::sbx_specs::{ver_to_block_size,
-                       ver_to_data_size,
-                       ver_supports_rs,
-                       ver_to_usize};
+use super::sbx_specs::ver_to_usize;
 
 use std::str::from_utf8;
 

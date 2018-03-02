@@ -34,7 +34,7 @@ use super::sbx_specs::ver_forces_meta_enabled;
 use super::sbx_specs::{ver_to_usize,
                        ver_to_block_size,
                        ver_to_data_size,
-                       ver_supports_rs,
+                       ver_uses_rs,
                        ver_to_max_data_file_size};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -51,7 +51,7 @@ pub struct Stats {
 
 impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
-        let rs_enabled              = ver_supports_rs(self.version);
+        let rs_enabled              = ver_uses_rs(self.version);
         let block_size              = ver_to_block_size(self.version);
         let data_size               = ver_to_data_size(self.version);
         let meta_blocks_written     = self.meta_blocks_written;
@@ -119,7 +119,7 @@ impl Param {
             file_uid : file_uid.clone(),
             rs_data,
             rs_parity,
-            rs_enabled : ver_supports_rs(version),
+            rs_enabled : ver_uses_rs(version),
             meta_enabled : ver_forces_meta_enabled(version) || (!no_meta),
             hash_type,
             in_file  : String::from(in_file),

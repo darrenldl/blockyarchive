@@ -25,7 +25,7 @@ use super::sbx_block;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::{ver_to_block_size,
                        ver_to_data_size,
-                       ver_supports_rs,
+                       ver_uses_rs,
                        ver_to_usize};
 
 use std::str::from_utf8;
@@ -59,7 +59,7 @@ struct HashStats {
 
 impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
-        let rs_enabled              = ver_supports_rs(self.version);
+        let rs_enabled              = ver_uses_rs(self.version);
         let block_size              = ver_to_block_size(self.version);
         let recorded_hash           = &self.recorded_hash;
         let computed_hash           = &self.computed_hash;
@@ -291,7 +291,7 @@ pub fn decode(param         : &Param,
     }
 
     // deal with RS related stuff
-    if ver_supports_rs(ref_block.get_version()) {
+    if ver_uses_rs(ref_block.get_version()) {
         let ver_usize = ver_to_usize(ref_block.get_version());
         // must be metadata block, and must contain fields `RSD`, `RSP`
         if ref_block.is_data() {
