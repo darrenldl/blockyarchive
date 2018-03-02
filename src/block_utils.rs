@@ -125,10 +125,14 @@ pub fn get_ref_block(in_file            : &str,
 
     reporter.start();
 
+    let mut block_pos : u64 = 0;
+
     loop {
         let lazy_read_res = read_block_lazily(&mut block,
                                               &mut buffer,
                                               &mut reader)?;
+
+        block_pos = stats.lock().unwrap().bytes_processed;
 
         stats.lock().unwrap().bytes_processed += lazy_read_res.len_read as u64;
 
@@ -160,9 +164,9 @@ pub fn get_ref_block(in_file            : &str,
     reporter.stop();
 
     Ok(if     let Some(x) = meta_block {
-        Some((stats.lock().unwrap().bytes_processed, x))
+        Some((block_pos, x))
     } else if let Some(x) = data_block {
-        Some((stats.lock().unwrap().bytes_processed, x))
+        Some((block_pos, x))
     } else {
         None
     })
