@@ -188,7 +188,7 @@ pub trait ProgressReport {
     fn total_units(&self) -> u64;
 
     fn set_start_time(&mut self) {
-        *self.start_time_mut() = time_utils::get_time_now();
+        *self.start_time_mut() = time_utils::get_time_now(time_utils::TimeMode::UTC);
     }
 
     fn get_start_time(&mut self) -> f64 {
@@ -196,7 +196,7 @@ pub trait ProgressReport {
     }
 
     fn set_end_time(&mut self) {
-        *self.end_time_mut() = time_utils::get_time_now();
+        *self.end_time_mut() = time_utils::get_time_now(time_utils::TimeMode::UTC);
     }
 
     fn get_end_time(&mut self) -> f64 {
@@ -259,7 +259,7 @@ pub fn print_progress<T>(context        : &mut Context,
             context.finish_printed = true;
         }
 
-        context.last_report_time    = time_utils::get_time_now();
+        context.last_report_time    = time_utils::get_time_now(time_utils::TimeMode::UTC);
         context.last_reported_units = units_so_far;
     }
 }
@@ -316,7 +316,7 @@ fn make_message(context      : &Context,
             0
         };
     let percent                = helper::calc_percent(units_so_far, total_units);
-    let cur_time               = time_utils::get_time_now();
+    let cur_time               = time_utils::get_time_now(time_utils::TimeMode::UTC);
     let time_used              =
         f64_max(end_time - start_time, 0.1);
     let time_since_last_report =

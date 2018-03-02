@@ -1,9 +1,23 @@
-use super::time;
+use super::chrono::prelude::*;
 
-pub fn get_time_now() -> f64 {
-    let time = time::get_time();
+pub enum TimeMode {
+    UTC,
+    Local
+}
 
-    time.sec as f64 + (time.nsec as f64 / 1_000_000_000.)
+pub fn get_time_now(mode : TimeMode) -> f64 {
+    let (sec, nsec) = match mode {
+        TimeMode::UTC   => {
+            let time = Utc::now();
+            (time.timestamp(), time.timestamp_subsec_nanos())
+        },
+        TimeMode::Local => {
+            let time = Local::now();
+            (time.timestamp(), time.timestamp_subsec_nanos())
+        }
+    };
+
+    sec as f64 + (nsec as f64 / 1_000_000_000.)
 }
 
 pub fn seconds_to_hms (total_secs : i64) -> (usize, usize, usize) {
