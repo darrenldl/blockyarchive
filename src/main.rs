@@ -256,7 +256,7 @@ fn real_main () -> i32 {
         return 0;
     }
     else if let Some(matches) = matches.subcommand_matches("check") {
-        return 0;
+        cli_check::check(matches)
     }
     else {
         exit_with_msg!(ok => "Invoke with -h or --help for help message");
