@@ -73,6 +73,7 @@ mod rescue_core;
 mod repair_core;
 mod show_core;
 mod sort_core;
+mod check_core;
 
 mod progress_report;
 
@@ -213,6 +214,14 @@ fn to_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
         .help("Last position to try to decode a block. If not specified, defaults
 to the end of file. Negative values are treated as 0. If TO-BYTE is
 smaller than FROM-BYTE, then it will be treated as FROM-BYTE.")
+}
+
+fn no_meta_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("no_meta")
+        .long("no-meta")
+        .help("Use first whatever valid block as reference block. Use this when
+the container does not have metadata block or when you are okay
+with using a data block as reference block.")
 }
 
 fn real_main () -> i32 {

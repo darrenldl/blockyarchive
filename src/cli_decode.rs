@@ -28,11 +28,7 @@ OUT is provided and is not a directory, then it is used directly."))
              .short("f")
              .long("force")
              .help("Force overwrite even if OUT exists"))
-        .arg(Arg::with_name("no_meta")
-             .long("no-meta")
-             .help("Use first whatever valid block as reference block. Use this when
-the container does not have metadata block or when you are okay
-with using a data block as reference block."))
+        .arg(no_meta_arg())
         .arg(silence_level_arg())
 }
 

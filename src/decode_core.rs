@@ -334,9 +334,7 @@ pub fn decode(param         : &Param,
         let len_read = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                             &mut buffer))?;
 
-        if len_read < block_size {
-            break;
-        }
+        if len_read < block_size { break; }
 
         if let Err(_) = block.sync_from_buffer(&buffer) {
             stats.lock().unwrap().blocks_decode_failed += 1;
@@ -459,7 +457,7 @@ pub fn decode_file(param : &Param)
         match block_utils::get_ref_block(&param.in_file,
                                          param.no_meta,
                                          param.silence_level)? {
-            None => { return Err(Error::with_message("failed to find reference block")); },
+            None => { return Err(Error::with_message("Failed to find reference block")); },
             Some(x) => x,
         };
 
