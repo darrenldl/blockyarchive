@@ -463,6 +463,12 @@ pub fn decode_file(param : &Param)
             Some(x) => x,
         };
 
+    if ref_block.is_meta() {
+        println!("Using metadata block as reference block");
+    } else {
+        println!("Using data block as reference block");
+    }
+
     // get FNM of ref_block
     let recorded_file_name : Option<String> =
         if ref_block.is_data() {
