@@ -123,11 +123,11 @@ pub fn check_file(param : &Param)
         };
 
     if ref_block.is_meta() {
-        println!("Using metadata block as reference, located at {} (0x{:X})",
+        println!("Using metadata block as reference, located at byte {} (0x{:X})",
                  ref_block_pos,
                  ref_block_pos);
     } else {
-        println!("Using data block as reference block, located at {} (0x{:X})",
+        println!("Using data block as reference block, located at byte {} (0x{:X})",
                  ref_block_pos,
                  ref_block_pos);
     }
@@ -176,7 +176,7 @@ pub fn check_file(param : &Param)
                 }
             },
             Err(_) => {
-                println!("Block at {} (0x{:X}) failed check, version : {}, block size : {}",
+                println!("Block at byte {} (0x{:X}) failed check, version : {}, block size : {}",
                          block_pos,
                          block_pos,
                          ver_usize,

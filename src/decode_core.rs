@@ -296,7 +296,7 @@ pub fn decode(param         : &Param,
         let ver_usize = ver_to_usize(ref_block.get_version());
         // must be metadata block, and must contain fields `RSD`, `RSP`
         if ref_block.is_data() {
-            return Err(Error::with_message(&format!("reference block at {} (0x{:X}) is not a metadata block(metadata block must be used to decode for version {})",
+            return Err(Error::with_message(&format!("reference block at byte {} (0x{:X}) is not a metadata block(metadata block must be used to decode for version {})",
                                                     ref_block_pos,
                                                     ref_block_pos,
                                                     ver_usize)));
@@ -304,7 +304,7 @@ pub fn decode(param         : &Param,
             data_shards = match ref_block.get_RSD().unwrap() {
                 Some(x) => Some(x as usize),
                 None    => {
-                    return Err(Error::with_message(&format!("Reference block at {} (0x{:X}) is a metadata block but does not have RSD field(must be present to decode for version {})",
+                    return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSD field(must be present to decode for version {})",
                                                             ref_block_pos,
                                                             ref_block_pos,
                                                             ver_usize)));
@@ -314,7 +314,7 @@ pub fn decode(param         : &Param,
             parity_shards = match ref_block.get_RSP().unwrap() {
                 Some(x) => Some(x as usize),
                 None    => {
-                    return Err(Error::with_message(&format!("Reference block at {} (0x{:X}) is a metadata block but does not have RSP field(must be present to decode for version {})",
+                    return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to decode for version {})",
                                                             ref_block_pos,
                                                             ref_block_pos,
                                                             ver_usize)));
@@ -463,11 +463,11 @@ pub fn decode_file(param : &Param)
         };
 
     if ref_block.is_meta() {
-        println!("Using metadata block as reference, located at {} (0x{:X})",
+        println!("Using metadata block as reference, located at byte {} (0x{:X})",
                  ref_block_pos,
                  ref_block_pos);
     } else {
-        println!("Using data block as reference block, located at {} (0x{:X})",
+        println!("Using data block as reference block, located at byte {} (0x{:X})",
                  ref_block_pos,
                  ref_block_pos);
     }
