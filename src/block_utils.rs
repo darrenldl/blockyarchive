@@ -125,16 +125,18 @@ pub fn get_ref_block(in_file            : &str,
 
     reporter.start();
 
-    let mut block_pos : u64 = 0;
+    let mut block_pos       : u64 = 0;
+    let mut bytes_processed : u64 = 0;
 
     loop {
         let lazy_read_res = read_block_lazily(&mut block,
                                               &mut buffer,
                                               &mut reader)?;
 
-        block_pos = stats.lock().unwrap().bytes_processed;
+        block_pos        = bytes_processed;
+        bytes_processed += lazy_read_res.len_read as u64;
 
-        stats.lock().unwrap().bytes_processed += lazy_read_res.len_read as u64;
+        stats.lock().unwrap().bytes_processed = bytes_processed;
 
         if lazy_read_res.eof     { break; }
 
