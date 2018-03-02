@@ -464,9 +464,13 @@ pub fn decode_file(param : &Param)
         };
 
     if ref_block.is_meta() {
-        println!("Using metadata block as reference block");
+        println!("Using metadata block as reference, located at {} (0x{:X})",
+                 ref_block_pos,
+                 ref_block_pos);
     } else {
-        println!("Using data block as reference block");
+        println!("Using data block as reference block, located at {} (0x{:X})",
+                 ref_block_pos,
+                 ref_block_pos);
     }
 
     // get FNM of ref_block
