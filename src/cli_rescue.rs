@@ -29,10 +29,6 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .help("Log file to keep track of the progress to survive interruptions.
 Note that you should use the same log file for the same file and
 range specified in the initial run."))
-        .arg(Arg::with_name("force_misalign")
-                         .long("force-misalign")
-                         .help("Disable automatic rounding down of FROM-BYTE. This is not normally
-used and is only intended for data recovery or related purposes."))
         .arg(Arg::with_name("block_type")
                          .value_name("TYPE")
                          .long("only-pick-block")
@@ -47,26 +43,10 @@ used and is only intended for data recovery or related purposes."))
              .takes_value(true)
              .help("Only pick blocks with UID-HEX as uid. Uid must be exactly 6
 bytes(12 hex digits) in length."))
+        .arg(force_misalign_arg())
         .arg(silence_level_arg())
-        .arg(Arg::with_name("from_pos")
-             .value_name("FROM-BYTE")
-             .long("from")
-             .visible_alias("skip-to")
-             .takes_value(true)
-             .help("Start from byte FROM-BYTE. The position is automatically rounded
-down to the closest multiple of 128 bytes, after adding the bytes
-processed field from the log file(if specified). If this option is
-not specified, defaults to the start of file. Negative values are
-treated as 0. If FROM-BYTE exceeds the largest possible
-position(file size - 1), then it will be treated as (file size - 1).
-The rounding procedure is applied after all auto-adjustments."))
-        .arg(Arg::with_name("to_pos")
-             .value_name("TO-BYTE")
-             .long("to")
-             .takes_value(true)
-             .help("Last position to try to decode a block. If not specified, defaults
-to the end of file. Negative values are treated as 0. If TO-BYTE is
-smaller than FROM-BYTE, then it will be treated as FROM-BYTE."))
+        .arg(from_byte_arg())
+        .arg(to_byte_arg())
 }
 
 pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {

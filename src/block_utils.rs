@@ -125,7 +125,7 @@ pub fn get_ref_block(in_file            : &str,
 
     reporter.start();
 
-    let mut block_pos       : u64 = 0;
+    let mut block_pos       : u64;
     let mut bytes_processed : u64 = 0;
 
     loop {

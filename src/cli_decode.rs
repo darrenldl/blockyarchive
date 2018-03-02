@@ -38,10 +38,6 @@ with using a data block as reference block."))
 }
 
 pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let no_meta = matches.is_present("no_meta");
-
-    let force_write = matches.is_present("force");
-
     let silence_level = get_silence_level!(matches);
 
     let in_file  = matches.value_of("in_file").unwrap();

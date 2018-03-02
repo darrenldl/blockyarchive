@@ -183,6 +183,38 @@ fn silence_level_arg<'a, 'b>() -> Arg<'a, 'b> {
 This only affects progress text printing.")
 }
 
+fn force_misalign_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("force_misalign")
+        .long("force-misalign")
+        .help("Disable automatic rounding down of FROM-BYTE. This is not normally
+used and is only intended for data recovery or related purposes.")
+}
+
+fn from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("from_pos")
+        .value_name("FROM-BYTE")
+        .long("from")
+        .visible_alias("skip-to")
+        .takes_value(true)
+        .help("Start from byte FROM-BYTE. The position is automatically rounded
+down to the closest multiple of 128 bytes, after adding the bytes
+processed field from the log file(if specified). If this option is
+not specified, defaults to the start of file. Negative values are
+treated as 0. If FROM-BYTE exceeds the largest possible
+position(file size - 1), then it will be treated as (file size - 1).
+The rounding procedure is applied after all auto-adjustments.")
+}
+
+fn to_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("to_pos")
+        .value_name("TO-BYTE")
+        .long("to")
+        .takes_value(true)
+        .help("Last position to try to decode a block. If not specified, defaults
+to the end of file. Negative values are treated as 0. If TO-BYTE is
+smaller than FROM-BYTE, then it will be treated as FROM-BYTE.")
+}
+
 fn real_main () -> i32 {
     use std::str::FromStr;
     use std::path::Path;
@@ -209,7 +241,7 @@ fn real_main () -> i32 {
         cli_rescue::rescue(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("show") {
-        return 0;
+        cli_show::show(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("repair") {
         return 0;
