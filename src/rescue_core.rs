@@ -247,7 +247,7 @@ pub fn rescue_from_file(param : &Param)
     let RequiredLenAndSeekTo { required_len, seek_to } =
         misc_utils::calc_required_len_and_seek_to_from_byte_range(param.from_pos,
                                                                   param.to_pos,
-                                                                  false,
+                                                                  param.force_misalign,
                                                                   stats.lock().unwrap().bytes_processed,
                                                                   metadata.len());
 
