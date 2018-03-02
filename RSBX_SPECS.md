@@ -11,7 +11,7 @@ rsbx returns
   - This applies to encoding, decoding, rescuing (showing does not generate any files)
   - This is mainly for in case the partial data is useful to the user
 
-## Encoding workflow
+## Encode workflow
 1. If metadata is enabled, the following file metadata are gathered from file or retrieved from user input : file name, SBX file name, file size, file last modification time, encoding start time
 2. If metadata is enabled, then a partial metadata block is written into the output file as filler
   - The written metadata block is valid, but does not contain the actual file hash, a filler pattern of 0x00 is used in place of the hash part of the multihash(the header and length indicator of multihash are still valid)
@@ -19,7 +19,7 @@ rsbx returns
   - data size = block size - header size (e.g. version 1 has data size of 512 - 16 = 496)
 4. If metadata is enabled, the encoder seeks back to starting position of output file and overwrites the metadata block with one that contains the actual hash
 
-## Decoding workflow
+## Decode workflow
 Metadata block is valid if and only if
 - Header can be parsed
 - All metadata fields(duplicate or not) can be parsed successfully
@@ -70,7 +70,7 @@ Data block is valid if and only if
 - Corrupted blocks or missing blocks are not repaired in this mode
 - User needs to invoke repair mode to repair the archive
 
-## Rescuing workflow
+## Rescue workflow
 1. Scan for valid blocks from start of the provided file using 128 bytes alignment
 - rescue mode rescues all 3 versions of SBX blocks
 - if log file is specified, then
