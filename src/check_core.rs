@@ -122,6 +122,7 @@ pub fn check_file(param : &Param)
             Some(x) => x,
         };
 
+    println!();
     if ref_block.is_meta() {
         println!("Using metadata block as reference, located at byte {} (0x{:X})",
                  ref_block_pos,
@@ -131,6 +132,7 @@ pub fn check_file(param : &Param)
                  ref_block_pos,
                  ref_block_pos);
     }
+    println!();
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
@@ -184,6 +186,10 @@ pub fn check_file(param : &Param)
                 stats.lock().unwrap().blocks_decode_failed += 1;
             }
         }
+    }
+
+    if stats.lock().unwrap().blocks_decode_failed > 0 {
+        println!();
     }
 
     reporter.stop();
