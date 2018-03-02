@@ -303,7 +303,7 @@ pub fn decode(param         : &Param,
             data_shards = match ref_block.get_RSD().unwrap() {
                 Some(x) => Some(x as usize),
                 None    => {
-                    return Err(Error::with_message(&format!("reference block at {} (0x{:X}) is a metadata block but does not have RSD field(must be present to decode for version {})",
+                    return Err(Error::with_message(&format!("Reference block at {} (0x{:X}) is a metadata block but does not have RSD field(must be present to decode for version {})",
                                                             ref_block_pos,
                                                             ref_block_pos,
                                                             ver_usize)));
@@ -313,7 +313,7 @@ pub fn decode(param         : &Param,
             parity_shards = match ref_block.get_RSP().unwrap() {
                 Some(x) => Some(x as usize),
                 None    => {
-                    return Err(Error::with_message(&format!("reference block at {} (0x{:X}) is a metadata block but does not have RSP field(must be present to decode for version {})",
+                    return Err(Error::with_message(&format!("Reference block at {} (0x{:X}) is a metadata block but does not have RSP field(must be present to decode for version {})",
                                                             ref_block_pos,
                                                             ref_block_pos,
                                                             ver_usize)));
