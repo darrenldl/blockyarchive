@@ -35,6 +35,8 @@ I would like to thank [Marco](https://github.com/MarcoPon) (official SeqBox auth
 
 I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of the osbx project, of which most of the designs are carried over to rsbx, and also his further feedback on this project as well.
 
+The design of the readable rate in progress report text is copied from Arch Linux pacman's progress bar design.
+
 ## License
 
 #### Libcrc code
