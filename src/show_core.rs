@@ -165,51 +165,56 @@ pub fn show_file(param : &Param)
                 println!("========================================");
             }
 
-            println!(                      "Found at byte          : {} (0x{:X})",
-                                            block_pos,
-                                            block_pos);
+            println!("Found at byte          : {} (0x{:X})", block_pos, block_pos);
             println!();
-            println!(                      "File UID               : {}",
-                                            misc_utils::bytes_to_upper_hex_string(
-                                                &block.get_file_uid()));
-            match block.get_FNM().unwrap() {
-                None    => println!(       "File name              : N/A"),
+            println!("File UID               : {}",
+                     misc_utils::bytes_to_upper_hex_string(
+                         &block.get_file_uid()));
+            println!("File name              : {}", match block.get_FNM().unwrap() {
+                None    => "N/A".to_string(),
                 Some(x) => {
                     match from_utf8(&x) {
-                        Ok(x)  => println!("File name              : {}", x),
-                        Err(_) => println!("File name              : Invalid UTF-8 string")
+                        Ok(x)  => x.to_string(),
+                        Err(_) => "Invalid UTF-8 string".to_string()
                     }
                 }
-            }
-            match block.get_SNM().unwrap() {
-                None    => println!(       "SBX container name     : N/A"),
+            });
+            println!("SBX container name     : {}", match block.get_SNM().unwrap() {
+                None    => "N/A".to_string(),
                 Some(x) => {
                     match from_utf8(&x) {
-                        Ok(x)  => println!("SBX container name     : {}", x),
-                        Err(_) => println!("SBX container name     : Invalid UTF-8 string")
+                        Ok(x)  => x.to_string(),
+                        Err(_) => "Invalid UTF-8 string".to_string()
                     }
                 }
-            }
-            println!(                      "SBX container version  : {}",
-                                            ver_to_usize(block.get_version()));
-            match block.get_FSZ().unwrap() {
-                None    => println!(       "File size              : N/A"),
-                Some(x) => println!(       "File size              : {}", x)
-            }
-            match block.get_FDT().unwrap() {
-                None    => println!(       "File modification time : N/A"),
-                Some(x) => println!(       "File modification time : {}", x)
-            }
-            match block.get_SDT().unwrap() {
-                None    => println!(       "SBX encoding time      : N/A"),
-                Some(x) => println!(       "SBX encoding time      : {}", x)
-            }
-            match block.get_HSH().unwrap() {
-                None    => println!(       "Hash                   : N/A"),
-                Some(h) => println!(       "Hash                   : {} - {}",
-                                            hash_type_to_string(h.0),
-                                            misc_utils::bytes_to_lower_hex_string(&h.1))
-            }
+            });
+            println!("SBX container version  : {}", ver_to_usize(block.get_version()));
+            println!("File size              : {}", match block.get_FSZ().unwrap() {
+                None    => "N/A".to_string(),
+                Some(x) => x.to_string()
+            });
+            println!("File modification time : {}", match block.get_FDT().unwrap() {
+                None    => "N/A".to_string(),
+                Some(x) => match (time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::UTC),
+                                  time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::Local)) {
+                    (Some(u), Some(l)) => format!("{} (UTC)  {} (Local)", u, l),
+                    _                  => "Invalid recorded date time".to_string(),
+                }
+            });
+            println!("SBX encoding time      : {}", match block.get_SDT().unwrap() {
+                None    => "N/A".to_string(),
+                Some(x) => match (time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::UTC),
+                                  time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::Local)) {
+                    (Some(u), Some(l)) => format!("{} (UTC)  {} (Local)", u, l),
+                    _                  => "Invalid recorded date time".to_string(),
+                }
+            });
+            println!("Hash                   : {}", match block.get_HSH().unwrap() {
+                None    => "N/A".to_string(),
+                Some(h) => format!("{} - {}",
+                                   hash_type_to_string(h.0),
+                                   misc_utils::bytes_to_lower_hex_string(&h.1))
+            });
 
             meta_block_count += 1;
 
