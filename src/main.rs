@@ -224,6 +224,21 @@ the container does not have metadata block or when you are okay
 with using a data block as reference block.")
 }
 
+fn report_ref_block_type(ref_block_pos : u64,
+                         ref_block     : &sbx_block::Block) {
+    println!();
+    if ref_block.is_meta() {
+        println!("Using metadata block as reference, located at byte {} (0x{:X})",
+                 ref_block_pos,
+                 ref_block_pos);
+    } else {
+        println!("Using data block as reference block, located at byte {} (0x{:X})",
+                 ref_block_pos,
+                 ref_block_pos);
+    }
+    println!();
+}
+
 fn real_main () -> i32 {
     use std::str::FromStr;
     use std::path::Path;

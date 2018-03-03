@@ -33,10 +33,12 @@ use std::str::from_utf8;
 use super::time_utils;
 use super::block_utils;
 
+use super::report_ref_block_type;
+
 pub struct Param {
     no_meta       : bool,
-    in_file         : String,
-    silence_level   : SilenceLevel,
+    in_file       : String,
+    silence_level : SilenceLevel,
 }
 
 impl Param {
@@ -122,17 +124,7 @@ pub fn check_file(param : &Param)
             Some(x) => x,
         };
 
-    println!();
-    if ref_block.is_meta() {
-        println!("Using metadata block as reference, located at byte {} (0x{:X})",
-                 ref_block_pos,
-                 ref_block_pos);
-    } else {
-        println!("Using data block as reference block, located at byte {} (0x{:X})",
-                 ref_block_pos,
-                 ref_block_pos);
-    }
-    println!();
+    report_ref_block_type(ref_block_pos, &ref_block);
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
