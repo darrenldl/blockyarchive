@@ -184,6 +184,60 @@ pub fn seq_num_is_parity(seq_num       : u32,
     }
 }
 
+pub fn calc_rs_enabled_write_pos(seq_num          : u32,
+                                 version          : Version,
+                                 data_shards      : usize,
+                                 parity_shards    : usize,
+                                 burst_resilience : usize) -> u64 {
+    let index = seq_num as u64 - SBX_FIRST_DATA_SEQ_NUM as u64;
+
+    let data_shards      = data_shards      as u64;
+    let parity_shards    = parity_shards    as u64;
+    let burst_resilience = burst_resilience as u64;
+
+    let block_size = ver_to_block_size(version) as u64;
+
+    let super_block_set_size = (data_shards + parity_shards) * burst_resilience;
+
+    let sub_a_block_set_size = data_shards + parity_shards;
+    let sub_b_block_set_size = burst_resilience;
+
+    let super_block_set_index    = index / super_block_set_size;
+    let index_in_super_block_set = index % super_block_set_size;
+
+    let sub_a_block_set_index    = index_in_super_block_set / sub_a_block_set_size;
+    let index_in_sub_a_block_set = index_in_super_block_set % sub_a_block_set_size;
+
+    let sub_b_block_set_index    = index_in_sub_a_block_set;
+    let index_in_sub_b_block_set = sub_a_block_set_index;
+
+    let new_index_in_super_block_set =
+        sub_b_block_set_index * sub_b_block_set_size + index_in_sub_b_block_set;
+
+    // M = data_shards
+    // N = parity_shards
+    let new_index =
+        if super_block_set_index == 0 { // first super block set
+            // one metadata block at front of first (1 + N) sub B blocks
+            let meta_block_count =
+                if sub_b_block_set_index < 1 + parity_shards {
+                    1 + sub_b_block_set_index
+                } else {
+                    1 + parity_shards
+                };
+
+            meta_block_count + new_index_in_super_block_set
+        } else {
+            let meta_block_count = 1 + parity_shards;
+
+            meta_block_count
+                + (super_block_set_size * super_block_set_index)
+                + new_index_in_super_block_set
+        };
+
+    new_index
+}
+
 impl Block {
     pub fn new(version    : Version,
                file_uid   : &[u8; SBX_FILE_UID_LEN],
