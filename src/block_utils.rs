@@ -145,12 +145,12 @@ pub fn get_ref_block(in_file            : &str,
         match block.block_type() {
             BlockType::Meta => {
                 if let None = meta_block {
-                    meta_block = Some(block.clone());
+                    meta_block = Some((block_pos, block.clone()));
                 }
             },
             BlockType::Data => {
                 if let None = data_block {
-                    data_block = Some(block.clone());
+                    data_block = Some((block_pos, block.clone()));
                 }
             }
         }
@@ -165,11 +165,7 @@ pub fn get_ref_block(in_file            : &str,
 
     reporter.stop();
 
-    Ok(if     let Some(x) = meta_block {
-        Some((block_pos, x))
-    } else if let Some(x) = data_block {
-        Some((block_pos, x))
-    } else {
-        None
-    })
+    Ok(if      let Some(x) = meta_block { Some(x) }
+       else if let Some(x) = data_block { Some(x) }
+       else                             { None    })
 }
