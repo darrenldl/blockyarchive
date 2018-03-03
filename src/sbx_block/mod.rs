@@ -216,26 +216,24 @@ pub fn calc_rs_enabled_write_pos(seq_num          : u32,
 
     // M = data_shards
     // N = parity_shards
-    let new_index =
+    let meta_block_count =
         if super_block_set_index == 0 { // first super block set
             // one metadata block at front of first (1 + N) sub B blocks
-            let meta_block_count =
-                if sub_b_block_set_index < 1 + parity_shards {
-                    1 + sub_b_block_set_index
-                } else {
-                    1 + parity_shards
-                };
-
-            meta_block_count + new_index_in_super_block_set
+            if sub_b_block_set_index < 1 + parity_shards {
+                1 + sub_b_block_set_index
+            } else {
+                1 + parity_shards
+            }
         } else {
-            let meta_block_count = 1 + parity_shards;
-
-            meta_block_count
-                + (super_block_set_size * super_block_set_index)
-                + new_index_in_super_block_set
+            1 + parity_shards
         };
 
-    new_index
+    let new_index =
+        meta_block_count
+        + (super_block_set_size * super_block_set_index)
+        + new_index_in_super_block_set;
+
+    new_index * block_size
 }
 
 impl Block {
