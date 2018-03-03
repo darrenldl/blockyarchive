@@ -1,0 +1,31 @@
+//--------------------------------------
+//--- 010 Editor v6.0.3 Binary Template
+//
+// File: seqbox.bt
+// Author: Marco Pontello
+// Revision: 1
+// Purpose: Explore SeqBox container
+// https://github.com/MarcoPon/SeqBox
+//--------------------------------------
+
+local int BLOCKSIZE = 512;
+
+BigEndian();
+DisplayFormatHex();
+
+struct BLOCK {
+    struct HEADER {
+        struct MAGIC {
+            char    signature[3];
+        } magic;
+        byte    version; 
+        short   CRC16;
+        struct UID {
+            byte    uid[6];
+        } uid;
+        int     blocknum;
+    } header;
+    byte    data[BLOCKSIZE - sizeof(header)];
+} block[FileSize() / BLOCKSIZE];
+
+

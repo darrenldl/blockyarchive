@@ -1,0 +1,7 @@
+misc_tools/
+*.pyc
+*.zip
+*.dat
+*.sbx
+*.seqbox
+*.db3
