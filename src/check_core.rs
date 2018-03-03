@@ -178,12 +178,16 @@ pub fn check_file(param : &Param)
                 }
             },
             Err(_) => {
+                reporter.pause();
+
                 println!("Block at byte {} (0x{:X}) failed check, version : {}, block size : {}",
                          block_pos,
                          block_pos,
                          ver_usize,
                          block_size);
                 stats.lock().unwrap().blocks_decode_failed += 1;
+
+                reporter.resume();
             }
         }
     }
