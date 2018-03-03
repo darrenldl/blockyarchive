@@ -16,7 +16,7 @@ use super::progress_report::*;
 use super::sbx_specs::ver_to_block_size;
 use super::Error;
 
-pub struct ReadResult {
+pub struct LazyReadResult {
     pub len_read : usize,
     pub usable   : bool,
     pub eof      : bool,
@@ -53,23 +53,23 @@ impl ProgressReport for ScanStats {
 pub fn read_block_lazily(block  : &mut Block,
                          buffer : &mut [u8; SBX_LARGEST_BLOCK_SIZE],
                          reader : &mut FileReader)
-                         -> Result<ReadResult, Error> {
+                         -> Result<LazyReadResult, Error> {
     let mut total_len_read = 0;
 
     { // scan at 128 chunk size
-        total_len_read += reader.read(&mut buffer[0..SBX_SCAN_BLOCK_SIZE])?;
+        total_len_read += reader.read(&mut buffer[0..SBX_SCAN_BLOCK_SIZE])?.len_read;
 
         if total_len_read < SBX_SCAN_BLOCK_SIZE {
-            return Ok(ReadResult { len_read : total_len_read,
-                                   usable   : false,
-                                   eof      : true            });
+            return Ok(LazyReadResult { len_read : total_len_read,
+                                       usable   : false,
+                                       eof      : true            });
         }
 
         match block.sync_from_buffer_header_only(&buffer[0..SBX_SCAN_BLOCK_SIZE]) {
             Ok(()) => {},
-            Err(_) => { return Ok(ReadResult { len_read : total_len_read,
-                                               usable   : false,
-                                               eof      : false           }); }
+            Err(_) => { return Ok(LazyReadResult { len_read : total_len_read,
+                                                   usable   : false,
+                                                   eof      : false           }); }
         }
     }
 
@@ -77,25 +77,25 @@ pub fn read_block_lazily(block  : &mut Block,
         let block_size = ver_to_block_size(block.get_version());
 
         total_len_read +=
-            reader.read(&mut buffer[SBX_SCAN_BLOCK_SIZE..block_size])?;
+            reader.read(&mut buffer[SBX_SCAN_BLOCK_SIZE..block_size])?.len_read;
 
         if total_len_read < block_size {
-            return Ok(ReadResult { len_read : total_len_read,
-                                   usable   : false,
-                                   eof      : true            });
+            return Ok(LazyReadResult { len_read : total_len_read,
+                                       usable   : false,
+                                       eof      : true            });
         }
 
         match block.sync_from_buffer(&buffer[0..block_size]) {
             Ok(()) => {},
-            Err(_) => { return Ok(ReadResult { len_read : total_len_read,
-                                               usable   : false,
-                                               eof      : false           }); }
+            Err(_) => { return Ok(LazyReadResult { len_read : total_len_read,
+                                                   usable   : false,
+                                                   eof      : false           }); }
         }
     }
 
-    Ok(ReadResult { len_read : total_len_read,
-                    usable   : true,
-                    eof      : false           })
+    Ok(LazyReadResult { len_read : total_len_read,
+                        usable   : true,
+                        eof      : false           })
 }
 
 pub fn get_ref_block(in_file            : &str,

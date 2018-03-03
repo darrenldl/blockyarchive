@@ -310,10 +310,10 @@ pub fn decode(param         : &Param,
 
     loop {
         // read at reference block block size
-        let len_read = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                             &mut buffer))?;
 
-        if len_read < block_size { break; }
+        break_if_eof!(read_res);
 
         if let Err(_) = block.sync_from_buffer(&buffer) {
             stats.lock().unwrap().blocks_decode_failed += 1;
@@ -414,15 +414,13 @@ fn hash(param     : &Param,
     reporter.start();
 
     loop {
-        let len_read = reader.read(&mut buffer)?;
+        let read_res = reader.read(&mut buffer)?;
 
-        hash_ctx.update(&buffer[0..len_read]);
+        hash_ctx.update(&buffer[0..read_res.len_read]);
 
-        stats.lock().unwrap().bytes_processed += len_read as u64;
+        stats.lock().unwrap().bytes_processed += read_res.len_read as u64;
 
-        if len_read < HASH_FILE_BLOCK_SIZE {
-            break;
-        }
+        break_if_eof!(read_res);
     }
 
     reporter.stop();

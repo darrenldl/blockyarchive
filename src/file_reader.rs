@@ -62,6 +62,11 @@ enum FileHandle {
     Unbuffered(File),
 }
 
+pub struct ReadResult {
+    pub len_read : usize,
+    pub eof      : bool,
+}
+
 pub struct FileReader {
     file          : FileHandle,
     path          : String,
@@ -93,7 +98,7 @@ impl FileReader {
         })
     }
 
-    pub fn read(&mut self, buf : &mut [u8]) -> Result<usize, Error> {
+    pub fn read(&mut self, buf : &mut [u8]) -> Result<ReadResult, Error> {
         let mut len_read = 0;
         let mut tries    = 0;
         while len_read < buf.len() && tries < READ_RETRIES {
@@ -105,7 +110,8 @@ impl FileReader {
             tries += 1;
         }
 
-        Ok(len_read)
+        Ok(ReadResult { len_read,
+                        eof      : len_read < buf.len() })
     }
 
     pub fn write(&mut self, buf : &[u8]) -> Result<usize, Error> {

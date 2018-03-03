@@ -342,10 +342,10 @@ pub fn encode_file(param : &Param)
         let mut data_par_blocks_written = 0;
 
         // read data in
-        let len_read =
+        let read_res =
             reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data))?;
 
-        if len_read == 0 {
+        if read_res.len_read == 0 {
             if param.rs_enabled {
                 // check if the current batch of RS blocks are filled
                 if (block.get_seq_num() - SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32)
@@ -379,7 +379,7 @@ pub fn encode_file(param : &Param)
             break;
         }
 
-        sbx_block::write_padding(param.version, len_read, &mut data);
+        sbx_block::write_padding(param.version, read_res.len_read, &mut data);
 
         // start encoding
         block_sync_and_write(&mut block,
@@ -390,7 +390,7 @@ pub fn encode_file(param : &Param)
 
         // update hash state if needed
         if param.meta_enabled {
-            let data_part = &sbx_block::slice_data_buf(param.version, &data)[0..len_read];
+            let data_part = &sbx_block::slice_data_buf(param.version, &data)[0..read_res.len_read];
             hash_ctx.update(data_part);
         }
 

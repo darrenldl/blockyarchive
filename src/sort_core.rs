@@ -138,10 +138,10 @@ pub fn sort_file(param : &Param)
     reporter.start();
 
     loop {
-        let len_read = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                             &mut buffer))?;
 
-        if len_read < block_size { break; }
+        if read_res.eof { break; }
     }
 
     reporter.stop();

@@ -152,13 +152,13 @@ pub fn check_file(param : &Param)
     let mut bytes_processed : u64 = 0;
 
     loop {
-        let len_read = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                             &mut buffer))?;
 
-        if len_read < block_size { break; }
-
         block_pos        = bytes_processed;
-        bytes_processed += len_read as u64;
+        bytes_processed += read_res.len_read as u64;
+
+        if read_res.eof { break; }
 
         match block.sync_from_buffer(&buffer) {
             Ok(_)  => match block.block_type() {

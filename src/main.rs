@@ -20,9 +20,6 @@ extern crate ctrlc;
 //#[macro_use]
 extern crate reed_solomon_erasure;
 
-#[macro_use]
-mod worker_macros;
-
 macro_rules! smallvec {
     [
         $arr:ty => $val:expr; $len:expr
@@ -43,6 +40,15 @@ macro_rules! smallvec {
         v
     }}
 }
+
+macro_rules! break_if_eof {
+    (
+        $read_res:expr
+    ) => {
+        if $read_res.eof { break; }
+    }
+}
+
 
 mod file_error;
 
