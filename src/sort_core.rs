@@ -141,7 +141,7 @@ pub fn sort_file(param : &Param)
         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                             &mut buffer))?;
 
-        if read_res.eof { break; }
+        break_if_eof_seen!(read_res);
     }
 
     reporter.stop();

@@ -158,7 +158,7 @@ pub fn check_file(param : &Param)
         block_pos        = bytes_processed;
         bytes_processed += read_res.len_read as u64;
 
-        if read_res.eof { break; }
+        break_if_eof_seen!(read_res);
 
         match block.sync_from_buffer(&buffer) {
             Ok(_)  => match block.block_type() {

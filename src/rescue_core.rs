@@ -269,7 +269,7 @@ pub fn rescue_from_file(param : &Param)
 
         stats.lock().unwrap().bytes_processed += lazy_read_res.len_read as u64;
 
-        if lazy_read_res.eof     { break; }
+        break_if_eof_seen!(lazy_read_res);
 
         if !lazy_read_res.usable { continue; }
 

@@ -153,7 +153,7 @@ pub fn show_file(param : &Param)
             break;
         }
 
-        if lazy_read_res.eof     { break; }
+        break_if_eof_seen!(lazy_read_res);
 
         if !lazy_read_res.usable { continue; }
 

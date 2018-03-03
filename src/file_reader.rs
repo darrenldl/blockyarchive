@@ -64,7 +64,7 @@ enum FileHandle {
 
 pub struct ReadResult {
     pub len_read : usize,
-    pub eof      : bool,
+    pub eof_seen : bool,
 }
 
 pub struct FileReader {
@@ -111,7 +111,7 @@ impl FileReader {
         }
 
         Ok(ReadResult { len_read,
-                        eof      : len_read < buf.len() })
+                        eof_seen : len_read < buf.len() })
     }
 
     pub fn write(&mut self, buf : &[u8]) -> Result<usize, Error> {

@@ -313,7 +313,7 @@ pub fn decode(param         : &Param,
         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                             &mut buffer))?;
 
-        break_if_eof!(read_res);
+        break_if_eof_seen!(read_res);
 
         if let Err(_) = block.sync_from_buffer(&buffer) {
             stats.lock().unwrap().blocks_decode_failed += 1;
@@ -420,7 +420,7 @@ fn hash(param     : &Param,
 
         stats.lock().unwrap().bytes_processed += read_res.len_read as u64;
 
-        break_if_eof!(read_res);
+        break_if_eof_seen!(read_res);
     }
 
     reporter.stop();

@@ -19,7 +19,7 @@ use super::Error;
 pub struct LazyReadResult {
     pub len_read : usize,
     pub usable   : bool,
-    pub eof      : bool,
+    pub eof_seen : bool,
 }
 
 struct ScanStats {
@@ -62,14 +62,14 @@ pub fn read_block_lazily(block  : &mut Block,
         if total_len_read < SBX_SCAN_BLOCK_SIZE {
             return Ok(LazyReadResult { len_read : total_len_read,
                                        usable   : false,
-                                       eof      : true            });
+                                       eof_seen : true            });
         }
 
         match block.sync_from_buffer_header_only(&buffer[0..SBX_SCAN_BLOCK_SIZE]) {
             Ok(()) => {},
             Err(_) => { return Ok(LazyReadResult { len_read : total_len_read,
                                                    usable   : false,
-                                                   eof      : false           }); }
+                                                   eof_seen : false           }); }
         }
     }
 
@@ -82,20 +82,20 @@ pub fn read_block_lazily(block  : &mut Block,
         if total_len_read < block_size {
             return Ok(LazyReadResult { len_read : total_len_read,
                                        usable   : false,
-                                       eof      : true            });
+                                       eof_seen : true            });
         }
 
         match block.sync_from_buffer(&buffer[0..block_size]) {
             Ok(()) => {},
             Err(_) => { return Ok(LazyReadResult { len_read : total_len_read,
                                                    usable   : false,
-                                                   eof      : false           }); }
+                                                   eof_seen : false           }); }
         }
     }
 
     Ok(LazyReadResult { len_read : total_len_read,
                         usable   : true,
-                        eof      : false           })
+                        eof_seen : false           })
 }
 
 pub fn get_ref_block(in_file            : &str,
@@ -138,7 +138,7 @@ pub fn get_ref_block(in_file            : &str,
 
         stats.lock().unwrap().bytes_processed = bytes_processed;
 
-        if lazy_read_res.eof     { break; }
+        break_if_eof_seen!(lazy_read_res);
 
         if !lazy_read_res.usable { continue; }
 

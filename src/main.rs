@@ -41,11 +41,11 @@ macro_rules! smallvec {
     }}
 }
 
-macro_rules! break_if_eof {
+macro_rules! break_if_eof_seen {
     (
         $read_res:expr
     ) => {
-        if $read_res.eof { break; }
+        if $read_res.eof_seen { break; }
     }
 }
 
