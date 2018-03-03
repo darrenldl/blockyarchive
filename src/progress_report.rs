@@ -183,9 +183,11 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
 
     pub fn stop(&self) {
         if self.start_flag.load(Ordering::SeqCst)
-            && !self.shutdown_flag.swap(true, Ordering::SeqCst)
+            && !self.shutdown_flag.load(Ordering::SeqCst)
         {
             self.stats.lock().unwrap().set_end_time();
+
+            self.shutdown_flag.store(true, Ordering::SeqCst);
 
             self.shutdown_barrier.wait();
         }
@@ -338,7 +340,11 @@ fn make_message(context      : &Context,
     let percent                = helper::calc_percent(units_so_far, total_units);
     let cur_time               = time_utils::get_time_now(time_utils::TimeMode::UTC);
     let time_used              =
-        f64_max(end_time - start_time, 0.1);
+        if percent < 100 {
+            f64_max(cur_time - start_time, 0.1)
+        } else {
+            f64_max(end_time - start_time, 0.1)
+        };
     let time_since_last_report =
         f64_max(cur_time - context.last_report_time, 0.1);
     let avg_rate               =
