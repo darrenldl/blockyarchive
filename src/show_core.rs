@@ -26,6 +26,7 @@ use super::sbx_block::{Block, BlockType};
 use super::sbx_block;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::ver_to_usize;
+use super::sbx_specs::ver_uses_rs;
 
 use std::str::from_utf8;
 
@@ -191,6 +192,24 @@ pub fn show_file(param : &Param)
                 }
             });
             println!("SBX container version  : {}", ver_to_usize(block.get_version()));
+            println!("RS data count          : {}",
+                     if ver_uses_rs(block.get_version()) {
+                         match block.get_RSD().unwrap() {
+                             None    => "N/A".to_string(),
+                             Some(x) => x.to_string(),
+                         }
+                     } else {
+                         "version does not use RS".to_string()
+                     });
+            println!("RS parity count        : {}",
+                     if ver_uses_rs(block.get_version()) {
+                         match block.get_RSP().unwrap() {
+                             None    => "N/A".to_string(),
+                             Some(x) => x.to_string(),
+                         }
+                     } else {
+                         "version does not use RS".to_string()
+                     });
             println!("File size              : {}", match block.get_FSZ().unwrap() {
                 None    => "N/A".to_string(),
                 Some(x) => x.to_string()
