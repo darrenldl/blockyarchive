@@ -94,8 +94,8 @@ mod hex_tests {
     #[test]
     fn error_handling() {
         assert_eq!(hex_string_to_bytes("abc").unwrap_err(),
-                   Error::InvalidLen);
+                   HexError::InvalidLen);
         assert_eq!(hex_string_to_bytes("LL").unwrap_err(),
-                   Error::InvalidHexString);
+                   HexError::InvalidHexString);
     }
 }
