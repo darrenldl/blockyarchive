@@ -111,6 +111,15 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
         let runner_shutdown_barrier = Arc::clone(&shutdown_barrier);
         let runner_active_flag      = Arc::clone(&active_flag);
         let runner                  = thread::spawn(move || {
+            // waiting to be kickstarted
+            runner_start_barrier.wait();
+
+            // print at least once so the header is on top
+            print_progress::<T>(&mut context,
+                                &mut runner_stats.lock().unwrap(),
+                                false);
+
+            // let start() know progress text has been printed
             runner_start_barrier.wait();
 
             loop {
@@ -149,11 +158,16 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
 
             self.stats.lock().unwrap().set_start_time();
 
+            // first wait to kick start
+            self.start_barrier.wait();
+
+            // second wait for runner to finish printing for the first time
             self.start_barrier.wait();
         }
     }
 
     pub fn pause(&self) {
+        print!("\r");
         self.active_flag.store(false, Ordering::SeqCst);
     }
 
