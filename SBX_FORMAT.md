@@ -78,9 +78,10 @@ Block categories : `Meta`, `Data`, `Parity`
 
 Assumes configuration is **M** data shards and **N** parity shards.
 
-**Note** that the following only describes the sequence number arrangement, not the actual block arrangement.
+### Note
+The following only describes the sequence number arrangement, not the actual block arrangement.
 
-
+See section "Block interleaving scheme" below for details on actual block arrangement.
 
 ### Common blocks header:
 
@@ -192,3 +193,18 @@ Supported forward error correction algorithms since 1.0.0 are
 Metadata and the parity blocks (blocks 0 - 3) are mandatory
 
 #### Block interleaving scheme
+This block interleaving is heavily inspired by [Thanassis Tsiodras's design of RockFAT](Thanassis Tsiodras's design of RockFAT).
+
+The difference between the two schemes is that RockFAT's one is byte based interleaving, rsbx's one is SBX block based interleaving.
+
+The practical difference is that rsbx allows customizing level of resilience against burst sector errors.
+
+A burst error is defined as consecutive SBX block erasures.
+
+Burst resilience is defined as the maximum number of consective SBX block erasures tolerable for any instance of burst error.
+
+The maximum number of such errors is same as the parity shard count.
+
+Assuming arrangement of **M** data shards, **N** parity shards, **B** burst resilience.
+
+Then the SBX container can tolerate up to **N** burst errors, and each individual error may be up to **B** SBX blocks.
