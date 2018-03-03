@@ -81,8 +81,6 @@ mod file_reader;
 use file_reader::ReadResult;
 mod file_writer;
 
-mod worker;
-
 macro_rules! exit_with_msg {
     (
         ok => $($x:expr),*
