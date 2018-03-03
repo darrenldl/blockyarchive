@@ -78,6 +78,10 @@ Block categories : `Meta`, `Data`, `Parity`
 
 Assumes configuration is **M** data shards and **N** parity shards.
 
+**Note** that the following only describes the sequence number arrangement, not the actual block arrangement.
+
+
+
 ### Common blocks header:
 
 | pos | to pos | size | desc                                |
@@ -88,7 +92,7 @@ Assumes configuration is **M** data shards and **N** parity shards.
 |  6  |     11 |   6  | file UID                            |
 | 12  |     15 |   4  | Block sequence number               |
 
-### Block 0 (written **1 + N** times)
+### Block 0
 
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
@@ -186,3 +190,5 @@ Supported forward error correction algorithms since 1.0.0 are
   - Reed-Solomon erasure code - probably the only one for versions 11, 12, 13
 
 Metadata and the parity blocks (blocks 0 - 3) are mandatory
+
+#### Block interleaving scheme
