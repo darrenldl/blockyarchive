@@ -5,8 +5,11 @@ SeqBox is a single-file archive format designed by [Marco Pontello](https://gith
 
 Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for technical details on this.
 
+
 ## Enhancements
-This implementation adds forward error correction on top of the SeqBox format by adding support for Reed-Solomon erasure code, and also aims for higher performance(via more optimized code and utilising concurrency capability of Rust), but otherwise is based around [osbx](https://github.com/darrenldl/ocaml-SeqBox).
+This implementation adds forward error correction on top of the SeqBox format by adding support for Reed-Solomon erasure code, and also allows arranging the blocks such that burst sector errors can be tolerated.
+
+Rsbx is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), but much more optimized.
 
 ## Goals
 As rsbx is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
