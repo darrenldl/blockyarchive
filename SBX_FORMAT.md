@@ -233,6 +233,6 @@ First **1 + N** block sets :
 
 Rest of the block sets :
 
-Let **K > 1 + N***
+Let **K > 1 + N**
 
 | K | K + (M + N) | K + 2 * (M + N) | ... | K + (B - 1) * (M + N) |
