@@ -79,6 +79,7 @@ pub struct ProgressReporter<T : 'static + ProgressReport + Send> {
     shutdown_barrier : Arc<Barrier>,
     runner           : JoinHandle<()>,
     stats            : Arc<Mutex<T>>,
+    context          : Arc<Mutex<Context>>,
     active_flag      : Arc<AtomicBool>,
 }
 
@@ -90,22 +91,24 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
                -> ProgressReporter<T> {
         use self::ProgressElement::*;
         let stats                = Arc::clone(stats);
-        let mut context          = Context::new(header,
-                                                unit,
-                                                silence_level,
-                                                vec![ProgressBar,
-                                                     Percentage,
-                                                     CurrentRateShort,
-                                                     TimeUsedShort,
-                                                     TimeLeftShort],
-                                                vec![TimeUsedLong,
-                                                     AverageRateLong]);
+        let mut context          =
+            Arc::new(Mutex::new(Context::new(header,
+                                             unit,
+                                             silence_level,
+                                             vec![ProgressBar,
+                                                  Percentage,
+                                                  CurrentRateShort,
+                                                  TimeUsedShort,
+                                                  TimeLeftShort],
+                                             vec![TimeUsedLong,
+                                                  AverageRateLong])));
         let start_barrier           = Arc::new(Barrier::new(2));
         let start_flag              = Arc::new(AtomicBool::new(false));
         let shutdown_flag           = Arc::new(AtomicBool::new(false));
         let shutdown_barrier        = Arc::new(Barrier::new(2));
         let active_flag             = Arc::new(AtomicBool::new(true));
         let runner_stats            = Arc::clone(&stats);
+        let runner_context          = Arc::clone(&context);
         let runner_start_barrier    = Arc::clone(&start_barrier);
         let runner_shutdown_flag    = Arc::clone(&shutdown_flag);
         let runner_shutdown_barrier = Arc::clone(&shutdown_barrier);
@@ -115,7 +118,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             runner_start_barrier.wait();
 
             // print at least once so the header is on top
-            print_progress::<T>(&mut context,
+            print_progress::<T>(&mut runner_context.lock().unwrap(),
                                 &mut runner_stats.lock().unwrap(),
                                 false);
 
@@ -130,13 +133,13 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
                 thread::sleep(Duration::from_millis(300));
 
                 if runner_active_flag.load(Ordering::SeqCst) {
-                    print_progress::<T>(&mut context,
+                    print_progress::<T>(&mut runner_context.lock().unwrap(),
                                         &mut runner_stats.lock().unwrap(),
                                         false);
                 }
             }
 
-            print_progress::<T>(&mut context,
+            print_progress::<T>(&mut runner_context.lock().unwrap(),
                                 &mut runner_stats.lock().unwrap(),
                                 true);
 
@@ -149,6 +152,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             shutdown_barrier,
             runner,
             stats,
+            context,
             active_flag,
         }
     }
@@ -167,6 +171,8 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
     }
 
     pub fn pause(&self) {
+        // overwrite progress text
+        print!("\r{1:0$}", self.context.lock().unwrap().max_print_length, "");
         print!("\r");
         self.active_flag.store(false, Ordering::SeqCst);
     }
