@@ -208,3 +208,10 @@ The maximum number of such errors is same as the parity shard count.
 Assuming arrangement of **M** data shards, **N** parity shards, **B** burst resilience.
 
 Then the SBX container can tolerate up to **N** burst errors, and each individual error may be up to **B** SBX blocks.
+
+###### Diagrams
+
+General case
+
+Sequential arrangement
+| 00 | 01 | 02 | 03 | 04 | ...
