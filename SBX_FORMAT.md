@@ -192,7 +192,7 @@ Supported forward error correction algorithms since 1.0.0 are
 
 Metadata and the parity blocks (blocks 0 - 3) are mandatory
 
-#### Blocks interleaving scheme
+### Blocks interleaving scheme
 This blocks interleaving is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html).
 
 The major difference between the two schemes is that RockFAT's one is byte based interleaving, rsbx's one is SBX block based interleaving.
@@ -209,7 +209,7 @@ Assuming arrangement of **M** data shards, **N** parity shards, **B** burst resi
 
 Then the SBX container can tolerate up to **N** burst errors, and each individual error may be up to **B** SBX blocks.
 
-###### Diagrams
+#### Diagrams
 
 General case
 
