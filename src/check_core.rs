@@ -33,7 +33,7 @@ use std::str::from_utf8;
 use super::time_utils;
 use super::block_utils;
 
-use super::report_ref_block_type;
+use super::report_ref_block_info;
 
 pub struct Param {
     no_meta       : bool,
@@ -124,7 +124,7 @@ pub fn check_file(param : &Param)
             Some(x) => x,
         };
 
-    report_ref_block_type(ref_block_pos, &ref_block);
+    report_ref_block_info(ref_block_pos, &ref_block);
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));

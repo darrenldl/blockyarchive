@@ -224,7 +224,7 @@ the container does not have metadata block or when you are okay
 with using a data block as reference block.")
 }
 
-fn report_ref_block_type(ref_block_pos : u64,
+fn report_ref_block_info(ref_block_pos : u64,
                          ref_block     : &sbx_block::Block) {
     println!();
     if ref_block.is_meta() {

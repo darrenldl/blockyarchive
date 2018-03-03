@@ -17,6 +17,8 @@ use super::sbx_specs::SBX_SCAN_BLOCK_SIZE;
 use super::multihash;
 use super::multihash::*;
 
+use super::report_ref_block_info;
+
 use super::Error;
 use super::sbx_specs::Version;
 
@@ -438,17 +440,7 @@ pub fn decode_file(param : &Param)
             Some(x) => x,
         };
 
-    println!();
-    if ref_block.is_meta() {
-        println!("Using metadata block as reference, located at byte {} (0x{:X})",
-                 ref_block_pos,
-                 ref_block_pos);
-    } else {
-        println!("Using data block as reference block, located at byte {} (0x{:X})",
-                 ref_block_pos,
-                 ref_block_pos);
-    }
-    println!();
+    report_ref_block_info(ref_block_pos, &ref_block);
 
     // get FNM of ref_block
     let recorded_file_name : Option<String> =

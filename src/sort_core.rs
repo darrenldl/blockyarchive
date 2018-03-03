@@ -28,7 +28,7 @@ use super::sbx_specs::{ver_to_block_size,
                        ver_uses_rs,
                        ver_to_usize};
 
-use super::report_ref_block_type;
+use super::report_ref_block_info;
 
 use std::str::from_utf8;
 
@@ -113,7 +113,7 @@ pub fn sort_file(param : &Param)
             Some(x) => x,
         };
 
-    report_ref_block_type(ref_block_pos, &ref_block);
+    report_ref_block_info(ref_block_pos, &ref_block);
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
