@@ -74,7 +74,7 @@ Overall similar to above specs.
 
 Block categories : `Meta`, `Data`, `Parity`
 
-Only `Meta` and `Data` are mutually exclusive, a block can be both `Meta` and `Parity, ` or `Data` and `Parity`.
+**`Meta` and `Data`** are mutually exclusive, and **`Meta` and `Parity`** are mutually exclusive. A block can be both `Data` and `Parity`.
 
 Assumes configuration is **M** data shards and **N** parity shards.
 
@@ -88,28 +88,16 @@ Assumes configuration is **M** data shards and **N** parity shards.
 |  6  |     11 |   6  | file UID                            |
 | 12  |     15 |   4  | Block sequence number               |
 
-### Block 0
+### Block 0 (written **1 + N** times)
 
 | pos | to pos   | size | desc             |
 |---- | -------- | ---- | ---------------- |
 | 16  | n        | var  | encoded metadata |
 |  n+1| blockend | var  | padding (0x1a)   |
 
-### Block 1-3
-
-| pos | to pos   | size | desc             |
-|---- | -------- | ---- | ---------------- |
-| 16  | blockend | var  | parity           |
-
-RS arrangement : block 0 (data shard) block 1 (parity shard) block 2 (parity shard) block 3 (parity shard).
-
 Block 0 is `Meta` only.
 
-Block 1-3 are both `Meta` and `Parity`.
-
-Above gives 300% redundancy for the metadata block.
-
-### Blocks >= 4 & < 4 + K * (M + N), where K is an integer >= 1:
+### Blocks >= 1 & < 1 + K * (M + N), where K is an integer >= 1:
 
 For **M** continuous blocks
 
