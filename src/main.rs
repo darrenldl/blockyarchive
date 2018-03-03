@@ -78,11 +78,10 @@ mod check_core;
 mod progress_report;
 
 mod file_reader;
+use file_reader::ReadResult;
 mod file_writer;
 
 mod worker;
-
-const RSBX_VER_STR : &str = "1.0.0";
 
 macro_rules! exit_with_msg {
     (
@@ -240,7 +239,7 @@ fn real_main () -> i32 {
     use std::path::Path;
 
     let matches = App::new("rsbx")
-        .version(RSBX_VER_STR)
+        .version(env!("CARGO_PKG_VERSION"))
         .author("Darren Ldl <darrenldldev@gmail.com>")
         .about("Rust implementation of SeqBox")
         .subcommand(cli_encode::sub_command())
