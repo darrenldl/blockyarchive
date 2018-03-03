@@ -42,7 +42,7 @@ DIR/INFILE.sbx."))
              .long("no-meta")
              .help("Skip metadata block in the SBX container. Metadata block is
 never skipped for version 11, 12, 13.
-This means this option does nothing for version 11, 12, 13."))
+This means this option has no effect for version 11, 12, 13."))
         .arg(silence_level_arg())
         .arg(Arg::with_name("sbx_version")
              .value_name("SBX-VERSION")
