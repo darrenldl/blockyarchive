@@ -227,15 +227,11 @@ with using a data block as reference block.")
 fn report_ref_block_info(ref_block_pos : u64,
                          ref_block     : &sbx_block::Block) {
     println!();
-    if ref_block.is_meta() {
-        println!("Using metadata block as reference, located at byte {} (0x{:X})",
-                 ref_block_pos,
-                 ref_block_pos);
-    } else {
-        println!("Using data block as reference block, located at byte {} (0x{:X})",
-                 ref_block_pos,
-                 ref_block_pos);
-    }
+    println!("Using {} block as reference block, located at byte {} (0x{:X})",
+             if ref_block.is_meta() { "metadata" }
+             else                   { "data"     },
+             ref_block_pos,
+             ref_block_pos);
     println!();
 }
 
