@@ -5,7 +5,7 @@ use super::super::sbx_block::BlockType;
 use super::super::sbx_block::Block;
 use super::super::sbx_specs::ver_to_block_size;
 use super::super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-use super::super::sbx_specs::SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM;
+use super::super::sbx_specs::SBX_FIRST_DATA_SEQ_NUM;
 use super::*;
 use super::super::sbx_block;
 
@@ -60,7 +60,7 @@ impl RSRepairer {
 
         let start_seq_num = match block_type {
             BlockType::Meta => 0,
-            BlockType::Data => SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM,
+            BlockType::Data => SBX_FIRST_DATA_SEQ_NUM,
         } as u32;
 
         RSRepairer {

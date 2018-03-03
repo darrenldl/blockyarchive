@@ -1,8 +1,8 @@
 use std;
 use super::super::sbx_specs::{Version,
                               SBX_FILE_UID_LEN,
-                              SBX_SIGNATURE,
-                              ver_first_data_seq_num};
+                              SBX_FIRST_DATA_SEQ_NUM,
+                              SBX_SIGNATURE};
 use super::super::sbx_specs;
 use super::BlockType;
 
@@ -76,7 +76,7 @@ impl Header {
     }
 
     pub fn header_type(&self) -> BlockType {
-        if self.seq_num < ver_first_data_seq_num(self.version) as u32 {
+        if self.seq_num < SBX_FIRST_DATA_SEQ_NUM as u32 {
             BlockType::Meta
         } else {
             BlockType::Data

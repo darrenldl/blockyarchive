@@ -12,10 +12,9 @@ pub use self::metadata::MetadataID;
 use super::sbx_specs::{Version,
                        SBX_HEADER_SIZE,
                        SBX_FILE_UID_LEN,
+                       SBX_FIRST_DATA_SEQ_NUM,
                        ver_to_block_size,
-                       ver_first_data_seq_num,
-                       ver_uses_rs,
-                       SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM};
+                       ver_uses_rs};
 use self::crc::*;
 
 use super::multihash;
@@ -177,10 +176,8 @@ pub fn seq_num_is_parity(seq_num       : u32,
                          parity_shards : usize) -> bool {
     if        seq_num == 0 {
         false // this is metadata block
-    } else if seq_num < SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32 {
-        true  // this is metadata parity block
     } else {  // data sets
-        let index        = seq_num - SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32;
+        let index        = seq_num - SBX_FIRST_DATA_SEQ_NUM as u32;
         let index_in_set = index % (data_shards + parity_shards) as u32;
 
         (data_shards as u32 <= index_in_set)
@@ -194,7 +191,7 @@ impl Block {
                -> Block {
         match block_type {
             BlockType::Data => {
-                let seq_num = ver_first_data_seq_num(version) as u32;
+                let seq_num = SBX_FIRST_DATA_SEQ_NUM as u32;
                 Block {
                     header : Header::new(version, file_uid.clone(), seq_num),
                     data   : Data::Data,
@@ -212,7 +209,7 @@ impl Block {
 
     pub fn dummy() -> Block {
         let version = Version::V1;
-        let seq_num = ver_first_data_seq_num(version) as u32;
+        let seq_num = SBX_FIRST_DATA_SEQ_NUM as u32;
         Block {
             header : Header::new(version, [0; 6], seq_num),
             data   : Data::Data,
@@ -308,7 +305,7 @@ impl Block {
             Data::Data    => {
                 let data_index =
                     self.header.seq_num
-                    - ver_first_data_seq_num(self.header.version) as u32;
+                    - SBX_FIRST_DATA_SEQ_NUM as u32;
 
                 match dat_par_shards {
                     None                               => Some(data_index),

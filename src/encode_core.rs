@@ -29,8 +29,7 @@ use super::sbx_block;
 use super::sbx_block::Metadata;
 use super::sbx_specs::SBX_FILE_UID_LEN;
 use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-use super::sbx_specs::SBX_RS_METADATA_PARITY_COUNT;
-use super::sbx_specs::SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM;
+use super::sbx_specs::SBX_FIRST_DATA_SEQ_NUM;
 use super::sbx_specs::ver_forces_meta_enabled;
 use super::sbx_specs::{ver_to_usize,
                        ver_to_block_size,
@@ -223,12 +222,15 @@ fn write_metadata_block(param         : &Param,
                         hash          : Option<multihash::HashBytes>,
                         block         : &mut Block,
                         buf           : &mut [u8],
-                        writer        : &mut FileWriter)
+                        writer        : &mut FileWriter,
+                        seek_to_start : bool)
                         -> Result<(), Error> {
     // set to metadata block
     block.set_seq_num(0);
 
-    writer.seek(SeekFrom::Start(0))?;
+    if seek_to_start {
+        writer.seek(SeekFrom::Start(0))?;
+    }
 
     pack_metadata(block,
                   param,
@@ -293,9 +295,6 @@ pub fn encode_file(param : &Param)
         multihash::hash::Ctx::new(param.hash_type).unwrap();
 
     // setup Reed-Solomon things
-    let mut rs_codec_meta = RSEncoder::new(param.version,
-                                           1,
-                                           SBX_RS_METADATA_PARITY_COUNT);
     let mut rs_codec_data = RSEncoder::new(param.version,
                                            param.rs_data,
                                            param.rs_parity);
@@ -320,17 +319,21 @@ pub fn encode_file(param : &Param)
                              None,
                              &mut block,
                              &mut data,
-                             &mut writer)?;
+                             &mut writer,
+                             true)?;
 
         stats.lock().unwrap().meta_blocks_written += 1;
 
         if param.rs_enabled {
-            let parity_to_use = rs_codec_meta.encode(&data).unwrap();
-
-            for p in parity_to_use.iter_mut() {
-                block_sync_and_write(&mut block,
-                                     p,
-                                     &mut writer)?;
+            for _ in 0..param.rs_parity {
+                write_metadata_block(param,
+                                     &stats.lock().unwrap(),
+                                     &metadata,
+                                     None,
+                                     &mut block,
+                                     &mut data,
+                                     &mut writer,
+                                     false)?;
 
                 stats.lock().unwrap().meta_par_blocks_written += 1;
             }
@@ -348,7 +351,7 @@ pub fn encode_file(param : &Param)
         if read_res.len_read == 0 {
             if param.rs_enabled {
                 // check if the current batch of RS blocks are filled
-                if (block.get_seq_num() - SBX_RS_ENABLED_FIRST_DATA_SEQ_NUM as u32)
+                if (block.get_seq_num() - SBX_FIRST_DATA_SEQ_NUM as u32)
                     % (param.rs_data + param.rs_parity) as u32 != 0 {
                     // fill remaining slots with padding
                     loop {
@@ -426,18 +429,24 @@ pub fn encode_file(param : &Param)
                              Some(hash_bytes.clone()),
                              &mut block,
                              &mut data,
-                             &mut writer)?;
+                             &mut writer,
+                             true)?;
 
         // record hash in stats
         stats.lock().unwrap().hash_bytes = Some(hash_bytes);
 
         if param.rs_enabled {
-            let parity_to_use = rs_codec_meta.encode(&data).unwrap();
+            for _ in 0..param.rs_parity {
+                write_metadata_block(param,
+                                     &stats.lock().unwrap(),
+                                     &metadata,
+                                     None,
+                                     &mut block,
+                                     &mut data,
+                                     &mut writer,
+                                     false)?;
 
-            for p in parity_to_use.iter_mut() {
-                block_sync_and_write(&mut block,
-                                     p,
-                                     &mut writer)?;
+                stats.lock().unwrap().meta_par_blocks_written += 1;
             }
         }
     }

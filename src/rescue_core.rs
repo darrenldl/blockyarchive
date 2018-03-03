@@ -32,7 +32,6 @@ use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::sbx_specs::SBX_FILE_UID_LEN;
 use super::sbx_specs::{ver_to_block_size,
                        ver_to_data_size,
-                       ver_first_data_seq_num,
                        ver_uses_rs};
 
 use super::block_utils;
