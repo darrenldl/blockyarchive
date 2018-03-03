@@ -37,6 +37,8 @@ I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the
 
 The design of the readable rate in progress report text is copied from Arch Linux pacman's progress bar design.
 
+The design of block set interleaving arrangement in RS enabled versions is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html). The interleaving provides resilience against burst sector errors.
+
 ## License
 
 #### Libcrc code
