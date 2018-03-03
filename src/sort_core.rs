@@ -133,8 +133,6 @@ pub fn sort_file(param : &Param)
 
     let ver_usize = ver_to_usize(ref_block.get_version());
 
-    let block_size = ver_to_block_size(ref_block.get_version());
-
     reporter.start();
 
     loop {

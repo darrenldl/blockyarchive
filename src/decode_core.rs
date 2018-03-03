@@ -252,8 +252,6 @@ pub fn decode(param         : &Param,
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
-    let block_size   = ver_to_block_size(ref_block.get_version());
-
     let data_size    = ver_to_data_size(ref_block.get_version()) as u64;
 
     let mut data_shards   = None;
