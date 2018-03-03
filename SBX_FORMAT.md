@@ -213,5 +213,20 @@ Then the SBX container can tolerate up to **N** burst errors, and each individua
 
 General case
 
-Sequential arrangement
+Sequential arrangement, **M** data shards, **N** parity shards, **B** burst resilience
+
 | 00 | 01 | 02 | 03 | 04 | ...
+
+Interleaving arrangement
+
+Let block set size = **M + N**
+
+First **1 + N** block sets would look like
+
+| 00 | 01 | 01 + (M + N) | 01 + 2 * (M + N) | ... | 01 + (B - 1) * (M + N) |
+
+| 00 | 02 | 02 + (M + N) | 02 + 2 * (M + N) | ... | 02 + (B - 1) * (M + N) |
+
+...
+
+
