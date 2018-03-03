@@ -5,6 +5,11 @@ use super::super::sbx_specs;
 use super::super::misc_utils;
 
 #[test]
+fn test_calc_rs_enabled_write_pos() {
+    
+}
+
+#[test]
 fn test_sync_to_buffer_simple_cases() {
     let file_uid : [u8; 6] = [3; 6];
 

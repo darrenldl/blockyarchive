@@ -8,6 +8,7 @@ mod metadata_test;
 use self::header::Header;
 pub use self::metadata::Metadata;
 pub use self::metadata::MetadataID;
+use super::smallvec::SmallVec;
 
 use super::sbx_specs::{Version,
                        SBX_HEADER_SIZE,
@@ -184,18 +185,41 @@ pub fn seq_num_is_parity(seq_num       : u32,
     }
 }
 
-pub fn calc_rs_enabled_write_pos(seq_num          : u32,
-                                 version          : Version,
-                                 data_shards      : usize,
-                                 parity_shards    : usize,
-                                 burst_resilience : usize) -> u64 {
+pub fn calc_rs_enabled_meta_write_indices(parity_shards    : usize,
+                                          burst_resilience : usize)
+                                          -> SmallVec<[u64; 32]> {
+    let mut res : SmallVec<[u64; 32]> =
+        SmallVec::with_capacity(1 + parity_shards);
+
+    for i in 0..1 + parity_shards as u64 {
+        res.push(i * burst_resilience as u64);
+    }
+
+    res
+}
+
+pub fn calc_rs_enabled_data_write_pos(seq_num          : u32,
+                                      version          : Version,
+                                      data_shards      : usize,
+                                      parity_shards    : usize,
+                                      burst_resilience : usize) -> u64 {
+    let block_size = ver_to_block_size(version) as u64;
+
+    calc_rs_enabled_data_write_index(seq_num,
+                                     data_shards,
+                                     parity_shards,
+                                     burst_resilience) * block_size
+}
+
+pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
+                                        data_shards      : usize,
+                                        parity_shards    : usize,
+                                        burst_resilience : usize) -> u64 {
     let index = seq_num as u64 - SBX_FIRST_DATA_SEQ_NUM as u64;
 
     let data_shards      = data_shards      as u64;
     let parity_shards    = parity_shards    as u64;
     let burst_resilience = burst_resilience as u64;
-
-    let block_size = ver_to_block_size(version) as u64;
 
     let super_block_set_size = (data_shards + parity_shards) * burst_resilience;
 
@@ -233,7 +257,7 @@ pub fn calc_rs_enabled_write_pos(seq_num          : u32,
         + (super_block_set_size * super_block_set_index)
         + new_index_in_super_block_set;
 
-    new_index * block_size
+    new_index
 }
 
 impl Block {
