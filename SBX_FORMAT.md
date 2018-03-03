@@ -195,9 +195,9 @@ Metadata and the parity blocks (blocks 0 - 3) are mandatory
 #### Blocks interleaving scheme
 This blocks interleaving is heavily inspired by [Thanassis Tsiodras's design of RockFAT](Thanassis Tsiodras's design of RockFAT).
 
-The difference between the two schemes is that RockFAT's one is byte based interleaving, rsbx's one is SBX block based interleaving.
+The major difference between the two schemes is that RockFAT's one is byte based interleaving, rsbx's one is SBX block based interleaving.
 
-The practical difference is that rsbx allows customizing level of resilience against burst sector errors.
+The other difference is that rsbx allows customizing level of resilience against burst sector errors.
 
 A burst error is defined as consecutive SBX block erasures.
 
