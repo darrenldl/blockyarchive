@@ -3,6 +3,7 @@ use std::fs;
 use std::fmt;
 use super::file_utils;
 use super::time_utils;
+use super::misc_utils;
 use std::io::SeekFrom;
 
 use progress_report::ProgressReport;
@@ -40,6 +41,7 @@ use super::sbx_specs::{ver_to_usize,
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
     version                     : Version,
+    hash_bytes                  : Option<multihash::HashBytes>,
     pub meta_blocks_written     : u32,
     pub meta_par_blocks_written : u32,
     pub data_blocks_written     : u32,
@@ -76,6 +78,12 @@ impl fmt::Display for Stats {
             writeln!(f, "Number of blocks written (data only)       : {}", data_blocks_written)?;
             writeln!(f, "Number of blocks written (data parity)     : {}", data_par_blocks_written)?;
             writeln!(f, "Amount of data encoded (bytes)             : {}", data_bytes_encoded)?;
+            writeln!(f, "Hash                                       : {}", match self.hash_bytes {
+                None        => "N/A".to_string(),
+                Some(ref h) => format!("{} - {}",
+                                       multihash::hash_type_to_string(h.0),
+                                       misc_utils::bytes_to_lower_hex_string(&h.1))
+            })?;
             writeln!(f, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)
         } else {
             writeln!(f, "SBX version                         : {}", ver_to_usize(self.version))?;
@@ -85,6 +93,12 @@ impl fmt::Display for Stats {
             writeln!(f, "Number of blocks written (metadata) : {}", meta_blocks_written)?;
             writeln!(f, "Number of blocks written (data)     : {}", data_blocks_written)?;
             writeln!(f, "Amount of data encoded (bytes)      : {}", data_bytes_encoded)?;
+            writeln!(f, "Hash                                : {}", match self.hash_bytes {
+                None    => "N/A".to_string(),
+                Some(ref h) => format!("{} - {}",
+                                       multihash::hash_type_to_string(h.0),
+                                       misc_utils::bytes_to_lower_hex_string(&h.1))
+            })?;
             writeln!(f, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)
         }
     }
@@ -135,6 +149,7 @@ impl Stats {
             file_utils::calc_data_chunk_count(param.version, file_metadata) as u32;
         Stats {
             version                 : param.version,
+            hash_bytes              : None,
             meta_blocks_written     : 0,
             data_blocks_written     : 0,
             meta_par_blocks_written : 0,
@@ -401,14 +416,20 @@ pub fn encode_file(param : &Param)
         stats.lock().unwrap().data_par_blocks_written += data_par_blocks_written;
     }
 
-    if param.meta_enabled { // write actual metadata block
+    if param.meta_enabled {
+        let hash_bytes = hash_ctx.finish_into_hash_bytes();
+
+        // write actual medata block
         write_metadata_block(param,
                              &stats.lock().unwrap(),
                              &metadata,
-                             Some(hash_ctx.finish_into_hash_bytes()),
+                             Some(hash_bytes.clone()),
                              &mut block,
                              &mut data,
                              &mut writer)?;
+
+        // record hash in stats
+        stats.lock().unwrap().hash_bytes = Some(hash_bytes);
 
         if param.rs_enabled {
             let parity_to_use = rs_codec_meta.encode(&data).unwrap();
