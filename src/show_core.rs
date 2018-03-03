@@ -160,7 +160,9 @@ pub fn show_file(param : &Param)
             reporter.pause();
 
             if param.show_all {
-                println!();
+                if meta_block_count > 0 {
+                    println!();
+                }
                 println!("Metadata block number : {}", meta_block_count);
                 println!("========================================");
             }
