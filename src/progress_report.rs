@@ -91,7 +91,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
                -> ProgressReporter<T> {
         use self::ProgressElement::*;
         let stats                = Arc::clone(stats);
-        let mut context          =
+        let context                 =
             Arc::new(Mutex::new(Context::new(header,
                                              unit,
                                              silence_level,

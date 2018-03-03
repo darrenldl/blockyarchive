@@ -67,90 +67,66 @@ impl fmt::Display for Stats {
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
         if rs_enabled {
-            writeln!(f,                      "SBX version                                             : {}", ver_to_usize(self.version))?;
-            writeln!(f,                      "Block size used in decoding                             : {}", block_size)?;
-            writeln!(f,                      "Number of blocks processed                              : {}", self.units_so_far())?;
-            writeln!(f,                      "Number of blocks successfully decoded (metadata only)   : {}", self.meta_blocks_decoded)?;
-            writeln!(f,                      "Number of blocks successfully decoded (metadata parity) : {}", self.meta_par_blocks_decoded)?;
-            writeln!(f,                      "Number of blocks successfully decoded (data only)       : {}", self.data_blocks_decoded)?;
-            writeln!(f,                      "Number of blocks successfully decoded (data parity)     : {}", self.data_par_blocks_decoded)?;
-            writeln!(f,                      "Number of blocks failed to decode                       : {}", self.blocks_decode_failed)?;
-            writeln!(f,                      "Time elapsed                                            : {:02}:{:02}:{:02}", hour, minute, second)?;
-            match *recorded_hash {
-                None        => { writeln!(f, "Recorded hash                                           : N/A")?; },
-                Some(ref h) => { writeln!(f, "Recorded hash                                           : {} - {}",
-                                          hash_type_to_string(h.0),
-                                          misc_utils::bytes_to_lower_hex_string(&h.1))?; }
-            }
-            match (recorded_hash, computed_hash) {
-                (&None,    &None)        => {
-                    writeln!(f,              "Hash of output file                                     : N/A")?; },
-                (&Some(_), &None)        => {
-                    writeln!(f,              "Hash of output file                                     : N/A - recorded hash type is not supported by rsbx")?; },
-                (_,        &Some(ref h)) => {
-                    writeln!(f,              "Hash of output file                                     : {} - {}",
-                             hash_type_to_string(h.0),
-                             misc_utils::bytes_to_lower_hex_string(&h.1))?; }
-            }
-            match (recorded_hash, computed_hash) {
-                (&Some(ref recorded_hash), &Some(ref computed_hash)) => {
-                    if recorded_hash.1 == computed_hash.1 {
-                        writeln!(f, "The output file hash matches the recorded hash")?;
-                    } else {
-                        writeln!(f, "The output file does NOT match the recorded hash")?;
-                    }
-                },
-                (&Some(_),                 &None)                    => {
-                    writeln!(f, "No hash is available for output file")?;
-                },
-                (&None,                    &Some(_))                 => {
-                    writeln!(f, "No recorded hash is available")?;
-                },
-                (&None,                    &None)                    => {
-                    writeln!(f, "Neither recorded hash nor output file hash is available")?;
-                }
-            }
+            writeln!(f, "SBX version                                             : {}", ver_to_usize(self.version))?;
+            writeln!(f, "Block size used in decoding                             : {}", block_size)?;
+            writeln!(f, "Number of blocks processed                              : {}", self.units_so_far())?;
+            writeln!(f, "Number of blocks successfully decoded (metadata only)   : {}", self.meta_blocks_decoded)?;
+            writeln!(f, "Number of blocks successfully decoded (metadata parity) : {}", self.meta_par_blocks_decoded)?;
+            writeln!(f, "Number of blocks successfully decoded (data only)       : {}", self.data_blocks_decoded)?;
+            writeln!(f, "Number of blocks successfully decoded (data parity)     : {}", self.data_par_blocks_decoded)?;
+            writeln!(f, "Number of blocks failed to decode                       : {}", self.blocks_decode_failed)?;
+            writeln!(f, "Time elapsed                                            : {:02}:{:02}:{:02}", hour, minute, second)?;
+            writeln!(f, "Recorded hash                                           : {}", match *recorded_hash {
+                None        => "N/A".to_string(),
+                Some(ref h) => format!("{} - {}",
+                                       hash_type_to_string(h.0),
+                                       misc_utils::bytes_to_lower_hex_string(&h.1))
+            })?;
+            writeln!(f, "Hash of output file                                     : {}", match (recorded_hash, computed_hash) {
+                (&None,    &None)        => "N/A".to_string(),
+                (&Some(_), &None)        => "N/A - recorded hash type is not supported by rsbx".to_string(),
+                (_,        &Some(ref h)) => format!("{} - {}",
+                                                    hash_type_to_string(h.0),
+                                                    misc_utils::bytes_to_lower_hex_string(&h.1))
+            })?;
         } else {
-            writeln!(f,                      "SBX version                                      : {}", ver_to_usize(self.version))?;
-            writeln!(f,                      "Block size used in decoding                      : {}", block_size)?;
-            writeln!(f,                      "Number of blocks processed                       : {}", self.units_so_far())?;
-            writeln!(f,                      "Number of blocks successfully decoded (metadata) : {}", self.meta_blocks_decoded)?;
-            writeln!(f,                      "Number of blocks successfully decoded (data)     : {}", self.data_blocks_decoded)?;
-            writeln!(f,                      "Number of blocks failed to decode                : {}", self.blocks_decode_failed)?;
-            writeln!(f,                      "Time elapsed                                     : {:02}:{:02}:{:02}", hour, minute, second)?;
-            match *recorded_hash {
-                None        => { writeln!(f, "Recorded hash                                    : N/A")?; },
-                Some(ref h) => { writeln!(f, "Recorded hash                                    : {} - {}",
-                                          hash_type_to_string(h.0),
-                                          misc_utils::bytes_to_lower_hex_string(&h.1))?; }
-            }
-            match (recorded_hash, computed_hash) {
-                (&None,    &None)        => {
-                    writeln!(f,              "Hash of output file                              : N/A")?; },
-                (&Some(_), &None)        => {
-                    writeln!(f,              "Hash of output file                              : N/A - recorded hash type is not supported by rsbx")?; },
-                (_,        &Some(ref h)) => {
-                    writeln!(f,              "Hash of output file                              : {} - {}",
-                             hash_type_to_string(h.0),
-                             misc_utils::bytes_to_lower_hex_string(&h.1))?; }
-            }
-            match (recorded_hash, computed_hash) {
-                (&Some(ref recorded_hash), &Some(ref computed_hash)) => {
-                    if recorded_hash.1 == computed_hash.1 {
-                        writeln!(f, "The output file hash matches the recorded hash")?;
-                    } else {
-                        writeln!(f, "The output file does NOT match the recorded hash")?;
-                    }
-                },
-                (&Some(_),                 &None)                    => {
-                    writeln!(f, "No hash is available for output file")?;
-                },
-                (&None,                    &Some(_))                 => {
-                    writeln!(f, "No recorded hash is available")?;
-                },
-                (&None,                    &None)                    => {
-                    writeln!(f, "Neither recorded hash nor output file hash is available")?;
+            writeln!(f, "SBX version                                      : {}", ver_to_usize(self.version))?;
+            writeln!(f, "Block size used in decoding                      : {}", block_size)?;
+            writeln!(f, "Number of blocks processed                       : {}", self.units_so_far())?;
+            writeln!(f, "Number of blocks successfully decoded (metadata) : {}", self.meta_blocks_decoded)?;
+            writeln!(f, "Number of blocks successfully decoded (data)     : {}", self.data_blocks_decoded)?;
+            writeln!(f, "Number of blocks failed to decode                : {}", self.blocks_decode_failed)?;
+            writeln!(f, "Time elapsed                                     : {:02}:{:02}:{:02}", hour, minute, second)?;
+            writeln!(f, "Recorded hash                                    : {}", match *recorded_hash {
+                None        => "N/A".to_string(),
+                Some(ref h) => format!("{} - {}",
+                                       hash_type_to_string(h.0),
+                                       misc_utils::bytes_to_lower_hex_string(&h.1))
+            })?;
+            writeln!(f, "Hash of output file                              : {}", match (recorded_hash, computed_hash) {
+                (&None,    &None)        => "N/A".to_string(),
+                (&Some(_), &None)        => "N/A - recorded hash type is not supported by rsbx".to_string(),
+                (_,        &Some(ref h)) => format!("{} - {}",
+                                                    hash_type_to_string(h.0),
+                                                    misc_utils::bytes_to_lower_hex_string(&h.1))
+            })?;
+        }
+        match (recorded_hash, computed_hash) {
+            (&Some(ref recorded_hash), &Some(ref computed_hash)) => {
+                if recorded_hash.1 == computed_hash.1 {
+                    writeln!(f, "The output file hash matches the recorded hash")?;
+                } else {
+                    writeln!(f, "The output file does NOT match the recorded hash")?;
                 }
+            },
+            (&Some(_),                 &None)                    => {
+                writeln!(f, "No hash is available for output file")?;
+            },
+            (&None,                    &Some(_))                 => {
+                writeln!(f, "No recorded hash is available")?;
+            },
+            (&None,                    &None)                    => {
+                writeln!(f, "Neither recorded hash nor output file hash is available")?;
             }
         }
 
