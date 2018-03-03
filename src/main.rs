@@ -82,7 +82,7 @@ mod file_writer;
 
 mod worker;
 
-const RSBX_VER_STR : &str = "1.0";
+const RSBX_VER_STR : &str = "1.0.0";
 
 macro_rules! exit_with_msg {
     (
