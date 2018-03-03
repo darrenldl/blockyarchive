@@ -221,7 +221,7 @@ Interleaving arrangement
 
 Let block set size = **M + N**
 
-First **1 + N** block sets would look like
+First **1 + N** block sets :
 
 | 00 | 01 | 01 + (M + N) | 01 + 2 * (M + N) | ... | 01 + (B - 1) * (M + N) |
 
@@ -229,4 +229,10 @@ First **1 + N** block sets would look like
 
 ...
 
+| 00 | 1 + N | (1 + N) + (M + N) | (1 + N) + 2 * (M + N) | ... | (1 + N) + (B - 1) * (M + N) |
 
+Rest of the block sets :
+
+Let **K > 1 + N***
+
+| K | K + (M + N) | K + 2 * (M + N) | ... | K + (B - 1) * (M + N) |
