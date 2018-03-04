@@ -219,7 +219,9 @@ Sequential arrangement, **M** data shards, **N** parity shards, **B** burst resi
 
 Interleaving arrangement
 
-Let block set size = **M + N**
+Let base block set size = **M + N**
+
+First **1 + N** block sets have size = 1 + base block set size, the rest have size = base block set size
 
 First **1 + N** block sets :
 
