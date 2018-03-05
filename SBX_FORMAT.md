@@ -81,7 +81,7 @@ Assumes configuration is **M** data shards and **N** parity shards.
 ### Note
 The following only describes the sequence number arrangement, not the actual block arrangement.
 
-See section "Blocks interleaving scheme" below for details on actual block arrangement.
+See section "Block set interleaving scheme" below for details on actual block arrangement.
 
 ### Common blocks header:
 
@@ -192,8 +192,8 @@ Supported forward error correction algorithms since 1.0.0 are
 
 Metadata and the parity blocks (blocks 0 - 3) are mandatory
 
-### Blocks interleaving scheme
-This blocks interleaving is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html).
+### Block set interleaving scheme
+This block set interleaving is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html).
 
 The major difference between the two schemes is that RockFAT's one is byte based interleaving, rsbx's one is SBX block based interleaving.
 
