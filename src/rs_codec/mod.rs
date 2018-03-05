@@ -13,7 +13,7 @@ use std::fmt;
 mod repairer;
 pub use self::repairer::RSRepairer;
 
-mod test;
+mod tests;
 
 use super::Error;
 use super::ErrorKind;

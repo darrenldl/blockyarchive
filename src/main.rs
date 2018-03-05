@@ -57,9 +57,9 @@ use general_error::Error;
 use general_error::ErrorKind;
 
 mod multihash;
-mod multihash_test;
+mod multihash_tests;
 mod misc_utils;
-mod misc_utils_test;
+mod misc_utils_tests;
 mod file_utils;
 mod rand_utils;
 mod time_utils;

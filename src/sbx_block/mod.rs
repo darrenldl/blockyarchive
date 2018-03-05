@@ -1,9 +1,9 @@
 mod header;
 mod metadata;
 mod crc;
-mod test;
-mod header_test;
-mod metadata_test;
+mod tests;
+mod header_tests;
+mod metadata_tests;
 
 use self::header::Header;
 pub use self::metadata::Metadata;
