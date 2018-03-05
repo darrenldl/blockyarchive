@@ -76,14 +76,14 @@ impl fmt::Display for RSError {
                 let block_seq_num_end    = block_seq_num_start + self.block_count - 1;
                 let file_pos_first_block = block_seq_num_start * block_size;
                 let file_pos_last_block  = block_seq_num_end   * block_size;
-                writeln!(f, "too few blocks present to repair blocks {} - {} (file pos : {} (0x{:X}) - {} (0x{:X}))\n",
+                writeln!(f, "Too few blocks present to repair blocks {} - {} (file pos : {} (0x{:X}) - {} (0x{:X}))\n",
                          block_seq_num_start,
                          block_seq_num_end,
                          file_pos_first_block,
                          file_pos_first_block,
                          file_pos_last_block,
                          file_pos_last_block)?;
-                writeln!(f, "missing/corrupted : ")?;
+                writeln!(f, "Missing/corrupted : ")?;
                 let mut first_num = true;
                 for i in 0..self.shard_present.len() {
                     if !self.shard_present[i] {
@@ -102,7 +102,7 @@ impl fmt::Display for RSError {
                 let block_seq_num_end    = block_seq_num_start + self.block_count - 1;
                 let file_pos_first_block = block_seq_num_start * block_size;
                 let file_pos_last_block  = block_seq_num_end   * block_size;
-                writeln!(f, "failed to verify blocks {} - {} (file pos : {} (0x{:X}) - {} (0x{:X}))\n",
+                writeln!(f, "Failed to verify blocks {} - {} (file pos : {} (0x{:X}) - {} (0x{:X}))\n",
                          block_seq_num_start,
                          block_seq_num_end,
                          file_pos_first_block,
