@@ -50,10 +50,50 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
         }
     }
     {
-        const DATA   : usize = 3;
-        const PARITY : usize = 2;
+        const DATA   : usize = 1;
+        const PARITY : usize = 1;
         const TOTAL  : usize = DATA + PARITY;
-        const BURST  : usize = 4;
+        const BURST  : usize = 2;
+        let table : [u32; 5 * (TOTAL * BURST) + (1 + PARITY)] =
+            [00, 01, 03,
+             00, 02, 04,
+
+             05, 07,
+             06, 08,
+
+             09, 11,
+             10, 12,
+
+             13, 15,
+             14, 16,
+
+             17, 19,
+             18, 20];
+
+        // go through data seq num
+        for seq in 1..20 {
+            let write_index =
+                calc_rs_enabled_data_write_index(seq,
+                                                 DATA,
+                                                 PARITY,
+                                                 BURST) as usize;
+            assert_eq!(table[write_index], seq);
+        }
+
+        // go through the table
+        for index in 0..table.len() {
+            let seq = table[index];
+
+            if seq > 0 {
+                let write_index =
+                    calc_rs_enabled_data_write_index(seq,
+                                                     DATA,
+                                                     PARITY,
+                                                     BURST) as usize;
+
+                assert_eq!(index, write_index);
+            }
+        }
     }
 }
 
