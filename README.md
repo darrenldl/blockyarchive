@@ -13,7 +13,7 @@ Rsbx is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), 
 ## Features overall
 - Data recovery that does not depend on file system(sector level recovery)
 - Supports error correction(via Reed-Solomon erasure code)
-- Supports burst sector error resilience
+- Supports burst sector error resistance
 
 ## Goals
 As rsbx is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
@@ -37,7 +37,7 @@ I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the
 
 The design of the readable rate in progress report text is copied from Arch Linux pacman's progress bar design.
 
-The design of block set interleaving arrangement in RS enabled versions is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html). The interleaving provides resilience against burst sector errors.
+The design of block set interleaving arrangement in RS enabled versions is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html). The interleaving provides resistance against burst sector errors.
 
 ## License
 

@@ -197,15 +197,15 @@ This block set interleaving is heavily inspired by [Thanassis Tsiodras's design 
 
 The major difference between the two schemes is that RockFAT's one is byte based interleaving, rsbx's one is SBX block based interleaving.
 
-The other difference is that rsbx allows customizing level of resilience against burst sector errors.
+The other difference is that rsbx allows customizing level of resistance against burst sector errors.
 
 A burst error is defined as consecutive SBX block erasures.
 
-Burst resilience is defined as the maximum number of consective SBX block erasures tolerable for any instance of burst error.
+Burst resistance is defined as the maximum number of consective SBX block erasures tolerable for any instance of burst error.
 
 The maximum number of such errors is same as the parity shard count.
 
-Assuming arrangement of **M** data shards, **N** parity shards, **B** burst resilience.
+Assuming arrangement of **M** data shards, **N** parity shards, **B** burst resistance.
 
 Then the SBX container can tolerate up to **N** burst errors, and each individual error may be up to **B** SBX blocks.
 
@@ -213,7 +213,7 @@ Then the SBX container can tolerate up to **N** burst errors, and each individua
 
 General case
 
-Sequential arrangement, **M** data shards, **N** parity shards, **B** burst resilience
+Sequential arrangement, **M** data shards, **N** parity shards, **B** burst resistance
 
 | 00 | 01 | 02 | 03 | 04 | ...
 
