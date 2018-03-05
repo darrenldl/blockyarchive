@@ -91,7 +91,7 @@ impl fmt::Display for RSError {
                             writeln!(f, "{}", i);
                             first_num = false;
                         } else {
-                            wrteln!(f, ", {}", i);
+                            writeln!(f, ", {}", i);
                         }
                     }
                 }
