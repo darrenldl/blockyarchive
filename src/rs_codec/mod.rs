@@ -82,16 +82,16 @@ impl fmt::Display for RSError {
                          file_pos_first_block,
                          file_pos_first_block,
                          file_pos_last_block,
-                         file_pos_last_block);
-                writeln!(f, "missing/corrupted : ");
+                         file_pos_last_block)?;
+                writeln!(f, "missing/corrupted : ")?;
                 let mut first_num = true;
                 for i in 0..self.shard_present.len() {
                     if !self.shard_present[i] {
                         if first_num {
-                            writeln!(f, "{}", i);
+                            writeln!(f, "{}", i)?;
                             first_num = false;
                         } else {
-                            writeln!(f, ", {}", i);
+                            writeln!(f, ", {}", i)?;
                         }
                     }
                 }
@@ -108,8 +108,10 @@ impl fmt::Display for RSError {
                          file_pos_first_block,
                          file_pos_first_block,
                          file_pos_last_block,
-                         file_pos_last_block);
+                         file_pos_last_block)?;
             }
         }
+
+        Ok(())
     }
 }
