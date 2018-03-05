@@ -217,6 +217,7 @@ pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
                                         burst_resilience : usize) -> u64 {
     if seq_num < SBX_FIRST_DATA_SEQ_NUM as u32 { panic!(); }
 
+    // calculate data index
     let index = seq_num as u64 - SBX_FIRST_DATA_SEQ_NUM as u64;
 
     let data_shards      = data_shards      as u64;
@@ -225,13 +226,29 @@ pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
 
     let super_block_set_size = (data_shards + parity_shards) * burst_resilience;
 
+    // sub A block sets partitioning deals with the super block set
+    // of the sequential data index arrangement
+    // i.e. sub A = partitioning of input
+    //
+    // sub B block sets partitioning deals with the super block set
+    // of the interleaving data index arrangement
+    // i.e. sub B = partitioning of output
+    //
+    // sub A block set partitioning slices at total shards interval
+    // sub B block set partitioning slices at burst resilience level interval
     let sub_a_block_set_size = data_shards + parity_shards;
     let sub_b_block_set_size = burst_resilience;
 
+    // calculate the index of the start of super block set with
+    // respect to the data index
     let super_block_set_index    = index / super_block_set_size;
+    // calculate index of current seq num inside the current super block set
     let index_in_super_block_set = index % super_block_set_size;
 
+    // calculate the index of the start of sub A block set inside
+    // the current super block set
     let sub_a_block_set_index    = index_in_super_block_set / sub_a_block_set_size;
+    // calculate index of current seq num inside the current sub A block set
     let index_in_sub_a_block_set = index_in_super_block_set % sub_a_block_set_size;
 
     let sub_b_block_set_index    = index_in_sub_a_block_set;
@@ -242,6 +259,9 @@ pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
 
     // M = data_shards
     // N = parity_shards
+    //
+    // calculate the number of metadata blocks before the current
+    // seq num in the interleaving scheme
     let meta_block_count =
         if super_block_set_index == 0 { // first super block set
             // one metadata block at front of first (1 + N) sub B blocks
@@ -254,9 +274,15 @@ pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
             1 + parity_shards
         };
 
+    // finally calculate the index in interleaving data index arrangement
     let new_index =
+        // number of metadata blocks in front
         meta_block_count
+
+        // index of start of super block set
         + (super_block_set_size * super_block_set_index)
+
+        // index inside the super block set
         + new_index_in_super_block_set;
 
     new_index
