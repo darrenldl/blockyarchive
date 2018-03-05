@@ -71,50 +71,44 @@ impl fmt::Display for RSError {
         use self::RSErrorKind::*;
         match self.kind {
             RepairFail => {
-                let mut msg = String::with_capacity(20);
                 let block_size = ver_to_block_size(self.version) as u32;
                 let block_seq_num_start  = self.block_seq_num_start;
                 let block_seq_num_end    = block_seq_num_start + self.block_count - 1;
                 let file_pos_first_block = block_seq_num_start * block_size;
                 let file_pos_last_block  = block_seq_num_end   * block_size;
-                msg.push_str(&format!("too few blocks present to repair blocks {} - {} (file pos : {} (0x{:X}) - {} (0x{:X}))\n",
-                                      block_seq_num_start,
-                                      block_seq_num_end,
-                                      file_pos_first_block,
-                                      file_pos_first_block,
-                                      file_pos_last_block,
-                                      file_pos_last_block,
-                ));
-                msg.push_str("missing/corrupted : ");
+                writeln!(f, "too few blocks present to repair blocks {} - {} (file pos : {} (0x{:X}) - {} (0x{:X}))\n",
+                         block_seq_num_start,
+                         block_seq_num_end,
+                         file_pos_first_block,
+                         file_pos_first_block,
+                         file_pos_last_block,
+                         file_pos_last_block);
+                writeln!(f, "missing/corrupted : ");
                 let mut first_num = true;
                 for i in 0..self.shard_present.len() {
                     if !self.shard_present[i] {
                         if first_num {
-                            msg.push_str(&format!("{}", i));
+                            writeln!(f, "{}", i);
                             first_num = false;
                         } else {
-                            msg.push_str(&format!(", {}", i));
+                            wrteln!(f, ", {}", i);
                         }
                     }
                 }
-                write!(f, "{}", msg)
             },
             VerifyFail => {
-                let mut msg = String::with_capacity(20);
                 let block_size = ver_to_block_size(self.version) as u32;
                 let block_seq_num_start  = self.block_seq_num_start;
                 let block_seq_num_end    = block_seq_num_start + self.block_count - 1;
                 let file_pos_first_block = block_seq_num_start * block_size;
                 let file_pos_last_block  = block_seq_num_end   * block_size;
-                msg.push_str(&format!("failed to verify blocks {} - {} (file pos : {} (0x{:X}) - {} (0x{:X}))\n",
-                                      block_seq_num_start,
-                                      block_seq_num_end,
-                                      file_pos_first_block,
-                                      file_pos_first_block,
-                                      file_pos_last_block,
-                                      file_pos_last_block,
-                ));
-                write!(f, "{}", msg)
+                writeln!(f, "failed to verify blocks {} - {} (file pos : {} (0x{:X}) - {} (0x{:X}))\n",
+                         block_seq_num_start,
+                         block_seq_num_end,
+                         file_pos_first_block,
+                         file_pos_first_block,
+                         file_pos_last_block,
+                         file_pos_last_block);
             }
         }
     }
