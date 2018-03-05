@@ -215,9 +215,7 @@ pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
                                         data_shards      : usize,
                                         parity_shards    : usize,
                                         burst_resilience : usize) -> u64 {
-    if seq_num < SBX_FIRST_DATA_SEQ_NUM {
-        return 0;
-    }
+    if seq_num < SBX_FIRST_DATA_SEQ_NUM as u32 { panic!(); }
 
     let index = seq_num as u64 - SBX_FIRST_DATA_SEQ_NUM as u64;
 

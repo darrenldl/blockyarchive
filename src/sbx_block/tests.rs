@@ -5,7 +5,7 @@ use super::super::sbx_specs;
 use super::super::misc_utils;
 
 #[test]
-fn test_calc_rs_enabled_write_pos_simple_cases() {
+fn test_calc_rs_enabled_data_write_index_simple_cases() {
     {
         const DATA   : usize = 3;
         const PARITY : usize = 2;
@@ -33,6 +33,27 @@ fn test_calc_rs_enabled_write_pos_simple_cases() {
                                                  BURST) as usize;
             assert_eq!(table[write_index], seq);
         }
+
+        // go through the table
+        for index in 0..table.len() {
+            let seq = table[index];
+
+            if seq > 0 {
+                let write_index =
+                    calc_rs_enabled_data_write_index(seq,
+                                                     DATA,
+                                                     PARITY,
+                                                     BURST) as usize;
+
+                assert_eq!(index, write_index);
+            }
+        }
+    }
+    {
+        const DATA   : usize = 3;
+        const PARITY : usize = 2;
+        const TOTAL  : usize = DATA + PARITY;
+        const BURST  : usize = 4;
     }
 }
 
