@@ -5,6 +5,22 @@ use super::super::sbx_specs;
 use super::super::misc_utils;
 
 #[test]
+fn test_calc_rs_enabled_meta_write_indices() {
+    {
+        const PARITY : usize = 2;
+        const BURST  : usize = 4;
+
+        let indices = calc_rs_enabled_meta_write_indices(PARITY, BURST);
+
+        assert_eq!(3, indices.len());
+
+        assert_eq!( 0, indices[0]);
+        assert_eq!( 5, indices[1]);
+        assert_eq!(10, indices[2]);
+    }
+}
+
+#[test]
 fn test_calc_rs_enabled_data_write_index_simple_cases() {
     {
         const DATA   : usize = 3;

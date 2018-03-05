@@ -192,7 +192,7 @@ pub fn calc_rs_enabled_meta_write_indices(parity_shards    : usize,
         SmallVec::with_capacity(1 + parity_shards);
 
     for i in 0..1 + parity_shards as u64 {
-        res.push(i * burst_resilience as u64);
+        res.push(i * (1 + burst_resilience) as u64);
     }
 
     res
