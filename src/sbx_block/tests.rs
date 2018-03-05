@@ -5,8 +5,35 @@ use super::super::sbx_specs;
 use super::super::misc_utils;
 
 #[test]
-fn test_calc_rs_enabled_write_pos() {
-    
+fn test_calc_rs_enabled_write_pos_simple_cases() {
+    {
+        const DATA   : usize = 3;
+        const PARITY : usize = 2;
+        const TOTAL  : usize = DATA + PARITY;
+        const BURST  : usize = 4;
+        let table : [u32; 2 * (TOTAL * BURST) + (1 + PARITY)] =
+            [00, 01, 06, 11, 16,
+             00, 02, 07, 12, 17,
+             00, 03, 08, 13, 18,
+             04, 09, 14, 19,
+             05, 10, 15, 20,
+
+             21, 26, 31, 36,
+             22, 27, 32, 37,
+             23, 28, 33, 38,
+             24, 29, 34, 39,
+             25, 30, 35, 40];
+
+        // go through data seq num
+        for seq in 1..40 {
+            let write_index =
+                calc_rs_enabled_data_write_index(seq,
+                                                 DATA,
+                                                 PARITY,
+                                                 BURST) as usize;
+            assert_eq!(table[write_index], seq);
+        }
+    }
 }
 
 #[test]
