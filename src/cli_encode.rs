@@ -49,7 +49,7 @@ This means this option has no effect for version 11, 12, 13."))
              .long("sbx-version")
              .takes_value(true)
              .default_value("1")
-             .help("Sbx container version, one of :
+             .help("SBX container version, one of :
     1  (bs=512  bytes)
     2  (bs=128  bytes)
     3  (bs=4096 bytes)
@@ -73,6 +73,11 @@ Uid must be exactly 6 bytes(12 hex digits) in length."))
              .long("rs-parity")
              .takes_value(true)
              .help("Reed-Solomon parity shard count"))
+        .arg(Arg::with_name("burst")
+             .value_name("LEVEL")
+             .long("burst")
+             .takes_value(true)
+             .help("Burst resistance level"))
 }
 
 pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
