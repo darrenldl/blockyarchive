@@ -287,10 +287,12 @@ pub fn print_progress<T>(context        : &mut Context,
 }
 
 pub fn string_to_silence_level(string : &str) -> Result<SilenceLevel, ()> {
-    if      string == "0" { Ok(SilenceLevel::L0) }
-    else if string == "1" { Ok(SilenceLevel::L1) }
-    else if string == "2" { Ok(SilenceLevel::L2) }
-    else                  { Err(()) }
+    match string {
+        "0" => Ok(SilenceLevel::L0),
+        "1" => Ok(SilenceLevel::L1),
+        "2" => Ok(SilenceLevel::L2),
+        _   => Err(())
+    }
 }
 
 fn make_message(context      : &Context,

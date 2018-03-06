@@ -33,15 +33,17 @@ pub fn string_to_hash_type(string : &str) -> Result<HashType, ()> {
 
     use self::HashType::*;
 
-    if      string == "sha1"                               { Ok(SHA1)         }
-    else if string == "sha2-256"     || string == "sha256" { Ok(SHA256)       }
-    else if string == "sha2-512-256"                       { Ok(SHA2_512_256) }
-    else if string == "sha2-512-512" || string == "sha512" { Ok(SHA512)       }
-    else if string == "blake2b-256"                        { Ok(BLAKE2B_256)  }
-    else if string == "blake2b-512"                        { Ok(BLAKE2B_512)  }
-    else if string == "blake2s-128"                        { Ok(BLAKE2S_128)  }
-    else if string == "blake2s-256"                        { Ok(BLAKE2S_256)  }
-    else                                                   { Err(())          }
+    match string {
+        "sha1"                    => Ok(SHA1),
+        "sha2-256"     | "sha256" => Ok(SHA256),
+        "sha2-512-256"            => Ok(SHA2_512_256),
+        "sha2-512-512" | "sha512" => Ok(SHA512),
+        "blake2b-256"             => Ok(BLAKE2B_256),
+        "blake2b-512"             => Ok(BLAKE2B_512),
+        "blake2s-128"             => Ok(BLAKE2S_128),
+        "blake2s-256"             => Ok(BLAKE2S_256),
+        _                         => Err(())
+    }
 }
 
 pub fn hash_bytes_to_bytes(hash_bytes : &HashBytes, buffer : &mut [u8]) {

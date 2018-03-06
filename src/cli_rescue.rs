@@ -61,11 +61,11 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
     let block_type = match matches.value_of("block_type") {
         None    => None,
         Some(x) => {
-            if      x == "any"  { None }
-            else if x == "meta" { Some(BlockType::Meta) }
-            else if x == "data" { Some(BlockType::Data) }
-            else                {
-                exit_with_msg!(usr => "Invalid block type");
+            match x {
+                "any"  => None,
+                "meta" => Some(BlockType::Meta),
+                "data" => Some(BlockType::Data),
+                _      => exit_with_msg!(usr => "Invalid block type")
             }
         }
     };

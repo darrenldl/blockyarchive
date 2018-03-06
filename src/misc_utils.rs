@@ -146,8 +146,7 @@ pub fn make_path(path_parts : &[&str]) -> String {
         let str_len = string.len();
         match str_len {
             0 => string,
-            1 => { if &string[0..1] == "/" { ""     }
-                   else                    { string } },
+            1 => match &string[0..1] { "/" => "", _ => string },
             _ => { let char_last     = &string[str_len - 1..];
                    let char_2nd_last = &string[str_len - 2..];
                    if char_last == "/" && char_2nd_last != "\\" {

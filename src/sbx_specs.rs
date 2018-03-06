@@ -90,13 +90,15 @@ pub fn ver_to_usize(version : Version) -> usize {
 
 pub fn string_to_ver(string : &str) -> Result<Version, ()> {
     use self::Version::*;
-    if      string ==  "1" { Ok(V1) }
-    else if string ==  "2" { Ok(V2) }
-    else if string ==  "3" { Ok(V3) }
-    else if string == "11" { Ok(V11) }
-    else if string == "12" { Ok(V12) }
-    else if string == "13" { Ok(V13) }
-    else                   { Err(()) }
+    match string {
+        "1"  => Ok(V1),
+        "2"  => Ok(V2),
+        "3"  => Ok(V3),
+        "11" => Ok(V11),
+        "12" => Ok(V12),
+        "13" => Ok(V13),
+        _    => Err(()),
+    }
 }
 
 pub fn ver_to_block_size(version : Version) -> usize {
