@@ -273,7 +273,7 @@ fn real_main () -> i32 {
         cli_check::check(matches)
     }
     else {
-        exit_with_msg!(ok => "Invoke with -h or --help for help message");
+        exit_with_msg!(ok => "Invoke with -h or --help for help message\n");
     }
 }
 
