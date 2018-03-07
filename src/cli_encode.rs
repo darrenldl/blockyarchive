@@ -153,6 +153,19 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
             (1, 1) // use dummy values
         };
 
+    let burst =
+        match matches.value_of("burst") {
+            None    => 0,
+            Some(x) => {
+                match usize::from_str(&x) {
+                    Ok(x)  => x,
+                    Err(_) => {
+                        exit_with_msg!(usr => "Failed to parse burst resistance level");
+                    }
+                }
+            }
+        };
+
     let force_write = matches.is_present("force");
 
     let in_file  = matches.value_of("in_file").unwrap();
