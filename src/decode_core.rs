@@ -41,7 +41,6 @@ const HASH_FILE_BLOCK_SIZE : usize = 4096;
 pub struct Stats {
     version                     : Version,
     pub meta_blocks_decoded     : u64,
-    pub meta_par_blocks_decoded : u64,
     pub data_blocks_decoded     : u64,
     pub data_par_blocks_decoded : u64,
     pub blocks_decode_failed    : u64,
@@ -72,8 +71,7 @@ impl fmt::Display for Stats {
             writeln!(f, "SBX version                                             : {}", ver_to_usize(self.version))?;
             writeln!(f, "Block size used in decoding                             : {}", block_size)?;
             writeln!(f, "Number of blocks processed                              : {}", self.units_so_far())?;
-            writeln!(f, "Number of blocks successfully decoded (metadata only)   : {}", self.meta_blocks_decoded)?;
-            writeln!(f, "Number of blocks successfully decoded (metadata parity) : {}", self.meta_par_blocks_decoded)?;
+            writeln!(f, "Number of blocks successfully decoded (metadata)        : {}", self.meta_blocks_decoded)?;
             writeln!(f, "Number of blocks successfully decoded (data only)       : {}", self.data_blocks_decoded)?;
             writeln!(f, "Number of blocks successfully decoded (data parity)     : {}", self.data_par_blocks_decoded)?;
             writeln!(f, "Number of blocks failed to decode                       : {}", self.blocks_decode_failed)?;
@@ -185,7 +183,6 @@ impl Stats {
             version                 : ref_block.get_version(),
             blocks_decode_failed    : 0,
             meta_blocks_decoded     : 0,
-            meta_par_blocks_decoded : 0,
             data_blocks_decoded     : 0,
             data_par_blocks_decoded : 0,
             total_blocks,
@@ -214,7 +211,6 @@ impl ProgressReport for Stats {
 
     fn units_so_far(&self)       -> u64      {
         (self.meta_blocks_decoded
-         + self.meta_par_blocks_decoded
          + self.data_blocks_decoded
          + self.data_par_blocks_decoded
          + self.blocks_decode_failed) as u64
@@ -319,15 +315,7 @@ pub fn decode(param         : &Param,
         }
 
         if block.is_meta() { // do nothing if block is meta or meta parity
-            if rs_enabled {
-                if block.is_parity(data_shards.unwrap(), parity_shards.unwrap()) {
-                    stats.lock().unwrap().meta_par_blocks_decoded += 1;
-                } else {
-                    stats.lock().unwrap().meta_blocks_decoded += 1;
-                }
-            } else {
-                stats.lock().unwrap().meta_blocks_decoded += 1;
-            }
+            stats.lock().unwrap().meta_blocks_decoded += 1;
         } else {
             if rs_enabled {
                 if block.is_parity(data_shards.unwrap(), parity_shards.unwrap()) {
