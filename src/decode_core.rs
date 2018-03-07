@@ -356,6 +356,10 @@ pub fn decode(param         : &Param,
                 writer.set_len(x)?;
             }
         }
+    } else {
+        println!();
+        println!("Warning : Reference block is not a metadata block, output file may contain data padding");
+        println!();
     }
 
     let res = stats.lock().unwrap().clone();
