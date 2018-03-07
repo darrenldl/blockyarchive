@@ -140,6 +140,8 @@ pub fn show_file(param : &Param)
     let mut bytes_processed : u64 = 0;
 
     loop {
+        if bytes_processed > required_len { break; }
+
         let lazy_read_res = block_utils::read_block_lazily(&mut block,
                                                            &mut buffer,
                                                            &mut reader)?;
@@ -148,10 +150,6 @@ pub fn show_file(param : &Param)
         bytes_processed += lazy_read_res.len_read as u64;
 
         stats.lock().unwrap().bytes_processed = bytes_processed;
-
-        if bytes_processed > required_len {
-            break;
-        }
 
         break_if_eof_seen!(lazy_read_res);
 
@@ -168,7 +166,9 @@ pub fn show_file(param : &Param)
                 println!("========================================");
             }
 
-            println!("Found at byte          : {} (0x{:X})", block_pos, block_pos);
+            println!("Found at byte          : {} (0x{:X})",
+                     block_pos + seek_to,
+                     block_pos + seek_to);
             println!();
             println!("File UID               : {}",
                      misc_utils::bytes_to_upper_hex_string(
