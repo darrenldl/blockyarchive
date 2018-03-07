@@ -33,7 +33,7 @@ pub fn string_to_hash_type(string : &str) -> Result<HashType, ()> {
 
     use self::HashType::*;
 
-    match string {
+    match string.as_str() {
         "sha1"                    => Ok(SHA1),
         "sha2-256"     | "sha256" => Ok(SHA256),
         "sha2-512-256"            => Ok(SHA2_512_256),

@@ -32,7 +32,6 @@ DIR/INFILE.sbx."))
              .value_name("HASH-TYPE")
              .long("hash")
              .takes_value(true)
-             .default_value("sha256")
              .help("Hash function to use, one of (case-insensitive) :
     sha1
     sha256 (default)
@@ -48,7 +47,6 @@ This means this option has no effect for version 11, 12, 13."))
              .value_name("SBX-VERSION")
              .long("sbx-version")
              .takes_value(true)
-             .default_value("1")
              .help("SBX container version, one of :
     1  (bs=512  bytes)
     2  (bs=128  bytes)
@@ -200,6 +198,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                            &uid,
                            rs_data,
                            rs_parity,
+                           burst,
                            matches.is_present("no_meta"),
                            hash_type,
                            in_file,

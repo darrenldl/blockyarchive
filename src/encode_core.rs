@@ -36,6 +36,8 @@ use super::sbx_specs::{ver_to_usize,
                        ver_to_data_size,
                        ver_uses_rs,
                        ver_to_max_data_file_size};
+use super::sbx_block::{calc_rs_enabled_data_write_pos,
+                       calc_rs_enabled_meta_parity_write_pos_s};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
@@ -110,6 +112,7 @@ pub struct Param {
     rs_data      : usize,
     rs_parity    : usize,
     rs_enabled   : bool,
+    burst        : usize,
     meta_enabled : bool,
     hash_type    : multihash::HashType,
     in_file      : String,
@@ -122,6 +125,7 @@ impl Param {
                file_uid      : &[u8; SBX_FILE_UID_LEN],
                rs_data       : usize,
                rs_parity     : usize,
+               burst         : usize,
                no_meta       : bool,
                hash_type     : multihash::HashType,
                in_file       : &str,
@@ -133,6 +137,7 @@ impl Param {
             rs_data,
             rs_parity,
             rs_enabled : ver_uses_rs(version),
+            burst,
             meta_enabled : ver_forces_meta_enabled(version) || (!no_meta),
             hash_type,
             in_file  : String::from(in_file),
@@ -216,21 +221,17 @@ fn pack_metadata(block         : &mut Block,
             meta.push(Metadata::RSP(param.rs_parity as u8)); }}
 }
 
-fn write_metadata_block(param         : &Param,
-                        stats         : &Stats,
-                        file_metadata : &fs::Metadata,
-                        hash          : Option<multihash::HashBytes>,
-                        block         : &mut Block,
-                        buf           : &mut [u8],
-                        writer        : &mut FileWriter,
-                        seek_to_start : bool)
-                        -> Result<(), Error> {
+fn write_meta_block(param         : &Param,
+                    stats         : &Stats,
+                    file_metadata : &fs::Metadata,
+                    hash          : Option<multihash::HashBytes>,
+                    block         : &mut Block,
+                    buf           : &mut [u8],
+                    writer        : &mut FileWriter,
+                    pos           : u64)
+                     -> Result<(), Error> {
     // set to metadata block
     block.set_seq_num(0);
-
-    if seek_to_start {
-        writer.seek(SeekFrom::Start(0))?;
-    }
 
     pack_metadata(block,
                   param,
@@ -238,14 +239,37 @@ fn write_metadata_block(param         : &Param,
                   file_metadata,
                   hash);
 
+    writer.seek(SeekFrom::Start(pos))?;
+
     block_sync_and_write(block,
                          buf,
                          writer)
 }
 
-fn block_sync_and_write(block  : &mut Block,
-                        buffer : &mut [u8],
-                        writer : &mut FileWriter) -> Result<(), Error> {
+fn write_data_block(param  : &Param,
+                    block  : &mut Block,
+                    buffer : &mut [u8],
+                    writer : &mut FileWriter)
+                    -> Result<(), Error> {
+    if param.rs_enabled && param.burst > 0 {
+        let write_pos =
+            calc_rs_enabled_data_write_pos(block.get_seq_num(),
+                                           param.version,
+                                           param.rs_data,
+                                           param.rs_parity,
+                                           param.burst);
+        writer.seek(SeekFrom::Start(write_pos))?;
+    }
+
+    block_sync_and_write(block,
+                         buffer,
+                         writer)
+}
+
+fn block_sync_and_write(block        : &mut Block,
+                        buffer       : &mut [u8],
+                        writer       : &mut FileWriter)
+                        -> Result<(), Error> {
     block.sync_to_buffer(None, buffer).unwrap();
 
     writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
@@ -313,27 +337,31 @@ pub fn encode_file(param : &Param)
     reporter.start();
 
     if param.meta_enabled { // write dummy metadata block
-        write_metadata_block(param,
-                             &stats.lock().unwrap(),
-                             &metadata,
-                             None,
-                             &mut block,
-                             &mut data,
-                             &mut writer,
-                             true)?;
+        write_meta_block(param,
+                         &stats.lock().unwrap(),
+                         &metadata,
+                         None,
+                         &mut block,
+                         &mut data,
+                         &mut writer,
+                         0)?;
 
         stats.lock().unwrap().meta_blocks_written += 1;
 
         if param.rs_enabled {
-            for _ in 0..param.rs_parity {
-                write_metadata_block(param,
-                                     &stats.lock().unwrap(),
-                                     &metadata,
-                                     None,
-                                     &mut block,
-                                     &mut data,
-                                     &mut writer,
-                                     false)?;
+            let write_positions =
+                calc_rs_enabled_meta_parity_write_pos_s(param.version,
+                                                        param.rs_parity,
+                                                        param.burst);
+            for &p in write_positions.iter() {
+                write_meta_block(param,
+                                 &stats.lock().unwrap(),
+                                 &metadata,
+                                 None,
+                                 &mut block,
+                                 &mut data,
+                                 &mut writer,
+                                 p)?;
 
                 stats.lock().unwrap().meta_par_blocks_written += 1;
             }
@@ -356,9 +384,10 @@ pub fn encode_file(param : &Param)
                     // fill remaining slots with padding
                     loop {
                         // write padding
-                        block_sync_and_write(&mut block,
-                                             &mut padding,
-                                             &mut writer)?;
+                        write_data_block(param,
+                                         &mut block,
+                                         &mut padding,
+                                         &mut writer)?;
 
                         data_blocks_written += 1;
 
@@ -366,9 +395,10 @@ pub fn encode_file(param : &Param)
                             None                => {},
                             Some(parity_to_use) => {
                                 for p in parity_to_use.iter_mut() {
-                                    block_sync_and_write(&mut block,
-                                                         p,
-                                                         &mut writer)?;
+                                    write_data_block(param,
+                                                     &mut block,
+                                                     p,
+                                                     &mut writer)?;
 
                                     data_par_blocks_written += 1;
                                 }
@@ -385,9 +415,10 @@ pub fn encode_file(param : &Param)
         sbx_block::write_padding(param.version, read_res.len_read, &mut data);
 
         // start encoding
-        block_sync_and_write(&mut block,
-                             &mut data,
-                             &mut writer)?;
+        write_data_block(param,
+                         &mut block,
+                         &mut data,
+                         &mut writer)?;
 
         data_blocks_written += 1;
 
@@ -404,9 +435,10 @@ pub fn encode_file(param : &Param)
                 None                => {},
                 Some(parity_to_use) => {
                     for p in parity_to_use.iter_mut() {
-                        block_sync_and_write(&mut block,
-                                             p,
-                                             &mut writer)?;
+                        write_data_block(param,
+                                         &mut block,
+                                         p,
+                                         &mut writer)?;
 
                         data_par_blocks_written += 1;
                     }
@@ -423,28 +455,32 @@ pub fn encode_file(param : &Param)
         let hash_bytes = hash_ctx.finish_into_hash_bytes();
 
         // write actual medata block
-        write_metadata_block(param,
-                             &stats.lock().unwrap(),
-                             &metadata,
-                             Some(hash_bytes.clone()),
-                             &mut block,
-                             &mut data,
-                             &mut writer,
-                             true)?;
+        write_meta_block(param,
+                         &stats.lock().unwrap(),
+                         &metadata,
+                         Some(hash_bytes.clone()),
+                         &mut block,
+                         &mut data,
+                         &mut writer,
+                         0)?;
 
         // record hash in stats
         stats.lock().unwrap().hash_bytes = Some(hash_bytes);
 
         if param.rs_enabled {
-            for _ in 0..param.rs_parity {
-                write_metadata_block(param,
-                                     &stats.lock().unwrap(),
-                                     &metadata,
-                                     None,
-                                     &mut block,
-                                     &mut data,
-                                     &mut writer,
-                                     false)?;
+            let write_positions =
+                calc_rs_enabled_meta_parity_write_pos_s(param.version,
+                                                        param.rs_parity,
+                                                        param.burst);
+            for &p in write_positions.iter() {
+                write_meta_block(param,
+                                 &stats.lock().unwrap(),
+                                 &metadata,
+                                 None,
+                                 &mut block,
+                                 &mut data,
+                                 &mut writer,
+                                 p)?;
 
                 stats.lock().unwrap().meta_par_blocks_written += 1;
             }

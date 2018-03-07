@@ -185,7 +185,8 @@ pub fn seq_num_is_parity(seq_num       : u32,
     }
 }
 
-pub fn calc_rs_enabled_meta_parity_write_pos_s(parity_shards    : usize,
+pub fn calc_rs_enabled_meta_parity_write_pos_s(version          : Version,
+                                               parity_shards    : usize,
                                                burst_resistance : usize)
                                                -> SmallVec<[u64; 32]> {
     let block_size = ver_to_block_size(version) as u64;
@@ -234,7 +235,7 @@ pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
     assert!(seq_num >= SBX_FIRST_DATA_SEQ_NUM as u32);
 
     if burst_resistance == 0 {
-        return (1 + parity_shards) + seq_num;
+        return (1 + parity_shards) as u64 + seq_num as u64;
     }
 
     // calculate data index
