@@ -171,18 +171,17 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
     let out_file = match matches.value_of("out_file") {
         None    => format!("{}.sbx", in_file),
         Some(x) => {
-            let x =
-                if file_utils::check_if_file_is_dir(x) {
-                    misc_utils::make_path(&[x, in_file])
-                } else {
-                    String::from(x)
-                };
-            if !force_write {
-                exit_if_file!(exists &x => "File \"{}\" already exists", x);
+            if file_utils::check_if_file_is_dir(x) {
+                misc_utils::make_path(&[x, in_file])
+            } else {
+                String::from(x)
             }
-            x
         }
     };
+
+    if !force_write {
+        exit_if_file!(exists &out_file => "File \"{}\" already exists", out_file);
+    }
 
     let hash_type = match matches.value_of("hash_type") {
         None    => multihash::HashType::SHA256,
