@@ -47,6 +47,7 @@ pub struct Stats {
     pub meta_par_blocks_written : u32,
     pub data_blocks_written     : u32,
     pub data_par_blocks_written : u32,
+    pub data_padding_bytes      : usize,
     total_data_blocks           : u32,
     start_time                  : f64,
     end_time                    : f64,
@@ -65,7 +66,10 @@ impl fmt::Display for Stats {
             + data_blocks_written
             + meta_par_blocks_written
             + data_par_blocks_written;
-        let data_bytes_encoded      = self.data_blocks_written * data_size as u32;
+        let data_bytes_encoded      =
+            self.data_blocks_written as usize
+            * data_size
+            - self.data_padding_bytes;
         let time_elapsed            = (self.end_time - self.start_time) as i64;
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
@@ -158,6 +162,7 @@ impl Stats {
             data_blocks_written     : 0,
             meta_par_blocks_written : 0,
             data_par_blocks_written : 0,
+            data_padding_bytes      : 0,
             total_data_blocks,
             start_time              : 0.,
             end_time                : 0.,
@@ -412,7 +417,8 @@ pub fn encode_file(param : &Param)
             break;
         }
 
-        sbx_block::write_padding(param.version, read_res.len_read, &mut data);
+        stats.lock().unwrap().data_padding_bytes +=
+            sbx_block::write_padding(param.version, read_res.len_read, &mut data);
 
         // start encoding
         write_data_block(param,

@@ -125,10 +125,15 @@ macro_rules! block_size {
 
 pub fn write_padding(version : Version,
                      skip    : usize,
-                     buffer  : &mut [u8]) {
-    for i in SBX_HEADER_SIZE + skip..ver_to_block_size(version) {
+                     buffer  : &mut [u8]) -> usize {
+    let block_size = ver_to_block_size(version);
+    let start      = SBX_HEADER_SIZE + skip;
+
+    for i in start..block_size {
         buffer[i] = 0x1A;
     }
+
+    block_size - start
 }
 
 pub fn slice_buf(version : Version,
