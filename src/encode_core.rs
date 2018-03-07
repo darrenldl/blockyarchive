@@ -465,7 +465,7 @@ pub fn encode_file(param : &Param)
                          0)?;
 
         // record hash in stats
-        stats.lock().unwrap().hash_bytes = Some(hash_bytes);
+        stats.lock().unwrap().hash_bytes = Some(hash_bytes.clone());
 
         if param.rs_enabled {
             let write_positions =
@@ -476,13 +476,11 @@ pub fn encode_file(param : &Param)
                 write_meta_block(param,
                                  &stats.lock().unwrap(),
                                  &metadata,
-                                 None,
+                                 Some(hash_bytes.clone()),
                                  &mut block,
                                  &mut data,
                                  &mut writer,
                                  p)?;
-
-                stats.lock().unwrap().meta_par_blocks_written += 1;
             }
         }
     }
