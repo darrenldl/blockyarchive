@@ -233,6 +233,10 @@ pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
                                         burst_resistance : usize) -> u64 {
     assert!(seq_num >= SBX_FIRST_DATA_SEQ_NUM as u32);
 
+    if burst_resistance == 0 {
+        return (1 + parity_shards) + seq_num;
+    }
+
     // calculate data index
     let index = seq_num as u64 - SBX_FIRST_DATA_SEQ_NUM as u64;
 
