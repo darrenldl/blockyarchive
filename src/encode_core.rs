@@ -44,7 +44,6 @@ pub struct Stats {
     version                     : Version,
     hash_bytes                  : Option<multihash::HashBytes>,
     pub meta_blocks_written     : u32,
-    pub meta_par_blocks_written : u32,
     pub data_blocks_written     : u32,
     pub data_par_blocks_written : u32,
     pub data_padding_bytes      : usize,
@@ -60,11 +59,10 @@ impl fmt::Display for Stats {
         let data_size               = ver_to_data_size(self.version);
         let meta_blocks_written     = self.meta_blocks_written;
         let data_blocks_written     = self.data_blocks_written;
-        let meta_par_blocks_written = self.meta_par_blocks_written;
         let data_par_blocks_written = self.data_par_blocks_written;
-        let blocks_written = meta_blocks_written
+        let blocks_written          =
+            meta_blocks_written
             + data_blocks_written
-            + meta_par_blocks_written
             + data_par_blocks_written;
         let data_bytes_encoded      =
             self.data_blocks_written as usize
@@ -78,8 +76,7 @@ impl fmt::Display for Stats {
             writeln!(f, "Block size used in encoding                : {}", block_size)?;
             writeln!(f, "Data  size used in encoding                : {}", data_size)?;
             writeln!(f, "Number of blocks written                   : {}", blocks_written)?;
-            writeln!(f, "Number of blocks written (metadata only)   : {}", meta_blocks_written)?;
-            writeln!(f, "Number of blocks written (metadata parity) : {}", meta_par_blocks_written)?;
+            writeln!(f, "Number of blocks written (metadata)        : {}", meta_blocks_written)?;
             writeln!(f, "Number of blocks written (data only)       : {}", data_blocks_written)?;
             writeln!(f, "Number of blocks written (data parity)     : {}", data_par_blocks_written)?;
             writeln!(f, "Amount of data encoded (bytes)             : {}", data_bytes_encoded)?;
@@ -160,7 +157,6 @@ impl Stats {
             hash_bytes              : None,
             meta_blocks_written     : 0,
             data_blocks_written     : 0,
-            meta_par_blocks_written : 0,
             data_par_blocks_written : 0,
             data_padding_bytes      : 0,
             total_data_blocks,
@@ -368,7 +364,7 @@ pub fn encode_file(param : &Param)
                                  &mut writer,
                                  p)?;
 
-                stats.lock().unwrap().meta_par_blocks_written += 1;
+                stats.lock().unwrap().meta_blocks_written += 1;
             }
         }
     }
