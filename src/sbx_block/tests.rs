@@ -10,36 +10,33 @@ fn test_calc_rs_enabled_meta_write_indices() {
         const PARITY : usize = 2;
         const BURST  : usize = 4;
 
-        let indices = calc_rs_enabled_meta_write_indices(PARITY, BURST);
+        let indices = calc_rs_enabled_meta_dup_write_indices(PARITY, BURST);
 
-        assert_eq!(3, indices.len());
+        assert_eq!(2, indices.len());
 
-        assert_eq!( 0, indices[0]);
-        assert_eq!( 5, indices[1]);
-        assert_eq!(10, indices[2]);
+        assert_eq!( 5, indices[0]);
+        assert_eq!(10, indices[1]);
     }
     {
         const PARITY : usize = 1;
         const BURST  : usize = 2;
 
-        let indices = calc_rs_enabled_meta_write_indices(PARITY, BURST);
+        let indices = calc_rs_enabled_meta_dup_write_indices(PARITY, BURST);
 
-        assert_eq!(2, indices.len());
+        assert_eq!(1, indices.len());
 
-        assert_eq!(0, indices[0]);
-        assert_eq!(3, indices[1]);
+        assert_eq!(3, indices[0]);
     }
     {
         const PARITY : usize = 2;
         const BURST  : usize = 11;
 
-        let indices = calc_rs_enabled_meta_write_indices(PARITY, BURST);
+        let indices = calc_rs_enabled_meta_dup_write_indices(PARITY, BURST);
 
-        assert_eq!(3, indices.len());
+        assert_eq!(2, indices.len());
 
-        assert_eq!( 0, indices[0]);
-        assert_eq!(12, indices[1]);
-        assert_eq!(24, indices[2]);
+        assert_eq!(12, indices[0]);
+        assert_eq!(24, indices[1]);
     }
 }
 

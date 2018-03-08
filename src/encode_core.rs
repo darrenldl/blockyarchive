@@ -37,7 +37,7 @@ use super::sbx_specs::{ver_to_usize,
                        ver_uses_rs,
                        ver_to_max_data_file_size};
 use super::sbx_block::{calc_rs_enabled_data_write_pos,
-                       calc_rs_enabled_meta_parity_write_pos_s};
+                       calc_rs_enabled_meta_dup_write_pos_s};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
@@ -351,9 +351,9 @@ pub fn encode_file(param : &Param)
 
         if param.rs_enabled {
             let write_positions =
-                calc_rs_enabled_meta_parity_write_pos_s(param.version,
-                                                        param.rs_parity,
-                                                        param.burst);
+                calc_rs_enabled_meta_dup_write_pos_s(param.version,
+                                                     param.rs_parity,
+                                                     param.burst);
             for &p in write_positions.iter() {
                 write_meta_block(param,
                                  &stats.lock().unwrap(),
@@ -471,9 +471,9 @@ pub fn encode_file(param : &Param)
 
         if param.rs_enabled {
             let write_positions =
-                calc_rs_enabled_meta_parity_write_pos_s(param.version,
-                                                        param.rs_parity,
-                                                        param.burst);
+                calc_rs_enabled_meta_dup_write_pos_s(param.version,
+                                                     param.rs_parity,
+                                                     param.burst);
             for &p in write_positions.iter() {
                 write_meta_block(param,
                                  &stats.lock().unwrap(),

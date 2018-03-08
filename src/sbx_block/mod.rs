@@ -190,15 +190,15 @@ pub fn seq_num_is_parity(seq_num       : u32,
     }
 }
 
-pub fn calc_rs_enabled_meta_parity_write_pos_s(version          : Version,
-                                               parity_shards    : usize,
-                                               burst_resistance : usize)
-                                               -> SmallVec<[u64; 32]> {
+pub fn calc_rs_enabled_meta_dup_write_pos_s(version          : Version,
+                                            parity_shards    : usize,
+                                            burst_resistance : usize)
+                                            -> SmallVec<[u64; 32]> {
     let block_size = ver_to_block_size(version) as u64;
 
     let mut res =
-        calc_rs_enabled_meta_parity_write_indices(parity_shards,
-                                                  burst_resistance);
+        calc_rs_enabled_meta_dup_write_indices(parity_shards,
+                                               burst_resistance);
 
     for i in res.iter_mut() {
         *i = *i * block_size;
@@ -207,9 +207,9 @@ pub fn calc_rs_enabled_meta_parity_write_pos_s(version          : Version,
     res
 }
 
-pub fn calc_rs_enabled_meta_parity_write_indices(parity_shards    : usize,
-                                                 burst_resistance : usize)
-                                                 -> SmallVec<[u64; 32]> {
+pub fn calc_rs_enabled_meta_dup_write_indices(parity_shards    : usize,
+                                              burst_resistance : usize)
+                                              -> SmallVec<[u64; 32]> {
     let mut res : SmallVec<[u64; 32]> =
         SmallVec::with_capacity(1 + parity_shards);
 
