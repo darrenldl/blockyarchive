@@ -20,9 +20,9 @@ pub enum Version {
     V1,
     V2,
     V3,
-    V11,
-    V12,
-    V13,
+    V17,
+    V18,
+    V19,
 }
 
 mod common_params {
@@ -55,21 +55,21 @@ mod params_for_v3 {
     pub const DATA_SIZE  : usize = BLOCK_SIZE - common_params::HEADER_SIZE;
 }
 
-mod params_for_v11 {
+mod params_for_v17 {
     use super::params_for_v1;
 
     pub const BLOCK_SIZE : usize = params_for_v1::BLOCK_SIZE;
     pub const DATA_SIZE  : usize = params_for_v1::DATA_SIZE;
 }
 
-mod params_for_v12 {
+mod params_for_v18 {
     use super::params_for_v2;
 
     pub const BLOCK_SIZE : usize = params_for_v2::BLOCK_SIZE;
     pub const DATA_SIZE  : usize = params_for_v2::DATA_SIZE;
 }
 
-mod params_for_v13 {
+mod params_for_v19 {
     use super::params_for_v3;
 
     pub const BLOCK_SIZE : usize = params_for_v3::BLOCK_SIZE;
@@ -82,9 +82,9 @@ pub fn ver_to_usize(version : Version) -> usize {
         V1  => 1,
         V2  => 2,
         V3  => 3,
-        V11 => 11,
-        V12 => 12,
-        V13 => 13,
+        V17 => 17,
+        V18 => 18,
+        V19 => 19,
     }
 }
 
@@ -94,9 +94,9 @@ pub fn string_to_ver(string : &str) -> Result<Version, ()> {
         "1"  => Ok(V1),
         "2"  => Ok(V2),
         "3"  => Ok(V3),
-        "11" => Ok(V11),
-        "12" => Ok(V12),
-        "13" => Ok(V13),
+        "17" => Ok(V17),
+        "18" => Ok(V18),
+        "19" => Ok(V19),
         _    => Err(()),
     }
 }
@@ -107,9 +107,9 @@ pub fn ver_to_block_size(version : Version) -> usize {
         V1  => params_for_v1::BLOCK_SIZE,
         V2  => params_for_v2::BLOCK_SIZE,
         V3  => params_for_v3::BLOCK_SIZE,
-        V11 => params_for_v11::BLOCK_SIZE,
-        V12 => params_for_v12::BLOCK_SIZE,
-        V13 => params_for_v13::BLOCK_SIZE,
+        V17 => params_for_v17::BLOCK_SIZE,
+        V18 => params_for_v18::BLOCK_SIZE,
+        V19 => params_for_v19::BLOCK_SIZE,
     }
 }
 
@@ -119,9 +119,9 @@ pub fn ver_to_data_size(version : Version) -> usize {
         V1  => params_for_v1::DATA_SIZE,
         V2  => params_for_v2::DATA_SIZE,
         V3  => params_for_v3::DATA_SIZE,
-        V11 => params_for_v11::DATA_SIZE,
-        V12 => params_for_v12::DATA_SIZE,
-        V13 => params_for_v13::DATA_SIZE,
+        V17 => params_for_v17::DATA_SIZE,
+        V18 => params_for_v18::DATA_SIZE,
+        V19 => params_for_v19::DATA_SIZE,
     }
 }
 
@@ -129,7 +129,7 @@ pub fn ver_uses_rs(version : Version) -> bool {
     use self::Version::*;
     match version {
         V1  | V2  | V3  => false,
-        V11 | V12 | V13 => true,
+        V17 | V18 | V19 => true,
     }
 }
 
@@ -137,7 +137,7 @@ pub fn ver_forces_meta_enabled(version : Version) -> bool {
     use self::Version::*;
     match version {
         V1  | V2  | V3  => false,
-        V11 | V12 | V13 => true,
+        V17 | V18 | V19 => true,
     }
 }
 

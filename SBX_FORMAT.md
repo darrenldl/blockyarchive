@@ -69,7 +69,7 @@ Supported crypto hashes since 1.0.0 are
 
 Metadata block (block 0) can be disabled
 
-## For versions : 11, 12, 13
+## For versions : 17(0x11), 18(0x12), 19(0x13)
 Overall similar to above specs.
 
 Block categories : `Meta`, `Data`, `Parity`
@@ -188,7 +188,7 @@ The N blocks are both `Data` and `Parity`.
 | RSP | Reed-Solomon parity shards part of ratio (ratio = RSD : RSP) (1 byte - uint8) |
 
 Supported forward error correction algorithms since 1.0.0 are
-  - Reed-Solomon erasure code - probably the only one for versions 11, 12, 13
+  - Reed-Solomon erasure code - probably the only one for versions 17, 18, 19
 
 Metadata and the parity blocks (blocks 0 - 3) are mandatory
 

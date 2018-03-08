@@ -46,7 +46,7 @@ fn test_from_bytes_versions() {
 
         header.from_bytes(buffer).unwrap();
 
-        assert_eq!(header.version, Version::V11);
+        assert_eq!(header.version, Version::V17);
         assert_eq!(header.crc, 0xCDEF);
         assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
         assert_eq!(header.seq_num, 0x01020304);
@@ -56,7 +56,7 @@ fn test_from_bytes_versions() {
 
         header.from_bytes(buffer).unwrap();
 
-        assert_eq!(header.version, Version::V12);
+        assert_eq!(header.version, Version::V18);
         assert_eq!(header.crc, 0xCDEF);
         assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
         assert_eq!(header.seq_num, 0x01020304);
@@ -66,7 +66,7 @@ fn test_from_bytes_versions() {
 
         header.from_bytes(buffer).unwrap();
 
-        assert_eq!(header.version, Version::V13);
+        assert_eq!(header.version, Version::V19);
         assert_eq!(header.crc, 0xCDEF);
         assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
         assert_eq!(header.seq_num, 0x01020304);
@@ -122,7 +122,7 @@ fn test_to_bytes_versions() {
     }
     {
         let mut header =
-            Header::new(Version::V11,
+            Header::new(Version::V17,
                         [0x00, 0x01, 0x02, 0x03, 0x04, 0x05],
                         0);
         header.crc = 0xCDEF;
@@ -137,7 +137,7 @@ fn test_to_bytes_versions() {
     }
     {
         let mut header =
-            Header::new(Version::V12,
+            Header::new(Version::V18,
                         [0x00, 0x01, 0x02, 0x03, 0x04, 0x05],
                         0);
         header.crc = 0xCDEF;
@@ -152,7 +152,7 @@ fn test_to_bytes_versions() {
     }
     {
         let mut header =
-            Header::new(Version::V13,
+            Header::new(Version::V19,
                         [0x00, 0x01, 0x02, 0x03, 0x04, 0x05],
                         0);
         header.crc = 0xCDEF;
