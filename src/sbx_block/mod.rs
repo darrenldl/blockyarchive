@@ -190,15 +190,15 @@ pub fn seq_num_is_parity(seq_num       : u32,
     }
 }
 
-pub fn calc_rs_enabled_meta_dup_write_pos_s(version          : Version,
-                                            parity_shards    : usize,
-                                            burst_resistance : usize)
+pub fn calc_rs_enabled_meta_dup_write_pos_s(version                : Version,
+                                            parity_shards          : usize,
+                                            burst_err_resistance : usize)
                                             -> SmallVec<[u64; 32]> {
     let block_size = ver_to_block_size(version) as u64;
 
     let mut res =
         calc_rs_enabled_meta_dup_write_indices(parity_shards,
-                                               burst_resistance);
+                                               burst_err_resistance);
 
     for i in res.iter_mut() {
         *i = *i * block_size;
@@ -208,13 +208,13 @@ pub fn calc_rs_enabled_meta_dup_write_pos_s(version          : Version,
 }
 
 pub fn calc_rs_enabled_meta_dup_write_indices(parity_shards    : usize,
-                                              burst_resistance : usize)
+                                              burst_err_resistance : usize)
                                               -> SmallVec<[u64; 32]> {
     let mut res : SmallVec<[u64; 32]> =
         SmallVec::with_capacity(1 + parity_shards);
 
     for i in 1..1 + parity_shards as u64 {
-        res.push(i * (1 + burst_resistance) as u64);
+        res.push(i * (1 + burst_err_resistance) as u64);
     }
 
     res
@@ -224,22 +224,22 @@ pub fn calc_rs_enabled_data_write_pos(seq_num          : u32,
                                       version          : Version,
                                       data_shards      : usize,
                                       parity_shards    : usize,
-                                      burst_resistance : usize) -> u64 {
+                                      burst_err_resistance : usize) -> u64 {
     let block_size = ver_to_block_size(version) as u64;
 
     calc_rs_enabled_data_write_index(seq_num,
                                      data_shards,
                                      parity_shards,
-                                     burst_resistance) * block_size
+                                     burst_err_resistance) * block_size
 }
 
 pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
                                         data_shards      : usize,
                                         parity_shards    : usize,
-                                        burst_resistance : usize) -> u64 {
+                                        burst_err_resistance : usize) -> u64 {
     assert!(seq_num >= SBX_FIRST_DATA_SEQ_NUM as u32);
 
-    if burst_resistance == 0 {
+    if burst_err_resistance == 0 {
         return (1 + parity_shards) as u64 + seq_num as u64;
     }
 
@@ -248,9 +248,9 @@ pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
 
     let data_shards      = data_shards      as u64;
     let parity_shards    = parity_shards    as u64;
-    let burst_resistance = burst_resistance as u64;
+    let burst_err_resistance = burst_err_resistance as u64;
 
-    let super_block_set_size = (data_shards + parity_shards) * burst_resistance;
+    let super_block_set_size = (data_shards + parity_shards) * burst_err_resistance;
 
     // sub A block sets partitioning deals with the super block set
     // of the sequential data index arrangement
@@ -263,7 +263,7 @@ pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
     // sub A block set partitioning slices at total shards interval
     // sub B block set partitioning slices at burst resistance level interval
     let sub_a_block_set_size = data_shards + parity_shards;
-    let sub_b_block_set_size = burst_resistance;
+    let sub_b_block_set_size = burst_err_resistance;
 
     // calculate the index of the start of super block set with
     // respect to the data index

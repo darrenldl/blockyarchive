@@ -75,7 +75,7 @@ Uid must be exactly 6 bytes(12 hex digits) in length."))
              .value_name("LEVEL")
              .long("burst")
              .takes_value(true)
-             .help("Burst resistance level"))
+             .help("Burst error resistance level"))
 }
 
 pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
@@ -158,7 +158,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                 match usize::from_str(&x) {
                     Ok(x)  => x,
                     Err(_) => {
-                        exit_with_msg!(usr => "Failed to parse burst resistance level");
+                        exit_with_msg!(usr => "Failed to parse burst error resistance level");
                     }
                 }
             }

@@ -11,6 +11,8 @@ use std::sync::{Arc, Mutex};
 use std::fs;
 use super::file_utils;
 
+use super::sbx_block;
+
 use super::progress_report::*;
 
 use super::sbx_specs::ver_to_block_size;
@@ -168,4 +170,36 @@ pub fn get_ref_block(in_file            : &str,
     Ok(if      let Some(x) = meta_block { Some(x) }
        else if let Some(x) = data_block { Some(x) }
        else                             { None    })
+}
+
+pub fn guess_burst_err_resistance_level(in_file       : &str,
+                                          ref_block     : &Block,
+                                          silence_level : SilenceLevel)
+                                          -> Result<Option<u64>, Error> {
+    let metadata = file_utils::get_file_metadata(in_file)?;
+
+    let stats = Arc::new(Mutex::new(ScanStats::new(&metadata)));
+
+    let reporter = ProgressReporter::new(&stats,
+                                         "Reference block scanning progress",
+                                         "bytes",
+                                         silence_level);
+
+    let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
+        [0; SBX_LARGEST_BLOCK_SIZE];
+
+    let mut block = Block::dummy();
+
+    let mut reader = FileReader::new(in_file,
+                                     FileReaderParam { write    : false,
+                                                       buffered : true   })?;
+
+    loop {
+        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+                                                            &mut buffer))?;
+
+        break_if_eof_seen!(read_res);
+    }
+
+    Ok(None)
 }
