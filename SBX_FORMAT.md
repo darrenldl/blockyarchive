@@ -201,11 +201,11 @@ The other difference is that rsbx allows customizing level of resistance against
 
 A burst error is defined as consecutive SBX block erasures.
 
-Burst resistance is defined as the maximum number of consective SBX block erasures tolerable for any instance of burst error.
+Burst error resistance is defined as the maximum number of consective SBX block erasures tolerable for any instance of burst error.
 
 The maximum number of such errors is same as the parity shard count.
 
-Assuming arrangement of **M** data shards, **N** parity shards, **B** burst resistance.
+Assuming arrangement of **M** data shards, **N** parity shards, **B** burst error resistance.
 
 Then the SBX container can tolerate up to **N** burst errors, and each individual error may be up to **B** SBX blocks.
 
@@ -213,7 +213,7 @@ Then the SBX container can tolerate up to **N** burst errors, and each individua
 
 General case
 
-Sequential arrangement, **M** data shards, **N** parity shards, **B** burst resistance
+Sequential arrangement, **M** data shards, **N** parity shards, **B** burst error resistance
 
 | 00 | 01 | 02 | 03 | 04 | ...
 
