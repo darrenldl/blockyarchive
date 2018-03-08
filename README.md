@@ -28,7 +28,7 @@ Modularity and ease of maintenance will be of high priority during development a
 [Rsbx specs](RSBX_SPECS.md)
 
 ## Contributions
-Contributions are welcome. Note that by submitting contributions, you agree to license your work under the same license used by this project(3-Clause BSD).
+Contributions are welcome. Note that by submitting contributions, you agree to license your work under the same license used by this project(MIT).
 
 ## Acknowledgement
 I would like to thank [Marco](https://github.com/MarcoPon) (official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx.
@@ -50,4 +50,4 @@ The C source code of crcccitt copied directly from libcrc are under the MIT Lice
 The files in tests folder copied from official SeqBox are under its license, which is MIT as of time of writing
   - tests/SeqBox/*
 
-All remaining files are distributed under the 3-Clause BSD license as stated in the LICENSE file
+All remaining files are distributed under the MIT license as stated in the LICENSE file
