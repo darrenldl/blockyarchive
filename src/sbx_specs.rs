@@ -28,10 +28,10 @@ pub enum Version {
 mod common_params {
     use std::u32;
 
-    pub const FILE_UID_LEN   : usize = 6;
-    pub const SIGNATURE      : &[u8] = b"SBx";
-    pub const HEADER_SIZE    : usize = 16;
-    pub const MAX_BLOCKS_NUM : u64   = u32::MAX as u64;
+    pub const FILE_UID_LEN  : usize = 6;
+    pub const SIGNATURE     : &[u8] = b"SBx";
+    pub const HEADER_SIZE   : usize = 16;
+    pub const MAX_BLOCK_NUM : u64   = u32::MAX as u64;
 }
 
 mod params_for_v1 {
