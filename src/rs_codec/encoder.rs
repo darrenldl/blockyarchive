@@ -6,22 +6,23 @@ use super::super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use super::super::sbx_specs::ver_to_block_size;
 
 pub struct RSEncoder {
-    cur_data_index : u32,
-    rs_codec       : ReedSolomon,
-    version        : Version,
-    par_buf        : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
+    data_index : usize,
+    rs_codec   : ReedSolomon,
+    version    : Version,
+    par_buf    : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
 }
 
-macro_rules! add_cur_data_index {
+macro_rules! add_data_index {
     (
         $self:ident, $val:expr
     ) => {{
-        $self.cur_data_index = $self.cur_data_index.wrapping_add($val);
+        $self.data_index =
+            ($self.data_index + $val) % $self.rs_codec.data_shard_count();
     }};
     (
         1 => $self:ident
     ) => {{
-        add_cur_data_index!($self, 1);
+        add_data_index!($self, 1);
     }}
 }
 
@@ -35,9 +36,9 @@ impl RSEncoder {
             smallvec![smallvec![0; block_size]; parity_shards];
 
         RSEncoder {
-            cur_data_index : 0,
-            rs_codec       : ReedSolomon::new(data_shards,
-                                              parity_shards).unwrap(),
+            data_index : 0,
+            rs_codec   : ReedSolomon::new(data_shards,
+                                          parity_shards).unwrap(),
             version,
             par_buf,
         }
@@ -53,8 +54,7 @@ impl RSEncoder {
         let par_buf  = &mut self.par_buf;
 
         let data_shards = rs_codec.data_shard_count();
-
-        let index = (self.cur_data_index % data_shards as u32) as usize;
+        let index       = self.data_index;
 
         {
             let mut parity : SmallVec<[&mut [u8]; 32]> =
@@ -68,7 +68,7 @@ impl RSEncoder {
                                        &mut parity).unwrap();
         }
 
-        add_cur_data_index!(1 => self);
+        add_data_index!(1 => self);
 
         if index == data_shards - 1 {
             Some(par_buf)
