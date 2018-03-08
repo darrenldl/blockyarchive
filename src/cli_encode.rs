@@ -59,7 +59,7 @@ where bs=sbx block size."))
              .value_name("UID-HEX")
              .long("uid")
              .takes_value(true)
-             .help("Alternative file uid in hex (by default uid is randomly generated).
+             .help("Alternative file uid in hex(by default uid is randomly generated).
 Uid must be exactly 6 bytes(12 hex digits) in length."))
         .arg(Arg::with_name("rs_data")
              .value_name("SHARD")

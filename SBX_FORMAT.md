@@ -203,7 +203,7 @@ A burst error is defined as consecutive SBX block erasures.
 
 Burst error resistance is defined as the maximum number of consective SBX block erasures tolerable for any instance of burst error.
 
-The maximum number of such errors is same as the parity shard count.
+The maximum number of such errors tolerable is same as the parity shard count.
 
 Assuming arrangement of **M** data shards, **N** parity shards, **B** burst error resistance.
 
