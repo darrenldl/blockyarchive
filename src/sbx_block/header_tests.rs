@@ -132,7 +132,7 @@ fn test_to_bytes_versions() {
 
         header.to_bytes(&mut buffer).unwrap();
 
-        assert_eq!(*b"SBx\x0B\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
+        assert_eq!(*b"SBx\x11\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
                    buffer);
     }
     {
@@ -147,7 +147,7 @@ fn test_to_bytes_versions() {
 
         header.to_bytes(&mut buffer).unwrap();
 
-        assert_eq!(*b"SBx\x0C\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
+        assert_eq!(*b"SBx\x12\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
                    buffer);
     }
     {
@@ -162,7 +162,7 @@ fn test_to_bytes_versions() {
 
         header.to_bytes(&mut buffer).unwrap();
 
-        assert_eq!(*b"SBx\x0D\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
+        assert_eq!(*b"SBx\x13\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
                    buffer);
     }
 }
