@@ -68,7 +68,9 @@ impl fmt::Display for Stats {
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
         if rs_enabled {
-            writeln!(f, "SBX version                                             : {}", ver_to_usize(self.version))?;
+            writeln!(f, "SBX version                                             : {} (0x{:X})",
+                     ver_to_usize(self.version),
+                     ver_to_usize(self.version))?;
             writeln!(f, "Block size used in decoding                             : {}", block_size)?;
             writeln!(f, "Number of blocks processed                              : {}", self.units_so_far())?;
             writeln!(f, "Number of blocks successfully decoded (metadata)        : {}", self.meta_blocks_decoded)?;

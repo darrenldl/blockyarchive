@@ -191,7 +191,14 @@ pub fn show_file(param : &Param)
                     }
                 }
             });
-            println!("SBX container version  : {}", ver_to_usize(block.get_version()));
+            println!("SBX container version  : {}",
+                     if ver_uses_rs(block.get_version()) {
+                         format!("{} (0x{:X})",
+                                 ver_to_usize(block.get_version()),
+                                 ver_to_usize(block.get_version()))
+                     } else {
+                         ver_to_usize(block.get_version()).to_string()
+                     });
             println!("RS data count          : {}",
                      if ver_uses_rs(block.get_version()) {
                          match block.get_RSD().unwrap() {
