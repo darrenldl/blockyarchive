@@ -1,6 +1,6 @@
 [package]
 name = "crc-ccitt"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 build = "build.rs"
 
