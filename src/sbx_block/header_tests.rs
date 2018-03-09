@@ -42,7 +42,7 @@ fn test_from_bytes_versions() {
         assert_eq!(header.seq_num, 0x01020304);
     }
     {
-        let buffer : &[u8; 16] = b"SBx\x0B\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
+        let buffer : &[u8; 16] = b"SBx\x11\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
 
         header.from_bytes(buffer).unwrap();
 
@@ -52,7 +52,7 @@ fn test_from_bytes_versions() {
         assert_eq!(header.seq_num, 0x01020304);
     }
     {
-        let buffer : &[u8; 16] = b"SBx\x0C\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
+        let buffer : &[u8; 16] = b"SBx\x12\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
 
         header.from_bytes(buffer).unwrap();
 
@@ -62,7 +62,7 @@ fn test_from_bytes_versions() {
         assert_eq!(header.seq_num, 0x01020304);
     }
     {
-        let buffer : &[u8; 16] = b"SBx\x0D\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
+        let buffer : &[u8; 16] = b"SBx\x13\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04";
 
         header.from_bytes(buffer).unwrap();
 
