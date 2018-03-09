@@ -185,6 +185,11 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
                                          "bytes",
                                          silence_level);
 
+    let data_shards = match block.get_RSD().unwrap() {
+        None    => { return Err(Error::with_message("reference block does"))},
+        Some(x) => x.to_string(),
+    }
+
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
         [0; SBX_LARGEST_BLOCK_SIZE];
 
@@ -194,11 +199,35 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
 
+    let mut seq_nums : [Option<u32>; SBX_MAX_BURST_ERR_RESISTANCE] =
+        [None; SBX_MAX_BURST_ERR_RESISTANCE];
+
+    let mut mismatches_for_level : [usize; SBX_MAX_BURST_ERR_RESISTANCE] =
+        [0; SBX_MAX_BURST_ERR_RESISTANCE];
+
+    let mut seq_nums_found = 0;
+
+    // record first up to 1000 seq nums
     loop {
         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                             &mut buffer))?;
 
         break_if_eof_seen!(read_res);
+
+        if seq_nums_found >= SBX_MAX_BURST_ERR_RESISTANCE { break; }
+
+        seq_nums[seq_nums_found] = Some(block.get_seq_num());
+
+        seq_nums_found += 1;
+    }
+
+    // count mismatches
+    for level in 0..mismatches_for_level.len() {
+        for index in 0..seq_nums.len() {
+            let expected_seq_num =
+                sbx_block::calc_rs_enabled_seq_num_at_index(index,
+                data_shards,)
+        }
     }
 
     Ok(None)

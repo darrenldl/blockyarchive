@@ -40,6 +40,7 @@ pub struct Param {
     in_file       : String,
     out_file      : String,
     silence_level : SilenceLevel,
+    burst         : usize,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -133,6 +134,10 @@ pub fn sort_file(param : &Param)
 
     let ver_usize = ver_to_usize(ref_block.get_version());
 
+    let rs_enabled = ver_uses_rs(ref_block.get_version());
+
+    let mut meta_written = false;
+
     reporter.start();
 
     loop {
@@ -140,6 +145,19 @@ pub fn sort_file(param : &Param)
                                                             &mut buffer))?;
 
         break_if_eof_seen!(read_res);
+
+        // calculate write position
+        let write_pos =
+            if rs_enabled {
+                if block.is_meta() {
+                    if !meta_written {
+
+                        meta_written = true;
+                    }
+                }
+                sbx_block::calc_rs_enabled_data_write_pos()
+            } else {
+            };
     }
 
     reporter.stop();
