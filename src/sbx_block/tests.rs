@@ -178,6 +178,63 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
 }
 
 #[test]
+fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
+    {
+        const DATA   : usize = 3;
+        const PARITY : usize = 2;
+        const TOTAL  : usize = DATA + PARITY;
+        const BURST  : usize = 4;
+        let table : [u32; 2 * (TOTAL * BURST) + (1 + PARITY)] =
+            [00, 01, 06, 11, 16,
+             00, 02, 07, 12, 17,
+             00, 03, 08, 13, 18,
+             04, 09, 14, 19,
+             05, 10, 15, 20,
+
+             21, 26, 31, 36,
+             22, 27, 32, 37,
+             23, 28, 33, 38,
+             24, 29, 34, 39,
+             25, 30, 35, 40];
+
+        // go through the table
+        for index in 0..table.len() {
+            let seq_num_from_index =
+                calc_rs_enabled_seq_num_at_index(index as u64,
+                                                 DATA,
+                                                 PARITY,
+                                                 BURST);
+
+            assert_eq!(table[index], seq_num_from_index);
+        }
+    }
+}
+
+quickcheck! {
+    fn qc_data_seq_num_to_index_to_seq_num(seq_num       : u32,
+                                           data_shards   : usize,
+                                           parity_shards : usize,
+                                           burst         : usize) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+        let data_shards   = 1 + data_shards % 256;
+        let parity_shards = 1 + parity_shards % 256;
+        let burst         = burst % sbx_specs::SBX_MAX_BURST_ERR_RESISTANCE;
+
+        let index = calc_rs_enabled_data_write_index(seq_num,
+                                                     data_shards,
+                                                     parity_shards,
+                                                     burst);
+
+        let seq_num_from_index = calc_rs_enabled_seq_num_at_index(index,
+                                                                  data_shards,
+                                                                  parity_shards,
+                                                                  burst);
+
+        seq_num_from_index == seq_num
+    }
+}
+
+#[test]
 fn test_sync_to_buffer_simple_cases() {
     let file_uid : [u8; 6] = [3; 6];
 

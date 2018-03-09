@@ -1,6 +1,10 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+#[cfg(test)]
+#[macro_use]
+extern crate quickcheck;
+
 #[macro_use]
 extern crate nom;
 

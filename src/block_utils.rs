@@ -173,9 +173,9 @@ pub fn get_ref_block(in_file            : &str,
 }
 
 pub fn guess_burst_err_resistance_level(in_file       : &str,
-                                          ref_block     : &Block,
-                                          silence_level : SilenceLevel)
-                                          -> Result<Option<u64>, Error> {
+                                        ref_block     : &Block,
+                                        silence_level : SilenceLevel)
+                                        -> Result<Option<u64>, Error> {
     let metadata = file_utils::get_file_metadata(in_file)?;
 
     let stats = Arc::new(Mutex::new(ScanStats::new(&metadata)));
