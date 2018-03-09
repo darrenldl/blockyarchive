@@ -15,6 +15,8 @@ pub const SBX_HEADER_SIZE          : usize = common_params::HEADER_SIZE;
 pub const SBX_MAX_DATA_BLOCK_COUNT : u32   =
     u32::max_value() - SBX_METADATA_BLOCK_COUNT as u32;
 
+pub const SBX_MAX_BURST_ERR_RESISTANCE : usize = 1000;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Version {
     V1,

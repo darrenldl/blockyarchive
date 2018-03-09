@@ -233,9 +233,9 @@ pub fn calc_rs_enabled_data_write_pos(seq_num          : u32,
                                      burst_err_resistance) * block_size
 }
 
-pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
-                                        data_shards      : usize,
-                                        parity_shards    : usize,
+pub fn calc_rs_enabled_data_write_index(seq_num              : u32,
+                                        data_shards          : usize,
+                                        parity_shards        : usize,
                                         burst_err_resistance : usize) -> u64 {
     assert!(seq_num >= SBX_FIRST_DATA_SEQ_NUM as u32);
 
@@ -285,7 +285,7 @@ pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
 
     // M = data_shards
     // N = parity_shards
-    //
+
     // calculate the number of metadata blocks before the current
     // seq num in the interleaving scheme
     let meta_block_count =
@@ -312,6 +312,53 @@ pub fn calc_rs_enabled_data_write_index(seq_num          : u32,
         + new_index_in_super_block_set;
 
     new_index
+}
+
+pub fn calc_rs_enabled_seq_num_at_index(index                : u64,
+                                        data_shards          : usize,
+                                        parity_shards        : usize,
+                                        burst_err_resistance : usize) -> u32 {
+    // M = data shards
+    // N = parity_shards
+    // B = burst_err_resistance
+
+    // if index is in first 1 + N block set
+    if index < ((1 + parity_shards) * (1 + burst_err_resistance)) as u64 {
+        let block_set_index    : u32 =
+            (index / (1 + burst_err_resistance) as u64) as u32;
+        let index_in_block_set : u32 =
+            (index % (1 + burst_err_resistance) as u64) as u32;
+
+        if index_in_block_set == 0 { // metadata block
+            0
+        } else {
+            let first_data_seq_num_in_block_set : u32 =
+                block_set_index + 1;
+
+            first_data_seq_num_in_block_set
+                + index_in_block_set * (data_shards + parity_shards) as u32
+        }
+    } else {
+        let index_after_first_1_plus_n_blocksets      =
+            index - ((1 + parity_shards) * (1 + burst_err_resistance)) as u64;
+        let block_set_index_after_1_plus_n_block_sets : u32 =
+            (index_after_first_1_plus_n_blocksets
+             / burst_err_resistance as u64)
+            as u32;
+        let block_set_index    : u32 =
+            (1 + parity_shards) as u32
+            + block_set_index_after_1_plus_n_block_sets;
+        let index_in_block_set : u32 =
+            (index_after_first_1_plus_n_blocksets
+             % burst_err_resistance as u64)
+            as u32;
+
+        let first_data_seq_num_in_block_set : u32 =
+            block_set_index + 1;
+
+        first_data_seq_num_in_block_set
+            + index_in_block_set * (data_shards + parity_shards) as u32
+    }
 }
 
 impl Block {
