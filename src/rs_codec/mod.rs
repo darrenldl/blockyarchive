@@ -34,9 +34,9 @@ pub struct RSError {
     shard_present       : SmallVec<[bool; 32]>,
 }
 
-fn to_err(e : RSError) -> Error {
+/*fn to_err(e : RSError) -> Error {
     Error::new(ErrorKind::RSError(e))
-}
+}*/
 
 impl RSError {
     pub fn new(kind                : RSErrorKind,
@@ -66,7 +66,7 @@ impl RSError {
     }
 }
 
-impl fmt::Display for RSError {
+/*impl fmt::Display for RSError {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         use self::RSErrorKind::*;
         match self.kind {
@@ -114,4 +114,4 @@ impl fmt::Display for RSError {
 
         Ok(())
     }
-}
+}*/
