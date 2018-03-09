@@ -208,6 +208,68 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
             assert_eq!(table[index], seq_num_from_index);
         }
     }
+    {
+        const DATA   : usize = 1;
+        const PARITY : usize = 1;
+        const TOTAL  : usize = DATA + PARITY;
+        const BURST  : usize = 2;
+        let table : [u32; 5 * (TOTAL * BURST) + (1 + PARITY)] =
+            [00, 01, 03,
+             00, 02, 04,
+
+             05, 07,
+             06, 08,
+
+             09, 11,
+             10, 12,
+
+             13, 15,
+             14, 16,
+
+             17, 19,
+             18, 20];
+
+        // go through the table
+        for index in 0..table.len() {
+            let seq_num_from_index =
+                calc_rs_enabled_seq_num_at_index(index as u64,
+                                                 DATA,
+                                                 PARITY,
+                                                 BURST);
+
+            assert_eq!(table[index], seq_num_from_index);
+        }
+    }
+    {
+        const DATA   : usize = 10;
+        const PARITY : usize = 2;
+        const TOTAL  : usize = DATA + PARITY;
+        const BURST  : usize = 11;
+        let table : [u32; 1 * (TOTAL * BURST) + (1 + PARITY)] =
+            [00, 01, 13, 25, 37, 49, 61, 73, 85,  97,  109, 121,
+             00, 02, 14, 26, 38, 50, 62, 74, 86,  98,  110, 122,
+             00, 03, 15, 27, 39, 51, 63, 75, 87,  99,  111, 123,
+             04, 16, 28, 40, 52, 64, 76, 88, 100, 112, 124,
+             05, 17, 29, 41, 53, 65, 77, 89, 101, 113, 125,
+             06, 18, 30, 42, 54, 66, 78, 90, 102, 114, 126,
+             07, 19, 31, 43, 55, 67, 79, 91, 103, 115, 127,
+             08, 20, 32, 44, 56, 68, 80, 92, 104, 116, 128,
+             09, 21, 33, 45, 57, 69, 81, 93, 105, 117, 129,
+             10, 22, 34, 46, 58, 70, 82, 94, 106, 118, 130,
+             11, 23, 35, 47, 59, 71, 83, 95, 107, 119, 131,
+             12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132];
+
+        // go through the table
+        for index in 0..table.len() {
+            let seq_num_from_index =
+                calc_rs_enabled_seq_num_at_index(index as u64,
+                                                 DATA,
+                                                 PARITY,
+                                                 BURST);
+
+            assert_eq!(table[index], seq_num_from_index);
+        }
+    }
 }
 
 quickcheck! {
