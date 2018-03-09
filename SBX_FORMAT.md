@@ -219,7 +219,7 @@ Sequential arrangement, **M** data shards, **N** parity shards, **B** burst erro
 
 Interleaving arrangement
 
-Let base block set size = **M + N**
+Let base block set size = **B**
 
 First **1 + N** block sets have size = 1 + base block set size, the rest have size = base block set size
 
