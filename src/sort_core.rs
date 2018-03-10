@@ -220,6 +220,10 @@ pub fn sort_file(param : &Param)
 
         if block.is_meta() {
             if !meta_written {
+                writer.seek(SeekFrom::Start(0))?;
+                writer.write(sbx_block::slice_buf(version,
+                                                  &buffer))?;
+
                 if rs_enabled {
                     let write_pos_s =
                         sbx_block::calc_rs_enabled_meta_dup_write_pos_s(version,
@@ -227,11 +231,9 @@ pub fn sort_file(param : &Param)
                                                                         burst);
                     for p in write_pos_s.iter() {
                         writer.seek(SeekFrom::Start(*p))?;
-                        writer.write(&buffer)?;
+                        writer.write(sbx_block::slice_buf(version,
+                                                          &buffer))?;
                     }
-                } else {
-                    writer.seek(SeekFrom::Start(0))?;
-                    writer.write(&buffer)?;
                 }
 
                 meta_written = true;
@@ -249,7 +251,8 @@ pub fn sort_file(param : &Param)
                 };
 
             writer.seek(SeekFrom::Start(write_pos))?;
-            writer.write(&buffer)?;
+            writer.write(sbx_block::slice_buf(version,
+                                              &buffer))?;
         }
 
         if block.is_meta() {
