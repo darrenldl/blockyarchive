@@ -220,10 +220,6 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
 
     let mut blocks_processed = 0;
 
-    println!();
-    println!("Guessing burst error resistance level from file");
-    println!("Sampling blocks");
-
     // record first up to 1000 seq nums
     loop {
         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
@@ -241,8 +237,6 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
 
         blocks_processed += 1;
     }
-
-    println!("Trying {} levels", mismatches_for_level.len());
 
     // count mismatches
     for level in 0..mismatches_for_level.len() {
@@ -272,8 +266,6 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
     if mismatches_for_level[best_guess] == SBX_MAX_BURST_ERR_RESISTANCE {
         return Ok(None);
     }
-
-    println!("Best guess : {}", best_guess);
 
     Ok(Some(best_guess))
 }
