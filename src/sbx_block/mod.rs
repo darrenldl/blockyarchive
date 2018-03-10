@@ -364,8 +364,8 @@ pub fn calc_rs_enabled_seq_num_at_index(index                : u64,
     let super_block_set_index    = index_without_meta / super_block_set_size;
     let index_in_super_block_set = index_without_meta % super_block_set_size;
 
-    let sub_b_block_set_index    = index_in_super_block_set / burst_err_resistance;
-    let index_in_sub_b_block_set = index_in_super_block_set % burst_err_resistance;
+    let sub_b_block_set_index    = index_in_super_block_set / sub_b_block_set_size;
+    let index_in_sub_b_block_set = index_in_super_block_set % sub_b_block_set_size;
 
     let sub_a_block_set_index    = index_in_sub_b_block_set;
     let index_in_sub_a_block_set = sub_b_block_set_index;
