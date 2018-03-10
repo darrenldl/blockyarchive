@@ -159,6 +159,11 @@ pub fn sort_file(param : &Param)
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
 
+    let mut writer = FileWriter::new(&param.out_file,
+                                     FileWriterParam { read     : false,
+                                                       append   : false,
+                                                       buffered : true   })?;
+
     let mut block = Block::dummy();
 
     let reporter = Arc::new(ProgressReporter::new(&stats,
@@ -208,6 +213,10 @@ pub fn sort_file(param : &Param)
             } else {
                 block_size as u64* block.get_seq_num() as u64
             };
+
+        writer.seek(SeekFrom::Start(write_pos))?;
+
+        writer.write(&buffer)?;
     }
 
     reporter.stop();
