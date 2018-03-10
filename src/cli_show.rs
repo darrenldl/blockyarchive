@@ -26,7 +26,10 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(to_byte_arg())
         .arg(Arg::with_name("guess_burst")
              .long("guess-burst")
-             .help("Guess burst error resistance level at start"))
+             .help("Guess burst error resistance level at start.
+Note that this requires scanning for a reference block, and may
+go through the entire file as a result.
+This operation does not respect the misalignment and range requirements."))
 }
 
 pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
