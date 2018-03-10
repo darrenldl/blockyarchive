@@ -132,7 +132,7 @@ pub fn sort_file(param : &Param)
 
     let version   = ref_block.get_version();
     let ver_usize = ver_to_usize(version);
-    let block_size = ver_to_block_size(version);
+    let block_size = ver_to_block_size(version) as u64;
 
     let rs_enabled = ver_uses_rs(version);
 
@@ -218,27 +218,39 @@ pub fn sort_file(param : &Param)
             continue;
         }
 
-        // calculate write position
-        let write_pos =
-            if rs_enabled {
-                if block.is_meta() {
-                    if !meta_written {
-
-                        meta_written = true;
+        if block.is_meta() {
+            if !meta_written {
+                if rs_enabled {
+                    let write_pos_s =
+                        sbx_block::calc_rs_enabled_meta_dup_write_pos_s(version,
+                                                                        parity_shards.unwrap(),
+                                                                        burst);
+                    for p in write_pos_s.iter() {
+                        writer.seek(SeekFrom::Start(*p))?;
+                        writer.write(&buffer)?;
                     }
+                } else {
+                    writer.seek(SeekFrom::Start(0))?;
+                    writer.write(&buffer)?;
                 }
-                sbx_block::calc_rs_enabled_data_write_pos(block.get_seq_num(),
-                                                          version,
-                                                          data_shards.unwrap(),
-                                                          parity_shards.unwrap(),
-                                                          burst)
-            } else {
-                block_size as u64* block.get_seq_num() as u64
-            };
 
-        writer.seek(SeekFrom::Start(write_pos))?;
+                meta_written = true;
+            }
+        } else {
+            let write_pos =
+                if rs_enabled {
+                    sbx_block::calc_rs_enabled_data_write_pos(block.get_seq_num(),
+                                                              version,
+                                                              data_shards.unwrap(),
+                                                              parity_shards.unwrap(),
+                                                              burst)
+                } else {
+                    block.get_seq_num() as u64 * block_size
+                };
 
-        writer.write(&buffer)?;
+            writer.seek(SeekFrom::Start(write_pos))?;
+            writer.write(&buffer)?;
+        }
 
         if block.is_meta() {
             stats.lock().unwrap().meta_or_par_blocks_decoded += 1;
