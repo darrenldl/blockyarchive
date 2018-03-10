@@ -62,7 +62,7 @@ impl Param {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
     version                        : Version,
-    pub meta_or_par_blocks_decoded : u64,
+    pub meta_blocks_decoded        : u64,
     pub data_or_par_blocks_decoded : u64,
     pub blocks_decode_failed       : u64,
     total_blocks                   : u64,
@@ -79,7 +79,7 @@ impl Stats {
         Stats {
             version                 : ref_block.get_version(),
             blocks_decode_failed    : 0,
-            meta_or_par_blocks_decoded : 0,
+            meta_blocks_decoded        : 0,
             data_or_par_blocks_decoded : 0,
             total_blocks,
             start_time              : 0.,
@@ -94,7 +94,7 @@ impl ProgressReport for Stats {
     fn end_time_mut(&mut self)   -> &mut f64 { &mut self.end_time }
 
     fn units_so_far(&self)       -> u64      {
-        (self.meta_or_par_blocks_decoded
+        (self.meta_blocks_decoded
          + self.data_or_par_blocks_decoded
          + self.blocks_decode_failed) as u64
     }
@@ -111,7 +111,7 @@ impl fmt::Display for Stats {
         writeln!(f, "SBX version                        : {}", ver_to_usize(self.version))?;
         writeln!(f, "Block size used in checking        : {}", block_size)?;
         writeln!(f, "Number of blocks processed         : {}", self.units_so_far())?;
-        writeln!(f, "Number of blocks sorted (metadata) : {}", self.meta_or_par_blocks_decoded)?;
+        writeln!(f, "Number of blocks sorted (metadata) : {}", self.meta_blocks_decoded)?;
         writeln!(f, "Number of blocks sorted (data)     : {}", self.data_or_par_blocks_decoded)?;
         writeln!(f, "Number of blocks failed to sort    : {}", self.blocks_decode_failed)?;
         writeln!(f, "Time elapsed                       : {:02}:{:02}:{:02}", hour, minute, second)?;
@@ -261,7 +261,7 @@ pub fn sort_file(param : &Param)
         }
 
         if block.is_meta() {
-            stats.lock().unwrap().meta_or_par_blocks_decoded += 1;
+            stats.lock().unwrap().meta_blocks_decoded += 1;
         } else {
             stats.lock().unwrap().data_or_par_blocks_decoded += 1;
         }
