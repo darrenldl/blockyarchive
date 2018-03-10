@@ -349,7 +349,7 @@ fn test_sync_from_buffer_simple_cases() {
                                    &[0; 6],
                                    BlockType::Meta);
 
-        block.sync_from_buffer(template).unwrap();
+        block.sync_from_buffer(template, None).unwrap();
 
         assert_eq!(BlockType::Data, block.block_type());
         assert!(block.is_data());
@@ -362,7 +362,7 @@ fn test_sync_from_buffer_simple_cases() {
                                    &[0; 6],
                                    BlockType::Data);
 
-        block.sync_from_buffer(template).unwrap();
+        block.sync_from_buffer(template, None).unwrap();
 
         assert_eq!(BlockType::Meta, block.block_type());
         assert!(!block.is_data());
@@ -374,7 +374,7 @@ fn test_sync_from_buffer_simple_cases() {
                                    &[0; 6],
                                    BlockType::Data);
 
-        block.sync_from_buffer(template).unwrap();
+        block.sync_from_buffer(template, None).unwrap();
 
         assert_eq!(BlockType::Meta, block.block_type());
         assert!(!block.is_data());
