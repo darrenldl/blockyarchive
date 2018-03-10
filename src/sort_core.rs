@@ -134,6 +134,8 @@ pub fn sort_file(param : &Param)
     let ver_usize = ver_to_usize(version);
     let block_size = ver_to_block_size(version);
 
+    let rs_enabled = ver_uses_rs(version);
+
     let burst =
         match param.burst {
             None => {
@@ -148,21 +150,26 @@ pub fn sort_file(param : &Param)
             Some(x) => x
         };
 
-    let data_shards = match ref_block.get_RSD().unwrap() {
-        None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
-                                                          ref_block_pos,
-                                                          ref_block_pos,
-                                                          ver_usize))); },
-        Some(x) => x,
-    } as usize;
+    let mut data_shards = None;
+    let mut parity_shards = None;
 
-    let parity_shards = match ref_block.get_RSP().unwrap() {
-        None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
-                                                          ref_block_pos,
-                                                          ref_block_pos,
-                                                          ver_usize))); },
-        Some(x) => x,
-    } as usize;
+    if rs_enabled {
+        data_shards = match ref_block.get_RSD().unwrap() {
+            None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
+                                                              ref_block_pos,
+                                                              ref_block_pos,
+                                                              ver_usize))); },
+            Some(x) => Some(x as usize),
+        };
+
+        parity_shards = match ref_block.get_RSP().unwrap() {
+            None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
+                                                              ref_block_pos,
+                                                              ref_block_pos,
+                                                              ver_usize))); },
+            Some(x) => Some(x as usize),
+        };
+    }
 
     report_ref_block_info(ref_block_pos, &ref_block);
 
@@ -183,10 +190,9 @@ pub fn sort_file(param : &Param)
     let mut block = Block::dummy();
 
     let reporter = Arc::new(ProgressReporter::new(&stats,
-                                                  "SBX block checking progress",
-                                                  "bytes",
+                                                  "SBX block sorting progress",
+                                                  "blocks",
                                                   param.silence_level));
-    let rs_enabled = ver_uses_rs(version);
 
     let mut meta_written = false;
 
@@ -223,8 +229,8 @@ pub fn sort_file(param : &Param)
                 }
                 sbx_block::calc_rs_enabled_data_write_pos(block.get_seq_num(),
                                                           version,
-                                                          data_shards,
-                                                          parity_shards,
+                                                          data_shards.unwrap(),
+                                                          parity_shards.unwrap(),
                                                           burst)
             } else {
                 block_size as u64* block.get_seq_num() as u64
@@ -233,6 +239,12 @@ pub fn sort_file(param : &Param)
         writer.seek(SeekFrom::Start(write_pos))?;
 
         writer.write(&buffer)?;
+
+        if block.is_meta() {
+            stats.lock().unwrap().meta_or_par_blocks_decoded += 1;
+        } else {
+            stats.lock().unwrap().data_or_par_blocks_decoded += 1;
+        }
     }
 
     reporter.stop();
