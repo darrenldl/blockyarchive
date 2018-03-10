@@ -129,7 +129,7 @@ pub fn show_file(param : &Param)
                                                                 &ref_block) {
                 Err(e)      => println!("Error encountered when guessing : {}", e),
                 Ok(None)    => println!("Failed to guess level"),
-                Ok(Some(x)) => println!("Best guess : {}", x),
+                Ok(Some(x)) => println!("Best guess for burst reference level : {}", x),
             }
         } else {
             println!("Reference block version does not use RS");
