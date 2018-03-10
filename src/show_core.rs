@@ -111,6 +111,7 @@ pub fn show_file(param : &Param)
                  -> Result<Stats, Error> {
     if param.guess_burst {
         println!("Guessing burst error resistance level");
+        println!();
 
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&param.in_file,
@@ -134,6 +135,8 @@ pub fn show_file(param : &Param)
             println!("Reference block version does not use RS");
         }
 
+        println!();
+        println!("========================================");
         println!();
     }
 
