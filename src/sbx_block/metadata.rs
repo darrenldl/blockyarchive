@@ -155,7 +155,7 @@ mod parsers {
                    do_parse!(
                        _id : tag!($id) >>
                            n : be_u8 >>
-                           res : $res_parser >>
+                           res : cond_reduce!(n > 0, $res_parser) >>
                            ($constructor(res))
                    )
             );
@@ -167,7 +167,7 @@ mod parsers {
                    do_parse!(
                        tag!($id) >>
                            n : be_u8 >>
-                           res : take!(n) >>
+                           res : cond_reduce!(n > 0, take!(n)) >>
                            ($constructor(misc_utils::slice_to_vec(res)
                                          .into_boxed_slice()))
                    )
