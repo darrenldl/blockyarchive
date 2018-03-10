@@ -188,15 +188,11 @@ fn pack_metadata(block         : &mut Block,
     { // add file name
         meta.push(Metadata::FNM(param
                                 .in_file
-                                .clone()
-                                .into_bytes()
-                                .into_boxed_slice())); }
+                                .clone())); }
     { // add sbx file name
         meta.push(Metadata::SNM(param
                                 .out_file
-                                .clone()
-                                .into_bytes()
-                                .into_boxed_slice())); }
+                                .clone())); }
     { // add file size
         meta.push(Metadata::FSZ(file_metadata
                                 .len())); }

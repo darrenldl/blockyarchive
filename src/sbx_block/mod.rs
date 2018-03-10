@@ -547,8 +547,8 @@ impl Block {
         }
     }
 
-    make_meta_getter!(get_FNM => FNM => Box<[u8]>);
-    make_meta_getter!(get_SNM => SNM => Box<[u8]>);
+    make_meta_getter!(get_FNM => FNM => String);
+    make_meta_getter!(get_SNM => SNM => String);
     make_meta_getter!(get_FSZ => FSZ => u64);
     make_meta_getter!(get_FDT => FDT => i64);
     make_meta_getter!(get_SDT => SDT => i64);

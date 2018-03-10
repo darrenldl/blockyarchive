@@ -1,11 +1,24 @@
+use std::string;
+
 use super::super::multihash;
 use std;
 use super::Error;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Metadata {
-    FNM(Box<[u8]>),
-    SNM(Box<[u8]>),
+    FNM(String),
+    SNM(String),
+    FSZ(u64),
+    FDT(i64),
+    SDT(i64),
+    HSH(multihash::HashBytes),
+    RSD(u8),
+    RSP(u8),
+}
+
+pub enum UncheckedMetadata {
+    FNM(Vec<u8>),
+    SNM(Vec<u8>),
     FSZ(u64),
     FDT(i64),
     SDT(i64),
@@ -95,7 +108,7 @@ fn single_to_bytes(meta   : &Metadata,
     // write info
     match *meta {
         FNM(ref x) | SNM(ref x) => {
-            dst.copy_from_slice(x);
+            dst.copy_from_slice(x.as_bytes());
         },
         FSZ(x) => {
             let be_bytes : [u8; 8] =
@@ -137,8 +150,8 @@ pub fn to_bytes(meta   : &[Metadata],
 }
 
 mod parsers {
-    use super::Metadata;
-    use super::Metadata::*;
+    use super::UncheckedMetadata;
+    use super::UncheckedMetadata::*;
     use super::super::super::misc_utils;
     use super::super::super::multihash::parsers::multihash_w_len_p;
 
@@ -149,13 +162,14 @@ mod parsers {
     macro_rules! make_meta_parser {
         (
             $name:ident, $id:expr, $constructor:path
-                => num, $res_parser:ident
+                => num, $n_must_be:expr, $res_parser:ident
         ) => {
-            named!($name <Metadata>,
+            named!($name <UncheckedMetadata>,
                    do_parse!(
                        _id : tag!($id) >>
                            n : be_u8 >>
-                           res : cond_reduce!(n > 0, $res_parser) >>
+                           res : cond_reduce!(n >= 1 && n == $n_must_be,
+                                              $res_parser) >>
                            ($constructor(res))
                    )
             );
@@ -163,13 +177,12 @@ mod parsers {
         (
             $name:ident, $id:expr, $constructor:path => str
         ) => {
-            named!($name <Metadata>,
+            named!($name <UncheckedMetadata>,
                    do_parse!(
                        tag!($id) >>
                            n : be_u8 >>
-                           res : cond_reduce!(n > 0, take!(n)) >>
-                           ($constructor(misc_utils::slice_to_vec(res)
-                                         .into_boxed_slice()))
+                           res : cond_reduce!(n >= 1, take!(n)) >>
+                           ($constructor(misc_utils::slice_to_vec(res)))
                    )
             );
         };
@@ -177,13 +190,13 @@ mod parsers {
 
     make_meta_parser!(fnm_p, b"FNM", FNM => str);
     make_meta_parser!(snm_p, b"SNM", SNM => str);
-    make_meta_parser!(fsz_p, b"FSZ", FSZ => num, be_u64);
-    make_meta_parser!(fdt_p, b"FDT", FDT => num, be_i64);
-    make_meta_parser!(sdt_p, b"SDT", SDT => num, be_i64);
-    make_meta_parser!(rsd_p, b"RSD", RSD => num, be_u8);
-    make_meta_parser!(rsp_p, b"RSP", RSP => num, be_u8);
+    make_meta_parser!(fsz_p, b"FSZ", FSZ => num, 8, be_u64);
+    make_meta_parser!(fdt_p, b"FDT", FDT => num, 8, be_i64);
+    make_meta_parser!(sdt_p, b"SDT", SDT => num, 8, be_i64);
+    make_meta_parser!(rsd_p, b"RSD", RSD => num, 1, be_u8);
+    make_meta_parser!(rsp_p, b"RSP", RSP => num, 1, be_u8);
 
-    named!(hsh_p <Metadata>,
+    named!(hsh_p <UncheckedMetadata>,
            do_parse!(
                _id : tag!(b"HSH") >>
                    res : multihash_w_len_p >>
@@ -191,7 +204,7 @@ mod parsers {
            )
     );
 
-    named!(pub meta_p <Vec<Metadata>>,
+    named!(pub meta_p <Vec<UncheckedMetadata>>,
            many0!(
                alt!(fnm_p  |
                     snm_p  |
@@ -206,11 +219,43 @@ mod parsers {
     );
 }
 
+fn filter_invalid_metadata(input : Vec<UncheckedMetadata>) -> Vec<Metadata> {
+    use self::UncheckedMetadata::*;
+    let mut res = Vec::with_capacity(input.len());
+
+    for meta in input.into_iter() {
+        let possibly_push : Option<Metadata> =
+            match meta {
+                FNM(x) => match String::from_utf8(x) {
+                    Ok(x)  => Some(Metadata::FNM(x)),
+                    Err(_) => None,
+                },
+                SNM(x) => { match String::from_utf8(x) {
+                    Ok(x)  => Some(Metadata::SNM(x)),
+                    Err(_) => None,
+                }},
+                FSZ(x) => Some(Metadata::FSZ(x)),
+                FDT(x) => Some(Metadata::FDT(x)),
+                SDT(x) => Some(Metadata::SDT(x)),
+                HSH(h) => Some(Metadata::HSH(h)),
+                RSD(d) => Some(Metadata::RSD(d)),
+                RSP(p) => Some(Metadata::RSP(p)),
+            };
+
+        match possibly_push {
+            None    => {},
+            Some(x) => { res.push(x) }
+        }
+    }
+
+    res
+}
+
 pub fn from_bytes(bytes : &[u8])
                   -> Result<Vec<Metadata>, Error> {
     use nom::IResult;
     match parsers::meta_p(bytes) {
-        IResult::Done(_, res) => Ok(res),
+        IResult::Done(_, res) => Ok(filter_invalid_metadata(res)),
         _                     => Err(Error::ParseError)
     }
 }

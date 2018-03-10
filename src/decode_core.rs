@@ -446,15 +446,7 @@ pub fn decode_file(param : &Param)
         if ref_block.is_data() {
             None
         } else {
-            match ref_block.get_FNM().unwrap() {
-                None    => None,
-                Some(x) => {
-                    match from_utf8(&x) {
-                        Ok(x)  => Some(String::from(x)),
-                        Err(_) => { return Err(Error::with_message("Recorded file name is not a valid UTF-8 string")); }
-                    }
-                }
-            }
+            ref_block.get_FNM().unwrap()
         };
 
     // compute output file name

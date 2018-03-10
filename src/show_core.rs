@@ -172,24 +172,10 @@ pub fn show_file(param : &Param)
             println!();
             println!("File UID               : {}",
                      misc_utils::bytes_to_upper_hex_string(&block.get_uid()));
-            println!("File name              : {}", match block.get_FNM().unwrap() {
-                None    => "N/A".to_string(),
-                Some(x) => {
-                    match from_utf8(&x) {
-                        Ok(x)  => x.to_string(),
-                        Err(_) => "Invalid UTF-8 string".to_string()
-                    }
-                }
-            });
-            println!("SBX container name     : {}", match block.get_SNM().unwrap() {
-                None    => "N/A".to_string(),
-                Some(x) => {
-                    match from_utf8(&x) {
-                        Ok(x)  => x.to_string(),
-                        Err(_) => "Invalid UTF-8 string".to_string()
-                    }
-                }
-            });
+            println!("File name              : {}",
+                     block.get_FNM().unwrap().unwrap_or("N/A".to_string()));
+            println!("SBX container name     : {}",
+                     block.get_SNM().unwrap().unwrap_or("N/A".to_string()));
             println!("SBX container version  : {}",
                      if ver_uses_rs(block.get_version()) {
                          format!("{} (0x{:X})",
