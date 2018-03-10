@@ -231,6 +231,14 @@ the container does not have metadata block or when you are okay
 with using a data block as reference block.")
 }
 
+fn burst_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("burst")
+        .value_name("LEVEL")
+        .long("burst")
+        .takes_value(true)
+        .help("Burst error resistance level")
+}
+
 fn report_ref_block_info(ref_block_pos : u64,
                          ref_block     : &sbx_block::Block) {
     println!();
@@ -275,6 +283,9 @@ fn real_main () -> i32 {
     }
     else if let Some(matches) = matches.subcommand_matches("check") {
         cli_check::check(matches)
+    }
+    else if let Some(matches) = matches.subcommand_matches("sort") {
+        cli_sort::sort(matches)
     }
     else {
         exit_with_msg!(ok => "Invoke with -h or --help for help message\n");

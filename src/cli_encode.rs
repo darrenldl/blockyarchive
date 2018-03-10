@@ -71,11 +71,7 @@ Uid must be exactly 6 bytes(12 hex digits) in length."))
              .long("rs-parity")
              .takes_value(true)
              .help("Reed-Solomon parity shard count"))
-        .arg(Arg::with_name("burst")
-             .value_name("LEVEL")
-             .long("burst")
-             .takes_value(true)
-             .help("Burst error resistance level"))
+        .arg(burst_arg())
 }
 
 pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {

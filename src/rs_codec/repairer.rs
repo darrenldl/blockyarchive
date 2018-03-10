@@ -82,6 +82,8 @@ impl RSRepairer {
     }
 
     pub fn repair(&mut self) -> bool {
+        assert_eq!(0, self.index);
+
         let rs_codec      = &self.rs_codec;
 
         let mut buf : SmallVec<[&mut [u8]; 32]> =
@@ -97,6 +99,8 @@ impl RSRepairer {
     }
 
     pub fn verify(&mut self) -> bool {
+        assert_eq!(0, self.index);
+
         let rs_codec      = &self.rs_codec;
 
         let mut slices : SmallVec<[&[u8]; 32]> =

@@ -43,6 +43,22 @@ pub struct Param {
     burst         : Option<usize>,
 }
 
+impl Param {
+    pub fn new(no_meta       : bool,
+               in_file       : &str,
+               out_file      : &str,
+               silence_level : SilenceLevel,
+               burst         : Option<usize>) -> Param {
+        Param {
+            no_meta,
+            in_file  : String::from(in_file),
+            out_file : String::from(out_file),
+            silence_level,
+            burst,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
     version                        : Version,
