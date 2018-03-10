@@ -283,19 +283,13 @@ pub fn rescue_from_file(param : &Param)
         }
 
         // check if block matches required block type
-        match param.only_pick_block {
-            None    => {},
-            Some(x) => {
-                if block.block_type() != x { continue; }
-            }
+        if let Some(x) = param.only_pick_block {
+            if block.block_type() != x { continue; }
         }
 
         // check if block has the required uid
-        match param.only_pick_uid {
-            None    => {},
-            Some(x) => {
-                if block.get_uid() != x { continue; }
-            }
+        if let Some(x) = param.only_pick_uid {
+            if block.get_uid() != x { continue; }
         }
 
         // write block out
