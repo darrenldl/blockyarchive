@@ -114,9 +114,11 @@ macro_rules! exit_with_msg {
 
 macro_rules! exit_if_file {
     (
-        exists $file:expr => $($x:expr),*
+        exists $file:expr => $force_write:expr => $($x:expr),*
     ) => {{
-        if file_utils::check_if_file_exists($file) {
+        if file_utils::check_if_file_exists($file)
+            && !$force_write
+        {
             exit_with_msg!(usr => $($x),*);
         }
     }};

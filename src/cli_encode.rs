@@ -160,8 +160,6 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
             }
         };
 
-    let force_write = matches.is_present("force");
-
     let in_file  = matches.value_of("in_file").unwrap();
     exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
     let out_file = match matches.value_of("out_file") {
@@ -175,9 +173,9 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
         }
     };
 
-    if !force_write {
-        exit_if_file!(exists &out_file => "File \"{}\" already exists", out_file);
-    }
+    exit_if_file!(exists &out_file
+                  => matches.is_present("force")
+                  => "File \"{}\" already exists", out_file);
 
     let hash_type = match matches.value_of("hash_type") {
         None    => multihash::HashType::SHA256,

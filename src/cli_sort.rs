@@ -60,11 +60,9 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
             }
         };
 
-    let force_write = matches.is_present("force");
-
-    if !force_write {
-        exit_if_file!(exists &out_file => "File \"{}\" already exists", out_file);
-    }
+    exit_if_file!(exists &out_file
+                  => matches.is_present("force")
+                  => "File \"{}\" already exists", out_file);
 
     let silence_level = get_silence_level!(matches);
 
