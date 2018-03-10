@@ -150,6 +150,10 @@ pub fn sort_file(param : &Param)
             Some(x) => x
         };
 
+    println!();
+    println!("Using burst error resistance level {} for output container",
+             burst);
+
     let mut data_shards = None;
     let mut parity_shards = None;
 
