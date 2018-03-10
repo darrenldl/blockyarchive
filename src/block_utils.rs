@@ -13,6 +13,10 @@ use super::file_utils;
 
 use super::sbx_block;
 
+use super::sbx_specs::{ver_to_usize,
+                       ver_uses_rs,
+                       SBX_MAX_BURST_ERR_RESISTANCE};
+
 use super::progress_report::*;
 
 use super::sbx_specs::ver_to_block_size;
@@ -174,21 +178,32 @@ pub fn get_ref_block(in_file            : &str,
 
 pub fn guess_burst_err_resistance_level(in_file       : &str,
                                         ref_block     : &Block,
+                                        ref_block_pos : u64,
                                         silence_level : SilenceLevel)
                                         -> Result<Option<u64>, Error> {
+    let rs_enabled = ver_uses_rs(ref_block.get_version());
+
+    if !rs_enabled { return Ok(None); }
+
     let metadata = file_utils::get_file_metadata(in_file)?;
 
-    let stats = Arc::new(Mutex::new(ScanStats::new(&metadata)));
+    let ver_usize = ver_to_usize(ref_block.get_version());
 
-    let reporter = ProgressReporter::new(&stats,
-                                         "Reference block scanning progress",
-                                         "bytes",
-                                         silence_level);
+    let data_shards = match ref_block.get_RSD().unwrap() {
+        None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSD field(must be present to guess the burst error resistance level for version {})",
+                                                          ref_block_pos,
+                                                          ref_block_pos,
+                                                          ver_usize))); },
+        Some(x) => x,
+    } as usize;
 
-    let data_shards = match block.get_RSD().unwrap() {
-        None    => { return Err(Error::with_message("reference block does"))},
-        Some(x) => x.to_string(),
-    }
+    let parity_shards = match ref_block.get_RSP().unwrap() {
+        None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to guess the burst error resistance level for version {})",
+                                                          ref_block_pos,
+                                                          ref_block_pos,
+                                                          ver_usize))); },
+        Some(x) => x,
+    } as usize;
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
         [0; SBX_LARGEST_BLOCK_SIZE];
@@ -205,7 +220,7 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
     let mut mismatches_for_level : [usize; SBX_MAX_BURST_ERR_RESISTANCE] =
         [0; SBX_MAX_BURST_ERR_RESISTANCE];
 
-    let mut seq_nums_found = 0;
+    let mut blocks_processed = 0;
 
     // record first up to 1000 seq nums
     loop {
@@ -214,21 +229,45 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
 
         break_if_eof_seen!(read_res);
 
-        if seq_nums_found >= SBX_MAX_BURST_ERR_RESISTANCE { break; }
+        if blocks_processed >= SBX_MAX_BURST_ERR_RESISTANCE { break; }
 
-        seq_nums[seq_nums_found] = Some(block.get_seq_num());
+        seq_nums[blocks_processed] =
+            match block.sync_from_buffer(&buffer) {
+                Ok(()) => Some(block.get_seq_num()),
+                Err(_) => None,
+            };
 
-        seq_nums_found += 1;
+        blocks_processed += 1;
     }
 
     // count mismatches
     for level in 0..mismatches_for_level.len() {
         for index in 0..seq_nums.len() {
             let expected_seq_num =
-                sbx_block::calc_rs_enabled_seq_num_at_index(index,
-                data_shards,)
+                sbx_block::calc_rs_enabled_seq_num_at_index(index as u64,
+                                                            data_shards,
+                                                            parity_shards,
+                                                            level);
+            if let Some(seq_num) = seq_nums[index] {
+                if seq_num != expected_seq_num {
+                    mismatches_for_level[level] += 1;
+                }
+            }
         }
     }
 
-    Ok(None)
+    // find level with fewest mismatches
+    let mut best_guess = 0;
+    for level in 0..mismatches_for_level.len() {
+        if mismatches_for_level[level] < mismatches_for_level[best_guess] {
+            best_guess = level;
+        }
+    }
+
+    // if the best guess is completely rubbish, just return None
+    if mismatches_for_level[best_guess] == SBX_MAX_BURST_ERR_RESISTANCE {
+        return Ok(None);
+    }
+
+    Ok(Some(best_guess as u64))
 }

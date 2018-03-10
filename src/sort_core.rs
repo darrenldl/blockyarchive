@@ -132,9 +132,10 @@ pub fn sort_file(param : &Param)
                                                   "bytes",
                                                   param.silence_level));
 
-    let ver_usize = ver_to_usize(ref_block.get_version());
+    let version   = ref_block.get_version();
+    let ver_usize = ver_to_usize(version);
 
-    let rs_enabled = ver_uses_rs(ref_block.get_version());
+    let rs_enabled = ver_uses_rs(version);
 
     let mut meta_written = false;
 
@@ -146,8 +147,13 @@ pub fn sort_file(param : &Param)
 
         break_if_eof_seen!(read_res);
 
+        if let Err(_) = block.sync_from_buffer(&buffer) {
+            stats.lock().unwrap().blocks_decode_failed += 1;
+            continue;
+        }
+
         // calculate write position
-        let write_pos =
+        /*let write_pos =
             if rs_enabled {
                 if block.is_meta() {
                     if !meta_written {
@@ -155,9 +161,11 @@ pub fn sort_file(param : &Param)
                         meta_written = true;
                     }
                 }
-                sbx_block::calc_rs_enabled_data_write_pos()
+                sbx_block::calc_rs_enabled_data_write_pos(block.get_seq_num(),
+                                                          version,)
             } else {
-            };
+
+            };*/
     }
 
     reporter.stop();
