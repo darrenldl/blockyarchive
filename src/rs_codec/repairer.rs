@@ -52,11 +52,6 @@ impl RSRepairer {
         let buf_par_verify : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
             smallvec![smallvec![0; block_size]; parity_shards];
 
-        let start_seq_num = match block_type {
-            BlockType::Meta => 0,
-            BlockType::Data => SBX_FIRST_DATA_SEQ_NUM,
-        } as u32;
-
         RSRepairer {
             index          : 0,
             rs_codec       : ReedSolomon::new(data_shards,
@@ -89,8 +84,6 @@ impl RSRepairer {
     pub fn repair(&mut self) -> bool {
         let rs_codec      = &self.rs_codec;
 
-        let total_num = rs_codec.total_shard_count();
-
         let mut buf : SmallVec<[&mut [u8]; 32]> =
             SmallVec::with_capacity(rs_codec.total_shard_count());
         for s in self.buf.iter_mut() {
@@ -103,9 +96,7 @@ impl RSRepairer {
         }
     }
 
-    pub fn verify(&mut self,
-                  incre_cur_seq_num : bool)
-                  -> bool {
+    pub fn verify(&mut self) -> bool {
         let rs_codec      = &self.rs_codec;
 
         let mut slices : SmallVec<[&[u8]; 32]> =
