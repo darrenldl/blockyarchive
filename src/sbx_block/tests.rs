@@ -298,11 +298,11 @@ quickcheck! {
 
 #[test]
 fn test_sync_to_buffer_simple_cases() {
-    let file_uid : [u8; 6] = [3; 6];
+    let uid : [u8; 6] = [3; 6];
 
     {
         let mut block = Block::new(sbx_specs::Version::V1,
-                                   &file_uid,
+                                   &uid,
                                    BlockType::Meta);
 
         let mut buffer : [u8; 512] = [0; 512];
@@ -321,7 +321,7 @@ fn test_sync_to_buffer_simple_cases() {
     }
     {
         let mut block = Block::new(sbx_specs::Version::V1,
-                                   &file_uid,
+                                   &uid,
                                    BlockType::Data);
 
         let mut buffer : [u8; 512] = [0; 512];

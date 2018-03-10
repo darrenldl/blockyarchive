@@ -294,12 +294,12 @@ pub fn rescue_from_file(param : &Param)
         match param.only_pick_uid {
             None    => {},
             Some(x) => {
-                if block.get_file_uid() != x { continue; }
+                if block.get_uid() != x { continue; }
             }
         }
 
         // write block out
-        let uid_str = misc_utils::bytes_to_upper_hex_string(&block.get_file_uid());
+        let uid_str = misc_utils::bytes_to_upper_hex_string(&block.get_uid());
         let path    = misc_utils::make_path(&[&param.out_dir, &uid_str]);
         let mut writer = FileWriter::new(&path,
                                          FileWriterParam { read     : false,

@@ -303,11 +303,11 @@ pub fn decode(param         : &Param,
     }
 
     let pred = {
-        let version  = ref_block.get_version();
-        let file_uid = ref_block.get_file_uid();
+        let version = ref_block.get_version();
+        let uid     = ref_block.get_uid();
         move |block : &Block| -> bool {
         block.get_version() == version
-            && block.get_file_uid() == file_uid
+            && block.get_uid() == uid
         }
     };
 

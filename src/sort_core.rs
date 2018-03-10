@@ -40,7 +40,7 @@ pub struct Param {
     in_file       : String,
     out_file      : String,
     silence_level : SilenceLevel,
-    burst         : usize,
+    burst         : Option<usize>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -114,6 +114,40 @@ pub fn sort_file(param : &Param)
             Some(x) => x,
         };
 
+    let version   = ref_block.get_version();
+    let ver_usize = ver_to_usize(version);
+    let block_size = ver_to_block_size(version);
+
+    let burst =
+        match param.burst {
+            None => {
+                match block_utils::guess_burst_err_resistance_level(&param.in_file,
+                                                                    ref_block_pos,
+                                                                    &ref_block)?
+                {
+                    None    => { return Err(Error::with_message("Failed to guess burst resistance level, please specify via --burst option")); },
+                    Some(x) => x
+                }
+            },
+            Some(x) => x
+        };
+
+    let data_shards = match ref_block.get_RSD().unwrap() {
+        None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
+                                                          ref_block_pos,
+                                                          ref_block_pos,
+                                                          ver_usize))); },
+        Some(x) => x,
+    } as usize;
+
+    let parity_shards = match ref_block.get_RSP().unwrap() {
+        None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
+                                                          ref_block_pos,
+                                                          ref_block_pos,
+                                                          ver_usize))); },
+        Some(x) => x,
+    } as usize;
+
     report_ref_block_info(ref_block_pos, &ref_block);
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
@@ -131,16 +165,17 @@ pub fn sort_file(param : &Param)
                                                   "SBX block checking progress",
                                                   "bytes",
                                                   param.silence_level));
-
-    let version   = ref_block.get_version();
-    let ver_usize = ver_to_usize(version);
-
     let rs_enabled = ver_uses_rs(version);
 
     let mut meta_written = false;
 
-    let pred = |block : &Block| -> bool {
-        block.get_file_uid() == ref_block.get_file_uid()
+    let pred = {
+        let version = ref_block.get_version();
+        let uid     = ref_block.get_uid();
+        move |block : &Block| -> bool {
+            block.get_version() == version
+                && block.get_uid() == uid
+        }
     };
 
     reporter.start();
@@ -157,7 +192,7 @@ pub fn sort_file(param : &Param)
         }
 
         // calculate write position
-        /*let write_pos =
+        let write_pos =
             if rs_enabled {
                 if block.is_meta() {
                     if !meta_written {
@@ -166,10 +201,13 @@ pub fn sort_file(param : &Param)
                     }
                 }
                 sbx_block::calc_rs_enabled_data_write_pos(block.get_seq_num(),
-                                                          version,)
+                                                          version,
+                                                          data_shards,
+                                                          parity_shards,
+                                                          burst)
             } else {
-
-            };*/
+                block_size as u64* block.get_seq_num() as u64
+            };
     }
 
     reporter.stop();

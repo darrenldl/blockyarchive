@@ -15,6 +15,7 @@ use super::sbx_block;
 
 use super::sbx_specs::{ver_to_usize,
                        ver_uses_rs,
+                       SBX_FILE_UID_LEN,
                        SBX_MAX_BURST_ERR_RESISTANCE};
 
 use super::progress_report::*;
@@ -177,15 +178,12 @@ pub fn get_ref_block(in_file            : &str,
 }
 
 pub fn guess_burst_err_resistance_level(in_file       : &str,
-                                        ref_block     : &Block,
                                         ref_block_pos : u64,
-                                        silence_level : SilenceLevel)
-                                        -> Result<Option<u64>, Error> {
+                                        ref_block     : &Block)
+                                        -> Result<Option<usize>, Error> {
     let rs_enabled = ver_uses_rs(ref_block.get_version());
 
     if !rs_enabled { return Ok(None); }
-
-    let metadata = file_utils::get_file_metadata(in_file)?;
 
     let ver_usize = ver_to_usize(ref_block.get_version());
 
@@ -269,5 +267,5 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
         return Ok(None);
     }
 
-    Ok(Some(best_guess as u64))
+    Ok(Some(best_guess))
 }

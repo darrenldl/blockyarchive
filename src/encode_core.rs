@@ -111,7 +111,7 @@ impl fmt::Display for Stats {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {
     version      : Version,
-    file_uid     : [u8; SBX_FILE_UID_LEN],
+    uid          : [u8; SBX_FILE_UID_LEN],
     rs_data      : usize,
     rs_parity    : usize,
     rs_enabled   : bool,
@@ -125,7 +125,7 @@ pub struct Param {
 
 impl Param {
     pub fn new(version       : Version,
-               file_uid      : &[u8; SBX_FILE_UID_LEN],
+               uid      : &[u8; SBX_FILE_UID_LEN],
                rs_data       : usize,
                rs_parity     : usize,
                burst         : usize,
@@ -136,7 +136,7 @@ impl Param {
                silence_level : progress_report::SilenceLevel) -> Param {
         Param {
             version,
-            file_uid : file_uid.clone(),
+            uid : uid.clone(),
             rs_data,
             rs_parity,
             rs_enabled : ver_uses_rs(version),
@@ -334,7 +334,7 @@ pub fn encode_file(param : &Param)
 
     // setup main data block
     let mut block = Block::new(param.version,
-                               &param.file_uid,
+                               &param.uid,
                                BlockType::Data);
 
     reporter.start();

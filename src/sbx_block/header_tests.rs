@@ -18,7 +18,7 @@ fn test_from_bytes_versions() {
 
         assert_eq!(header.version, Version::V1);
         assert_eq!(header.crc, 0xCDEF);
-        assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
+        assert_eq!(header.uid, *b"\x00\x01\x02\x03\x04\x05");
         assert_eq!(header.seq_num, 0x01020304);
     }
     {
@@ -28,7 +28,7 @@ fn test_from_bytes_versions() {
 
         assert_eq!(header.version, Version::V2);
         assert_eq!(header.crc, 0xCDEF);
-        assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
+        assert_eq!(header.uid, *b"\x00\x01\x02\x03\x04\x05");
         assert_eq!(header.seq_num, 0x01020304);
     }
     {
@@ -38,7 +38,7 @@ fn test_from_bytes_versions() {
 
         assert_eq!(header.version, Version::V3);
         assert_eq!(header.crc, 0xCDEF);
-        assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
+        assert_eq!(header.uid, *b"\x00\x01\x02\x03\x04\x05");
         assert_eq!(header.seq_num, 0x01020304);
     }
     {
@@ -48,7 +48,7 @@ fn test_from_bytes_versions() {
 
         assert_eq!(header.version, Version::V17);
         assert_eq!(header.crc, 0xCDEF);
-        assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
+        assert_eq!(header.uid, *b"\x00\x01\x02\x03\x04\x05");
         assert_eq!(header.seq_num, 0x01020304);
     }
     {
@@ -58,7 +58,7 @@ fn test_from_bytes_versions() {
 
         assert_eq!(header.version, Version::V18);
         assert_eq!(header.crc, 0xCDEF);
-        assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
+        assert_eq!(header.uid, *b"\x00\x01\x02\x03\x04\x05");
         assert_eq!(header.seq_num, 0x01020304);
     }
     {
@@ -68,7 +68,7 @@ fn test_from_bytes_versions() {
 
         assert_eq!(header.version, Version::V19);
         assert_eq!(header.crc, 0xCDEF);
-        assert_eq!(header.file_uid, *b"\x00\x01\x02\x03\x04\x05");
+        assert_eq!(header.uid, *b"\x00\x01\x02\x03\x04\x05");
         assert_eq!(header.seq_num, 0x01020304);
     }
 }
@@ -227,7 +227,7 @@ fn test_from_to_from_bytes() {
         let mut expect = Header::new(Version::V1, [0; 6], 0);
         expect.crc = ((buffer[4] as u16) << 8) + (buffer[5] as u16);
         for i in 0..6 {
-            expect.file_uid[i] = buffer[6 + i];
+            expect.uid[i] = buffer[6 + i];
         }
         expect.seq_num =
             ((buffer[12] as u32) << 24) +
@@ -260,7 +260,7 @@ fn test_to_from_to_bytes() {
     for _ in 0..1000 {
         let mut header = Header::new(Version::V1, [0; 6], 0);
         header.crc = rand::random::<u16>();
-        fill_random_bytes(&mut header.file_uid);
+        fill_random_bytes(&mut header.uid);
         header.seq_num = rand::random::<u32>();
 
         let mut expect : [u8; 16] =
@@ -268,7 +268,7 @@ fn test_to_from_to_bytes() {
         expect[4] = (header.crc >> 8) as u8;
         expect[5] =  header.crc      as u8;
         for i in 0..6 {
-            expect[6 + i] = header.file_uid[i];
+            expect[6 + i] = header.uid[i];
         }
         expect[12] = (header.seq_num >> 24) as u8;
         expect[13] = (header.seq_num >> 16) as u8;

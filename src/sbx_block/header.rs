@@ -12,20 +12,20 @@ use super::Error;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Header {
-    pub version  : Version,
-    pub crc      : u16,
-    pub file_uid : [u8; SBX_FILE_UID_LEN],
-    pub seq_num  : u32,
+    pub version : Version,
+    pub crc     : u16,
+    pub uid     : [u8; SBX_FILE_UID_LEN],
+    pub seq_num : u32,
 }
 
 impl Header {
-    pub fn new(version  : Version,
-               file_uid : [u8; SBX_FILE_UID_LEN],
-               seq_num  : u32) -> Header {
+    pub fn new(version : Version,
+               uid     : [u8; SBX_FILE_UID_LEN],
+               seq_num : u32) -> Header {
         Header {
             version,
             crc       : 0,
-            file_uid,
+            uid,
             seq_num
         }
     }
@@ -44,7 +44,7 @@ impl Header {
                 unsafe { std::mem::transmute::<u16, [u8; 2]>(self.crc.to_be()) };
             buffer[4..6].copy_from_slice(&crc); }
         { // file uid
-            buffer[6..12].copy_from_slice(&self.file_uid); }
+            buffer[6..12].copy_from_slice(&self.uid); }
         { // seq num
             let seq_num : [u8; 4] =
                 unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num.to_be()) };
@@ -69,7 +69,7 @@ impl Header {
     }
 
     pub fn calc_crc(&self) -> u16 {
-        let crc = sbx_crc_ccitt(self.version, &self.file_uid);
+        let crc = sbx_crc_ccitt(self.version, &self.uid);
         let seq_num : [u8; 4] =
             unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num.to_be()) };
         crc_ccitt_generic(crc, &seq_num)
@@ -127,15 +127,15 @@ mod parsers {
                _sig : sig_p >>
                    version      : ver_p >>
                    crc          : be_u16 >>
-                   file_uid_raw : uid_p >>
+                   uid_raw : uid_p >>
                    seq_num      : be_u32 >>
                    ({
-                       let mut file_uid : [u8; 6] = [0; 6];
-                       file_uid.copy_from_slice(file_uid_raw);
+                       let mut uid : [u8; 6] = [0; 6];
+                       uid.copy_from_slice(uid_raw);
                        Header {
                            version,
                            crc,
-                           file_uid,
+                           uid,
                            seq_num
                        }
                    })

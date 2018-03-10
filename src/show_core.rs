@@ -171,8 +171,7 @@ pub fn show_file(param : &Param)
                      block_pos + seek_to);
             println!();
             println!("File UID               : {}",
-                     misc_utils::bytes_to_upper_hex_string(
-                         &block.get_file_uid()));
+                     misc_utils::bytes_to_upper_hex_string(&block.get_uid()));
             println!("File name              : {}", match block.get_FNM().unwrap() {
                 None    => "N/A".to_string(),
                 Some(x) => {

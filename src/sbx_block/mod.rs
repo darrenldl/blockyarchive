@@ -208,7 +208,7 @@ pub fn calc_rs_enabled_meta_dup_write_pos_s(version                : Version,
     res
 }
 
-pub fn calc_rs_enabled_meta_dup_write_indices(parity_shards    : usize,
+pub fn calc_rs_enabled_meta_dup_write_indices(parity_shards        : usize,
                                               burst_err_resistance : usize)
                                               -> SmallVec<[u64; 32]> {
     let mut res : SmallVec<[u64; 32]> =
@@ -221,10 +221,10 @@ pub fn calc_rs_enabled_meta_dup_write_indices(parity_shards    : usize,
     res
 }
 
-pub fn calc_rs_enabled_data_write_pos(seq_num          : u32,
-                                      version          : Version,
-                                      data_shards      : usize,
-                                      parity_shards    : usize,
+pub fn calc_rs_enabled_data_write_pos(seq_num              : u32,
+                                      version              : Version,
+                                      data_shards          : usize,
+                                      parity_shards        : usize,
                                       burst_err_resistance : usize) -> u64 {
     let block_size = ver_to_block_size(version) as u64;
 
@@ -385,21 +385,21 @@ pub fn calc_rs_enabled_seq_num_at_index(index                : u64,
 
 impl Block {
     pub fn new(version    : Version,
-               file_uid   : &[u8; SBX_FILE_UID_LEN],
+               uid   : &[u8; SBX_FILE_UID_LEN],
                block_type : BlockType)
                -> Block {
         match block_type {
             BlockType::Data => {
                 let seq_num = SBX_FIRST_DATA_SEQ_NUM as u32;
                 Block {
-                    header : Header::new(version, file_uid.clone(), seq_num),
+                    header : Header::new(version, uid.clone(), seq_num),
                     data   : Data::Data,
                 }
             },
             BlockType::Meta => {
                 let seq_num = 0 as u32;
                 Block {
-                    header : Header::new(version, file_uid.clone(), seq_num),
+                    header : Header::new(version, uid.clone(), seq_num),
                     data   : Data::Meta(Vec::with_capacity(10)),
                 }
             }
@@ -424,13 +424,13 @@ impl Block {
         self.header.version = version;
     }
 
-    pub fn get_file_uid(&self) -> [u8; SBX_FILE_UID_LEN] {
-        self.header.file_uid
+    pub fn get_uid(&self) -> [u8; SBX_FILE_UID_LEN] {
+        self.header.uid
     }
 
-    pub fn set_file_uid(&mut self,
-                        file_uid : [u8; SBX_FILE_UID_LEN]) {
-        self.header.file_uid = file_uid;
+    pub fn set_uid(&mut self,
+                   uid : [u8; SBX_FILE_UID_LEN]) {
+        self.header.uid = uid;
     }
 
     pub fn get_crc(&self) -> u16 {
