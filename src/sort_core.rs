@@ -139,6 +139,10 @@ pub fn sort_file(param : &Param)
 
     let mut meta_written = false;
 
+    let pred = |block : &Block| -> bool {
+        block.get_file_uid() == ref_block.get_file_uid()
+    };
+
     reporter.start();
 
     loop {
@@ -147,7 +151,7 @@ pub fn sort_file(param : &Param)
 
         break_if_eof_seen!(read_res);
 
-        if let Err(_) = block.sync_from_buffer(&buffer) {
+        if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
             stats.lock().unwrap().blocks_decode_failed += 1;
             continue;
         }

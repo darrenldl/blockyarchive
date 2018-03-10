@@ -302,6 +302,15 @@ pub fn decode(param         : &Param,
         rs_enabled = false;
     }
 
+    let pred = {
+        let version  = ref_block.get_version();
+        let file_uid = ref_block.get_file_uid();
+        move |block : &Block| -> bool {
+        block.get_version() == version
+            && block.get_file_uid() == file_uid
+        }
+    };
+
     reporter.start();
 
     loop {
@@ -311,7 +320,7 @@ pub fn decode(param         : &Param,
 
         break_if_eof_seen!(read_res);
 
-        if let Err(_) = block.sync_from_buffer(&buffer) {
+        if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
             stats.lock().unwrap().blocks_decode_failed += 1;
             continue;
         }

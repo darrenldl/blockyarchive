@@ -91,7 +91,7 @@ pub fn read_block_lazily(block  : &mut Block,
                                        eof_seen : true            });
         }
 
-        match block.sync_from_buffer(&buffer[0..block_size]) {
+        match block.sync_from_buffer(&buffer[0..block_size], None) {
             Ok(()) => {},
             Err(_) => { return Ok(LazyReadResult { len_read : total_len_read,
                                                    usable   : false,
@@ -232,7 +232,7 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
         if blocks_processed >= SBX_MAX_BURST_ERR_RESISTANCE { break; }
 
         seq_nums[blocks_processed] =
-            match block.sync_from_buffer(&buffer) {
+            match block.sync_from_buffer(&buffer, None) {
                 Ok(()) => Some(block.get_seq_num()),
                 Err(_) => None,
             };

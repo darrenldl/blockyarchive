@@ -49,7 +49,8 @@ pub enum Error {
     TooMuchMetaData,
     InvalidCRC,
     SeqNumOverflow,
-    ParseError
+    ParseError,
+    FailedPred,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -169,7 +170,7 @@ pub fn check_if_buffer_valid(buffer : &[u8]) -> bool {
                                b"\x00\x00\x00\x00\x00\x00",
                                BlockType::Data);
 
-    match block.sync_from_buffer(buffer) {
+    match block.sync_from_buffer(buffer, None) {
         Ok(()) => {},
         Err(_) => { return false; }
     }
@@ -659,8 +660,10 @@ impl Block {
     }
 
     pub fn sync_from_buffer(&mut self,
-                            buffer : &[u8])
-                            -> Result<(), Error> {
+                            buffer : &[u8],
+                            pred   : Option<&Fn(&Block) -> bool>)
+                            -> Result<(), Error>
+    {
         self.sync_from_buffer_header_only(buffer)?;
 
         check_buffer!(self, buffer);
@@ -683,7 +686,11 @@ impl Block {
             Data::Data => {}
         }
 
-        Ok(())
+        match pred {
+            Some(pred) =>
+                if pred(&self) { Ok(()) } else { Err(Error::FailedPred) },
+            None       => Ok(())
+        }
     }
 
     pub fn verify_crc(&self,

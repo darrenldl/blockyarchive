@@ -160,7 +160,7 @@ pub fn check_file(param : &Param)
 
         break_if_eof_seen!(read_res);
 
-        match block.sync_from_buffer(&buffer) {
+        match block.sync_from_buffer(&buffer, None) {
             Ok(_)  => match block.block_type() {
                 BlockType::Meta => {
                     stats.lock().unwrap().meta_or_par_blocks_decoded += 1;
