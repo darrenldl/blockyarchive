@@ -130,6 +130,8 @@ pub fn sort_file(param : &Param)
             Some(x) => x,
         };
 
+    println!();
+
     let version   = ref_block.get_version();
     let ver_usize = ver_to_usize(version);
     let block_size = ver_to_block_size(version) as u64;
@@ -150,7 +152,6 @@ pub fn sort_file(param : &Param)
             Some(x) => x
         };
 
-    println!();
     println!("Using burst error resistance level {} for output container",
              burst);
 

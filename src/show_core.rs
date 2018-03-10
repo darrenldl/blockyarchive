@@ -5,6 +5,8 @@ use super::file_utils;
 use super::misc_utils;
 use super::misc_utils::RequiredLenAndSeekTo;
 
+use super::report_ref_block_info;
+
 use std::io::SeekFrom;
 
 use super::progress_report::*;
@@ -77,6 +79,7 @@ impl fmt::Display for Stats {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {
     show_all       : bool,
+    guess_burst    : bool,
     force_misalign : bool,
     from_pos       : Option<u64>,
     to_pos         : Option<u64>,
@@ -86,6 +89,7 @@ pub struct Param {
 
 impl Param {
     pub fn new(show_all       : bool,
+               guess_burst    : bool,
                force_misalign : bool,
                from_pos       : Option<u64>,
                to_pos         : Option<u64>,
@@ -93,6 +97,7 @@ impl Param {
                silence_level  : SilenceLevel) -> Param {
         Param {
             show_all,
+            guess_burst,
             force_misalign,
             from_pos,
             to_pos,
@@ -104,6 +109,34 @@ impl Param {
 
 pub fn show_file(param : &Param)
                  -> Result<Stats, Error> {
+    if param.guess_burst {
+        println!("Guessing burst error resistance level");
+
+        let (ref_block_pos, ref_block) =
+            match block_utils::get_ref_block(&param.in_file,
+                                             false,
+                                             param.silence_level)? {
+                None => { return Err(Error::with_message("Failed to find reference block")); },
+                Some(x) => x,
+            };
+
+        report_ref_block_info(ref_block_pos, &ref_block);
+
+        if ver_uses_rs(ref_block.get_version()) {
+            match block_utils::guess_burst_err_resistance_level(&param.in_file,
+                                                                ref_block_pos,
+                                                                &ref_block) {
+                Err(e)      => println!("Error encountered when guessing : {}", e),
+                Ok(None)    => println!("Failed to guess level"),
+                Ok(Some(x)) => println!("Best guess : {}", x),
+            }
+        } else {
+            println!("Reference block version does not use RS");
+        }
+
+        println!();
+    }
+
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
     let stats = Arc::new(Mutex::new(Stats::new(&metadata)));

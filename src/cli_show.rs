@@ -24,6 +24,9 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(silence_level_arg())
         .arg(from_byte_arg())
         .arg(to_byte_arg())
+        .arg(Arg::with_name("guess_burst")
+             .long("guess-burst")
+             .help("Guess burst error resistance level at start"))
 }
 
 pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
@@ -49,6 +52,7 @@ pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
     };
 
     let param = Param::new(matches.is_present("show_all"),
+                           matches.is_present("guess_burst"),
                            matches.is_present("force_misalign"),
                            from_pos,
                            to_pos,
