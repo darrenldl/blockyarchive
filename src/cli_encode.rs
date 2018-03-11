@@ -42,7 +42,7 @@ DIR/INFILE.sbx."))
              .help("Skip metadata block in the SBX container. Metadata block is
 never skipped for version 11, 12, 13.
 This means this option has no effect for version 11, 12, 13."))
-        .arg(silence_level_arg())
+        .arg(pr_verbosity_level_arg())
         .arg(Arg::with_name("sbx_version")
              .value_name("SBX-VERSION")
              .long("sbx-version")
@@ -185,7 +185,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
         }
     };
 
-    let silence_level = get_silence_level!(matches);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
     let param = Param::new(version,
                            &uid,
@@ -196,7 +196,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                            hash_type,
                            in_file,
                            &out_file,
-                           silence_level);
+                           pr_verbosity_level);
     match encode_core::encode_file(&param) {
         Ok(s)  => exit_with_msg!(ok => "{}", s),
         Err(e) => exit_with_msg!(op => "{}", e)

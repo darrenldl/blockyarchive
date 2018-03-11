@@ -36,24 +36,24 @@ use super::time_utils;
 use super::block_utils;
 
 pub struct Param {
-    no_meta       : bool,
-    in_file       : String,
-    out_file      : String,
-    silence_level : SilenceLevel,
-    burst         : Option<usize>,
+    no_meta            : bool,
+    in_file            : String,
+    out_file           : String,
+    pr_verbosity_level : PRVerbosityLevel,
+    burst              : Option<usize>,
 }
 
 impl Param {
-    pub fn new(no_meta       : bool,
-               in_file       : &str,
-               out_file      : &str,
-               silence_level : SilenceLevel,
-               burst         : Option<usize>) -> Param {
+    pub fn new(no_meta            : bool,
+               in_file            : &str,
+               out_file           : &str,
+               pr_verbosity_level : PRVerbosityLevel,
+               burst              : Option<usize>) -> Param {
         Param {
             no_meta,
             in_file  : String::from(in_file),
             out_file : String::from(out_file),
-            silence_level,
+            pr_verbosity_level,
             burst,
         }
     }
@@ -125,7 +125,7 @@ pub fn sort_file(param : &Param)
     let (ref_block_pos, ref_block) =
         match block_utils::get_ref_block(&param.in_file,
                                          param.no_meta,
-                                         param.silence_level)? {
+                                         param.pr_verbosity_level)? {
             None => { return Err(Error::with_message("Failed to find reference block")); },
             Some(x) => x,
         };
@@ -204,7 +204,7 @@ pub fn sort_file(param : &Param)
     let reporter = Arc::new(ProgressReporter::new(&stats,
                                                   "SBX block sorting progress",
                                                   "blocks",
-                                                  param.silence_level));
+                                                  param.pr_verbosity_level));
 
     let mut meta_written = false;
 

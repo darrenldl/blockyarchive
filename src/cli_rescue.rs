@@ -43,7 +43,7 @@ range specified in the initial run."))
              .help("Only pick blocks with UID-HEX as uid. Uid must be exactly 6
 bytes(12 hex digits) in length."))
         .arg(force_misalign_arg())
-        .arg(silence_level_arg())
+        .arg(pr_verbosity_level_arg())
         .arg(from_byte_arg())
         .arg(to_byte_arg())
 }
@@ -86,7 +86,7 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
         }
     };
 
-    let silence_level = get_silence_level!(matches);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
     let in_file  = matches.value_of("in_file").unwrap();
     exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
@@ -109,7 +109,7 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
                            matches.is_present("force_misalign"),
                            block_type,
                            uid,
-                           silence_level);
+                           pr_verbosity_level);
     match rescue_core::rescue_from_file(&param) {
         Ok(s)  => exit_with_msg!(ok => "{}", s),
         Err(e) => exit_with_msg!(op => "{}", e)

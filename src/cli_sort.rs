@@ -27,7 +27,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .long("force")
              .help("Force overwrite even if OUT exists"))
         .arg(no_meta_arg())
-        .arg(silence_level_arg())
+        .arg(pr_verbosity_level_arg())
         .arg(from_byte_arg())
         .arg(to_byte_arg())
         .arg(burst_arg())
@@ -64,12 +64,12 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
                   => matches.is_present("force")
                   => "File \"{}\" already exists", out_file);
 
-    let silence_level = get_silence_level!(matches);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
     let param = Param::new(matches.is_present("no-meta"),
                            in_file,
                            &out_file,
-                           silence_level,
+                           pr_verbosity_level,
                            burst);
     match sort_core::sort_file(&param) {
         Ok(s)  => exit_with_msg!(ok => "{}", s),

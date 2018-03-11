@@ -131,15 +131,15 @@ macro_rules! exit_if_file {
     }}
 }
 
-macro_rules! get_silence_level {
+macro_rules! get_pr_verbosity_level {
     (
         $matches:expr
     ) => {{
-        match $matches.value_of("silence_level") {
-            None    => progress_report::SilenceLevel::L0,
-            Some(x) => match progress_report::string_to_silence_level(x) {
+        match $matches.value_of("pr_verbosity_level") {
+            None    => progress_report::PRVerbosityLevel::L0,
+            Some(x) => match progress_report::string_to_verbosity_level(x) {
                 Ok(x)  => x,
-                Err(_) => exit_with_msg!(usr => "Invalid silence level")
+                Err(_) => exit_with_msg!(usr => "Invalid verbosity level")
             }
         }
     }}
@@ -180,11 +180,11 @@ mod cli_repair;
 mod cli_check;
 mod cli_sort;
 
-fn silence_level_arg<'a, 'b>() -> Arg<'a, 'b> {
-    Arg::with_name("silence_level")
+fn pr_verbosity_level_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("pr_verbosity_level")
     .value_name("LEVEL")
     .short("s")
-    .long("silent")
+    .long("pv")
     .takes_value(true)
     .help("One of :
     0 (show everything)

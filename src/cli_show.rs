@@ -21,7 +21,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .long("show-all")
              .help("Show all metadata (by default only shows the first one)"))
         .arg(force_misalign_arg())
-        .arg(silence_level_arg())
+        .arg(pr_verbosity_level_arg())
         .arg(from_byte_arg())
         .arg(to_byte_arg())
         .arg(Arg::with_name("guess_burst")
@@ -36,7 +36,7 @@ pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
     let in_file = matches.value_of("in_file").unwrap();
     exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
 
-    let silence_level = get_silence_level!(matches);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
     let from_pos = match matches.value_of("from_pos") {
         None    => None,
@@ -60,7 +60,7 @@ pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
                            from_pos,
                            to_pos,
                            in_file,
-                           silence_level);
+                           pr_verbosity_level);
     match show_core::show_file(&param) {
         Ok(s)  => exit_with_msg!(ok => "{}", s),
         Err(e) => exit_with_msg!(op => "{}", e)

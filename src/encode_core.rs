@@ -6,10 +6,7 @@ use super::time_utils;
 use super::misc_utils;
 use std::io::SeekFrom;
 
-use progress_report::ProgressReport;
-use progress_report::ProgressReporter;
-
-use super::progress_report;
+use super::progress_report::*;
 
 use std::time::UNIX_EPOCH;
 
@@ -110,30 +107,30 @@ impl fmt::Display for Stats {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {
-    version      : Version,
-    uid          : [u8; SBX_FILE_UID_LEN],
-    rs_data      : usize,
-    rs_parity    : usize,
-    rs_enabled   : bool,
-    burst        : usize,
-    meta_enabled : bool,
-    hash_type    : multihash::HashType,
-    in_file      : String,
-    out_file     : String,
-    silence_level : progress_report::SilenceLevel
+    version            : Version,
+    uid                : [u8; SBX_FILE_UID_LEN],
+    rs_data            : usize,
+    rs_parity          : usize,
+    rs_enabled         : bool,
+    burst              : usize,
+    meta_enabled       : bool,
+    hash_type          : multihash::HashType,
+    in_file            : String,
+    out_file           : String,
+    pr_verbosity_level : PRVerbosityLevel,
 }
 
 impl Param {
-    pub fn new(version       : Version,
-               uid      : &[u8; SBX_FILE_UID_LEN],
-               rs_data       : usize,
-               rs_parity     : usize,
-               burst         : usize,
-               no_meta       : bool,
-               hash_type     : multihash::HashType,
-               in_file       : &str,
-               out_file      : &str,
-               silence_level : progress_report::SilenceLevel) -> Param {
+    pub fn new(version            : Version,
+               uid                : &[u8; SBX_FILE_UID_LEN],
+               rs_data            : usize,
+               rs_parity          : usize,
+               burst              : usize,
+               no_meta            : bool,
+               hash_type          : multihash::HashType,
+               in_file            : &str,
+               out_file           : &str,
+               pr_verbosity_level : PRVerbosityLevel) -> Param {
         Param {
             version,
             uid : uid.clone(),
@@ -145,7 +142,7 @@ impl Param {
             hash_type,
             in_file  : String::from(in_file),
             out_file : String::from(out_file),
-            silence_level,
+            pr_verbosity_level,
         }
     }
 }
@@ -314,7 +311,7 @@ pub fn encode_file(param : &Param)
     let reporter = ProgressReporter::new(&stats,
                                          "Data encoding progress",
                                          "chunks",
-                                         param.silence_level);
+                                         param.pr_verbosity_level);
 
     // set up hash state
     let mut hash_ctx =

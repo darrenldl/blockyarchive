@@ -12,10 +12,10 @@ use std::thread;
 use std::time::Duration;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub enum SilenceLevel {
+pub enum PRVerbosityLevel {
     L0,
     L1,
-    L2
+    L2,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -33,9 +33,9 @@ pub enum ProgressElement {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct SilenceSettings {
-    pub silent_while_active : bool,
-    pub silent_when_done    : bool
+struct VerbositySettings {
+    verbose_while_active : bool,
+    verbose_when_done    : bool
 }
 
 pub struct Context {
@@ -48,13 +48,13 @@ pub struct Context {
     active_print_elements : Vec<ProgressElement>,
     finish_print_elements : Vec<ProgressElement>,
     max_print_length      : usize,
-    silence_settings      : SilenceSettings,
+    verbosity_settings    : VerbositySettings,
 }
 
 impl Context {
     pub fn new(header                : &str,
                unit                  : &str,
-               silence_level         : SilenceLevel,
+               pr_verbosity_level    : PRVerbosityLevel,
                active_print_elements : Vec<ProgressElement>,
                finish_print_elements : Vec<ProgressElement>) -> Context {
         Context {
@@ -67,7 +67,7 @@ impl Context {
             active_print_elements,
             finish_print_elements,
             max_print_length      : 0,
-            silence_settings      : silence_level_to_settings(silence_level),
+            verbosity_settings    : pr_verbosity_level_to_settings(pr_verbosity_level),
         }
     }
 }
@@ -84,17 +84,17 @@ pub struct ProgressReporter<T : 'static + ProgressReport + Send> {
 }
 
 impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
-    pub fn new(stats         : &Arc<Mutex<T>>,
-               header        : &str,
-               unit          : &str,
-               silence_level : SilenceLevel)
+    pub fn new(stats              : &Arc<Mutex<T>>,
+               header             : &str,
+               unit               : &str,
+               pr_verbosity_level : PRVerbosityLevel)
                -> ProgressReporter<T> {
         use self::ProgressElement::*;
         let stats                = Arc::clone(stats);
         let context                 =
             Arc::new(Mutex::new(Context::new(header,
                                              unit,
-                                             silence_level,
+                                             pr_verbosity_level,
                                              vec![ProgressBar,
                                                   Percentage,
                                                   CurrentRateShort,
@@ -233,8 +233,8 @@ pub fn print_progress<T>(context        : &mut Context,
 {
     use std::cmp::max;
 
-    let silent_while_active = context.silence_settings.silent_while_active;
-    let silent_when_done    = context.silence_settings.silent_when_done;
+    let verbose_while_active = context.verbosity_settings.verbose_while_active;
+    let verbose_when_done    = context.verbosity_settings.verbose_when_done;
 
     let units_so_far = stats.units_so_far();
     let total_units  = stats.total_units();
@@ -243,8 +243,8 @@ pub fn print_progress<T>(context        : &mut Context,
 
     let progress_complete = percent == 100 || pretend_finish;
 
-    if !(silent_while_active && !progress_complete)
-        && !(silent_when_done       && progress_complete)
+    if ((verbose_while_active && !progress_complete)
+        || (verbose_when_done && progress_complete))
         && !(context.finish_printed && progress_complete)
     {
         // print header once if not already
@@ -286,11 +286,11 @@ pub fn print_progress<T>(context        : &mut Context,
     }
 }
 
-pub fn string_to_silence_level(string : &str) -> Result<SilenceLevel, ()> {
+pub fn string_to_verbosity_level(string : &str) -> Result<PRVerbosityLevel, ()> {
     match string {
-        "0" => Ok(SilenceLevel::L0),
-        "1" => Ok(SilenceLevel::L1),
-        "2" => Ok(SilenceLevel::L2),
+        "0" => Ok(PRVerbosityLevel::L0),
+        "1" => Ok(PRVerbosityLevel::L1),
+        "2" => Ok(PRVerbosityLevel::L2),
         _   => Err(())
     }
 }
@@ -369,14 +369,14 @@ fn make_message(context      : &Context,
     res
 }
 
-pub fn silence_level_to_settings (level:SilenceLevel) -> SilenceSettings {
+fn pr_verbosity_level_to_settings (level:PRVerbosityLevel) -> VerbositySettings {
     match level {
-        SilenceLevel::L0 => SilenceSettings { silent_while_active : false,
-                                              silent_when_done    : false },
-        SilenceLevel::L1 => SilenceSettings { silent_while_active : true,
-                                              silent_when_done    : false },
-        SilenceLevel::L2 => SilenceSettings { silent_while_active : true,
-                                              silent_when_done    : true },
+        PRVerbosityLevel::L0 => VerbositySettings { verbose_while_active : false,
+                                                    verbose_when_done    : false, },
+        PRVerbosityLevel::L1 => VerbositySettings { verbose_while_active : true,
+                                                    verbose_when_done    : false, },
+        PRVerbosityLevel::L2 => VerbositySettings { verbose_while_active : true,
+                                                    verbose_when_done    : true,  },
     }
 }
 

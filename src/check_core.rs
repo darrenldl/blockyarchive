@@ -36,19 +36,19 @@ use super::block_utils;
 use super::report_ref_block_info;
 
 pub struct Param {
-    no_meta       : bool,
-    in_file       : String,
-    silence_level : SilenceLevel,
+    no_meta            : bool,
+    in_file            : String,
+    pr_verbosity_level : PRVerbosityLevel,
 }
 
 impl Param {
-    pub fn new(no_meta       : bool,
-               in_file       : &str,
-               silence_level : SilenceLevel) -> Param {
+    pub fn new(no_meta            : bool,
+               in_file            : &str,
+               pr_verbosity_level : PRVerbosityLevel) -> Param {
         Param {
             no_meta,
             in_file  : String::from(in_file),
-            silence_level,
+            pr_verbosity_level,
         }
     }
 }
@@ -119,7 +119,7 @@ pub fn check_file(param : &Param)
     let (ref_block_pos, ref_block) =
         match block_utils::get_ref_block(&param.in_file,
                                          param.no_meta,
-                                         param.silence_level)? {
+                                         param.pr_verbosity_level)? {
             None => { return Err(Error::with_message("Failed to find reference block")); },
             Some(x) => x,
         };
@@ -140,7 +140,7 @@ pub fn check_file(param : &Param)
     let reporter = Arc::new(ProgressReporter::new(&stats,
                                                   "SBX block checking progress",
                                                   "bytes",
-                                                  param.silence_level));
+                                                  param.pr_verbosity_level));
 
     let ver_usize = ver_to_usize(ref_block.get_version());
 

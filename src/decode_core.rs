@@ -138,19 +138,19 @@ impl fmt::Display for Stats {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {
-    no_meta       : bool,
-    force_write   : bool,
-    in_file       : String,
-    out_file      : Option<String>,
-    silence_level : SilenceLevel
+    no_meta            : bool,
+    force_write        : bool,
+    in_file            : String,
+    out_file           : Option<String>,
+    pr_verbosity_level : PRVerbosityLevel
 }
 
 impl Param {
-    pub fn new(no_meta       : bool,
-               force_write   : bool,
-               in_file       : &str,
-               out_file      : Option<&str>,
-               silence_level : SilenceLevel) -> Param {
+    pub fn new(no_meta         : bool,
+               force_write     : bool,
+               in_file         : &str,
+               out_file        : Option<&str>,
+               pr_verbosity_level : PRVerbosityLevel) -> Param {
         Param {
             no_meta,
             force_write,
@@ -159,7 +159,7 @@ impl Param {
                 None    => None,
                 Some(x) => Some(String::from(x))
             },
-            silence_level,
+            pr_verbosity_level,
         }
     }
 }
@@ -244,7 +244,7 @@ pub fn decode(param         : &Param,
     let reporter = ProgressReporter::new(&stats,
                                          "Data decoding progress",
                                          "blocks",
-                                         param.silence_level);
+                                         param.pr_verbosity_level);
 
     let mut block = Block::dummy();
 
@@ -408,7 +408,7 @@ fn hash(param     : &Param,
     let reporter = ProgressReporter::new(&stats,
                                          "Output file hashing progress",
                                          "bytes",
-                                         param.silence_level);
+                                         param.pr_verbosity_level);
 
     let mut buffer : [u8; HASH_FILE_BLOCK_SIZE] = [0; HASH_FILE_BLOCK_SIZE];
 
@@ -434,7 +434,7 @@ pub fn decode_file(param : &Param)
     let (ref_block_pos, ref_block) =
         match block_utils::get_ref_block(&param.in_file,
                                          param.no_meta,
-                                         param.silence_level)? {
+                                         param.pr_verbosity_level)? {
             None => { return Err(Error::with_message("Failed to find reference block")); },
             Some(x) => x,
         };
@@ -485,7 +485,7 @@ pub fn decode_file(param : &Param)
                            param.force_write,
                            &param.in_file,
                            Some(&out_file_path),
-                           param.silence_level);
+                           param.pr_verbosity_level);
 
     let mut stats = decode(&param, ref_block_pos, &ref_block)?;
 

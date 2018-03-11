@@ -78,23 +78,23 @@ impl fmt::Display for Stats {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {
-    show_all       : bool,
-    guess_burst    : bool,
-    force_misalign : bool,
-    from_pos       : Option<u64>,
-    to_pos         : Option<u64>,
-    in_file        : String,
-    silence_level  : SilenceLevel
+    show_all            : bool,
+    guess_burst         : bool,
+    force_misalign      : bool,
+    from_pos            : Option<u64>,
+    to_pos              : Option<u64>,
+    in_file             : String,
+    pr_verbosity_level  : PRVerbosityLevel
 }
 
 impl Param {
-    pub fn new(show_all       : bool,
-               guess_burst    : bool,
-               force_misalign : bool,
-               from_pos       : Option<u64>,
-               to_pos         : Option<u64>,
-               in_file        : &str,
-               silence_level  : SilenceLevel) -> Param {
+    pub fn new(show_all            : bool,
+               guess_burst         : bool,
+               force_misalign      : bool,
+               from_pos            : Option<u64>,
+               to_pos              : Option<u64>,
+               in_file             : &str,
+               pr_verbosity_level  : PRVerbosityLevel) -> Param {
         Param {
             show_all,
             guess_burst,
@@ -102,7 +102,7 @@ impl Param {
             from_pos,
             to_pos,
             in_file : String::from(in_file),
-            silence_level,
+            pr_verbosity_level,
         }
     }
 }
@@ -116,7 +116,7 @@ pub fn show_file(param : &Param)
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&param.in_file,
                                              false,
-                                             param.silence_level)? {
+                                             param.pr_verbosity_level)? {
                 None => { return Err(Error::with_message("Failed to find reference block")); },
                 Some(x) => x,
             };
@@ -147,7 +147,7 @@ pub fn show_file(param : &Param)
     let reporter = ProgressReporter::new(&stats,
                                          "Metadata block scanning progress",
                                          "bytes",
-                                         param.silence_level);
+                                         param.pr_verbosity_level);
 
     let mut block = Block::dummy();
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =

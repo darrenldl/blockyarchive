@@ -29,11 +29,11 @@ OUT is provided and is not a directory, then it is used directly."))
              .long("force")
              .help("Force overwrite even if OUT exists"))
         .arg(no_meta_arg())
-        .arg(silence_level_arg())
+        .arg(pr_verbosity_level_arg())
 }
 
 pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let silence_level = get_silence_level!(matches);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
     let in_file  = matches.value_of("in_file").unwrap();
     exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
@@ -43,7 +43,7 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
                            matches.is_present("force"),
                            in_file,
                            out_file,
-                           silence_level);
+                           pr_verbosity_level);
     match decode_core::decode_file(&param) {
         Ok(s)  => exit_with_msg!(ok => "{}", s),
         Err(e) => exit_with_msg!(op => "{}", e)

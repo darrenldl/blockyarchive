@@ -41,27 +41,27 @@ use std::num::ParseIntError;
 use super::integer_utils::IntegerUtils;
 
 pub struct Param {
-    in_file         : String,
-    out_dir         : String,
-    log_file        : Option<String>,
-    from_pos        : Option<u64>,
-    to_pos          : Option<u64>,
-    force_misalign  : bool,
-    only_pick_block : Option<BlockType>,
-    only_pick_uid   : Option<[u8; SBX_FILE_UID_LEN]>,
-    silence_level   : SilenceLevel,
+    in_file            : String,
+    out_dir            : String,
+    log_file           : Option<String>,
+    from_pos           : Option<u64>,
+    to_pos             : Option<u64>,
+    force_misalign     : bool,
+    only_pick_block    : Option<BlockType>,
+    only_pick_uid      : Option<[u8; SBX_FILE_UID_LEN]>,
+    pr_verbosity_level : PRVerbosityLevel,
 }
 
 impl Param {
-    pub fn new(in_file         : &str,
-               out_dir         : &str,
-               log_file        : Option<&str>,
-               from_pos        : Option<u64>,
-               to_pos          : Option<u64>,
-               force_misalign  : bool,
-               only_pick_block : Option<BlockType>,
-               only_pick_uid   : Option<&[u8; SBX_FILE_UID_LEN]>,
-               silence_level   : SilenceLevel) -> Param {
+    pub fn new(in_file            : &str,
+               out_dir            : &str,
+               log_file           : Option<&str>,
+               from_pos           : Option<u64>,
+               to_pos             : Option<u64>,
+               force_misalign     : bool,
+               only_pick_block    : Option<BlockType>,
+               only_pick_uid      : Option<&[u8; SBX_FILE_UID_LEN]>,
+               pr_verbosity_level : PRVerbosityLevel) -> Param {
         Param {
             in_file  : String::from(in_file),
             out_dir  : String::from(out_dir),
@@ -77,7 +77,7 @@ impl Param {
                 None    => None,
                 Some(x) => Some(x.clone())
             },
-            silence_level,
+            pr_verbosity_level,
         }
     }
 }
@@ -220,7 +220,7 @@ pub fn rescue_from_file(param : &Param)
     let reporter = Arc::new(ProgressReporter::new(&stats,
                                                   "Data rescue progress",
                                                   "bytes",
-                                                  param.silence_level));
+                                                  param.pr_verbosity_level));
 
     let loop_stop_flag = Arc::new(AtomicBool::new(false));
 

@@ -17,7 +17,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .required(true)
              .index(1)
              .help("SBX container to repair"))
-        .arg(silence_level_arg())
+        .arg(pr_verbosity_level_arg())
         .arg(burst_arg())
 }
 
@@ -25,7 +25,7 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
     let in_file = matches.value_of("in_file").unwrap();
     exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
 
-    let silence_level = get_silence_level!(matches);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
     let burst =
         match matches.value_of("burst") {
@@ -41,7 +41,7 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
         };
 
     let param = Param::new(in_file,
-                           silence_level,
+                           pr_verbosity_level,
                            burst);
     match repair_core::repair_file(&param) {
         Ok(s)  => exit_with_msg!(ok => "{}", s),
