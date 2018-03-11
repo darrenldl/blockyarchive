@@ -49,9 +49,9 @@ This means this option has no effect for version 11, 12, 13."))
              .takes_value(true)
              .help("SBX container version, one of :
                     | SBX block size | Reed-Solomon | Burst error resistance |
-(default) 1         |      512 bytes |  not enabled |          not supported |
-          2         |      128 bytes |  not enabled |          not supported |
-          3         |     4096 bytes |  not enabled |          not supported |
+(default)  1        |      512 bytes |  not enabled |          not supported |
+           2        |      128 bytes |  not enabled |          not supported |
+           3        |     4096 bytes |  not enabled |          not supported |
           17 (0x11) |      512 bytes |      enabled |              supported |
           18 (0x12) |      128 bytes |      enabled |              supported |
           19 (0x13) |     4096 bytes |      enabled |              supported |"))
