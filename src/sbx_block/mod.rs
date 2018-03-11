@@ -191,8 +191,8 @@ pub fn seq_num_is_parity(seq_num       : u32,
     }
 }
 
-pub fn calc_rs_enabled_meta_dup_write_pos_s(version                : Version,
-                                            parity_shards          : usize,
+pub fn calc_rs_enabled_meta_dup_write_pos_s(version              : Version,
+                                            parity_shards        : usize,
                                             burst_err_resistance : usize)
                                             -> SmallVec<[u64; 32]> {
     let block_size = ver_to_block_size(version) as u64;
@@ -217,6 +217,30 @@ pub fn calc_rs_enabled_meta_dup_write_indices(parity_shards        : usize,
     for i in 1..1 + parity_shards as u64 {
         res.push(i * (1 + burst_err_resistance) as u64);
     }
+
+    res
+}
+
+pub fn calc_rs_enabled_meta_dup_write_all_s(version              : Version,
+                                            parity_shards        : usize,
+                                            burst_err_resistance : usize)
+                                            -> SmallVec<[u64; 32]> {
+    let mut res = calc_rs_enabled_meta_dup_write_pos_s(version,
+                                                       parity_shards,
+                                                       burst_err_resistance);
+
+    res.push(0);
+
+    res
+}
+
+pub fn calc_rs_enabled_meta_all_write_indices(parity_shards        : usize,
+                                              burst_err_resistance : usize)
+                                              -> SmallVec<[u64; 32]> {
+    let mut res = calc_rs_enabled_meta_dup_write_indices(parity_shards,
+                                                         burst_err_resistance);
+
+    res.push(0);
 
     res
 }
@@ -570,43 +594,27 @@ impl Block {
         }
     }
 
-    pub fn calc_crc(&self, buffer : &[u8]) -> Result<u16, Error> {
+    pub fn calc_crc(&self, buffer : &[u8]) -> u16 {
         check_buffer!(self, buffer);
-
-        self.check_header_type_matches_block_type()?;
 
         let crc = self.header.calc_crc();
 
-        Ok(crc_ccitt_generic(crc, slice_buf!(data => self, buffer)))
+        crc_ccitt_generic(crc, slice_buf!(data => self, buffer))
     }
 
     pub fn update_crc(&mut self,
-                      buffer : &[u8])
-                      -> Result<(), Error> {
+                      buffer : &[u8]) {
         self.header.crc = self.calc_crc(buffer)?;
-
-        Ok(())
     }
 
     fn header_type_matches_block_type(&self) -> bool {
         self.header.header_type() == self.block_type()
     }
 
-    fn check_header_type_matches_block_type(&self) -> Result<(), Error> {
-        if self.header_type_matches_block_type() {
-            Ok(())
-        } else {
-            Err(Error::InconsistentHeaderBlockType)
-        }
-    }
-
     pub fn sync_to_buffer(&mut self,
                           update_crc : Option<bool>,
-                          buffer     : &mut [u8])
-                          -> Result<(), Error> {
+                          buffer     : &mut [u8]) {
         check_buffer!(self, buffer);
-
-        self.check_header_type_matches_block_type()?;
 
         let update_crc = match update_crc {
             Some(v) => v,
@@ -624,13 +632,11 @@ impl Block {
         }
 
         match self.block_type() {
-            BlockType::Data => if update_crc { self.update_crc(buffer)? },
-            BlockType::Meta =>                 self.update_crc(buffer)?
+            BlockType::Data => if update_crc { self.update_crc(buffer) },
+            BlockType::Meta =>                 self.update_crc(buffer)
         }
 
         self.header.to_bytes(slice_buf!(header_mut => self, buffer)).unwrap();
-
-        Ok(())
     }
 
     fn switch_block_type(&mut self) {
