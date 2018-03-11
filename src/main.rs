@@ -136,10 +136,10 @@ macro_rules! get_pr_verbosity_level {
         $matches:expr
     ) => {{
         match $matches.value_of("pr_verbosity_level") {
-            None    => progress_report::PRVerbosityLevel::L0,
+            None    => progress_report::PRVerbosityLevel::L2,
             Some(x) => match progress_report::string_to_verbosity_level(x) {
                 Ok(x)  => x,
-                Err(_) => exit_with_msg!(usr => "Invalid verbosity level")
+                Err(_) => exit_with_msg!(usr => "Invalid progress report verbosity level")
             }
         }
     }}
@@ -190,6 +190,12 @@ fn pr_verbosity_level_arg<'a, 'b>() -> Arg<'a, 'b> {
           1 (only show progress stats when done)
 (default) 2 (show both progress bar and progress stats)
 This only affects progress text printing.")
+}
+
+fn verbose_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("verbose")
+        .short("v")
+        .long("verbose")
 }
 
 fn force_misalign_arg<'a, 'b>() -> Arg<'a, 'b> {
