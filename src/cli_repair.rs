@@ -29,18 +29,7 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
-    let burst =
-        match matches.value_of("burst") {
-            None    => None,
-            Some(x) => {
-                match usize::from_str(&x) {
-                    Ok(x)  => Some(x),
-                    Err(_) => {
-                        exit_with_msg!(usr => "Failed to parse burst error resistance level");
-                    }
-                }
-            }
-        };
+    let burst = get_burst_for_repair!(matches);
 
     let param = Param::new(in_file,
                            matches.is_present("verbose"),

@@ -181,7 +181,7 @@ macro_rules! check_data_parity_shards {
     }}
 }
 
-macro_rules! get_burst {
+macro_rules! get_burst_for_encode {
     (
         $matches:expr
     ) => {{
@@ -190,6 +190,24 @@ macro_rules! get_burst {
             Some(x) => {
                 match usize::from_str(&x) {
                     Ok(x)  => x,
+                    Err(_) => {
+                        exit_with_msg!(usr => "Failed to parse burst error resistance level");
+                    }
+                }
+            }
+        }
+    }}
+}
+
+macro_rules! get_burst_for_repair {
+    (
+        $matches:expr
+    ) => {{
+        match $matches.value_of("burst") {
+            None    => None,
+            Some(x) => {
+                match usize::from_str(&x) {
+                    Ok(x)  => Some(x),
                     Err(_) => {
                         exit_with_msg!(usr => "Failed to parse burst error resistance level");
                     }
