@@ -107,15 +107,15 @@ impl RSRepairer {
     }
 
     pub fn missing_count(&self) -> usize {
+        self.rs_codec.total_shard_count() - self.present_count()
+    }
+
+    pub fn present_count(&self) -> usize {
         let mut count = 0;
         for p in self.buf_present.iter() {
             if *p { count += 1; }
         }
         count
-    }
-
-    pub fn present_count(&self) -> usize {
-        self.rs_codec.total_shard_count() - self.missing_count()
     }
 
     pub fn repair(&mut self,

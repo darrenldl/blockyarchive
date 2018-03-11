@@ -292,21 +292,24 @@ pub fn repair_file(param : &Param)
         let codec_state =
             if read_res.len_read < block_size {   // read an incomplete block
                 stats.lock().unwrap().blocks_decode_failed += 1;
-
                 repairer.mark_missing()
             } else if let Err(_) = block.sync_from_buffer(repairer.get_block_buffer(),
                                                           Some(&pred)) {
                 stats.lock().unwrap().blocks_decode_failed += 1;
-
                 repairer.mark_missing()
             } else {
-                if block.is_meta() {
-                    stats.lock().unwrap().meta_blocks_decoded += 1;
+                if block.get_seq_num() != seq_num {
+                    stats.lock().unwrap().blocks_decode_failed += 1;
+                    repairer.mark_missing()
                 } else {
-                    stats.lock().unwrap().data_or_par_blocks_decoded += 1;
-                }
+                    if block.is_meta() {
+                        stats.lock().unwrap().meta_blocks_decoded += 1;
+                    } else {
+                        stats.lock().unwrap().data_or_par_blocks_decoded += 1;
+                    }
 
-                repairer.mark_present()
+                    repairer.mark_present()
+                }
             };
 
         match codec_state {
@@ -320,7 +323,8 @@ pub fn repair_file(param : &Param)
                 if repair_stats.successful {
                     stats.lock().unwrap().data_blocks_repaired += repair_stats.missing_count as u64;
                     if repair_stats.missing_count > 0 {
-                        print!("Successfully repaired blocks : ");
+                        reporter.pause();
+                        print!("Repaired blocks : ");
                         let mut first_num = true;
                         for i in 0..repair_stats.present.len() {
                             if !repair_stats.present[i] {
@@ -330,6 +334,8 @@ pub fn repair_file(param : &Param)
                                 first_num = false;
                             }
                         }
+                        println!();
+                        reporter.resume();
                     }
                 } else {
                     stats.lock().unwrap().data_blocks_repair_failed += repair_stats.missing_count as u64;
