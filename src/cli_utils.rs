@@ -158,3 +158,12 @@ pub fn report_ref_block_info(ref_block_pos : u64,
              ref_block_pos);
     println!();
 }
+
+pub fn guess_burst_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("guess_burst")
+        .long("guess-burst")
+        .help("Guess burst error resistance level at start.
+Note that this requires scanning for a reference block, and may
+go through the entire file as a result.
+This operation does not respect the misalignment and range requirements.")
+}

@@ -24,12 +24,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(pr_verbosity_level_arg())
         .arg(from_byte_arg())
         .arg(to_byte_arg())
-        .arg(Arg::with_name("guess_burst")
-             .long("guess-burst")
-             .help("Guess burst error resistance level at start.
-Note that this requires scanning for a reference block, and may
-go through the entire file as a result.
-This operation does not respect the misalignment and range requirements."))
+        .arg(guess_burst_arg())
 }
 
 pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
