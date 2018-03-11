@@ -75,7 +75,7 @@ impl RSRepairer {
 
         self.buf_present[index] = true;
 
-        sbx_block::slice_data_buf_mut(self.version, &mut self.buf[index])
+        sbx_block::slice_buf_mut(self.version, &mut self.buf[index])
     }
 
     pub fn mark_present(&mut self) -> RSCodecState {
@@ -95,8 +95,6 @@ impl RSRepairer {
 
     pub fn mark_missing(&mut self) -> RSCodecState {
         let index = self.index;
-
-        println!("index : {}, total : {}", index, self.rs_codec.total_shard_count());
 
         add_index!(1 => self);
 
