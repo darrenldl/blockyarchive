@@ -182,26 +182,25 @@ pub fn repair_file(param : &Param)
         println!();
     }
 
-    let mut data_shards = None;
-    let mut parity_shards = None;
+    let data_shards = match ref_block.get_RSD().unwrap() {
+        None    => {
+            return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
+                                                    ref_block_pos,
+                                                    ref_block_pos,
+                                                    ver_usize)));
+        },
+        Some(x) => x as usize,
+    };
 
-    if rs_enabled {
-        data_shards = match ref_block.get_RSD().unwrap() {
-            None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
-                                                              ref_block_pos,
-                                                              ref_block_pos,
-                                                              ver_usize))); },
-            Some(x) => Some(x as usize),
-        };
-
-        parity_shards = match ref_block.get_RSP().unwrap() {
-            None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
-                                                              ref_block_pos,
-                                                              ref_block_pos,
-                                                              ver_usize))); },
-            Some(x) => Some(x as usize),
-        };
-    }
+    let parity_shards = match ref_block.get_RSP().unwrap() {
+        None    => {
+            return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
+                                                    ref_block_pos,
+                                                    ref_block_pos,
+                                                    ver_usize)));
+        },
+        Some(x) => x as usize,
+    };
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : true,
@@ -225,8 +224,8 @@ pub fn repair_file(param : &Param)
 
     let mut rs_codec = RSRepairer::new(version,
                                        &ref_block,
-                                       data_shards.unwrap_or(1),
-                                       parity_shards.unwrap_or(1));
+                                       data_shards,
+                                       parity_shards);
 
     reporter.start();
 
@@ -238,7 +237,7 @@ pub fn repair_file(param : &Param)
         ref_block.sync_to_buffer(None, &mut buffer).unwrap();
 
         for p in sbx_block::calc_rs_enabled_meta_all_write_pos_s(version,
-                                                                 parity_shards.unwrap(),
+                                                                 parity_shards,
                                                                  burst).iter()
         {
             reader.seek(SeekFrom::Start(*p))?;
@@ -264,8 +263,8 @@ pub fn repair_file(param : &Param)
     let total_block_count =
         match file_size {
             Some(x) => file_utils::calc_rs_enabled_total_block_count_from_orig_file_size(version,
-                                                                                         data_shards.unwrap(),
-                                                                                         parity_shards.unwrap(),
+                                                                                         data_shards,
+                                                                                         parity_shards,
                                                                                          x),
             None    => {
                 reporter.pause();
@@ -285,8 +284,8 @@ pub fn repair_file(param : &Param)
 
         let pos = sbx_block::calc_rs_enabled_data_write_pos(seq_num,
                                                             version,
-                                                            data_shards.unwrap(),
-                                                            parity_shards.unwrap(),
+                                                            data_shards,
+                                                            parity_shards,
                                                             burst);
 
         reader.seek(SeekFrom::Start(pos))?;
