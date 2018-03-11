@@ -220,6 +220,15 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
 
     let mut blocks_processed = 0;
 
+    let pred = {
+        let version = ref_block.get_version();
+        let uid     = ref_block.get_uid();
+        move |block : &Block| -> bool {
+            block.get_version() == version
+                && block.get_uid() == uid
+        }
+    };
+
     // record first up to 1000 seq nums
     loop {
         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
@@ -230,7 +239,7 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
         if blocks_processed >= SBX_MAX_BURST_ERR_RESISTANCE { break; }
 
         seq_nums[blocks_processed] =
-            match block.sync_from_buffer(&buffer, None) {
+            match block.sync_from_buffer(&buffer, Some(&pred)) {
                 Ok(()) => Some(block.get_seq_num()),
                 Err(_) => None,
             };
