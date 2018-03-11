@@ -1,4 +1,3 @@
-use super::clap::ArgMatches;
 use super::encode_core::Param;
 use super::sbx_specs::{SBX_FILE_UID_LEN,
                        Version,
@@ -9,6 +8,7 @@ use std::str::FromStr;
 use std::path::Path;
 
 use super::*;
+use super::cli_utils::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("encode")

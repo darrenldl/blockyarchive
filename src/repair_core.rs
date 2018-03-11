@@ -30,7 +30,7 @@ use super::sbx_specs::{ver_to_block_size,
                        SBX_FIRST_DATA_SEQ_NUM,
                        ver_to_usize};
 
-use super::report_ref_block_info;
+use super::cli_utils::report_ref_block_info;
 
 use std::str::from_utf8;
 

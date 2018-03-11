@@ -17,7 +17,7 @@ use super::sbx_specs::SBX_SCAN_BLOCK_SIZE;
 use super::multihash;
 use super::multihash::*;
 
-use super::report_ref_block_info;
+use super::cli_utils::report_ref_block_info;
 
 use super::Error;
 use super::sbx_specs::Version;

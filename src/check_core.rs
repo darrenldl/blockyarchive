@@ -33,7 +33,7 @@ use std::str::from_utf8;
 use super::time_utils;
 use super::block_utils;
 
-use super::report_ref_block_info;
+use super::cli_utils::report_ref_block_info;
 
 pub struct Param {
     no_meta            : bool,

@@ -28,7 +28,7 @@ use super::sbx_specs::{ver_to_block_size,
                        ver_uses_rs,
                        ver_to_usize};
 
-use super::report_ref_block_info;
+use super::cli_utils::report_ref_block_info;
 
 use std::str::from_utf8;
 

@@ -5,7 +5,7 @@ use super::file_utils;
 use super::misc_utils;
 use super::misc_utils::RequiredLenAndSeekTo;
 
-use super::report_ref_block_info;
+use super::cli_utils::report_ref_block_info;
 
 use std::io::SeekFrom;
 
