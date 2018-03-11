@@ -44,9 +44,9 @@ impl RSEncoder {
         }
     }
 
-    pub fn encode(&mut self,
-                  data : &[u8])
-                  -> Option<&mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>> {
+    pub fn encode_no_block_sync(&mut self,
+                                data : &[u8])
+                                -> Option<&mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>> {
         let data = sbx_block::slice_data_buf(self.version, data);
 
         let version  = self.version;

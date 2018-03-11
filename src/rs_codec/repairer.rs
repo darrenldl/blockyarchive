@@ -118,10 +118,10 @@ impl RSRepairer {
         count
     }
 
-    pub fn repair(&mut self,
-                  seq_num : u32,
-                  burst   : usize)
-                  ->
+    pub fn repair_with_block_sync(&mut self,
+                                  seq_num : u32,
+                                  burst   : usize)
+                                  ->
         (RSRepairStats,
          SmallVec<[(u64, &[u8]); 32]>)
     {

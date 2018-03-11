@@ -223,7 +223,7 @@ pub fn repair_file(param : &Param)
         }
     };
 
-    let mut repairer = RSRepairer::new(version,
+    let mut rs_codec = RSRepairer::new(version,
                                        &ref_block,
                                        data_shards.unwrap_or(1),
                                        parity_shards.unwrap_or(1));
@@ -291,20 +291,20 @@ pub fn repair_file(param : &Param)
 
         reader.seek(SeekFrom::Start(pos))?;
 
-        let read_res = reader.read(repairer.get_block_buffer())?;
+        let read_res = reader.read(rs_codec.get_block_buffer())?;
 
         let codec_state =
             if read_res.len_read < block_size {   // read an incomplete block
                 stats.lock().unwrap().blocks_decode_failed += 1;
-                repairer.mark_missing()
-            } else if let Err(_) = block.sync_from_buffer(repairer.get_block_buffer(),
+                rs_codec.mark_missing()
+            } else if let Err(_) = block.sync_from_buffer(rs_codec.get_block_buffer(),
                                                           Some(&pred)) {
                 stats.lock().unwrap().blocks_decode_failed += 1;
-                repairer.mark_missing()
+                rs_codec.mark_missing()
             } else {
                 if block.get_seq_num() != seq_num {
                     stats.lock().unwrap().blocks_decode_failed += 1;
-                    repairer.mark_missing()
+                    rs_codec.mark_missing()
                 } else {
                     if block.is_meta() {
                         stats.lock().unwrap().meta_blocks_decoded += 1;
@@ -312,7 +312,7 @@ pub fn repair_file(param : &Param)
                         stats.lock().unwrap().data_or_par_blocks_decoded += 1;
                     }
 
-                    repairer.mark_present()
+                    rs_codec.mark_present()
                 }
             };
 
@@ -321,7 +321,7 @@ pub fn repair_file(param : &Param)
                 reporter.pause();
                 reporter.resume();
                 let (repair_stats, repaired_blocks) =
-                    repairer.repair(seq_num, burst);
+                    rs_codec.repair_with_block_sync(seq_num, burst);
 
                 stats.lock().unwrap().blocks_decode_failed += repair_stats.missing_count as u64;
                 if repair_stats.successful {

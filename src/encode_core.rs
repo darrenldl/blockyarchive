@@ -318,9 +318,9 @@ pub fn encode_file(param : &Param)
         multihash::hash::Ctx::new(param.hash_type).unwrap();
 
     // setup Reed-Solomon things
-    let mut rs_codec_data = RSEncoder::new(param.version,
-                                           param.rs_data,
-                                           param.rs_parity);
+    let mut rs_codec = RSEncoder::new(param.version,
+                                      param.rs_data,
+                                      param.rs_parity);
 
     // setup main data buffer
     let mut data : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
@@ -378,7 +378,7 @@ pub fn encode_file(param : &Param)
         if read_res.len_read == 0 {
             if param.rs_enabled {
                 // check if the current batch of RS blocks are filled
-                if (block.get_seq_num() - SBX_FIRST_DATA_SEQ_NUM as u32)
+                if (block.get_seq_num() - SBX_FIRST_DATA_SEQ_NUM)
                     % (param.rs_data + param.rs_parity) as u32 != 0 {
                     // fill remaining slots with padding
                     loop {
@@ -390,7 +390,7 @@ pub fn encode_file(param : &Param)
 
                         data_blocks_written += 1;
 
-                        match rs_codec_data.encode(&padding) {
+                        match rs_codec.encode_no_block_sync(&padding) {
                             None                => {},
                             Some(parity_to_use) => {
                                 for p in parity_to_use.iter_mut() {
@@ -431,7 +431,7 @@ pub fn encode_file(param : &Param)
         // update Reed-Solomon data if needed
         if param.rs_enabled {
             // encode normally once
-            match rs_codec_data.encode(&data) {
+            match rs_codec.encode_no_block_sync(&data) {
                 None                => {},
                 Some(parity_to_use) => {
                     for p in parity_to_use.iter_mut() {
