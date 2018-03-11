@@ -282,7 +282,7 @@ fn real_main () -> i32 {
         cli_show::show(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("repair") {
-        return 0;
+        cli_repair::repair(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("check") {
         cli_check::check(matches)
