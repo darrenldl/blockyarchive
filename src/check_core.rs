@@ -131,6 +131,8 @@ pub fn check_file(param : &Param)
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
+    let blank : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
@@ -170,16 +172,21 @@ pub fn check_file(param : &Param)
                 }
             },
             Err(_) => {
-                reporter.pause();
+                // only report error if the buffer is not completely blank
+                if sbx_block::slice_buf(ref_block.get_version(), &blank)
+                    != sbx_block::slice_buf(ref_block.get_version(), &buffer)
+                {
+                    reporter.pause();
 
-                println!("Block failed check, version : {}, block size : {}, at byte {} (0x{:X})",
-                         ver_usize,
-                         block_size,
-                         block_pos,
-                         block_pos);
-                stats.lock().unwrap().blocks_decode_failed += 1;
+                    println!("Block failed check, version : {}, block size : {}, at byte {} (0x{:X})",
+                             ver_usize,
+                             block_size,
+                             block_pos,
+                             block_pos);
+                    stats.lock().unwrap().blocks_decode_failed += 1;
 
-                reporter.resume();
+                    reporter.resume();
+                }
             }
         }
     }
