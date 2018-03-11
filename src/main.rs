@@ -182,14 +182,14 @@ mod cli_sort;
 
 fn pr_verbosity_level_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("pr_verbosity_level")
-    .value_name("LEVEL")
-    .short("s")
-    .long("pv")
-    .takes_value(true)
-    .help("One of :
-    0 (show everything)
-    1 (only show progress stats when done)
-    2 (show nothing)
+        .value_name("LEVEL")
+        .short("s")
+        .long("pv")
+        .takes_value(true)
+        .help("Progress report verbosity level, one of :
+          0 (show nothing)
+          1 (only show progress stats when done)
+(default) 2 (show both progress bar and progress stats)
 This only affects progress text printing.")
 }
 

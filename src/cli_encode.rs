@@ -33,10 +33,10 @@ DIR/INFILE.sbx."))
              .long("hash")
              .takes_value(true)
              .help("Hash function to use, one of (case-insensitive) :
-    sha1
-    sha256 (default)
-    sha512
-    blake2b-512"))
+          sha1
+(default) sha256
+          sha512
+          blake2b-512"))
         .arg(Arg::with_name("no_meta")
              .long("no-meta")
              .help("Skip metadata block in the SBX container. Metadata block is
@@ -48,13 +48,13 @@ This means this option has no effect for version 11, 12, 13."))
              .long("sbx-version")
              .takes_value(true)
              .help("SBX container version, one of :
-    1         (bs=512  bytes)
-    2         (bs=128  bytes)
-    3         (bs=4096 bytes)
-    17 (0x11) (bs=512  bytes, Reed-Solomon enabled)
-    18 (0x12) (bs=128  bytes, Reed-Solomon enabled)
-    19 (0x13) (bs=4096 bytes, Reed-Solomon enabled)
-where bs=sbx block size."))
+(default) 1         (bs=512  bytes)
+          2         (bs=128  bytes)
+          3         (bs=4096 bytes)
+          17 (0x11) (bs=512  bytes, Reed-Solomon enabled)
+          18 (0x12) (bs=128  bytes, Reed-Solomon enabled)
+          19 (0x13) (bs=4096 bytes, Reed-Solomon enabled)
+where bs=SBX block size."))
         .arg(Arg::with_name("uid")
              .value_name("UID-HEX")
              .long("uid")
