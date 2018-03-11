@@ -183,7 +183,6 @@ mod cli_sort;
 fn pr_verbosity_level_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("pr_verbosity_level")
         .value_name("LEVEL")
-        .short("s")
         .long("pv")
         .takes_value(true)
         .help("Progress report verbosity level, one of :
