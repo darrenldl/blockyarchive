@@ -12,11 +12,18 @@ use std::fmt;
 
 mod repairer;
 pub use self::repairer::RSRepairer;
+pub use self::repairer::RSRepairStats;
 
 mod tests;
 
 use super::Error;
 use super::ErrorKind;
+
+#[must_use]
+pub enum RSCodecState {
+    Ready,
+    NotReady
+}
 
 #[derive(Clone)]
 pub enum RSErrorKind {

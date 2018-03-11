@@ -27,7 +27,7 @@ use super::sbx_specs::{ver_to_block_size,
                        ver_to_data_size,
                        ver_uses_rs,
                        SBX_LAST_SEQ_NUM,
-                       SBX_FIRST_DATS_SEQ_NUM,
+                       SBX_FIRST_DATA_SEQ_NUM,
                        ver_to_usize};
 
 use super::report_ref_block_info;
@@ -38,8 +38,8 @@ use super::time_utils;
 use super::block_utils;
 
 use rs_codec::RSRepairer;
-use rs_codec::CodecState;
-use rs_codec::RSStats;
+use rs_codec::RSCodecState;
+use rs_codec::RSRepairStats;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
@@ -131,7 +131,7 @@ impl Param {
 
 pub fn repair_file(param : &Param)
                    -> Result<Stats, Error> {
-    let (ref_block_pos, ref_block) =
+    let (ref_block_pos, mut ref_block) =
         match block_utils::get_ref_block(&param.in_file,
                                          false,
                                          param.silence_level)? {
@@ -209,8 +209,6 @@ pub fn repair_file(param : &Param)
                                                   "blocks",
                                                   param.silence_level));
 
-    let mut meta_written = false;
-
     let pred = {
         let version = ref_block.get_version();
         let uid     = ref_block.get_uid();
@@ -220,22 +218,25 @@ pub fn repair_file(param : &Param)
         }
     };
 
-    let repairer = RSRepairer::new(version,
-                                   &ref_block,
-                                   data_shards.unwrap_or(1),
-                                   parity_shards.unwrap_or(1));
+    let mut repairer = RSRepairer::new(version,
+                                       &ref_block,
+                                       data_shards.unwrap_or(1),
+                                       parity_shards.unwrap_or(1));
 
     reporter.start();
 
     // replace metadata blocks with reference block if broken
     {
+        let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
+            [0; SBX_LARGEST_BLOCK_SIZE];
+
         ref_block.sync_to_buffer(None, &mut buffer);
 
         for p in sbx_block::calc_rs_enabled_meta_all_write_pos_s(version,
-                                                                 parity_shards,
+                                                                 parity_shards.unwrap(),
                                                                  burst).iter()
         {
-            reader.seek(*p)?;
+            reader.seek(SeekFrom::Start(*p))?;
             reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
             match block.sync_from_buffer(&buffer, Some(&pred)) {
                 Ok(()) => {
@@ -277,15 +278,15 @@ pub fn repair_file(param : &Param)
 
         reader.seek(SeekFrom::Start(pos))?;
 
-        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
-                                                            &mut buffer))?;
+        let read_res = reader.read(repairer.get_block_buffer())?;
 
         let codec_state =
             if read_res.len_read < block_size {   // read an incomplete block
                 stats.lock().unwrap().blocks_decode_failed += 1;
 
                 repairer.mark_missing()
-            } else if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
+            } else if let Err(_) = block.sync_from_buffer(repairer.get_block_buffer(),
+                                                          Some(&pred)) {
                 stats.lock().unwrap().blocks_decode_failed += 1;
 
                 repairer.mark_missing()
@@ -304,11 +305,7 @@ pub fn repair_file(param : &Param)
                 let stats = repairer.repair(seq_num);
 
                 if stats.successful {
-                    let mut missing = 0;
-                    for p in stats.present.iter() {
-                        if !*p { missing += 1; }
-                    }
-                    if missing > 0 {
+                    if stats.missing_count > 0 {
                         print!("Successfully repaired blocks : ");
                         let mut first_num = true;
                         for i in 0..stats.present.len() {

@@ -21,16 +21,12 @@ pub struct RSRepairer {
     ref_block      : Block,
 }
 
-#[must_use]
-pub enum CodecState {
-    Ready,
-    NotReady
-}
-
-pub struct RSStats<'a> {
+pub struct RSRepairStats<'a> {
     pub successful    : bool,
     pub start_seq_num : u32,
-    pub present       : &'a SmallVec<[bool; 32]>
+    pub present       : &'a SmallVec<[bool; 32]>,
+    pub missing_count : usize,
+    pub present_count : usize,
 }
 
 macro_rules! add_index {
@@ -82,7 +78,7 @@ impl RSRepairer {
         sbx_block::slice_data_buf_mut(self.version, &mut self.buf[index])
     }
 
-    pub fn mark_present(&mut self) -> CodecState {
+    pub fn mark_present(&mut self) -> RSCodecState {
         let index = self.index;
 
         add_index!(1 => self);
@@ -90,13 +86,13 @@ impl RSRepairer {
         self.buf_present[index] = true;
 
         if index == self.rs_codec.total_shard_count() - 1 {
-            CodecState::Ready
+            RSCodecState::Ready
         } else {
-            CodecState::NotReady
+            RSCodecState::NotReady
         }
     }
 
-    pub fn mark_missing(&mut self) -> CodecState {
+    pub fn mark_missing(&mut self) -> RSCodecState {
         let index = self.index;
 
         add_index!(1 => self);
@@ -104,9 +100,9 @@ impl RSRepairer {
         self.buf_present[index] = false;
 
         if index == self.rs_codec.total_shard_count() - 1 {
-            CodecState::Ready
+            RSCodecState::Ready
         } else {
-            CodecState::NotReady
+            RSCodecState::NotReady
         }
     }
 
@@ -123,23 +119,26 @@ impl RSRepairer {
     }
 
     pub fn repair(&mut self,
-                  seq_num : u32) -> RSStats {
+                  seq_num : u32) -> RSRepairStats {
         assert_eq!(0, self.index);
 
         let rs_codec      = &self.rs_codec;
 
-        let mut buf : SmallVec<[&mut [u8]; 32]> =
-            SmallVec::with_capacity(rs_codec.total_shard_count());
-        for s in self.buf.iter_mut() {
-            buf.push(sbx_block::slice_data_buf_mut(self.version, s));
-        }
+        let successful;
+        {
+            let mut buf : SmallVec<[&mut [u8]; 32]> =
+                SmallVec::with_capacity(rs_codec.total_shard_count());
+            for s in self.buf.iter_mut() {
+                buf.push(sbx_block::slice_data_buf_mut(self.version, s));
+            }
 
-        // reconstruct data portion
-        let successful =
-            match rs_codec.reconstruct(&mut buf, &self.buf_present) {
-                Ok(()) => true,
-                Err(_) => false
-            };
+            // reconstruct data portion
+            successful =
+                match rs_codec.reconstruct(&mut buf, &self.buf_present) {
+                    Ok(()) => true,
+                    Err(_) => false
+                };
+        }
 
         let block_set_size = self.rs_codec.total_shard_count() as u32;
 
@@ -153,18 +152,21 @@ impl RSRepairer {
 
         // reconstruct header if successful
         if successful {
-            for i in 0..block_set_size {
+            for i in 0..block_set_size as usize {
                 if !self.buf_present[i] {
-                    self.ref_block.set_seq_num(first_seq_num_in_cur_set + i);
-                    self.ref_block.sync_to_buffer(&mut self.buf[i]);
+                    self.ref_block.set_seq_num(first_seq_num_in_cur_set + i as u32);
+                    self.ref_block.sync_to_buffer(None,
+                                                  &mut self.buf[i]);
                 }
             }
         }
 
-        RSStats {
+        RSRepairStats {
             successful,
             start_seq_num : first_seq_num_in_cur_set,
             present       : &self.buf_present,
+            missing_count : self.missing_count(),
+            present_count : self.present_count(),
         }
     }
 }

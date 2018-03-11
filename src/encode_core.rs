@@ -269,7 +269,7 @@ fn block_sync_and_write(block        : &mut Block,
                         buffer       : &mut [u8],
                         writer       : &mut FileWriter)
                         -> Result<(), Error> {
-    block.sync_to_buffer(None, buffer).unwrap();
+    block.sync_to_buffer(None, buffer);
 
     writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
 

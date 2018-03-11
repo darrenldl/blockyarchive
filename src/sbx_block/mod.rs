@@ -222,7 +222,7 @@ pub fn calc_rs_enabled_meta_dup_write_indices(parity_shards        : usize,
     res
 }
 
-pub fn calc_rs_enabled_meta_dup_write_all_s(version              : Version,
+pub fn calc_rs_enabled_meta_all_write_pos_s(version              : Version,
                                             parity_shards        : usize,
                                             burst_err_resistance : usize)
                                             -> SmallVec<[u64; 32]> {
