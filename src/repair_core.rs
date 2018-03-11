@@ -113,16 +113,19 @@ impl fmt::Display for Stats {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {
     in_file            : String,
+    verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
     burst              : Option<usize>,
 }
 
 impl Param {
     pub fn new(in_file            : &str,
+               verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel,
                burst              : Option<usize>) -> Param {
         Param {
             in_file : String::from(in_file),
+            verbose,
             pr_verbosity_level,
             burst,
         }
@@ -138,6 +141,8 @@ pub fn repair_file(param : &Param)
             None => { return Err(Error::with_message("Failed to find reference block")); },
             Some(x) => x,
         };
+
+    report_ref_block_info(ref_block_pos, &ref_block);
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
@@ -155,8 +160,6 @@ pub fn repair_file(param : &Param)
         return Ok(stats);
     }
 
-    println!();
-
     let file_size = ref_block.get_FSZ().unwrap();
 
     let burst =
@@ -173,8 +176,11 @@ pub fn repair_file(param : &Param)
             Some(x) => x
         };
 
-    println!("Using burst error resistance level {} for output container",
-             burst);
+    if param.verbose {
+        println!("Using burst error resistance level {} for output container",
+                 burst);
+        println!();
+    }
 
     let mut data_shards = None;
     let mut parity_shards = None;
@@ -196,8 +202,6 @@ pub fn repair_file(param : &Param)
             Some(x) => Some(x as usize),
         };
     }
-
-    report_ref_block_info(ref_block_pos, &ref_block);
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : true,
