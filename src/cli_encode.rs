@@ -99,10 +99,9 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
             (1, 1) // use dummy values
         };
 
-    let burst = get_burst_for_encode!(matches);
+    let burst = get_burst_or_zero!(matches);
 
-    let in_file  = matches.value_of("in_file").unwrap();
-    exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
+    let in_file  = get_in_file!(matches);
     let out_file = match matches.value_of("out_file") {
         None    => format!("{}.sbx", in_file),
         Some(x) => {

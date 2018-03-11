@@ -29,7 +29,7 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
-    let burst = get_burst_for_repair!(matches);
+    let burst = get_burst_opt!(matches);
 
     let param = Param::new(in_file,
                            matches.is_present("verbose"),

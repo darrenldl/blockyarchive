@@ -34,9 +34,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
 }
 
 pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let in_file = matches.value_of("in_file").unwrap();
-    exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
-
+    let in_file = get_in_file!(matches);
     let out_file = {
         let out_file = matches.value_of("out_file").unwrap();
 
@@ -47,18 +45,7 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
         }
     };
 
-    let burst =
-        match matches.value_of("burst") {
-            None    => None,
-            Some(x) => {
-                match usize::from_str(&x) {
-                    Ok(x)  => Some(x),
-                    Err(_) => {
-                        exit_with_msg!(usr => "Failed to parse burst error resistance level");
-                    }
-                }
-            }
-        };
+    let burst = get_burst_opt!(matches);
 
     exit_if_file!(exists &out_file
                   => matches.is_present("force")

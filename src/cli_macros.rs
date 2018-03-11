@@ -181,7 +181,7 @@ macro_rules! check_data_parity_shards {
     }}
 }
 
-macro_rules! get_burst_for_encode {
+macro_rules! get_burst_or_zero {
     (
         $matches:expr
     ) => {{
@@ -199,7 +199,7 @@ macro_rules! get_burst_for_encode {
     }}
 }
 
-macro_rules! get_burst_for_repair {
+macro_rules! get_burst_opt {
     (
         $matches:expr
     ) => {{
