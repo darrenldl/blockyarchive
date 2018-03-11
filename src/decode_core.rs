@@ -68,23 +68,23 @@ impl fmt::Display for Stats {
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
         if rs_enabled {
-            writeln!(f, "SBX version                                             : {} (0x{:X})",
+            writeln!(f, "SBX version                            : {} (0x{:X})",
                      ver_to_usize(self.version),
                      ver_to_usize(self.version))?;
-            writeln!(f, "Block size used in decoding                             : {}", block_size)?;
-            writeln!(f, "Number of blocks processed                              : {}", self.units_so_far())?;
-            writeln!(f, "Number of blocks successfully decoded (metadata)        : {}", self.meta_blocks_decoded)?;
-            writeln!(f, "Number of blocks successfully decoded (data only)       : {}", self.data_blocks_decoded)?;
-            writeln!(f, "Number of blocks successfully decoded (data parity)     : {}", self.data_par_blocks_decoded)?;
-            writeln!(f, "Number of blocks failed to decode                       : {}", self.blocks_decode_failed)?;
-            writeln!(f, "Time elapsed                                            : {:02}:{:02}:{:02}", hour, minute, second)?;
-            writeln!(f, "Recorded hash                                           : {}", match *recorded_hash {
+            writeln!(f, "Block size used in decoding            : {}", block_size)?;
+            writeln!(f, "Number of blocks processed             : {}", self.units_so_far())?;
+            writeln!(f, "Number of blocks decoded (metadata)    : {}", self.meta_blocks_decoded)?;
+            writeln!(f, "Number of blocks decoded (data only)   : {}", self.data_blocks_decoded)?;
+            writeln!(f, "Number of blocks decoded (data parity) : {}", self.data_par_blocks_decoded)?;
+            writeln!(f, "Number of blocks failed to decode      : {}", self.blocks_decode_failed)?;
+            writeln!(f, "Time elapsed                           : {:02}:{:02}:{:02}", hour, minute, second)?;
+            writeln!(f, "Recorded hash                          : {}", match *recorded_hash {
                 None        => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
                                        hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            writeln!(f, "Hash of output file                                     : {}", match (recorded_hash, computed_hash) {
+            writeln!(f, "Hash of output file                    : {}", match (recorded_hash, computed_hash) {
                 (&None,    &None)        => "N/A".to_string(),
                 (&Some(_), &None)        => "N/A - recorded hash type is not supported by rsbx".to_string(),
                 (_,        &Some(ref h)) => format!("{} - {}",
@@ -92,20 +92,20 @@ impl fmt::Display for Stats {
                                                     misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
         } else {
-            writeln!(f, "SBX version                                      : {}", ver_to_usize(self.version))?;
-            writeln!(f, "Block size used in decoding                      : {}", block_size)?;
-            writeln!(f, "Number of blocks processed                       : {}", self.units_so_far())?;
-            writeln!(f, "Number of blocks successfully decoded (metadata) : {}", self.meta_blocks_decoded)?;
-            writeln!(f, "Number of blocks successfully decoded (data)     : {}", self.data_blocks_decoded)?;
-            writeln!(f, "Number of blocks failed to decode                : {}", self.blocks_decode_failed)?;
-            writeln!(f, "Time elapsed                                     : {:02}:{:02}:{:02}", hour, minute, second)?;
-            writeln!(f, "Recorded hash                                    : {}", match *recorded_hash {
+            writeln!(f, "SBX version                         : {}", ver_to_usize(self.version))?;
+            writeln!(f, "Block size used in decoding         : {}", block_size)?;
+            writeln!(f, "Number of blocks processed          : {}", self.units_so_far())?;
+            writeln!(f, "Number of blocks decoded (metadata) : {}", self.meta_blocks_decoded)?;
+            writeln!(f, "Number of blocks decoded (data)     : {}", self.data_blocks_decoded)?;
+            writeln!(f, "Number of blocks failed to decode   : {}", self.blocks_decode_failed)?;
+            writeln!(f, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)?;
+            writeln!(f, "Recorded hash                       : {}", match *recorded_hash {
                 None        => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
                                        hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            writeln!(f, "Hash of output file                              : {}", match (recorded_hash, computed_hash) {
+            writeln!(f, "Hash of output file                 : {}", match (recorded_hash, computed_hash) {
                 (&None,    &None)        => "N/A".to_string(),
                 (&Some(_), &None)        => "N/A - recorded hash type is not supported by rsbx".to_string(),
                 (_,        &Some(ref h)) => format!("{} - {}",
