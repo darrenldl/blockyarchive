@@ -1,6 +1,8 @@
 pub const SBX_LARGEST_BLOCK_SIZE   : usize = 4096;
 
-pub const SBX_FIRST_DATA_SEQ_NUM   : usize = 1;
+pub const SBX_FIRST_DATA_SEQ_NUM   : u32   = 1;
+
+pub const SBX_LAST_SEQ_NUM         : u32   = u32::max_value();
 
 pub const SBX_METADATA_BLOCK_COUNT : usize = 1;
 
