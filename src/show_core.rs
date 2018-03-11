@@ -132,7 +132,7 @@ pub fn show_file(param : &Param)
                 Ok(Some(x)) => println!("Best guess for burst error resistance level : {}", x),
             }
         } else {
-            println!("Reference block version does not use RS");
+            println!("Reference block version does not use Reed-Solomon erasure code");
         }
 
         println!();
