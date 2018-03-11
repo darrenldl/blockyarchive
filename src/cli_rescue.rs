@@ -70,21 +70,8 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
         }
     };
 
-    let from_pos = match matches.value_of("from_pos") {
-        None    => None,
-        Some(x) => match u64::from_str(x) {
-            Ok(x)  => Some(x),
-            Err(_) => exit_with_msg!(usr => "Invalid from position")
-        }
-    };
-
-    let to_pos = match matches.value_of("to_pos") {
-        None    => None,
-        Some(x) => match u64::from_str(x) {
-            Ok(x)  => Some(x),
-            Err(_) => exit_with_msg!(usr => "Invalid to position")
-        }
-    };
+    let from_pos = get_from_pos!(matches);
+    let to_pos   = get_to_pos!(matches);
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches);
 

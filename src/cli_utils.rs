@@ -55,6 +55,34 @@ macro_rules! get_pr_verbosity_level {
     }}
 }
 
+macro_rules! get_from_pos {
+    (
+        $matches:expr
+    ) => {{
+        match $matches.value_of("from_pos") {
+            None    => None,
+            Some(x) => match u64::from_str(x) {
+                Ok(x)  => Some(x),
+                Err(_) => exit_with_msg!(usr => "Invalid from position")
+            }
+        }
+    }}
+}
+
+macro_rules! get_to_pos {
+    (
+        $matches:expr
+    ) => {{
+        match $matches.value_of("to_pos") {
+            None    => None,
+            Some(x) => match u64::from_str(x) {
+                Ok(x)  => Some(x),
+                Err(_) => exit_with_msg!(usr => "Invalid to position")
+            }
+        }
+    }}
+}
+
 macro_rules! parse_uid {
     (
         $buf:expr, $uid:expr
