@@ -85,80 +85,22 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
     }
 
     // compute version
-    let version : Version =
-        match matches.value_of("sbx_version") {
-            None    => Version::V1,
-            Some(x) => match string_to_ver(&x) {
-                Ok(v)   => v,
-                Err(()) => {
-                    exit_with_msg!(usr => "Invalid SBX version");
-                }
-            }
-        };
-
-    let ver_usize = ver_to_usize(version);
+    let version   = get_version!(matches);
 
     let (rs_data, rs_parity) =
         if ver_uses_rs(version) {
-            use reed_solomon_erasure::ReedSolomon;
-            use reed_solomon_erasure::Error;
             // deal with RS related options
-            let data_shards = match matches.value_of("rs_data") {
-                None    => {
-                    exit_with_msg!(usr => "Reed-Solomon erasure code data shard count must be specified for version {}", ver_usize);
-                },
-                Some(x) => {
-                    match usize::from_str(&x) {
-                        Ok(x)  => x,
-                        Err(_) => {
-                            exit_with_msg!(usr => "Failed to parse Reed-Solomon erasure code data shard count");
-                        }
-                    }
-                }
-            };
-            let parity_shards = match matches.value_of("rs_parity") {
-                None    => {
-                    exit_with_msg!(usr => "Reed-Solomon erasure code parity shard count must be specified for version {}", ver_usize);
-                },
-                Some(x) => {
-                    match usize::from_str(&x) {
-                        Ok(x)  => x,
-                        Err(_) => {
-                            exit_with_msg!(usr => "Failed to parse Reed-Solomon erasure code parity shard count");
-                        }
-                    }
-                }
-            };
-            match ReedSolomon::new(data_shards, parity_shards) {
-                Ok(_)                          => {},
-                Err(Error::TooFewDataShards)   => {
-                    exit_with_msg!(usr => "Too few data shards for Reed-Solomon erasure code");
-                },
-                Err(Error::TooFewParityShards) => {
-                    exit_with_msg!(usr => "Too few parity shards for Reed-Solomon erasure code");
-                },
-                Err(Error::TooManyShards)      => {
-                    exit_with_msg!(usr => "Too many shards for Reed-Solomon erasure code");
-                },
-                Err(_)                         => { panic!(); }
-            }
+            let data_shards   = get_data_shards!(matches, version);
+            let parity_shards = get_parity_shards!(matches, version);
+
+            check_data_parity_shards!(data_shards, parity_shards);
+
             (data_shards, parity_shards)
         } else {
             (1, 1) // use dummy values
         };
 
-    let burst =
-        match matches.value_of("burst") {
-            None    => 0,
-            Some(x) => {
-                match usize::from_str(&x) {
-                    Ok(x)  => x,
-                    Err(_) => {
-                        exit_with_msg!(usr => "Failed to parse burst error resistance level");
-                    }
-                }
-            }
-        };
+    let burst = get_burst!(matches);
 
     let in_file  = matches.value_of("in_file").unwrap();
     exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);

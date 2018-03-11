@@ -90,6 +90,8 @@ use file_reader::ReadResult;
 mod file_writer;
 
 #[macro_use]
+mod cli_macros;
+
 mod cli_utils;
 
 mod cli_encode;

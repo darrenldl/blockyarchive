@@ -35,8 +35,7 @@ OUT is provided and is not a directory, then it is used directly."))
 pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
     let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
-    let in_file  = matches.value_of("in_file").unwrap();
-    exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
+    let in_file  = get_in_file!(matches);
     let out_file = matches.value_of("out_file");
 
     let param = Param::new(matches.is_present("no_meta"),

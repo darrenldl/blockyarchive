@@ -24,8 +24,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
 pub fn check<'a>(matches : &ArgMatches<'a>) -> i32 {
     let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
-    let in_file  = matches.value_of("in_file").unwrap();
-    exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
+    let in_file  = get_in_file!(matches);
     let param = Param::new(matches.is_present("no_meta"),
                            in_file,
                            pr_verbosity_level);

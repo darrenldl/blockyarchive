@@ -28,8 +28,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
 }
 
 pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let in_file = matches.value_of("in_file").unwrap();
-    exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
+    let in_file = get_in_file!(matches);
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
