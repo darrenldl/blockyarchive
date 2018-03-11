@@ -81,6 +81,7 @@ impl RSRepairer {
     pub fn mark_present(&mut self) -> RSCodecState {
         let index = self.index;
 
+        println!("index : {}, total : {}", index, self.rs_codec.total_shard_count());
         add_index!(1 => self);
 
         self.buf_present[index] = true;
@@ -94,6 +95,8 @@ impl RSRepairer {
 
     pub fn mark_missing(&mut self) -> RSCodecState {
         let index = self.index;
+
+        println!("index : {}, total : {}", index, self.rs_codec.total_shard_count());
 
         add_index!(1 => self);
 
@@ -119,8 +122,16 @@ impl RSRepairer {
     }
 
     pub fn repair(&mut self,
-                  seq_num : u32) -> RSRepairStats {
+                  seq_num : u32,
+                  burst   : usize)
+                  ->
+        (RSRepairStats,
+         SmallVec<[(u64, &[u8]); 32]>)
+    {
         assert_eq!(0, self.index);
+
+        let mut repaired_blocks =
+            SmallVec::with_capacity(self.rs_codec.parity_shard_count());
 
         let rs_codec      = &self.rs_codec;
 
@@ -159,14 +170,26 @@ impl RSRepairer {
                                                   &mut self.buf[i]).unwrap();
                 }
             }
+            for i in 0..block_set_size as usize {
+                if !self.buf_present[i] {
+                    println!("{} is missing", i);
+                    let pos = sbx_block::calc_rs_enabled_data_write_pos(first_seq_num_in_cur_set + i as u32,
+                                                                        self.version,
+                                                                        self.rs_codec.data_shard_count(),
+                                                                        self.rs_codec.parity_shard_count(),
+                                                                        burst);
+                    repaired_blocks.push((pos, sbx_block::slice_buf(self.version,
+                                                                    &self.buf[i])));
+                }
+            }
         }
 
-        RSRepairStats {
+        (RSRepairStats {
             successful,
             start_seq_num : first_seq_num_in_cur_set,
             present       : &self.buf_present,
             missing_count : self.missing_count(),
-            present_count : self.present_count(),
-        }
+            present_count : self.present_count(), },
+         repaired_blocks)
     }
 }

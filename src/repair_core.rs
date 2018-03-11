@@ -206,7 +206,7 @@ pub fn repair_file(param : &Param)
     let mut block = Block::dummy();
 
     let reporter = Arc::new(ProgressReporter::new(&stats,
-                                                  "SBX block sorting progress",
+                                                  "SBX block repairing progress",
                                                   "blocks",
                                                   param.silence_level));
 
@@ -244,6 +244,8 @@ pub fn repair_file(param : &Param)
                     stats.lock().unwrap().meta_blocks_decoded += 1;
                 },
                 Err(_) => {
+                    stats.lock().unwrap().blocks_decode_failed += 1;
+
                     reader.seek(SeekFrom::Start(*p))?;
 
                     ref_block.sync_to_buffer(None, &mut buffer).unwrap();
@@ -257,7 +259,10 @@ pub fn repair_file(param : &Param)
 
     let total_block_count =
         match file_size {
-            Some(x) => x / block_size as u64,
+            Some(x) => file_utils::calc_rs_enabled_total_block_count_from_orig_file_size(version,
+                                                                                         data_shards.unwrap(),
+                                                                                         parity_shards.unwrap(),
+                                                                                         x),
             None    => {
                 reporter.pause();
                 println!();
@@ -306,36 +311,48 @@ pub fn repair_file(param : &Param)
 
         match codec_state {
             RSCodecState::Ready => {
-                let stats = repairer.repair(seq_num);
+                reporter.pause();
+                println!("Ready");
+                reporter.resume();
+                let (repair_stats, repaired_blocks) =
+                    repairer.repair(seq_num, burst);
 
-                if stats.successful {
-                    if stats.missing_count > 0 {
+                stats.lock().unwrap().blocks_decode_failed += repair_stats.missing_count as u64;
+                if repair_stats.successful {
+                    stats.lock().unwrap().data_blocks_repaired += repair_stats.missing_count as u64;
+                    if repair_stats.missing_count > 0 {
                         print!("Successfully repaired blocks : ");
                         let mut first_num = true;
-                        for i in 0..stats.present.len() {
-                            if !stats.present[i] {
+                        for i in 0..repair_stats.present.len() {
+                            if !repair_stats.present[i] {
                                 print!("{}{}",
                                        if first_num { "" } else { ", " },
-                                       stats.start_seq_num + i as u32);
+                                       repair_stats.start_seq_num + i as u32);
                                 first_num = false;
                             }
                         }
                     }
                 } else {
+                    stats.lock().unwrap().data_blocks_repair_failed += repair_stats.missing_count as u64;
                     reporter.pause();
                     print!("Failed to repair blocks : ");
                     let mut first_num = true;
-                    for i in 0..stats.present.len() {
-                        if !stats.present[i] {
+                    for i in 0..repair_stats.present.len() {
+                        if !repair_stats.present[i] {
                             if first_num {
                                 print!("{}{}",
                                        if first_num { "" } else { ", " },
-                                       stats.start_seq_num + i as u32);
+                                       repair_stats.start_seq_num + i as u32);
                                 first_num = false;
                             }
                         }
                     }
                     reporter.resume();
+                }
+
+                for &(pos, block_buf) in repaired_blocks.iter() {
+                    reader.seek(SeekFrom::Start(pos))?;
+                    reader.write(&block_buf)?;
                 }
             },
             RSCodecState::NotReady => {},
