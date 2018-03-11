@@ -156,7 +156,7 @@ impl RSRepairer {
                 if !self.buf_present[i] {
                     self.ref_block.set_seq_num(first_seq_num_in_cur_set + i as u32);
                     self.ref_block.sync_to_buffer(None,
-                                                  &mut self.buf[i]);
+                                                  &mut self.buf[i]).unwrap();
                 }
             }
         }

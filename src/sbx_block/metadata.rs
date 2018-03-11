@@ -89,7 +89,7 @@ fn single_to_bytes(meta   : &Metadata,
     let info_size  = single_info_size(meta);
 
     if buffer.len() < total_size {
-        return Err(Error::TooMuchMetaData);
+        return Err(Error::TooMuchMetadata);
     }
 
     use self::Metadata::*;

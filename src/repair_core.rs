@@ -230,7 +230,7 @@ pub fn repair_file(param : &Param)
         let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
             [0; SBX_LARGEST_BLOCK_SIZE];
 
-        ref_block.sync_to_buffer(None, &mut buffer);
+        ref_block.sync_to_buffer(None, &mut buffer).unwrap();
 
         for p in sbx_block::calc_rs_enabled_meta_all_write_pos_s(version,
                                                                  parity_shards.unwrap(),
@@ -301,7 +301,7 @@ pub fn repair_file(param : &Param)
             };
 
         match codec_state {
-            Ready => {
+            RSCodecState::Ready => {
                 let stats = repairer.repair(seq_num);
 
                 if stats.successful {
@@ -334,7 +334,7 @@ pub fn repair_file(param : &Param)
                     reporter.resume();
                 }
             },
-            NotReady => {},
+            RSCodecState::NotReady => {},
         }
     }
 

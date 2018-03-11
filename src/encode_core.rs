@@ -269,7 +269,10 @@ fn block_sync_and_write(block        : &mut Block,
                         buffer       : &mut [u8],
                         writer       : &mut FileWriter)
                         -> Result<(), Error> {
-    block.sync_to_buffer(None, buffer);
+    match block.sync_to_buffer(None, buffer) {
+        Ok(()) => {},
+        Err(_) => { return Err(Error::with_message("Too much metadata")); }
+    }
 
     writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
 

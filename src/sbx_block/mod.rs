@@ -46,7 +46,7 @@ pub enum Error {
     InconsistentHeaderBlockType,
     InsufficientBufferSize,
     IncorrectBufferSize,
-    TooMuchMetaData,
+    TooMuchMetadata,
     InvalidCRC,
     SeqNumOverflow,
     ParseError,
