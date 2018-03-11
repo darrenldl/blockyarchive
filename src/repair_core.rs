@@ -245,6 +245,8 @@ pub fn repair_file(param : &Param)
                 },
                 Err(_) => {
                     reader.seek(SeekFrom::Start(*p))?;
+
+                    ref_block.sync_to_buffer(None, &mut buffer).unwrap();
                     reader.write(sbx_block::slice_buf(version, &buffer))?;
 
                     stats.lock().unwrap().meta_blocks_repaired += 1;
