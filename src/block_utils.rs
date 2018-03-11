@@ -271,10 +271,18 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
         }
     }
 
-    // if the best guess is completely rubbish, just return None
-    if mismatches_for_level[best_guess] == SBX_MAX_BURST_ERR_RESISTANCE {
-        return Ok(None);
+    // if the best guess has same number of mismatches as other guesses,
+    // then just return None
+    let mut same_as_best_guess = 0;
+    for level in 0..mismatches_for_level.len() {
+        if mismatches_for_level[level] == mismatches_for_level[best_guess] {
+            same_as_best_guess += 1;
+        }
     }
 
-    Ok(Some(best_guess))
+    if same_as_best_guess == mismatches_for_level.len() {
+        Ok(None)
+    } else {
+        Ok(Some(best_guess))
+    }
 }
