@@ -172,11 +172,11 @@ pub fn check_file(param : &Param)
             Err(_) => {
                 reporter.pause();
 
-                println!("Block at byte {} (0x{:X}) failed check, version : {}, block size : {}",
-                         block_pos,
-                         block_pos,
+                println!("Block failed check, version : {}, block size : {}, at byte {} (0x{:X})",
                          ver_usize,
-                         block_size);
+                         block_size,
+                         block_pos,
+                         block_pos);
                 stats.lock().unwrap().blocks_decode_failed += 1;
 
                 reporter.resume();
