@@ -130,6 +130,9 @@ pub fn sort_file(param : &Param)
             Some(x) => x,
         };
 
+    let metadata = file_utils::get_file_metadata(&param.in_file)?;
+    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
+
     println!();
 
     let version   = ref_block.get_version();
@@ -137,6 +140,13 @@ pub fn sort_file(param : &Param)
     let block_size = ver_to_block_size(version) as u64;
 
     let rs_enabled = ver_uses_rs(version);
+
+    if !rs_enabled {
+        println!("Version {} does not use Reed-Solomon erasure code, exiting now", ver_usize);
+        println!();
+        let stats = stats.lock().unwrap().clone();
+        return Ok(stats);
+    }
 
     let burst =
         match param.burst {
@@ -177,9 +187,6 @@ pub fn sort_file(param : &Param)
     }
 
     report_ref_block_info(ref_block_pos, &ref_block);
-
-    let metadata = file_utils::get_file_metadata(&param.in_file)?;
-    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 

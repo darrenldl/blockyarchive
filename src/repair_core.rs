@@ -150,6 +150,7 @@ pub fn repair_file(param : &Param)
 
     if !rs_enabled {
         println!("Version {} does not use Reed-Solomon erasure code, exiting now", ver_usize);
+        println!();
         let stats = stats.lock().unwrap().clone();
         return Ok(stats);
     }
