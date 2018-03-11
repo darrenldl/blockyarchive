@@ -238,8 +238,16 @@ fn filter_invalid_metadata(input : Vec<UncheckedMetadata>) -> Vec<Metadata> {
                 FDT(x) => Some(Metadata::FDT(x)),
                 SDT(x) => Some(Metadata::SDT(x)),
                 HSH(h) => Some(Metadata::HSH(h)),
-                RSD(d) => Some(Metadata::RSD(d)),
-                RSP(p) => Some(Metadata::RSP(p)),
+                RSD(d) => if 1 <= d {
+                    Some(Metadata::RSD(d))
+                } else {
+                    None
+                },
+                RSP(p) => if 1 <= p {
+                    Some(Metadata::RSP(p))
+                } else {
+                    None
+                }
             };
 
         match possibly_push {
