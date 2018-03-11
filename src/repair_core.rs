@@ -244,6 +244,7 @@ pub fn repair_file(param : &Param)
                     stats.lock().unwrap().meta_blocks_decoded += 1;
                 },
                 Err(_) => {
+                    reader.seek(SeekFrom::Start(*p))?;
                     reader.write(sbx_block::slice_buf(version, &buffer))?;
 
                     stats.lock().unwrap().meta_blocks_repaired += 1;
