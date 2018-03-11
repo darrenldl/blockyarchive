@@ -48,13 +48,13 @@ This means this option has no effect for version 11, 12, 13."))
              .long("sbx-version")
              .takes_value(true)
              .help("SBX container version, one of :
-(default) 1         (bs=512  bytes)
-          2         (bs=128  bytes)
-          3         (bs=4096 bytes)
-          17 (0x11) (bs=512  bytes, Reed-Solomon enabled)
-          18 (0x12) (bs=128  bytes, Reed-Solomon enabled)
-          19 (0x13) (bs=4096 bytes, Reed-Solomon enabled)
-where bs=SBX block size."))
+                    | SBX block size | Reed-Solomon | Burst error resistance |
+(default) 1         |      512 bytes |  not enabled |          not supported |
+          2         |      128 bytes |  not enabled |          not supported |
+          3         |     4096 bytes |  not enabled |          not supported |
+          17 (0x11) |      512 bytes |      enabled |              supported |
+          18 (0x12) |      128 bytes |      enabled |              supported |
+          19 (0x13) |     4096 bytes |      enabled |              supported |"))
         .arg(Arg::with_name("uid")
              .value_name("UID-HEX")
              .long("uid")
