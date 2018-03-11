@@ -43,16 +43,16 @@ use rs_codec::RSRepairStats;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
-    version                        : Version,
-    pub meta_blocks_decoded        : u64,
-    pub data_or_par_blocks_decoded : u64,
-    pub blocks_decode_failed       : u64,
-    pub meta_blocks_repaired       : u64,
-    pub data_blocks_repaired       : u64,
-    pub data_blocks_repair_failed  : u64,
-    total_blocks                   : u64,
-    start_time                     : f64,
-    end_time                       : f64,
+    version                              : Version,
+    pub meta_blocks_decoded              : u64,
+    pub data_or_par_blocks_decoded       : u64,
+    pub blocks_decode_failed             : u64,
+    pub meta_blocks_repaired             : u64,
+    pub data_or_par_blocks_repaired      : u64,
+    pub data_or_par_blocks_repair_failed : u64,
+    total_blocks                         : u64,
+    start_time                           : f64,
+    end_time                             : f64,
 }
 
 impl Stats {
@@ -62,16 +62,16 @@ impl Stats {
             file_utils::calc_total_block_count(ref_block.get_version(),
                                                file_metadata);
         Stats {
-            version                    : ref_block.get_version(),
-            blocks_decode_failed       : 0,
-            meta_blocks_decoded        : 0,
-            data_or_par_blocks_decoded : 0,
-            meta_blocks_repaired       : 0,
-            data_blocks_repaired       : 0,
-            data_blocks_repair_failed  : 0,
+            version                          : ref_block.get_version(),
+            blocks_decode_failed             : 0,
+            meta_blocks_decoded              : 0,
+            data_or_par_blocks_decoded       : 0,
+            meta_blocks_repaired             : 0,
+            data_or_par_blocks_repaired      : 0,
+            data_or_par_blocks_repair_failed : 0,
             total_blocks,
-            start_time                 : 0.,
-            end_time                   : 0.,
+            start_time                       : 0.,
+            end_time                         : 0.,
         }
     }
 }
@@ -96,15 +96,16 @@ impl fmt::Display for Stats {
         let time_elapsed           = (self.end_time - self.start_time) as i64;
         let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
 
-        writeln!(f, "SBX version                           : {}", ver_to_usize(self.version))?;
-        writeln!(f, "Block size used in checking           : {}", block_size)?;
-        writeln!(f, "Number of blocks processed            : {}", self.units_so_far())?;
-        writeln!(f, "Number of blocks processed (metadata) : {}", self.meta_blocks_decoded)?;
-        writeln!(f, "Number of blocks processed (data)     : {}", self.data_or_par_blocks_decoded)?;
-        writeln!(f, "Number of blocks failed to process    : {}", self.blocks_decode_failed)?;
-        writeln!(f, "Number of blocks repaired             : {}", self.blocks_decode_failed)?;
-        writeln!(f, "Number of blocks failed to process    : {}", self.blocks_decode_failed)?;
-        writeln!(f, "Time elapsed                          : {:02}:{:02}:{:02}", hour, minute, second)?;
+        writeln!(f, "SBX version                              : {}", ver_to_usize(self.version))?;
+        writeln!(f, "Block size used in checking              : {}", block_size)?;
+        writeln!(f, "Number of blocks processed               : {}", self.units_so_far())?;
+        writeln!(f, "Number of blocks processed (metadata)    : {}", self.meta_blocks_decoded)?;
+        writeln!(f, "Number of blocks processed (data)        : {}", self.data_or_par_blocks_decoded)?;
+        writeln!(f, "Number of blocks failed to process       : {}", self.blocks_decode_failed)?;
+        writeln!(f, "Number of blocks repaired (metadata)     : {}", self.meta_blocks_repaired)?;
+        writeln!(f, "Number of blocks repaired (data)         : {}", self.data_or_par_blocks_repaired)?;
+        writeln!(f, "Number of blocks failed to repair (data) : {}", self.data_or_par_blocks_repair_failed)?;
+        writeln!(f, "Time elapsed                             : {:02}:{:02}:{:02}", hour, minute, second)?;
 
         Ok(())
     }
@@ -324,7 +325,7 @@ pub fn repair_file(param : &Param)
 
                 stats.lock().unwrap().blocks_decode_failed += repair_stats.missing_count as u64;
                 if repair_stats.successful {
-                    stats.lock().unwrap().data_blocks_repaired += repair_stats.missing_count as u64;
+                    stats.lock().unwrap().data_or_par_blocks_repaired += repair_stats.missing_count as u64;
                     if repair_stats.missing_count > 0 {
                         reporter.pause();
                         print!("Repaired blocks : ");
@@ -341,7 +342,7 @@ pub fn repair_file(param : &Param)
                         reporter.resume();
                     }
                 } else {
-                    stats.lock().unwrap().data_blocks_repair_failed += repair_stats.missing_count as u64;
+                    stats.lock().unwrap().data_or_par_blocks_repair_failed += repair_stats.missing_count as u64;
                     reporter.pause();
                     print!("Failed to repair blocks : ");
                     let mut first_num = true;
