@@ -36,9 +36,9 @@ Modularity and ease of maintenance will be of high priority during development a
   - [ ] error recovery enabled SBX versions(17, 18, 19)
     - [ ] verifying mode
     - [ ] repairing code with burst error resistant pattern awareness
-- [ ] sorter
-  - [ ] basic sequential sorting for base SBX versions(1, 2, 3)
-  - [ ] burst error resistance aware sorting for versions(17, 18, 19)
+- [x] sorter
+  - [x] basic sequential sorting for base SBX versions(1, 2, 3)
+  - [x] burst error resistance aware sorting for versions(17, 18, 19)
 
 ## Notes
 
