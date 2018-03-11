@@ -30,9 +30,10 @@ impl Header {
         }
     }
 
-    pub fn to_bytes(&self, buffer : &mut [u8]) -> Result<(), Error> {
+    pub fn to_bytes(&self, buffer : &mut [u8]) {
         if buffer.len() != 16 {
-            return Err(Error::IncorrectBufferSize);
+            panic!("Incorrect buffer size");
+            //return Err(Error::IncorrectBufferSize);
         }
 
         { // signature
@@ -49,8 +50,6 @@ impl Header {
             let seq_num : [u8; 4] =
                 unsafe { std::mem::transmute::<u32, [u8; 4]>(self.seq_num.to_be()) };
             buffer[12..16].copy_from_slice(&seq_num); }
-
-        Ok(())
     }
 
     pub fn from_bytes(&mut self, buffer : &[u8]) -> Result<(), Error> {

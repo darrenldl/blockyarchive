@@ -103,7 +103,8 @@ macro_rules! check_buffer {
         $self:ident, $buf:ident
     ) => {
         if $buf.len() < block_size!($self) {
-            return Err(Error::InsufficientBufferSize);
+            panic!("Insufficient buffer size");
+            //return Err(Error::InsufficientBufferSize);
         }
     }
 }
@@ -604,7 +605,7 @@ impl Block {
 
     pub fn update_crc(&mut self,
                       buffer : &[u8]) {
-        self.header.crc = self.calc_crc(buffer)?;
+        self.header.crc = self.calc_crc(buffer);
     }
 
     fn header_type_matches_block_type(&self) -> bool {
@@ -613,13 +614,11 @@ impl Block {
 
     pub fn sync_to_buffer(&mut self,
                           update_crc : Option<bool>,
-                          buffer     : &mut [u8]) {
+                          buffer     : &mut [u8])
+                          -> Result<(), Error> {
         check_buffer!(self, buffer);
 
-        let update_crc = match update_crc {
-            Some(v) => v,
-            None    => true
-        };
+        let update_crc = update_crc.unwrap_or(true);
 
         match self.data {
             Data::Meta(ref meta) => {
@@ -636,7 +635,9 @@ impl Block {
             BlockType::Meta =>                 self.update_crc(buffer)
         }
 
-        self.header.to_bytes(slice_buf!(header_mut => self, buffer)).unwrap();
+        self.header.to_bytes(slice_buf!(header_mut => self, buffer));
+
+        Ok(())
     }
 
     fn switch_block_type(&mut self) {
@@ -702,7 +703,7 @@ impl Block {
     pub fn verify_crc(&self,
                       buffer : &[u8])
                       -> Result<bool, Error> {
-        Ok(self.header.crc == self.calc_crc(buffer)?)
+        Ok(self.header.crc == self.calc_crc(buffer))
     }
 
     pub fn enforce_crc(&self,
