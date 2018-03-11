@@ -32,10 +32,9 @@ Modularity and ease of maintenance will be of high priority during development a
   - [x] all SBX versions(1, 2, 3, 17, 18, 19)
 - [x] shower
   - [x] all SBX versions(1, 2, 3, 17, 18, 19)
-- [ ] repairer
-  - [ ] error recovery enabled SBX versions(17, 18, 19)
-    - [ ] verifying mode
-    - [ ] repairing code with burst error resistant pattern awareness
+- [x] repairer
+  - [x] error recovery enabled SBX versions(17, 18, 19)
+    - [x] repairing code with burst error resistant pattern awareness
 - [x] sorter
   - [x] basic sequential sorting for base SBX versions(1, 2, 3)
   - [x] burst error resistance aware sorting for versions(17, 18, 19)
