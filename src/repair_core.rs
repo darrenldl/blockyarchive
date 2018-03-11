@@ -43,15 +43,16 @@ use rs_codec::RSStats;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
-    version                          : Version,
-    pub meta_blocks_processed        : u64,
-    pub data_or_par_blocks_processed : u64,
-    pub blocks_process_failed        : u64,
-    pub blocks_repaired              : u64,
-    pub blocks_repair_failed         : u64,
-    total_blocks                     : u64,
-    start_time                       : f64,
-    end_time                         : f64,
+    version                        : Version,
+    pub meta_blocks_decoded        : u64,
+    pub data_or_par_blocks_decoded : u64,
+    pub blocks_decode_failed       : u64,
+    pub meta_blocks_repaired       : u64,
+    pub data_blocks_repaired       : u64,
+    pub data_blocks_repair_failed  : u64,
+    total_blocks                   : u64,
+    start_time                     : f64,
+    end_time                       : f64,
 }
 
 impl Stats {
@@ -61,13 +62,16 @@ impl Stats {
             file_utils::calc_total_block_count(ref_block.get_version(),
                                                file_metadata);
         Stats {
-            version                      : ref_block.get_version(),
-            blocks_process_failed        : 0,
-            meta_blocks_processed        : 0,
-            data_or_par_blocks_processed : 0,
+            version                    : ref_block.get_version(),
+            blocks_decode_failed       : 0,
+            meta_blocks_decoded        : 0,
+            data_or_par_blocks_decoded : 0,
+            meta_blocks_repaired       : 0,
+            data_blocks_repaired       : 0,
+            data_blocks_repair_failed  : 0,
             total_blocks,
-            start_time                   : 0.,
-            end_time                     : 0.,
+            start_time                 : 0.,
+            end_time                   : 0.,
         }
     }
 }
@@ -78,9 +82,9 @@ impl ProgressReport for Stats {
     fn end_time_mut(&mut self)   -> &mut f64 { &mut self.end_time }
 
     fn units_so_far(&self)       -> u64      {
-        (self.meta_blocks_processed
-         + self.data_or_par_blocks_processed
-         + self.blocks_process_failed) as u64
+        (self.meta_blocks_decoded
+         + self.data_or_par_blocks_decoded
+         + self.blocks_decode_failed) as u64
     }
 
     fn total_units(&self)        -> u64      { self.total_blocks as u64 }
@@ -109,15 +113,18 @@ impl fmt::Display for Stats {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {
     in_file       : String,
-    silence_level : SilenceLevel
+    silence_level : SilenceLevel,
+    burst         : Option<usize>,
 }
 
 impl Param {
     pub fn new(in_file       : &str,
-               silence_level : SilenceLevel) -> Param {
+               silence_level : SilenceLevel,
+               burst         : Option<usize>) -> Param {
         Param {
             in_file : String::from(in_file),
             silence_level,
+            burst,
         }
     }
 }
@@ -126,7 +133,7 @@ pub fn repair_file(param : &Param)
                    -> Result<Stats, Error> {
     let (ref_block_pos, ref_block) =
         match block_utils::get_ref_block(&param.in_file,
-                                         param.no_meta,
+                                         false,
                                          param.silence_level)? {
             None => { return Err(Error::with_message("Failed to find reference block")); },
             Some(x) => x,
@@ -137,7 +144,7 @@ pub fn repair_file(param : &Param)
 
     let version   = ref_block.get_version();
     let ver_usize = ver_to_usize(version);
-    let block_size = ver_to_block_size(version) as u64;
+    let block_size = ver_to_block_size(version);
 
     let rs_enabled = ver_uses_rs(version);
 
@@ -220,24 +227,32 @@ pub fn repair_file(param : &Param)
 
     reporter.start();
 
-    // repair metadata blocks
+    // replace metadata blocks with reference block if broken
     {
-        ref_block.sync_to_buffer(None, &mut buffer)?;
+        ref_block.sync_to_buffer(None, &mut buffer);
 
         for p in sbx_block::calc_rs_enabled_meta_all_write_pos_s(version,
                                                                  parity_shards,
                                                                  burst).iter()
         {
             reader.seek(*p)?;
-            reader.write(sbx_block::slice_buf(version, &buffer))?;
+            reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
+            match block.sync_from_buffer(&buffer, Some(&pred)) {
+                Ok(()) => {
+                    stats.lock().unwrap().meta_blocks_decoded += 1;
+                },
+                Err(_) => {
+                    reader.write(sbx_block::slice_buf(version, &buffer))?;
 
-            stats.lock().unwrap().meta_blocks_processed += 1;
+                    stats.lock().unwrap().meta_blocks_repaired += 1;
+                }
+            }
         }
     }
 
     let total_block_count =
         match file_size {
-            Some(x) => x / block_size,
+            Some(x) => x / block_size as u64,
             None    => {
                 reporter.pause();
                 println!();
@@ -246,7 +261,7 @@ pub fn repair_file(param : &Param)
                 println!("          show false repair/verify failures when gaps in container are encountered.");
                 println!();
                 reporter.resume();
-                metadata.len() / block_size
+                metadata.len() / block_size as u64
             },
         };
 
@@ -267,18 +282,18 @@ pub fn repair_file(param : &Param)
 
         let codec_state =
             if read_res.len_read < block_size {   // read an incomplete block
-                stats.lock().unwrap().block_process_failed += 1;
+                stats.lock().unwrap().blocks_decode_failed += 1;
 
                 repairer.mark_missing()
             } else if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
-                stats.lock().unwrap().block_process_failed += 1;
+                stats.lock().unwrap().blocks_decode_failed += 1;
 
                 repairer.mark_missing()
             } else {
                 if block.is_meta() {
-                    stats.lock().unwrap().meta_blocks_processed += 1;
+                    stats.lock().unwrap().meta_blocks_decoded += 1;
                 } else {
-                    stats.lock().unwrap().meta_or_par_blocks_processed += 1;
+                    stats.lock().unwrap().data_or_par_blocks_decoded += 1;
                 }
 
                 repairer.mark_present()
@@ -290,14 +305,14 @@ pub fn repair_file(param : &Param)
 
                 if stats.successful {
                     let mut missing = 0;
-                    for p in stats.buf_present.iter() {
+                    for p in stats.present.iter() {
                         if !*p { missing += 1; }
                     }
                     if missing > 0 {
                         print!("Successfully repaired blocks : ");
                         let mut first_num = true;
-                        for i in 0..stats.buf_present.len() {
-                            if !stats.buf_present[i] {
+                        for i in 0..stats.present.len() {
+                            if !stats.present[i] {
                                 print!("{}{}",
                                        if first_num { "" } else { ", " },
                                        stats.start_seq_num + i as u32);
@@ -309,8 +324,8 @@ pub fn repair_file(param : &Param)
                     reporter.pause();
                     print!("Failed to repair blocks : ");
                     let mut first_num = true;
-                    for i in 0..stats.buf_present.len() {
-                        if !stats.buf_present[i] {
+                    for i in 0..stats.present.len() {
+                        if !stats.present[i] {
                             if first_num {
                                 print!("{}{}",
                                        if first_num { "" } else { ", " },

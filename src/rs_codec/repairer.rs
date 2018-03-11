@@ -28,9 +28,9 @@ pub enum CodecState {
 }
 
 pub struct RSStats<'a> {
-    successful    : bool,
-    start_seq_num : u32,
-    present       : &'a SmallVec<[bool; 32]>
+    pub successful    : bool,
+    pub start_seq_num : u32,
+    pub present       : &'a SmallVec<[bool; 32]>
 }
 
 macro_rules! add_index {
