@@ -18,7 +18,6 @@ pub struct RSRepairer {
     buf            : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     buf_par_verify : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     buf_present    : SmallVec<[bool; 32]>,
-    block_type     : BlockType,
     ref_block      : Block,
 }
 
@@ -39,7 +38,6 @@ macro_rules! add_index {
 impl RSRepairer {
     pub fn new(version           : Version,
                ref_block         : &Block,
-               block_type        : BlockType,
                data_shards       : usize,
                parity_shards     : usize) -> RSRepairer {
         let block_size = ver_to_block_size(version);
@@ -60,7 +58,6 @@ impl RSRepairer {
             buf,
             buf_par_verify,
             buf_present,
-            block_type,
             ref_block      : ref_block.clone(),
         }
     }
@@ -68,11 +65,15 @@ impl RSRepairer {
     pub fn get_shard_buffer(&mut self) -> &mut [u8] {
         let index = self.index;
 
-        add_index!(1 => self);
-
         self.buf_present[index] = true;
 
         sbx_block::slice_data_buf_mut(self.version, &mut self.buf[index])
+    }
+
+    pub fn mark_present(&mut self) {
+        self.buf_present[self.index] = true;
+
+        add_index!(1 => self);
     }
 
     pub fn mark_missing(&mut self) {
