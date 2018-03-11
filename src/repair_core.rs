@@ -312,7 +312,6 @@ pub fn repair_file(param : &Param)
         match codec_state {
             RSCodecState::Ready => {
                 reporter.pause();
-                println!("Ready");
                 reporter.resume();
                 let (repair_stats, repaired_blocks) =
                     repairer.repair(seq_num, burst);
@@ -347,6 +346,7 @@ pub fn repair_file(param : &Param)
                             }
                         }
                     }
+                    println!();
                     reporter.resume();
                 }
 

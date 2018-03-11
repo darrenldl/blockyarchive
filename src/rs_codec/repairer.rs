@@ -81,7 +81,6 @@ impl RSRepairer {
     pub fn mark_present(&mut self) -> RSCodecState {
         let index = self.index;
 
-        println!("index : {}, total : {}", index, self.rs_codec.total_shard_count());
         add_index!(1 => self);
 
         self.buf_present[index] = true;
@@ -170,7 +169,6 @@ impl RSRepairer {
             }
             for i in 0..block_set_size as usize {
                 if !self.buf_present[i] {
-                    println!("{} is missing", i);
                     let pos = sbx_block::calc_rs_enabled_data_write_pos(first_seq_num_in_cur_set + i as u32,
                                                                         self.version,
                                                                         self.rs_codec.data_shard_count(),
