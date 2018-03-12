@@ -21,7 +21,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(Arg::with_name("skip_warning")
              .short("y")
              .long("skip-warning")
-             .help("Skip warning about in-place modifications that occur during repairing"))
+             .help("Skip warning about in-place automatic repairs"))
 }
 
 pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
@@ -52,7 +52,8 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
                            pr_verbosity_level,
                            burst);
     match repair_core::repair_file(&param) {
-        Ok(s)  => exit_with_msg!(ok => "{}", s),
-        Err(e) => exit_with_msg!(op => "{}", e)
+        Ok(Some(s)) => exit_with_msg!(ok => "{}", s),
+        Ok(None)    => exit_with_msg!(ok => ""),
+        Err(e)      => exit_with_msg!(op => "{}", e),
     }
 }

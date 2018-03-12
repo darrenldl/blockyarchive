@@ -133,16 +133,17 @@ impl Param {
 }
 
 pub fn repair_file(param : &Param)
-                   -> Result<Stats, Error> {
+                   -> Result<Option<Stats>, Error> {
     let (ref_block_pos, mut ref_block) = get_ref_block!(&param.in_file,
                                                         false,
                                                         param.verbose,
                                                         param.pr_verbosity_level);
 
     let version = ref_block.get_version();
-    let block_size = ver_to_block_size(version);
 
-    let rs_enabled = ver_uses_rs(version);
+    return_if_not_ver_uses_rs!(version);
+
+    let block_size = ver_to_block_size(version);
 
     let data_shards   = get_RSD_from_ref_block!(ref_block_pos, ref_block, "repair");
     let parity_shards = get_RSP_from_ref_block!(ref_block_pos, ref_block, "repair");
@@ -165,12 +166,6 @@ pub fn repair_file(param : &Param)
                 metadata.len() / block_size as u64
             },
         };
-
-    if !rs_enabled {
-        println!("Version {} does not use Reed-Solomon erasure code, exiting now", ver_to_usize(version));
-        println!();
-        return Ok(Stats::new(&ref_block, total_block_count));
-    }
 
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, total_block_count)));
 
@@ -325,5 +320,5 @@ pub fn repair_file(param : &Param)
 
     let stats = stats.lock().unwrap().clone();
 
-    Ok(stats)
+    Ok(Some(stats))
 }

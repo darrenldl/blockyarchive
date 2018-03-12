@@ -122,7 +122,7 @@ impl fmt::Display for Stats {
 }
 
 pub fn sort_file(param : &Param)
-                 -> Result<Stats, Error> {
+                 -> Result<Option<Stats>, Error> {
     let (ref_block_pos, ref_block) =
         match block_utils::get_ref_block(&param.in_file,
                                          param.no_meta,
@@ -134,20 +134,14 @@ pub fn sort_file(param : &Param)
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
 
-    println!();
+    //println!();
 
     let version   = ref_block.get_version();
-    let ver_usize = ver_to_usize(version);
     let block_size = ver_to_block_size(version) as u64;
 
     let rs_enabled = ver_uses_rs(version);
 
-    if !rs_enabled {
-        println!("Version {} does not use Reed-Solomon erasure code, exiting now", ver_usize);
-        println!();
-        let stats = stats.lock().unwrap().clone();
-        return Ok(stats);
-    }
+    return_if_not_ver_uses_rs!(version);
 
     let burst =
         match param.burst {
@@ -266,5 +260,5 @@ pub fn sort_file(param : &Param)
 
     let stats = stats.lock().unwrap().clone();
 
-    Ok(stats)
+    Ok(Some(stats))
 }

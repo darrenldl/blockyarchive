@@ -271,17 +271,11 @@ pub fn decode(param         : &Param,
 
     // deal with RS related stuff
     if ver_uses_rs(ref_block.get_version()) {
-        let ver_usize = ver_to_usize(ref_block.get_version());
         // must be metadata block, and must contain fields `RSD`, `RSP`
-        if ref_block.is_data() {
-            return Err(Error::with_message(&format!("reference block at byte {} (0x{:X}) is not a metadata block(metadata block must be used to decode for version {})",
-                                                    ref_block_pos,
-                                                    ref_block_pos,
-                                                    ver_usize)));
-        } else {
-            data_shards   = Some(get_RSD_from_ref_block!(ref_block_pos, ref_block, "decode"));
-            parity_shards = Some(get_RSP_from_ref_block!(ref_block_pos, ref_block, "decode"));
-        }
+        return_if_ref_not_meta!(ref_block_pos, ref_block, "decode");
+
+        data_shards   = Some(get_RSD_from_ref_block!(ref_block_pos, ref_block, "decode"));
+        parity_shards = Some(get_RSP_from_ref_block!(ref_block_pos, ref_block, "decode"));
 
         rs_enabled = true;
     } else {
