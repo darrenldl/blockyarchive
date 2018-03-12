@@ -1,3 +1,14 @@
+macro_rules! unwrap_or {
+    (
+        $val:expr, $or:expr
+    ) => {{
+        match $val {
+            Some(x) => x,
+            None    => $or
+        }
+    }}
+}
+
 macro_rules! get_ref_block {
     (
         $in_file:expr, $no_meta:expr, $verbose:expr, $pr_verbosity_level:expr
@@ -90,5 +101,25 @@ macro_rules! return_if_ref_not_meta {
                                                     $purpose,
                                                     ver_usize)));
         }
+    }}
+}
+
+macro_rules! get_burst_or_guess {
+    (
+        $in_file:expr, $ref_block_pos:expr, $ref_block:expr, $burst:expr
+    ) => {{
+        unwrap_or!($burst,
+                   if ver_uses_rs($ref_block.get_version()) {
+                       unwrap_or!(block_utils::guess_burst_err_resistance_level(&$in_file,
+                                                                                $ref_block_pos,
+                                                                                &$ref_block)?,
+                                  {
+                                      return Err(
+                                          Error::with_message(
+                                              "Failed to guess burst resistance level, please specify via --burst option"));
+                                  })
+                   } else {
+                       0
+                   })
     }}
 }

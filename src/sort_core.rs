@@ -126,13 +126,10 @@ impl fmt::Display for Stats {
 
 pub fn sort_file(param : &Param)
                  -> Result<Option<Stats>, Error> {
-    let (ref_block_pos, ref_block) =
-        match block_utils::get_ref_block(&param.in_file,
-                                         param.no_meta,
-                                         param.pr_verbosity_level)? {
-            None => { return Err(Error::with_message("Failed to find reference block")); },
-            Some(x) => x,
-        };
+    let (ref_block_pos, ref_block) = get_ref_block!(&param.in_file,
+                                                    param.no_meta,
+                                                    param.verbose,
+                                                    param.pr_verbosity_level);
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
@@ -142,29 +139,11 @@ pub fn sort_file(param : &Param)
 
     let rs_enabled = ver_uses_rs(version);
 
-    let burst =
-        match param.burst {
-            None => {
-                if rs_enabled {
-                    match block_utils::guess_burst_err_resistance_level(&param.in_file,
-                                                                        ref_block_pos,
-                                                                        &ref_block)?
-                    {
-                        None    => { return Err(Error::with_message("Failed to guess burst resistance level, please specify via --burst option")); },
-                        Some(x) => x
-                    }
-                } else {
-                    0
-                }
-            },
-            Some(x) => x
-        };
+    let burst = get_burst_or_guess!(param.in_file, ref_block_pos, ref_block, param.burst);
 
     if param.verbose {
         println!("Using burst error resistance level {} for output container",
                  burst);
-        println!();
-        report_ref_block_info(ref_block_pos, &ref_block);
         println!();
     }
 
