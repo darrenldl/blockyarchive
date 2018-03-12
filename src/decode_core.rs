@@ -256,11 +256,6 @@ pub fn decode(param         : &Param,
 
     let data_size    = ver_to_data_size(ref_block.get_version()) as u64;
 
-    let mut data_shards   = None;
-    let mut parity_shards = None;
-
-    let rs_enabled;
-
     // get hash possibly
     if ref_block.is_meta() {
         match ref_block.get_HSH().unwrap() {
@@ -270,18 +265,19 @@ pub fn decode(param         : &Param,
     }
 
     // deal with RS related stuff
-    if ver_uses_rs(ref_block.get_version()) {
-        // must be metadata block, and must contain fields `RSD`, `RSP`
+    let rs_enabled = ver_uses_rs(ref_block.get_version());
+
+    if rs_enabled { // must be metadata block, and must contain fields `RSD`, `RSP`
         return_if_ref_not_meta!(ref_block_pos, ref_block, "decode");
-
-        data_shards   = Some(get_RSD_from_ref_block!(ref_block_pos, ref_block, "decode"));
-        parity_shards = Some(get_RSP_from_ref_block!(ref_block_pos, ref_block, "decode"));
-
-        rs_enabled = true;
-    } else {
-        // no restrictions
-        rs_enabled = false;
     }
+
+    let data_par_shards =
+        if rs_enabled {
+            Some((get_RSD_from_ref_block!(ref_block_pos, ref_block, "decode"),
+                  get_RSP_from_ref_block!(ref_block_pos, ref_block, "decode")))
+        } else {
+            None
+        };
 
     let pred = {
         let version = ref_block.get_version();
@@ -306,28 +302,24 @@ pub fn decode(param         : &Param,
             continue;
         }
 
-        if block.is_meta() { // do nothing if block is meta or meta parity
+        if block.is_meta() { // do nothing if block is meta
             stats.lock().unwrap().meta_blocks_decoded += 1;
         } else {
-            if rs_enabled {
-                if block.is_parity(data_shards.unwrap(), parity_shards.unwrap()) {
-                    stats.lock().unwrap().data_par_blocks_decoded += 1;
-                } else {
+            match data_par_shards {
+                Some((data, par)) => {
+                    if block.is_parity(data, par) {
+                        stats.lock().unwrap().data_par_blocks_decoded += 1;
+                    } else {
+                        stats.lock().unwrap().data_blocks_decoded += 1;
+                    }
+                },
+                None => {
                     stats.lock().unwrap().data_blocks_decoded += 1;
                 }
-            } else {
-                stats.lock().unwrap().data_blocks_decoded += 1;
             }
 
-            let dat_par_shards =
-                if rs_enabled {
-                    Some((data_shards.unwrap(), parity_shards.unwrap()))
-                } else {
-                    None
-                };
-
             // write data block
-            if let Some(data_index) = block.data_index(dat_par_shards) {
+            if let Some(data_index) = block.data_index(data_par_shards) {
                 let write_to = data_index as u64 * data_size;
 
                 writer.seek(SeekFrom::Start(write_to as u64))?;

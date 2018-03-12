@@ -522,7 +522,7 @@ impl Block {
     }
 
     pub fn data_index(&self,
-                      dat_par_shards : Option<(usize, usize)>)
+                      data_par_shards : Option<(usize, usize)>)
                       -> Option<u32> {
         match self.data {
             Data::Meta(_) => None,
@@ -531,7 +531,7 @@ impl Block {
                     self.header.seq_num
                     - SBX_FIRST_DATA_SEQ_NUM as u32;
 
-                match dat_par_shards {
+                match data_par_shards {
                     None                               => Some(data_index),
                     Some((data_shards, parity_shards)) => {
                         if self.is_parity(data_shards, parity_shards) {
