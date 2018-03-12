@@ -240,7 +240,7 @@ Let **K > 1 + N** :
 
 | 0 | 1 | 2 | 3 | ... | B - 1 |
 |---|---|---|---|---|---|
-| K | K + (M + N) | K + 2 * (M + N) | K + 3 * (M + N) | ... | K + (B - 1) * (M + N** |
+| K | K + (M + N) | K + 2 * (M + N) | K + 3 * (M + N) | ... | K + (B - 1) * (M + N) |
 
 #### Limitations
 While an arbitrary number can be used for burst error resistance level during encoding, rsbx will only guess up to 1000 when automatically guessing the burst error resistance level.
