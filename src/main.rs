@@ -76,9 +76,6 @@ mod log;
 mod rs_codec;
 
 #[macro_use]
-mod cli_macros;
-
-#[macro_use]
 mod misc_macros;
 
 mod encode_core;
@@ -94,6 +91,9 @@ mod progress_report;
 mod file_reader;
 use file_reader::ReadResult;
 mod file_writer;
+
+#[macro_use]
+mod cli_macros;
 
 mod cli_utils;
 
