@@ -83,8 +83,6 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
         exit_with_msg!(usr => "\"{}\" is not a directory", out_dir);
     }
 
-    print_safe_to_interrupt();
-
     let log_file = matches.value_of("log_file");
 
     let param = Param::new(in_file,

@@ -1,5 +1,8 @@
 use super::clap::*;
 use super::sbx_block;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use super::ctrlc;
 
 pub fn in_file_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("in_file")
@@ -92,7 +95,14 @@ go through the entire file as a result.
 This operation does not respect the misalignment and range requirements.")
 }
 
-pub fn print_safe_to_interrupt() {
+pub fn setup_ctrl_c_handler(loop_stop_flag : &Arc<AtomicBool>) {
+    let loop_stop_flag = Arc::clone(&loop_stop_flag);
+
+    ctrlc::set_handler(move || {
+        println!("Interrupted");
+        loop_stop_flag.store(true, Ordering::Relaxed);
+    }).expect("Failed to set Ctrl-C handler");
+
     println!("This mode can be safely interrupted via Ctrl-C");
     println!();
 }

@@ -3,7 +3,6 @@ use std::fs;
 use std::fmt;
 use super::file_utils;
 use std::io::SeekFrom;
-use super::ctrlc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 
@@ -12,6 +11,8 @@ use super::misc_utils::RequiredLenAndSeekTo;
 
 use super::progress_report::*;
 use super::log::*;
+
+use super::cli_utils::setup_ctrl_c_handler;
 
 use super::file_reader::FileReader;
 use super::file_reader::FileReaderParam;
@@ -206,6 +207,10 @@ impl fmt::Display for Stats {
 
 pub fn rescue_from_file(param : &Param)
                         -> Result<Stats, Error> {
+    let loop_stop_flag = Arc::new(AtomicBool::new(false));
+
+    setup_ctrl_c_handler(&loop_stop_flag);
+
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&metadata)?));
 
@@ -222,8 +227,6 @@ pub fn rescue_from_file(param : &Param)
                                                   "bytes",
                                                   param.pr_verbosity_level));
 
-    let loop_stop_flag = Arc::new(AtomicBool::new(false));
-
     let mut block = Block::dummy();
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
@@ -233,14 +236,6 @@ pub fn rescue_from_file(param : &Param)
 
     // read from log file if it exists
     log_handler.read_from_file()?;
-
-    { // setup Ctrl-C handler
-        let loop_stop_flag = Arc::clone(&loop_stop_flag);
-
-        ctrlc::set_handler(move || {
-            println!("Interrupted");
-            loop_stop_flag.store(true, Ordering::Relaxed);
-        }).expect("Failed to set Ctrl-C handler"); }
 
     // calulate length to read and position to seek to
     let RequiredLenAndSeekTo { required_len, seek_to } =
