@@ -143,7 +143,7 @@ pub fn repair_file(param : &Param)
 
     return_if_not_ver_uses_rs!(version);
 
-    return_if_ref_not_meta!(ref_block_pos, ref_block, "rescue");
+    return_if_ref_not_meta!(ref_block_pos, ref_block, "repair");
 
     let block_size = ver_to_block_size(version);
 
@@ -171,19 +171,10 @@ pub fn repair_file(param : &Param)
 
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, total_block_count)));
 
-    let burst =
-        match param.burst {
-            None => {
-                match block_utils::guess_burst_err_resistance_level(&param.in_file,
-                                                                    ref_block_pos,
-                                                                    &ref_block)?
-                {
-                    None    => { return Err(Error::with_message("Failed to guess burst resistance level, please specify via --burst option")); },
-                    Some(x) => x
-                }
-            },
-            Some(x) => x
-        };
+    let burst = get_burst_or_guess!(param.in_file,
+                                    ref_block_pos,
+                                    ref_block,
+                                    param.burst);
 
     if param.verbose {
         println!("Using burst error resistance level {} for output container",
