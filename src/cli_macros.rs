@@ -199,6 +199,25 @@ macro_rules! get_burst_or_zero {
     }}
 }
 
+macro_rules! ask_if_wish_to_continue {
+    (
+    ) => {{
+        use std::io::{stdin, stdout, Read, Write};
+
+        print!("Do you wish to continue? [y/N] ");
+
+        stdout().flush().unwrap();
+
+        let mut ans : [u8; 1] = [0; 1];
+
+        let _ = stdin().read(&mut ans).unwrap();
+
+        if ans != *b"y"  {
+            return 0;
+        }
+    }}
+}
+
 macro_rules! get_burst_opt {
     (
         $matches:expr

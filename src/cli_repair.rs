@@ -21,7 +21,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(Arg::with_name("skip_warning")
              .short("y")
              .long("skip-warning")
-             .help("Skip warning about in-place editing that occurs during repairing"))
+             .help("Skip warning about in-place modifications that occur during repairing"))
 }
 
 pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
@@ -30,6 +30,17 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
     let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
     let burst = get_burst_opt!(matches);
+
+    if !matches.is_present("skip_warning") {
+        print_block!(
+            "Warning : Repair mode modifies the SBX container in-place.";
+            "";
+            "          This may cause further damage to the container and prohibit";
+            "          further manual data recovery if incorrect repairs are made.";
+        );
+
+        ask_if_wish_to_continue!();
+    }
 
     let param = Param::new(in_file,
                            matches.is_present("verbose"),
