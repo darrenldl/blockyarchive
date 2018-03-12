@@ -29,6 +29,7 @@ use super::sbx_specs::{ver_to_block_size,
                        ver_to_usize};
 
 use super::cli_utils::report_ref_block_info;
+use super::cli_utils::setup_ctrlc_handler;
 
 use std::str::from_utf8;
 
@@ -126,6 +127,8 @@ impl fmt::Display for Stats {
 
 pub fn sort_file(param : &Param)
                  -> Result<Option<Stats>, Error> {
+    let ctrlc_stop_flag = setup_ctrlc_handler();
+
     let (ref_block_pos, ref_block) = get_ref_block!(param);
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
@@ -180,6 +183,8 @@ pub fn sort_file(param : &Param)
     reporter.start();
 
     loop {
+        break_if_atomic_bool!(ctrlc_stop_flag);
+
         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                             &mut buffer))?;
 
