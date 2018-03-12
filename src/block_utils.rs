@@ -222,8 +222,8 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
     let mut seq_nums : SmallVec<[Option<u32>; BLOCKS_TO_SAMPLE_BASE_NUM]> =
         smallvec![None; blocks_to_sample];
 
-    let mut mismatches_for_level : [usize; SBX_MAX_BURST_ERR_RESISTANCE] =
-        [0; SBX_MAX_BURST_ERR_RESISTANCE];
+    let mut mismatches_for_level : [usize; SBX_MAX_BURST_ERR_RESISTANCE + 1] =
+        [0; SBX_MAX_BURST_ERR_RESISTANCE + 1];
 
     let mut blocks_processed = 0;
 
