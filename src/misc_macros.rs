@@ -11,23 +11,28 @@ macro_rules! unwrap_or {
 
 macro_rules! get_ref_block {
     (
-        $in_file:expr, $no_meta:expr, $verbose:expr, $pr_verbosity_level:expr
+        $param:expr, $no_meta:expr
     ) => {{
         let (ref_block_pos, ref_block) =
-            match block_utils::get_ref_block(&$in_file,
+            match block_utils::get_ref_block(&$param.in_file,
                                              $no_meta,
-                                             $pr_verbosity_level)? {
+                                             $param.pr_verbosity_level)? {
                 None => { return Err(Error::with_message("Failed to find reference block")); },
                 Some(x) => x,
             };
 
-        if $verbose {
+        if $param.verbose {
             println!();
             report_ref_block_info(ref_block_pos, &ref_block);
             println!();
         }
 
         (ref_block_pos, ref_block)
+    }};
+    (
+        $param:expr
+    ) => {{
+        get_ref_block!($param, $param.no_meta)
     }}
 }
 
@@ -106,25 +111,44 @@ macro_rules! return_if_ref_not_meta {
 
 macro_rules! get_burst_or_guess {
     (
-        $in_file:expr, $ref_block_pos:expr, $ref_block:expr, $burst:expr
+        $param:expr, $ref_block_pos:expr, $ref_block:expr
     ) => {{
-        unwrap_or!($burst,
-                   if ver_uses_rs($ref_block.get_version()) {
-                       unwrap_or!(block_utils::guess_burst_err_resistance_level(&$in_file,
-                                                                                $ref_block_pos,
-                                                                                &$ref_block)?,
-                                  {
-                                      return Err(
-                                          Error::with_message(
-                                              "Failed to guess burst resistance level, please specify via --burst option"));
-                                  })
-                   } else {
-                       0
-                   })
+        let burst = unwrap_or!($param.burst,
+                               if ver_uses_rs($ref_block.get_version()) {
+                                   unwrap_or!(block_utils::guess_burst_err_resistance_level(&$param.in_file,
+                                                                                            $ref_block_pos,
+                                                                                            &$ref_block)?,
+                                              {
+                                                  return Err(
+                                                      Error::with_message(
+                                                          "Failed to guess burst resistance level, please specify via --burst option"));
+                                              })
+                               } else {
+                                   0
+                               });
+
+        print_if_verbose!($param =>
+                          "Using burst error resistance level {} for output container", burst;
+                          "";
+        );
+
+        burst
     }}
 }
 
 macro_rules! print_if_verbose {
+    (
+        $param:expr =>
+            $(
+                $($expr:expr),*;
+            )*
+    ) => {{
+        if $param.verbose {
+            print_block!(
+                $( $($expr),*; )*
+            );
+        }
+    }};
     (
         $param:expr, $reporter:expr =>
             $(

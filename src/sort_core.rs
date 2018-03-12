@@ -126,10 +126,7 @@ impl fmt::Display for Stats {
 
 pub fn sort_file(param : &Param)
                  -> Result<Option<Stats>, Error> {
-    let (ref_block_pos, ref_block) = get_ref_block!(&param.in_file,
-                                                    param.no_meta,
-                                                    param.verbose,
-                                                    param.pr_verbosity_level);
+    let (ref_block_pos, ref_block) = get_ref_block!(param);
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
@@ -139,13 +136,9 @@ pub fn sort_file(param : &Param)
 
     let rs_enabled = ver_uses_rs(version);
 
-    let burst = get_burst_or_guess!(param.in_file, ref_block_pos, ref_block, param.burst);
-
-    if param.verbose {
-        println!("Using burst error resistance level {} for output container",
-                 burst);
-        println!();
-    }
+    let burst = get_burst_or_guess!(param,
+                                    ref_block_pos,
+                                    ref_block);
 
     let mut data_shards = None;
     let mut parity_shards = None;

@@ -134,10 +134,7 @@ impl Param {
 
 pub fn repair_file(param : &Param)
                    -> Result<Option<Stats>, Error> {
-    let (ref_block_pos, mut ref_block) = get_ref_block!(&param.in_file,
-                                                        false,
-                                                        param.verbose,
-                                                        param.pr_verbosity_level);
+    let (ref_block_pos, mut ref_block) = get_ref_block!(param, false);
 
     let version = ref_block.get_version();
 
@@ -171,16 +168,9 @@ pub fn repair_file(param : &Param)
 
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, total_block_count)));
 
-    let burst = get_burst_or_guess!(param.in_file,
+    let burst = get_burst_or_guess!(param,
                                     ref_block_pos,
-                                    ref_block,
-                                    param.burst);
-
-    if param.verbose {
-        println!("Using burst error resistance level {} for output container",
-                 burst);
-        println!();
-    }
+                                    ref_block);
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : true,

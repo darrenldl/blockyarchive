@@ -407,10 +407,7 @@ fn hash(param     : &Param,
 
 pub fn decode_file(param : &Param)
                    -> Result<Stats, Error> {
-    let (ref_block_pos, ref_block) = get_ref_block!(&param.in_file,
-                                                    param.no_meta,
-                                                    param.verbose,
-                                                    param.pr_verbosity_level);
+    let (ref_block_pos, ref_block) = get_ref_block!(param);
 
     // get FNM of ref_block
     let recorded_file_name : Option<String> =

@@ -123,10 +123,7 @@ impl fmt::Display for Stats {
 
 pub fn check_file(param : &Param)
                   -> Result<Stats, Error> {
-    let (_, ref_block) = get_ref_block!(param.in_file,
-                                                    param.no_meta,
-                                                    param.verbose,
-                                                    param.pr_verbosity_level);
+    let (_, ref_block) = get_ref_block!(param);
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
@@ -192,11 +189,11 @@ pub fn check_file(param : &Param)
         }
     }
 
-    reporter.stop();
-
     if stats.lock().unwrap().blocks_decode_failed > 0 {
         println!();
     }
+
+    reporter.stop();
 
     let stats = stats.lock().unwrap().clone();
 
