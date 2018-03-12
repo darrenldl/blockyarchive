@@ -291,12 +291,8 @@ pub fn repair_file(param : &Param)
 
         match codec_state {
             RSCodecState::Ready => {
-                reporter.pause();
-                reporter.resume();
                 let (repair_stats, repaired_blocks) =
                     rs_codec.repair_with_block_sync(seq_num, burst);
-
-                stats.lock().unwrap().blocks_decode_failed += repair_stats.missing_count as u64;
 
                 if repair_stats.successful {
                     stats.lock().unwrap().data_or_par_blocks_repaired +=
@@ -312,10 +308,14 @@ pub fn repair_file(param : &Param)
                     reporter.resume();
                 }
 
+                // write the repaired data blocks
                 for &(pos, block_buf) in repaired_blocks.iter() {
                     reader.seek(SeekFrom::Start(pos))?;
                     reader.write(&block_buf)?;
                 }
+
+                // update stats
+                stats.lock().unwrap().blocks_decode_failed += repair_stats.missing_count as u64;
             },
             RSCodecState::NotReady => {},
         }

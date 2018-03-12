@@ -355,9 +355,11 @@ pub fn decode(param         : &Param,
             }
         }
     } else {
-        println!();
-        println!("Warning : Reference block is not a metadata block, output file may contain data padding");
-        println!();
+        print_block!(
+            "";
+            "Warning : Reference block is not a metadata block, output file may contain data padding";
+            "";
+        )
     }
 
     let res = stats.lock().unwrap().clone();
