@@ -11,6 +11,8 @@ use std::sync::{Arc, Mutex};
 use std::fs;
 use super::file_utils;
 
+use super::smallvec::SmallVec;
+
 use super::sbx_block;
 
 use super::sbx_specs::{ver_to_usize,
@@ -212,8 +214,13 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
 
-    let mut seq_nums : [Option<u32>; SBX_MAX_BURST_ERR_RESISTANCE] =
-        [None; SBX_MAX_BURST_ERR_RESISTANCE];
+    const BLOCKS_TO_SAMPLE_BASE_NUM : usize = 1024;
+
+    let blocks_to_sample =
+        (1 + parity_shards) + SBX_MAX_BURST_ERR_RESISTANCE + 1;
+
+    let mut seq_nums : SmallVec<[Option<u32>; BLOCKS_TO_SAMPLE_BASE_NUM]> =
+        smallvec![None; blocks_to_sample];
 
     let mut mismatches_for_level : [usize; SBX_MAX_BURST_ERR_RESISTANCE] =
         [0; SBX_MAX_BURST_ERR_RESISTANCE];
@@ -236,7 +243,7 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
 
         break_if_eof_seen!(read_res);
 
-        if blocks_processed >= SBX_MAX_BURST_ERR_RESISTANCE { break; }
+        if blocks_processed >= seq_nums.len() { break; }
 
         seq_nums[blocks_processed] =
             match block.sync_from_buffer(&buffer, Some(&pred)) {
