@@ -279,25 +279,8 @@ pub fn decode(param         : &Param,
                                                     ref_block_pos,
                                                     ver_usize)));
         } else {
-            data_shards = match ref_block.get_RSD().unwrap() {
-                Some(x) => Some(x as usize),
-                None    => {
-                    return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSD field(must be present to decode for version {})",
-                                                            ref_block_pos,
-                                                            ref_block_pos,
-                                                            ver_usize)));
-                }
-            };
-
-            parity_shards = match ref_block.get_RSP().unwrap() {
-                Some(x) => Some(x as usize),
-                None    => {
-                    return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to decode for version {})",
-                                                            ref_block_pos,
-                                                            ref_block_pos,
-                                                            ver_usize)));
-                }
-            }
+            data_shards   = Some(get_RSD_from_ref_block!(ref_block_pos, ref_block, "decode"));
+            parity_shards = Some(get_RSP_from_ref_block!(ref_block_pos, ref_block, "decode"));
         }
 
         rs_enabled = true;

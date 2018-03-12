@@ -170,21 +170,8 @@ pub fn sort_file(param : &Param)
     let mut parity_shards = None;
 
     if rs_enabled {
-        data_shards = match ref_block.get_RSD().unwrap() {
-            None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
-                                                              ref_block_pos,
-                                                              ref_block_pos,
-                                                              ver_usize))); },
-            Some(x) => Some(x as usize),
-        };
-
-        parity_shards = match ref_block.get_RSP().unwrap() {
-            None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
-                                                              ref_block_pos,
-                                                              ref_block_pos,
-                                                              ver_usize))); },
-            Some(x) => Some(x as usize),
-        };
+        data_shards   = Some(get_RSD_from_ref_block!(ref_block_pos, ref_block, "sort"));
+        parity_shards = Some(get_RSP_from_ref_block!(ref_block_pos, ref_block, "sort"));
     }
 
     report_ref_block_info(ref_block_pos, &ref_block);

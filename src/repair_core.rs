@@ -144,8 +144,8 @@ pub fn repair_file(param : &Param)
 
     let rs_enabled = ver_uses_rs(version);
 
-    let data_shards   = get_RSD_from_ref_block!(ref_block_pos, ref_block, "must be present to sort");
-    let parity_shards = get_RSP_from_ref_block!(ref_block_pos, ref_block, "must be present to sort");
+    let data_shards   = get_RSD_from_ref_block!(ref_block_pos, ref_block, "repair");
+    let parity_shards = get_RSP_from_ref_block!(ref_block_pos, ref_block, "repair");
 
     let total_block_count =
         match ref_block.get_FSZ().unwrap() {
