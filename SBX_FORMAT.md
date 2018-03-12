@@ -211,13 +211,15 @@ Then the SBX container can tolerate up to **N** burst errors, and each individua
 
 #### Diagrams
 
-General case
+**M** data shards, **N** parity shards, **B** burst error resistance
 
-Sequential arrangement, **M** data shards, **N** parity shards, **B** burst error resistance
+**Sequential arrangement**
 
-| 00 | 01 | 02 | 03 | 04 | ...
+| 00 | 00 | ... | 00 | 01 | 02 | 03 | 04 | ... |
 
-Interleaving arrangement
+**1 + N** metadata blocks at the front
+
+**Interleaving arrangement**
 
 Let base block set size = **B**
 
@@ -238,4 +240,7 @@ Let **K > 1 + N** :
 
 | 0 | 1 | 2 | 3 | ... | B - 1 |
 |---|---|---|---|---|---|
-| K | K + (M + N) | K + 2 * (M + N) | K + 3 * (M + N) | ... | K + (B - 1) * (M + N) |
+| K | K + (M + N) | K + 2 * (M + N) | K + 3 * (M + N) | ... | K + (B - 1) * (M + N** |
+
+#### Limitations
+While an arbitrary number can be used for burst error resistance level during encoding, rsbx will only guess up to 1000 when automatically guessing the burst error resistance level.
