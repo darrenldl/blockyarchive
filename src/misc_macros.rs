@@ -20,3 +20,12 @@ macro_rules! get_ref_block {
     }}
 }
 
+macro_rules! print_block {
+    (
+        $(
+            $($arg:expr),*
+        );*
+    ) => {{
+        $( println!($($arg),*); )*
+    }}
+}

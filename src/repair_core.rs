@@ -264,11 +264,12 @@ pub fn repair_file(param : &Param)
                                                                                          x),
             None    => {
                 reporter.pause();
-                println!();
-                println!("Warning : No recorded file size found, using container file size to estimate total");
-                println!("          number of blocks. This may overestimate total number of blocks, and may");
-                println!("          show false repair/verify failures when gaps in container are encountered.");
-                println!();
+                print_block!(
+                    "";
+                    "Warning : No recorded file size found, using container file size to estimate total";
+                    "          number of blocks. This may overestimate total number of blocks, and may";
+                    "          show false repair/verify failures when gaps in container are encountered.";
+                    "");
                 reporter.resume();
                 metadata.len() / block_size as u64
             },

@@ -49,7 +49,7 @@ impl<'a> fmt::Display for RSRepairStats<'a> {
                     write!(f, "{}", self.start_seq_num + i as u32)?;
                 }
             }
-            writeln!(f)
+            Ok(())
         } else {
             Ok(())
         }
