@@ -12,10 +12,7 @@ use super::cli_utils::*;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("show")
         .about("Search for and print metadata in file")
-        .arg(Arg::with_name("in_file")
-             .value_name("INFILE")
-             .required(true)
-             .index(1)
+        .arg(in_file_arg()
              .help("SBX container to search for metadata"))
         .arg(Arg::with_name("show_all")
              .long("show-all")

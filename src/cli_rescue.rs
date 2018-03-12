@@ -12,10 +12,7 @@ use super::cli_utils::*;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("rescue")
         .about("Rescue SBX blocks from file/block device. Essentially ddrescue but for SBX blocks")
-        .arg(Arg::with_name("in_file")
-             .value_name("INFILE")
-             .required(true)
-             .index(1)
+        .arg(in_file_arg()
              .help("File/block device to rescue sbx data from"))
         .arg(Arg::with_name("out_dir")
              .value_name("OUTDIR")

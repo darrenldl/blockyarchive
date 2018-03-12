@@ -12,10 +12,7 @@ use super::cli_utils::*;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("decode")
         .about("Decode SBX container")
-        .arg(Arg::with_name("in_file")
-             .value_name("INFILE")
-             .required(true)
-             .index(1)
+        .arg(in_file_arg()
              .help("SBX container to decode"))
         .arg(Arg::with_name("out_file")
              .value_name("OUT")

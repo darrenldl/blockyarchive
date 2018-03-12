@@ -12,10 +12,7 @@ use super::cli_utils::*;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("check")
         .about("Check integrity of SBX blocks in container")
-        .arg(Arg::with_name("in_file")
-             .value_name("INFILE")
-             .required(true)
-             .index(1)
+        .arg(in_file_arg()
              .help("SBX container to check"))
         .arg(no_meta_arg())
         .arg(pr_verbosity_level_arg())

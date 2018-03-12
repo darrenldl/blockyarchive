@@ -1,6 +1,13 @@
 use super::clap::*;
 use super::sbx_block;
 
+pub fn in_file_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("in_file")
+        .value_name("INFILE")
+        .required(true)
+        .index(1)
+}
+
 pub fn pr_verbosity_level_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("pr_verbosity_level")
         .value_name("LEVEL")

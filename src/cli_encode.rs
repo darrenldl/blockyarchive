@@ -13,10 +13,7 @@ use super::cli_utils::*;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("encode")
         .about("Encode file")
-        .arg(Arg::with_name("in_file")
-             .value_name("INFILE")
-             .required(true)
-             .index(1)
+        .arg(in_file_arg()
              .help("File to encode"))
         .arg(Arg::with_name("out_file")
              .value_name("OUT")
