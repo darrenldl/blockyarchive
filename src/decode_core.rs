@@ -358,8 +358,7 @@ pub fn decode(param         : &Param,
         print_block!(
             "";
             "Warning : Reference block is not a metadata block, output file may contain data padding";
-            "";
-        )
+            "")
     }
 
     let res = stats.lock().unwrap().clone();
