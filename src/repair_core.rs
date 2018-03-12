@@ -143,6 +143,8 @@ pub fn repair_file(param : &Param)
 
     return_if_not_ver_uses_rs!(version);
 
+    return_if_ref_not_meta!(ref_block_pos, ref_block, "rescue");
+
     let block_size = ver_to_block_size(version);
 
     let data_shards   = get_RSD_from_ref_block!(ref_block_pos, ref_block, "repair");
