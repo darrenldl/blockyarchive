@@ -42,7 +42,8 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
             "";
             "   It is advisable to make a copy of the container and work on the copy";
             "   rather than repairing the original container directly.";
-            "");
+            "";
+        );
 
         ask_if_wish_to_continue!();
     }

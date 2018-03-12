@@ -179,15 +179,12 @@ pub fn check_file(param : &Param)
                         sbx_block::slice_buf(ref_block.get_version(),
                                              &buffer))
                 {
-                    if param.verbose {
-                        reporter.pause();
-                        println!("Block failed check, version : {}, block size : {}, at byte {} (0x{:X})",
-                                 ver_usize,
-                                 block_size,
-                                 block_pos,
-                                 block_pos);
-                        reporter.resume();
-                    }
+                    print_if_verbose!(param, reporter =>
+                                      "Block failed check, version : {}, block size : {}, at byte {} (0x{:X})",
+                                      ver_usize,
+                                      block_size,
+                                      block_pos,
+                                      block_pos;);
 
                     stats.lock().unwrap().blocks_decode_failed += 1;
                 }

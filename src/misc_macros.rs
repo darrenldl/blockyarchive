@@ -34,10 +34,10 @@ macro_rules! get_ref_block {
 macro_rules! print_block {
     (
         $(
-            $($arg:expr),*
-        );*
+            $($arg:expr),*;
+        )*
     ) => {{
-        $( println!($($arg),*); )*
+        $( println!($($arg),*) );*
     }}
 }
 
@@ -121,5 +121,31 @@ macro_rules! get_burst_or_guess {
                    } else {
                        0
                    })
+    }}
+}
+
+macro_rules! print_if_verbose {
+    (
+        $param:expr, $reporter:expr =>
+            $(
+                $($expr:expr),*;
+            )*
+    ) => {{
+        if $param.verbose {
+            pause_reporter!($reporter => $($($expr),*;)*);
+        }
+    }}
+}
+
+macro_rules! pause_reporter {
+    (
+        $reporter:expr =>
+            $(
+                $($expr:expr),*;
+            )*
+    ) => {{
+        $reporter.pause();
+        print_block!($($($expr),*;)*);
+        $reporter.resume();
     }}
 }

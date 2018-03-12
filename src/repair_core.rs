@@ -163,7 +163,7 @@ pub fn repair_file(param : &Param)
                     "Warning : No recorded file size found, using container file size to estimate total";
                     "          number of blocks. This may overestimate total number of blocks, and may";
                     "          show false repair/verify failures when gaps in container are encountered.";
-                    "");
+                    "";);
                 let metadata = file_utils::get_file_metadata(&param.in_file)?;
                 metadata.len() / block_size as u64
             },
@@ -290,11 +290,8 @@ pub fn repair_file(param : &Param)
                         repair_stats.missing_count as u64;
                 }
 
-                if param.verbose {
-                    reporter.pause();
-                    println!("{}", repair_stats);
-                    reporter.resume();
-                }
+                print_if_verbose!(param, reporter =>
+                                  "{}", repair_stats;);
 
                 // write the repaired data blocks
                 for &(pos, block_buf) in repaired_blocks.iter() {
