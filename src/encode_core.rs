@@ -9,6 +9,7 @@ use std::io::SeekFrom;
 use super::progress_report::*;
 
 use std::time::UNIX_EPOCH;
+use super::cli_utils::setup_ctrlc_handler;
 
 use super::file_reader::FileReader;
 use super::file_reader::FileReaderParam;
@@ -282,6 +283,8 @@ fn block_sync_and_write(block        : &mut Block,
 
 pub fn encode_file(param : &Param)
                    -> Result<Stats, Error> {
+    let ctrlc_stop_flag = setup_ctrlc_handler();
+
     // setup file reader and writer
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,
@@ -369,6 +372,8 @@ pub fn encode_file(param : &Param)
     }
 
     loop {
+        break_if_atomic_bool!(ctrlc_stop_flag);
+
         let mut data_blocks_written     = 0;
         let mut data_par_blocks_written = 0;
 
