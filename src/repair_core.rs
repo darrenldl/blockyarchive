@@ -281,7 +281,7 @@ pub fn repair_file(param : &Param)
 
     // repair data blocks
     for seq_num in 1..SBX_LAST_SEQ_NUM {
-        if stats.lock().unwrap().units_so_far() > total_block_count { break; }
+        if stats.lock().unwrap().units_so_far() >= total_block_count { break; }
 
         let pos = sbx_block::calc_rs_enabled_data_write_pos(seq_num,
                                                             version,
