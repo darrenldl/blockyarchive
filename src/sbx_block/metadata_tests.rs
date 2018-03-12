@@ -2,14 +2,13 @@
 
 use super::metadata;
 use super::metadata::Metadata;
-use super::super::misc_utils::slice_to_boxed;
 use super::super::multihash;
 
 #[test]
 fn test_to_bytes_simple_cases() {
     {
         let expect = b"FNM\x0Ahelloworld";
-        let meta = [Metadata::FNM(slice_to_boxed(b"helloworld"))];
+        let meta = [Metadata::FNM("helloworld".to_string())];
 
         let mut buffer : [u8; 100] = [0; 100];
         metadata::to_bytes(&meta, &mut buffer).unwrap();
@@ -22,7 +21,7 @@ fn test_to_bytes_simple_cases() {
     }
     {
         let expect = b"SNM\x07cheerio";
-        let meta = [Metadata::SNM(slice_to_boxed(b"cheerio"))];
+        let meta = [Metadata::SNM("cheerio".to_string())];
 
         let mut buffer : [u8; 100] = [0; 100];
         metadata::to_bytes(&meta, &mut buffer).unwrap();
@@ -96,7 +95,7 @@ fn test_to_bytes_simple_cases() {
 fn test_from_bytes_simple_cases() {
     {
         let input = b"FNM\x0Ahelloworld";
-        let expect = Metadata::FNM(slice_to_boxed(b"helloworld"));
+        let expect = Metadata::FNM("helloworld".to_string());
 
         let metas = metadata::from_bytes(input).unwrap();
         assert_eq!(1, metas.len());
@@ -105,7 +104,7 @@ fn test_from_bytes_simple_cases() {
     }
     {
         let input = b"SNM\x0Ahelloworld";
-        let expect = Metadata::SNM(slice_to_boxed(b"helloworld"));
+        let expect = Metadata::SNM("helloworld".to_string());
 
         let metas = metadata::from_bytes(input).unwrap();
         assert_eq!(1, metas.len());

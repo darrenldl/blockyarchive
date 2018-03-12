@@ -85,7 +85,7 @@ fn test_to_bytes_versions() {
 
         let mut buffer : [u8; 16] = [0; 16];
 
-        header.to_bytes(&mut buffer).unwrap();
+        header.to_bytes(&mut buffer);
 
         assert_eq!(*b"SBx\x01\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
                    buffer);
@@ -100,7 +100,7 @@ fn test_to_bytes_versions() {
 
         let mut buffer : [u8; 16] = [0; 16];
 
-        header.to_bytes(&mut buffer).unwrap();
+        header.to_bytes(&mut buffer);
 
         assert_eq!(*b"SBx\x02\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
                    buffer);
@@ -115,7 +115,7 @@ fn test_to_bytes_versions() {
 
         let mut buffer : [u8; 16] = [0; 16];
 
-        header.to_bytes(&mut buffer).unwrap();
+        header.to_bytes(&mut buffer);
 
         assert_eq!(*b"SBx\x03\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
                    buffer);
@@ -130,7 +130,7 @@ fn test_to_bytes_versions() {
 
         let mut buffer : [u8; 16] = [0; 16];
 
-        header.to_bytes(&mut buffer).unwrap();
+        header.to_bytes(&mut buffer);
 
         assert_eq!(*b"SBx\x11\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
                    buffer);
@@ -145,7 +145,7 @@ fn test_to_bytes_versions() {
 
         let mut buffer : [u8; 16] = [0; 16];
 
-        header.to_bytes(&mut buffer).unwrap();
+        header.to_bytes(&mut buffer);
 
         assert_eq!(*b"SBx\x12\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
                    buffer);
@@ -160,7 +160,7 @@ fn test_to_bytes_versions() {
 
         let mut buffer : [u8; 16] = [0; 16];
 
-        header.to_bytes(&mut buffer).unwrap();
+        header.to_bytes(&mut buffer);
 
         assert_eq!(*b"SBx\x13\xCD\xEF\x00\x01\x02\x03\x04\x05\x01\x02\x03\x04",
                    buffer);
@@ -202,19 +202,23 @@ fn test_from_bytes_error_handling() {
 }
 
 #[test]
-fn test_to_bytes_error_handling() {
+#[should_panic]
+fn test_to_bytes_error_handling_case1() {
     let header = Header::new(Version::V1, [0; 6], 0);
 
-    {
-        let mut buffer : [u8; 15] = [0; 15];
-        assert_eq!(Error::IncorrectBufferSize,
-                   header.to_bytes(&mut buffer).unwrap_err());
-    }
-    {
-        let mut buffer : [u8; 17] = [0; 17];
-        assert_eq!(Error::IncorrectBufferSize,
-                   header.to_bytes(&mut buffer).unwrap_err());
-    }
+    let mut buffer : [u8; 15] = [0; 15];
+
+    header.to_bytes(&mut buffer);
+}
+
+#[test]
+#[should_panic]
+fn test_to_bytes_error_handling_case2() {
+    let header = Header::new(Version::V1, [0; 6], 0);
+
+    let mut buffer : [u8; 17] = [0; 17];
+
+    header.to_bytes(&mut buffer);
 }
 
 #[test]
@@ -244,7 +248,7 @@ fn test_from_to_from_bytes() {
 
             let mut buffer2 : [u8; 16] = [0; 16];
 
-            header.to_bytes(&mut buffer2).unwrap();
+            header.to_bytes(&mut buffer2);
 
             assert_eq!(buffer, buffer2);
 
@@ -277,7 +281,7 @@ fn test_to_from_to_bytes() {
         {
             let mut buffer : [u8; 16] = [0; 16];
 
-            header.to_bytes(&mut buffer).unwrap();
+            header.to_bytes(&mut buffer);
 
             assert_eq!(expect, buffer);
 
@@ -289,7 +293,7 @@ fn test_to_from_to_bytes() {
 
             let mut buffer2 : [u8; 16] = [0; 16];
 
-            header.to_bytes(&mut buffer2).unwrap();
+            header.to_bytes(&mut buffer2);
 
             assert_eq!(expect, buffer2);
         }
