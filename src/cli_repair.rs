@@ -20,7 +20,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(pr_verbosity_level_arg())
         .arg(burst_arg())
         .arg(verbose_arg()
-             .help("Show reference block info, info(successes and failures) about all needed repairs"))
+             .help("Show reference block info, successes and failures of all needed repairs"))
 }
 
 pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
