@@ -406,8 +406,10 @@ fn hash(param     : &Param,
     loop {
         let read_res = reader.read(&mut buffer)?;
 
+        // update hash context/state
         hash_ctx.update(&buffer[0..read_res.len_read]);
 
+        // update stats
         stats.lock().unwrap().bytes_processed += read_res.len_read as u64;
 
         break_if_eof_seen!(read_res);
