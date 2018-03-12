@@ -37,16 +37,19 @@ use super::cli_utils::report_ref_block_info;
 
 pub struct Param {
     no_meta            : bool,
+    report_blank       : bool,
     in_file            : String,
     pr_verbosity_level : PRVerbosityLevel,
 }
 
 impl Param {
     pub fn new(no_meta            : bool,
+               report_blank       : bool,
                in_file            : &str,
                pr_verbosity_level : PRVerbosityLevel) -> Param {
         Param {
             no_meta,
+            report_blank,
             in_file  : String::from(in_file),
             pr_verbosity_level,
         }
@@ -172,9 +175,11 @@ pub fn check_file(param : &Param)
             },
             Err(_) => {
                 // only report error if the buffer is not completely blank
-                if !misc_utils::buffer_is_blank(
-                    sbx_block::slice_buf(ref_block.get_version(),
-                                         &buffer))
+                // unless report blank is true
+                if param.report_blank
+                    || !misc_utils::buffer_is_blank(
+                        sbx_block::slice_buf(ref_block.get_version(),
+                                             &buffer))
                 {
                     reporter.pause();
 
