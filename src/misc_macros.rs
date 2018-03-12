@@ -132,7 +132,11 @@ macro_rules! print_if_verbose {
             )*
     ) => {{
         if $param.verbose {
-            pause_reporter!($reporter => $($($expr),*;)*);
+            pause_reporter!($reporter =>
+                            print_block!(
+                                $( $($expr),*; )*
+                            );
+            );
         }
     }}
 }
@@ -140,12 +144,10 @@ macro_rules! print_if_verbose {
 macro_rules! pause_reporter {
     (
         $reporter:expr =>
-            $(
-                $($expr:expr),*;
-            )*
+            $($expr:expr;)*
     ) => {{
         $reporter.pause();
-        print_block!($($($expr),*;)*);
+        $($expr;)*;
         $reporter.resume();
     }}
 }
