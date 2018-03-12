@@ -175,3 +175,14 @@ macro_rules! pause_reporter {
         $reporter.resume();
     }}
 }
+
+macro_rules! break_if_atomic_bool {
+    (
+        $atomic_bool:expr
+    ) => {{
+        use std::sync::atomic::Ordering;
+        if $atomic_bool.load(Ordering::SeqCst) {
+            break;
+        }
+    }}
+}

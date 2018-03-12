@@ -12,7 +12,7 @@ use super::misc_utils::RequiredLenAndSeekTo;
 use super::progress_report::*;
 use super::log::*;
 
-use super::cli_utils::setup_ctrl_c_handler;
+use super::cli_utils::setup_ctrlc_handler;
 
 use super::file_reader::FileReader;
 use super::file_reader::FileReaderParam;
@@ -207,9 +207,7 @@ impl fmt::Display for Stats {
 
 pub fn rescue_from_file(param : &Param)
                         -> Result<Stats, Error> {
-    let loop_stop_flag = Arc::new(AtomicBool::new(false));
-
-    setup_ctrl_c_handler(&loop_stop_flag);
+    let ctrlc_stop_flag = setup_ctrlc_handler();
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&metadata)?));
@@ -249,9 +247,7 @@ pub fn rescue_from_file(param : &Param)
     reader.seek(SeekFrom::Start(seek_to))?;
 
     loop {
-        if loop_stop_flag.load(Ordering::Relaxed) {
-            break;
-        }
+        break_if_atomic_bool!(ctrlc_stop_flag);
 
         if stats.lock().unwrap().bytes_processed > required_len {
             break;
