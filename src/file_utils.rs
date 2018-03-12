@@ -31,30 +31,42 @@ pub fn check_if_file_is_dir(file : &str) -> bool {
     Path::new(file).is_dir()
 }
 
-pub fn calc_data_chunk_count(version  : Version,
-                             metadata : &fs::Metadata) -> u64 {
-    let data_size = ver_to_data_size(version) as u64;
-    ((metadata.len() + (data_size - 1)) / data_size)
+pub mod from_raw_file_metadata {
+    use super::*;
+    pub fn calc_data_chunk_count(version  : Version,
+                                 metadata : &fs::Metadata) -> u64 {
+        let data_size = ver_to_data_size(version) as u64;
+        ((metadata.len() + (data_size - 1)) / data_size)
+    }
 }
 
-pub fn calc_total_block_count(version  : Version,
-                              metadata : &fs::Metadata) -> u64 {
-    let block_size = ver_to_block_size(version) as u64;
-    ((metadata.len() + (block_size - 1)) / block_size)
+pub mod from_container_metadata {
+    use super::*;
+    pub fn calc_total_block_count(version  : Version,
+                                  metadata : &fs::Metadata) -> u64 {
+        let block_size = ver_to_block_size(version) as u64;
+        ((metadata.len() + (block_size - 1)) / block_size)
+    }
 }
 
-pub fn calc_rs_enabled_total_block_count_from_orig_file_size(version      : Version,
-                                                             data_shards   : usize,
-                                                             parity_shards : usize,
-                                                             size          : u64)
-                                                             -> u64 {
-    assert!(ver_uses_rs(version));
+pub mod from_orig_file_size {
+    use super::*;
+    pub fn calc_rs_enabled_total_block_count(version       : Version,
+                                             data_shards   : usize,
+                                             parity_shards : usize,
+                                             size          : u64)
+                                             -> u64 {
+        assert!(ver_uses_rs(version));
 
-    let chunk_size = ver_to_data_size(version) as u64;
-    let data_chunks = (size + (chunk_size - 1)) / chunk_size;
+        let chunk_size  = ver_to_data_size(version) as u64;
+        let data_chunks = (size + (chunk_size - 1)) / chunk_size;
 
-    let block_set_size = (data_shards + parity_shards) as u64;
-    let block_set_count = (data_chunks + (block_set_size - 1)) / block_set_size;
+        let meta_block_count = 1 + parity_shards as u64;
+        let block_set_size   =
+            (data_shards + parity_shards) as u64;
+        let block_set_count  =
+            (data_chunks + (block_set_size - 1)) / block_set_size;
 
-    (1 + parity_shards) as u64 + block_set_count * block_set_size
+        meta_block_count + block_set_count * block_set_size
+    }
 }

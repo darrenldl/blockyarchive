@@ -149,8 +149,9 @@ impl Param {
 
 impl Stats {
     pub fn new(param : &Param, file_metadata : &fs::Metadata) -> Stats {
+        use file_utils::from_raw_file_metadata::calc_data_chunk_count;
         let total_data_blocks =
-            file_utils::calc_data_chunk_count(param.version, file_metadata) as u32;
+            calc_data_chunk_count(param.version, file_metadata) as u32;
         Stats {
             version                 : param.version,
             hash_bytes              : None,

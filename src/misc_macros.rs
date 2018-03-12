@@ -29,3 +29,39 @@ macro_rules! print_block {
         $( println!($($arg),*); )*
     }}
 }
+
+macro_rules! get_RSD_from_ref_block {
+    (
+        $ref_block_pos:expr, $ref_block:expr, $reason:expr
+    ) => {{
+        let ver_usize = ver_to_usize($ref_block.get_version());
+        match $ref_block.get_RSD().unwrap() {
+            None    => {
+                return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSD field({} for version {})",
+                                                        $ref_block_pos,
+                                                        $ref_block_pos,
+                                                        $reason,
+                                                        ver_usize)));
+            },
+            Some(x) => x as usize,
+        }
+    }}
+}
+
+macro_rules! get_RSP_from_ref_block {
+    (
+        $ref_block_pos:expr, $ref_block:expr, $reason:expr
+    ) => {{
+        let ver_usize = ver_to_usize($ref_block.get_version());
+        match $ref_block.get_RSP().unwrap() {
+            None    => {
+                return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field({} for version {})",
+                                                        $ref_block_pos,
+                                                        $ref_block_pos,
+                                                        $reason,
+                                                        ver_usize)));
+            },
+            Some(x) => x as usize,
+        }
+    }}
+}

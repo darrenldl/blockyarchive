@@ -181,9 +181,10 @@ impl HashStats {
 impl Stats {
     pub fn new(ref_block     : &Block,
                file_metadata : &fs::Metadata) -> Stats {
+        use file_utils::from_container_metadata::calc_total_block_count;
         let total_blocks =
-            file_utils::calc_total_block_count(ref_block.get_version(),
-                                               file_metadata);
+            calc_total_block_count(ref_block.get_version(),
+                                   file_metadata);
         Stats {
             version                 : ref_block.get_version(),
             blocks_decode_failed    : 0,

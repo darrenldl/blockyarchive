@@ -14,6 +14,8 @@ use super::file_writer::FileWriterParam;
 
 use super::sbx_specs::SBX_SCAN_BLOCK_SIZE;
 
+use file_utils::from_orig_file_size::calc_rs_enabled_total_block_count;
+
 use super::multihash;
 use super::multihash::*;
 
@@ -56,11 +58,8 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(ref_block     : &Block,
-               file_metadata : &fs::Metadata) -> Stats {
-        let total_blocks =
-            file_utils::calc_total_block_count(ref_block.get_version(),
-                                               file_metadata);
+    pub fn new(ref_block    : &Block,
+               total_blocks : u64) -> Stats {
         Stats {
             version                          : ref_block.get_version(),
             blocks_decode_failed             : 0,
@@ -140,23 +139,40 @@ pub fn repair_file(param : &Param)
                                                         param.verbose,
                                                         param.pr_verbosity_level);
 
-    let metadata = file_utils::get_file_metadata(&param.in_file)?;
-    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
-
-    let version   = ref_block.get_version();
-    let ver_usize = ver_to_usize(version);
+    let version = ref_block.get_version();
     let block_size = ver_to_block_size(version);
 
     let rs_enabled = ver_uses_rs(version);
 
+    let data_shards   = get_RSD_from_ref_block!(ref_block_pos, ref_block, "must be present to sort");
+    let parity_shards = get_RSP_from_ref_block!(ref_block_pos, ref_block, "must be present to sort");
+
+    let total_block_count =
+        match ref_block.get_FSZ().unwrap() {
+            Some(x) =>
+                calc_rs_enabled_total_block_count(version,
+                                                  data_shards,
+                                                  parity_shards,
+                                                  x),
+            None    => {
+                print_block!(
+                    "";
+                    "Warning : No recorded file size found, using container file size to estimate total";
+                    "          number of blocks. This may overestimate total number of blocks, and may";
+                    "          show false repair/verify failures when gaps in container are encountered.";
+                    "");
+                let metadata = file_utils::get_file_metadata(&param.in_file)?;
+                metadata.len() / block_size as u64
+            },
+        };
+
     if !rs_enabled {
-        println!("Version {} does not use Reed-Solomon erasure code, exiting now", ver_usize);
+        println!("Version {} does not use Reed-Solomon erasure code, exiting now", ver_to_usize(version));
         println!();
-        let stats = stats.lock().unwrap().clone();
-        return Ok(stats);
+        return Ok(Stats::new(&ref_block, total_block_count));
     }
 
-    let file_size = ref_block.get_FSZ().unwrap();
+    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, total_block_count)));
 
     let burst =
         match param.burst {
@@ -177,26 +193,6 @@ pub fn repair_file(param : &Param)
                  burst);
         println!();
     }
-
-    let data_shards = match ref_block.get_RSD().unwrap() {
-        None    => {
-            return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
-                                                    ref_block_pos,
-                                                    ref_block_pos,
-                                                    ver_usize)));
-        },
-        Some(x) => x as usize,
-    };
-
-    let parity_shards = match ref_block.get_RSP().unwrap() {
-        None    => {
-            return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to sort for version {})",
-                                                    ref_block_pos,
-                                                    ref_block_pos,
-                                                    ver_usize)));
-        },
-        Some(x) => x as usize,
-    };
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : true,
@@ -255,25 +251,6 @@ pub fn repair_file(param : &Param)
             }
         }
     }
-
-    let total_block_count =
-        match file_size {
-            Some(x) => file_utils::calc_rs_enabled_total_block_count_from_orig_file_size(version,
-                                                                                         data_shards,
-                                                                                         parity_shards,
-                                                                                         x),
-            None    => {
-                reporter.pause();
-                print_block!(
-                    "";
-                    "Warning : No recorded file size found, using container file size to estimate total";
-                    "          number of blocks. This may overestimate total number of blocks, and may";
-                    "          show false repair/verify failures when gaps in container are encountered.";
-                    "");
-                reporter.resume();
-                metadata.len() / block_size as u64
-            },
-        };
 
     // repair data blocks
     for seq_num in 1..SBX_LAST_SEQ_NUM {
