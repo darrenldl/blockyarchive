@@ -135,15 +135,10 @@ impl Param {
 
 pub fn repair_file(param : &Param)
                    -> Result<Stats, Error> {
-    let (ref_block_pos, mut ref_block) =
-        match block_utils::get_ref_block(&param.in_file,
-                                         false,
-                                         param.pr_verbosity_level)? {
-            None => { return Err(Error::with_message("Failed to find reference block")); },
-            Some(x) => x,
-        };
-
-    report_ref_block_info(ref_block_pos, &ref_block);
+    let (ref_block_pos, mut ref_block) = get_ref_block!(&param.in_file,
+                                                        false,
+                                                        param.verbose,
+                                                        param.pr_verbosity_level);
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));

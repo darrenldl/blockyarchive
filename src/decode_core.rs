@@ -142,14 +142,16 @@ pub struct Param {
     force_write        : bool,
     in_file            : String,
     out_file           : Option<String>,
+    verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel
 }
 
 impl Param {
-    pub fn new(no_meta         : bool,
-               force_write     : bool,
-               in_file         : &str,
-               out_file        : Option<&str>,
+    pub fn new(no_meta            : bool,
+               force_write        : bool,
+               in_file            : &str,
+               out_file           : Option<&str>,
+               verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel) -> Param {
         Param {
             no_meta,
@@ -159,6 +161,7 @@ impl Param {
                 None    => None,
                 Some(x) => Some(String::from(x))
             },
+            verbose,
             pr_verbosity_level,
         }
     }
@@ -431,15 +434,10 @@ fn hash(param     : &Param,
 
 pub fn decode_file(param : &Param)
                    -> Result<Stats, Error> {
-    let (ref_block_pos, ref_block) =
-        match block_utils::get_ref_block(&param.in_file,
-                                         param.no_meta,
-                                         param.pr_verbosity_level)? {
-            None => { return Err(Error::with_message("Failed to find reference block")); },
-            Some(x) => x,
-        };
-
-    report_ref_block_info(ref_block_pos, &ref_block);
+    let (ref_block_pos, ref_block) = get_ref_block!(&param.in_file,
+                                                    param.no_meta,
+                                                    param.verbose,
+                                                    param.pr_verbosity_level);
 
     // get FNM of ref_block
     let recorded_file_name : Option<String> =
@@ -485,6 +483,7 @@ pub fn decode_file(param : &Param)
                            param.force_write,
                            &param.in_file,
                            Some(&out_file_path),
+                           param.verbose,
                            param.pr_verbosity_level);
 
     let mut stats = decode(&param, ref_block_pos, &ref_block)?;

@@ -75,6 +75,9 @@ mod log;
 
 mod rs_codec;
 
+#[macro_use]
+mod misc_macros;
+
 mod encode_core;
 mod decode_core;
 mod rescue_core;

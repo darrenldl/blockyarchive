@@ -69,13 +69,11 @@ pub fn burst_arg<'a, 'b>() -> Arg<'a, 'b> {
 
 pub fn report_ref_block_info(ref_block_pos : u64,
                              ref_block     : &sbx_block::Block) {
-    println!();
     println!("Using {} block as reference block, located at byte {} (0x{:X})",
              if ref_block.is_meta() { "metadata" }
              else                   { "data"     },
              ref_block_pos,
              ref_block_pos);
-    println!();
 }
 
 pub fn guess_burst_arg<'a, 'b>() -> Arg<'a, 'b> {

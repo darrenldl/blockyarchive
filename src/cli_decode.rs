@@ -30,6 +30,8 @@ OUT is provided and is not a directory, then it is used directly."))
              .help("Force overwrite even if OUT exists"))
         .arg(no_meta_arg())
         .arg(pr_verbosity_level_arg())
+        .arg(verbose_arg()
+             .help("Show reference block info"))
 }
 
 pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
@@ -42,6 +44,7 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
                            matches.is_present("force"),
                            in_file,
                            out_file,
+                           matches.is_present("verbose"),
                            pr_verbosity_level);
     match decode_core::decode_file(&param) {
         Ok(s)  => exit_with_msg!(ok => "{}", s),
