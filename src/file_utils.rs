@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::fs;
 use super::Error;
 use super::sbx_specs::Version;

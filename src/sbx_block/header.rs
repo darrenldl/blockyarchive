@@ -81,20 +81,6 @@ impl Header {
             BlockType::Data
         }
     }
-
-    pub fn is_meta(&self) -> bool {
-        match self.header_type() {
-            BlockType::Data => false,
-            BlockType::Meta => true
-        }
-    }
-
-    pub fn is_data(&self) -> bool {
-        match self.header_type() {
-            BlockType::Data => true,
-            BlockType::Meta => false
-        }
-    }
 }
 
 mod parsers {

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use super::Error;
 use super::file_error::FileError;
 use super::file_error::to_err;

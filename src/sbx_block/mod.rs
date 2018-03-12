@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod header;
 mod metadata;
 mod crc;
@@ -43,8 +45,6 @@ pub enum BlockType {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Error {
     IncorrectBlockType,
-    InconsistentHeaderBlockType,
-    InsufficientBufferSize,
     IncorrectBufferSize,
     TooMuchMetadata,
     InvalidCRC,

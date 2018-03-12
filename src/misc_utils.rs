@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::cell::Cell;
 use std::sync::mpsc::{channel, sync_channel, Sender, SyncSender, Receiver};
 

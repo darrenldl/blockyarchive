@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use super::time_utils;
 use super::misc_utils::f64_max;
 use std::io::Write;
@@ -77,7 +78,6 @@ pub struct ProgressReporter<T : 'static + ProgressReport + Send> {
     start_flag       : Arc<AtomicBool>,
     shutdown_flag    : Arc<AtomicBool>,
     shutdown_barrier : Arc<Barrier>,
-    runner           : JoinHandle<()>,
     stats            : Arc<Mutex<T>>,
     context          : Arc<Mutex<Context>>,
     active_flag      : Arc<AtomicBool>,
@@ -113,7 +113,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
         let runner_shutdown_flag    = Arc::clone(&shutdown_flag);
         let runner_shutdown_barrier = Arc::clone(&shutdown_barrier);
         let runner_active_flag      = Arc::clone(&active_flag);
-        let runner                  = thread::spawn(move || {
+        thread::spawn(move || {
             // waiting to be kickstarted
             runner_start_barrier.wait();
 
@@ -150,7 +150,6 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             start_flag,
             shutdown_flag,
             shutdown_barrier,
-            runner,
             stats,
             context,
             active_flag,

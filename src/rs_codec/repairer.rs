@@ -18,7 +18,6 @@ pub struct RSRepairer {
     rs_codec       : ReedSolomon,
     version        : Version,
     buf            : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
-    buf_par_verify : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     buf_present    : SmallVec<[bool; 32]>,
     ref_block      : Block,
 }
@@ -82,18 +81,14 @@ impl RSRepairer {
         let buf_present : SmallVec<[bool; 32]> =
             smallvec![false; data_shards + parity_shards];
 
-        let buf_par_verify : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
-            smallvec![smallvec![0; block_size]; parity_shards];
-
         RSRepairer {
-            index          : 0,
-            rs_codec       : ReedSolomon::new(data_shards,
-                                              parity_shards).unwrap(),
+            index       : 0,
+            rs_codec    : ReedSolomon::new(data_shards,
+                                           parity_shards).unwrap(),
             version,
             buf,
-            buf_par_verify,
             buf_present,
-            ref_block      : ref_block.clone(),
+            ref_block   : ref_block.clone(),
         }
     }
 

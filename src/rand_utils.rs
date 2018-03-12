@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 extern crate rand;
 
 pub fn fill_random_bytes(bytes : &mut [u8]) {

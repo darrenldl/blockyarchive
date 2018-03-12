@@ -24,7 +24,6 @@ const LOG_WRITE_INTERVAL_IN_MILLISEC : u64 = 1000;
 pub struct LogHandler<T : 'static + Log + Send> {
     log_file   : Option<String>,
     stats      : Arc<Mutex<T>>,
-    runner     : JoinHandle<()>,
     write_flag : Arc<AtomicBool>,
 }
 
@@ -102,7 +101,7 @@ impl<T : 'static + Log + Send> LogHandler<T> {
         };
         let write_flag = Arc::new(AtomicBool::new(true));
         let runner_write_flag = Arc::clone(&write_flag);
-        let runner = thread::spawn(move || {
+        thread::spawn(move || {
             loop {
                 runner_write_flag.store(true, Ordering::Relaxed);
 
@@ -112,7 +111,6 @@ impl<T : 'static + Log + Send> LogHandler<T> {
         LogHandler {
             log_file,
             stats    : Arc::clone(stats),
-            runner,
             write_flag,
         }
     }
