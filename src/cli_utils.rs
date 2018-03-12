@@ -86,3 +86,8 @@ Note that this requires scanning for a reference block, and may
 go through the entire file as a result.
 This operation does not respect the misalignment and range requirements.")
 }
+
+pub fn print_safe_to_interrupt() {
+    println!("This mode can be safely interrupted via Ctrl-C");
+    println!();
+}
