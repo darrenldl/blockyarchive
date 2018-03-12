@@ -168,3 +168,11 @@ pub fn make_path(path_parts : &[&str]) -> String {
     }
     string
 }
+
+pub fn buffer_is_blank(buf : &[u8]) -> bool {
+    for p in buf.iter() {
+        if *p != 0 { return false; }
+    }
+
+    true
+}
