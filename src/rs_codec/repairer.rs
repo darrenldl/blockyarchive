@@ -9,6 +9,8 @@ use super::super::sbx_specs::SBX_FIRST_DATA_SEQ_NUM;
 use super::*;
 use super::super::sbx_block;
 
+use std::fmt;
+
 use super::Error;
 
 pub struct RSRepairer {
@@ -27,6 +29,31 @@ pub struct RSRepairStats<'a> {
     pub present       : &'a SmallVec<[bool; 32]>,
     pub missing_count : usize,
     pub present_count : usize,
+}
+
+impl<'a> fmt::Display for RSRepairStats<'a> {
+    fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
+        if self.missing_count > 0 {
+            if self.successful {
+                write!(f, "Repaired blocks : ")?;
+            } else {
+                write!(f, "Failed to repair blocks : ")?;
+            }
+            let mut first_num = true;
+            for i in 0..self.present.len() {
+                if !self.present[i] {
+                    if !first_num {
+                        write!(f, ", ")?;
+                        first_num = false;
+                    }
+                    write!(f, "{}", self.start_seq_num + i as u32)?;
+                }
+            }
+            writeln!(f)
+        } else {
+            Ok(())
+        }
+    }
 }
 
 macro_rules! add_index {

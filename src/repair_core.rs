@@ -319,39 +319,18 @@ pub fn repair_file(param : &Param)
                     rs_codec.repair_with_block_sync(seq_num, burst);
 
                 stats.lock().unwrap().blocks_decode_failed += repair_stats.missing_count as u64;
+
                 if repair_stats.successful {
-                    stats.lock().unwrap().data_or_par_blocks_repaired += repair_stats.missing_count as u64;
-                    if repair_stats.missing_count > 0 {
-                        reporter.pause();
-                        print!("Repaired blocks : ");
-                        let mut first_num = true;
-                        for i in 0..repair_stats.present.len() {
-                            if !repair_stats.present[i] {
-                                print!("{}{}",
-                                       if first_num { "" } else { ", " },
-                                       repair_stats.start_seq_num + i as u32);
-                                first_num = false;
-                            }
-                        }
-                        println!();
-                        reporter.resume();
-                    }
+                    stats.lock().unwrap().data_or_par_blocks_repaired +=
+                        repair_stats.missing_count as u64;
                 } else {
-                    stats.lock().unwrap().data_or_par_blocks_repair_failed += repair_stats.missing_count as u64;
+                    stats.lock().unwrap().data_or_par_blocks_repair_failed +=
+                        repair_stats.missing_count as u64;
+                }
+
+                if param.verbose {
                     reporter.pause();
-                    print!("Failed to repair blocks : ");
-                    let mut first_num = true;
-                    for i in 0..repair_stats.present.len() {
-                        if !repair_stats.present[i] {
-                            if first_num {
-                                print!("{}{}",
-                                       if first_num { "" } else { ", " },
-                                       repair_stats.start_seq_num + i as u32);
-                                first_num = false;
-                            }
-                        }
-                    }
-                    println!();
+                    println!("{}", repair_stats);
                     reporter.resume();
                 }
 
