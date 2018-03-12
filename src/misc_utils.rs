@@ -11,20 +11,20 @@ pub enum HexError {
 }
 
 fn is_valid_hex_char(chr : u8) -> bool {
-    (0x30 <= chr && chr <= 0x39)
-        || (0x41 <= chr && chr <= 0x46)
-        || (0x61 <= chr && chr <= 0x66)
+    (b'0' <= chr && chr <= b'9')
+        || (b'A' <= chr && chr <= b'F')
+        || (b'a' <= chr && chr <= b'f')
 }
 
 fn hex_char_to_value(chr : u8) -> u8 {
-    if 0x30 <= chr && chr <= 0x39 {
-        chr - 0x30
+    if      b'0' <= chr && chr <= b'9' {
+        chr - b'0'
     }
-    else if 0x41 <= chr && chr <= 0x46 {
-        chr - 0x41 + 0x0A
+    else if b'A' <= chr && chr <= b'F' {
+        chr - b'A' + 0x0A
     }
-    else if 0x61 <= chr && chr <= 0x66 {
-        chr - 0x61 + 0x0A
+    else if b'a' <= chr && chr <= b'f' {
+        chr - b'a' + 0x0A
     }
     else { panic!() }
 }
