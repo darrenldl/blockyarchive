@@ -123,15 +123,10 @@ impl fmt::Display for Stats {
 
 pub fn check_file(param : &Param)
                   -> Result<Stats, Error> {
-    let (ref_block_pos, ref_block) =
-        match block_utils::get_ref_block(&param.in_file,
-                                         param.no_meta,
-                                         param.pr_verbosity_level)? {
-            None => { return Err(Error::with_message("Failed to find reference block")); },
-            Some(x) => x,
-        };
-
-    report_ref_block_info(ref_block_pos, &ref_block);
+    let (_, ref_block) = get_ref_block!(param.in_file,
+                                                    param.no_meta,
+                                                    param.verbose,
+                                                    param.pr_verbosity_level);
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
@@ -153,10 +148,10 @@ pub fn check_file(param : &Param)
 
     let block_size = ver_to_block_size(ref_block.get_version());
 
-    reporter.start();
-
     let mut block_pos       : u64;
     let mut bytes_processed : u64 = 0;
+
+    reporter.start();
 
     loop {
         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
@@ -184,26 +179,27 @@ pub fn check_file(param : &Param)
                         sbx_block::slice_buf(ref_block.get_version(),
                                              &buffer))
                 {
-                    reporter.pause();
+                    if param.verbose {
+                        reporter.pause();
+                        println!("Block failed check, version : {}, block size : {}, at byte {} (0x{:X})",
+                                 ver_usize,
+                                 block_size,
+                                 block_pos,
+                                 block_pos);
+                        reporter.resume();
+                    }
 
-                    println!("Block failed check, version : {}, block size : {}, at byte {} (0x{:X})",
-                             ver_usize,
-                             block_size,
-                             block_pos,
-                             block_pos);
                     stats.lock().unwrap().blocks_decode_failed += 1;
-
-                    reporter.resume();
                 }
             }
         }
     }
 
+    reporter.stop();
+
     if stats.lock().unwrap().blocks_decode_failed > 0 {
         println!();
     }
-
-    reporter.stop();
 
     let stats = stats.lock().unwrap().clone();
 
