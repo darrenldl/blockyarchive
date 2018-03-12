@@ -382,7 +382,7 @@ pub fn encode_file(param : &Param)
                 if (block.get_seq_num() - SBX_FIRST_DATA_SEQ_NUM)
                     % (param.rs_data + param.rs_parity) as u32 != 0 {
                     // fill remaining slots with padding
-                    loop {
+                    loop { // loop 1
                         // write padding
                         write_data_block(param,
                                          &mut block,
@@ -391,6 +391,8 @@ pub fn encode_file(param : &Param)
 
                         data_blocks_written += 1;
 
+                        // keep writing until parity shards are ready
+                        // then break loop
                         match rs_codec.encode_no_block_sync(&padding) {
                             None                => {},
                             Some(parity_to_use) => {
@@ -400,16 +402,13 @@ pub fn encode_file(param : &Param)
                                                      p,
                                                      &mut writer)?;
 
-                                    data_par_blocks_written += 1;
-                                }
+                                    data_par_blocks_written += 1; }
 
-                                break;
+                                break; // break loop 1
                             }
-                        }
-                    }
-                }
-            }
-            break;
+                        }}}}
+
+            break; // break outer loop
         }
 
         stats.lock().unwrap().data_padding_bytes +=
