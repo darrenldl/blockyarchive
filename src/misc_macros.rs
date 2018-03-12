@@ -73,7 +73,6 @@ macro_rules! return_if_not_ver_uses_rs {
         use sbx_specs::*;
         if !ver_uses_rs($version) {
             println!("Version {} does not use Reed-Solomon erasure code, exiting now", ver_to_usize($version));
-            println!();
             return Ok(None);
         }
     }}

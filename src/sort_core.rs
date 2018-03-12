@@ -39,6 +39,7 @@ pub struct Param {
     no_meta            : bool,
     in_file            : String,
     out_file           : String,
+    verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
     burst              : Option<usize>,
 }
@@ -47,12 +48,14 @@ impl Param {
     pub fn new(no_meta            : bool,
                in_file            : &str,
                out_file           : &str,
+               verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel,
                burst              : Option<usize>) -> Param {
         Param {
             no_meta,
             in_file  : String::from(in_file),
             out_file : String::from(out_file),
+            verbose,
             pr_verbosity_level,
             burst,
         }
@@ -134,31 +137,36 @@ pub fn sort_file(param : &Param)
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
 
-    //println!();
-
     let version   = ref_block.get_version();
     let block_size = ver_to_block_size(version) as u64;
 
     let rs_enabled = ver_uses_rs(version);
 
-    return_if_not_ver_uses_rs!(version);
-
     let burst =
         match param.burst {
             None => {
-                match block_utils::guess_burst_err_resistance_level(&param.in_file,
-                                                                    ref_block_pos,
-                                                                    &ref_block)?
-                {
-                    None    => { return Err(Error::with_message("Failed to guess burst resistance level, please specify via --burst option")); },
-                    Some(x) => x
+                if rs_enabled {
+                    match block_utils::guess_burst_err_resistance_level(&param.in_file,
+                                                                        ref_block_pos,
+                                                                        &ref_block)?
+                    {
+                        None    => { return Err(Error::with_message("Failed to guess burst resistance level, please specify via --burst option")); },
+                        Some(x) => x
+                    }
+                } else {
+                    0
                 }
             },
             Some(x) => x
         };
 
-    println!("Using burst error resistance level {} for output container",
-             burst);
+    if param.verbose {
+        println!("Using burst error resistance level {} for output container",
+                 burst);
+        println!();
+        report_ref_block_info(ref_block_pos, &ref_block);
+        println!();
+    }
 
     let mut data_shards = None;
     let mut parity_shards = None;
@@ -167,8 +175,6 @@ pub fn sort_file(param : &Param)
         data_shards   = Some(get_RSD_from_ref_block!(ref_block_pos, ref_block, "sort"));
         parity_shards = Some(get_RSP_from_ref_block!(ref_block_pos, ref_block, "sort"));
     }
-
-    report_ref_block_info(ref_block_pos, &ref_block);
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 

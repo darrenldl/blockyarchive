@@ -28,6 +28,8 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(from_byte_arg())
         .arg(to_byte_arg())
         .arg(burst_arg())
+        .arg(verbose_arg()
+             .help("Show reference block info"))
 }
 
 pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
@@ -53,6 +55,7 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
     let param = Param::new(matches.is_present("no-meta"),
                            in_file,
                            &out_file,
+                           matches.is_present("verbose"),
                            pr_verbosity_level,
                            burst);
     match sort_core::sort_file(&param) {

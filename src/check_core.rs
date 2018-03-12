@@ -39,6 +39,7 @@ pub struct Param {
     no_meta            : bool,
     report_blank       : bool,
     in_file            : String,
+    verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
 }
 
@@ -46,11 +47,13 @@ impl Param {
     pub fn new(no_meta            : bool,
                report_blank       : bool,
                in_file            : &str,
+               verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel) -> Param {
         Param {
             no_meta,
             report_blank,
             in_file  : String::from(in_file),
+            verbose,
             pr_verbosity_level,
         }
     }

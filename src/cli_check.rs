@@ -20,6 +20,8 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .long("report-blank")
              .help("Completely blank blocks are ignored by default.
 Specify this if you want rsbx to report blank blocks as well."))
+        .arg(verbose_arg()
+             .help("Show reference block info, show individual check results"))
 }
 
 pub fn check<'a>(matches : &ArgMatches<'a>) -> i32 {
@@ -29,6 +31,7 @@ pub fn check<'a>(matches : &ArgMatches<'a>) -> i32 {
     let param = Param::new(matches.is_present("no_meta"),
                            matches.is_present("report_blank"),
                            in_file,
+                           matches.is_present("verbose"),
                            pr_verbosity_level);
     match check_core::check_file(&param) {
         Ok(s)  => exit_with_msg!(ok => "{}", s),
