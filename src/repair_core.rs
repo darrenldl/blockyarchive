@@ -303,6 +303,10 @@ pub fn repair_file(param : &Param)
         }
     }
 
+    if stats.lock().unwrap().blocks_decode_failed > 0 {
+        print_if_verbose!(param, reporter => "";);
+    }
+
     reporter.stop();
 
     let stats = stats.lock().unwrap().clone();
