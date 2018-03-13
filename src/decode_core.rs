@@ -5,7 +5,10 @@ use super::file_utils;
 use super::misc_utils;
 use std::io::SeekFrom;
 
+use std::sync::atomic::AtomicBool;
+
 use super::progress_report::*;
+use super::cli_utils::setup_ctrlc_handler;
 
 use super::file_reader::FileReader;
 use super::file_reader::FileReaderParam;
@@ -225,9 +228,10 @@ impl ProgressReport for Stats {
     fn total_units(&self)        -> u64      { self.total_blocks as u64 }
 }
 
-pub fn decode(param         : &Param,
-              ref_block_pos : u64,
-              ref_block     : &Block)
+pub fn decode(param           : &Param,
+              ref_block_pos   : u64,
+              ref_block       : &Block,
+              ctrlc_stop_flag : &Arc<AtomicBool>)
               -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
@@ -291,6 +295,8 @@ pub fn decode(param         : &Param,
     reporter.start();
 
     loop {
+        break_if_atomic_bool!(ctrlc_stop_flag);
+
         // read at reference block block size
         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                             &mut buffer))?;
@@ -352,8 +358,9 @@ pub fn decode(param         : &Param,
     Ok(res)
 }
 
-fn hash(param     : &Param,
-        ref_block : &Block)
+fn hash(param           : &Param,
+        ref_block       : &Block,
+        ctrlc_stop_flag : &Arc<AtomicBool>)
         -> Result<Option<HashBytes>, Error> {
     let hash_bytes : Option<HashBytes> =
         if ref_block.is_data() {
@@ -389,6 +396,8 @@ fn hash(param     : &Param,
     reporter.start();
 
     loop {
+        break_if_atomic_bool!(ctrlc_stop_flag);
+
         let read_res = reader.read(&mut buffer)?;
 
         // update hash context/state
@@ -407,7 +416,10 @@ fn hash(param     : &Param,
 
 pub fn decode_file(param : &Param)
                    -> Result<Stats, Error> {
-    let (ref_block_pos, ref_block) = get_ref_block!(param);
+    let ctrlc_stop_flag = setup_ctrlc_handler();
+
+    let (ref_block_pos, ref_block) = get_ref_block!(param,
+                                                    ctrlc_stop_flag);
 
     // get FNM of ref_block
     let recorded_file_name : Option<String> =
@@ -456,9 +468,14 @@ pub fn decode_file(param : &Param)
                            param.verbose,
                            param.pr_verbosity_level);
 
-    let mut stats = decode(&param, ref_block_pos, &ref_block)?;
+    let mut stats = decode(&param,
+                           ref_block_pos,
+                           &ref_block,
+                           &ctrlc_stop_flag)?;
 
-    stats.computed_hash = hash(&param, &ref_block)?;
+    stats.computed_hash = hash(&param,
+                               &ref_block,
+                               &ctrlc_stop_flag)?;
 
     Ok(stats)
 }

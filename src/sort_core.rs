@@ -129,7 +129,8 @@ pub fn sort_file(param : &Param)
                  -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler();
 
-    let (ref_block_pos, ref_block) = get_ref_block!(param);
+    let (ref_block_pos, ref_block) = get_ref_block!(param,
+                                                    ctrlc_stop_flag);
 
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));

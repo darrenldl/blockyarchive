@@ -6,6 +6,7 @@ use super::misc_utils;
 use std::io::SeekFrom;
 
 use super::progress_report::*;
+use super::cli_utils::setup_ctrlc_handler;
 
 use super::file_reader::FileReader;
 use super::file_reader::FileReaderParam;
@@ -134,7 +135,11 @@ impl Param {
 
 pub fn repair_file(param : &Param)
                    -> Result<Option<Stats>, Error> {
-    let (ref_block_pos, mut ref_block) = get_ref_block!(param, false);
+    let ctrlc_stop_flag = setup_ctrlc_handler();
+
+    let (ref_block_pos, mut ref_block) = get_ref_block!(param,
+                                                        false,
+                                                        ctrlc_stop_flag);
 
     let version = ref_block.get_version();
 

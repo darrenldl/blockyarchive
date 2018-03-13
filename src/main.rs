@@ -57,6 +57,9 @@ mod general_error;
 use general_error::Error;
 use general_error::ErrorKind;
 
+#[macro_use]
+mod misc_macros;
+
 mod multihash;
 mod multihash_tests;
 mod misc_utils;
@@ -73,9 +76,6 @@ mod sbx_specs;
 mod log;
 
 mod rs_codec;
-
-#[macro_use]
-mod misc_macros;
 
 mod encode_core;
 mod decode_core;
