@@ -178,13 +178,17 @@ pub fn make_path(path_parts : &[&str]) -> String {
         }
     }
 
-    let mut path = PathBuf::new();
-    for p in path_parts.iter() {
-        path.push(
-            strip_slash_prefix(
-                strip_slash_suffix(p)));
+    let mut path_buf = PathBuf::new();
+    for i in 0..path_parts.len() {
+        if i == 0 {
+            path_buf.push(path_parts[i]);
+        } else {
+            path_buf.push(
+                strip_slash_prefix(
+                    strip_slash_suffix(path_parts[i])));
+        }
     }
-    path.to_string_lossy().to_string()
+    path_buf.to_string_lossy().to_string()
 }
 
 pub fn buffer_is_blank(buf : &[u8]) -> bool {
