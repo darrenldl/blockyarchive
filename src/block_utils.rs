@@ -192,8 +192,6 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
 
     if !rs_enabled { return Ok(None); }
 
-    let ver_usize = ver_to_usize(ref_block.get_version());
-
     let data_shards   = get_RSD_from_ref_block!(ref_block_pos, ref_block, "guess the burst error resistance level");
     let parity_shards = get_RSP_from_ref_block!(ref_block_pos, ref_block, "guess the burst error resistance level");
 

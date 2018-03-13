@@ -136,8 +136,6 @@ pub fn sort_file(param : &Param)
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
 
     let version   = ref_block.get_version();
-    let block_size = ver_to_block_size(version) as u64;
-
     let rs_enabled = ver_uses_rs(version);
 
     let burst = get_burst_or_guess!(param,
@@ -203,8 +201,8 @@ pub fn sort_file(param : &Param)
                     sbx_block::calc_meta_block_all_write_pos_s(version,
                                                                data_par_burst);
 
-                for p in write_pos_s.iter() {
-                    writer.seek(SeekFrom::Start(*p))?;
+                for &p in write_pos_s.iter() {
+                    writer.seek(SeekFrom::Start(p))?;
                     writer.write(sbx_block::slice_buf(version,
                                                       &buffer))?;
                 }

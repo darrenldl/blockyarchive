@@ -83,7 +83,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let version   = get_version!(matches);
 
-    let (rs_data, rs_parity) =
+    let data_par_burst =
         if ver_uses_rs(version) {
             // deal with RS related options
             let data_shards   = get_data_shards!(matches, version);
@@ -91,12 +91,12 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
             check_data_parity_shards!(data_shards, parity_shards);
 
-            (data_shards, parity_shards)
-        } else {
-            (1, 1) // use dummy values
-        };
+            let burst = get_burst_or_zero!(matches);
 
-    let burst = get_burst_or_zero!(matches);
+            Some((data_shards, parity_shards, burst))
+        } else {
+            None
+        };
 
     let in_file  = get_in_file!(matches);
     let out_file = match matches.value_of("out_file") {
@@ -126,9 +126,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let param = Param::new(version,
                            &uid,
-                           rs_data,
-                           rs_parity,
-                           burst,
+                           data_par_burst,
                            matches.is_present("no_meta"),
                            hash_type,
                            in_file,

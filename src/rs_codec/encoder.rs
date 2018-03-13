@@ -44,6 +44,10 @@ impl RSEncoder {
         }
     }
 
+    pub fn total_shard_count(&self) -> usize {
+        self.rs_codec.total_shard_count()
+    }
+
     pub fn encode_no_block_sync(&mut self,
                                 data : &[u8])
                                 -> Option<&mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>> {

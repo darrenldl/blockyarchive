@@ -38,6 +38,17 @@ macro_rules! make_meta_getter {
     }
 }
 
+macro_rules! check_ver_consistent_with_opt {
+    (
+        $version:expr, $val:expr
+    ) => {{
+        match $val {
+            None    => assert!(! ver_uses_rs($version)),
+            Some(_) => assert!(  ver_uses_rs($version)),
+        }
+    }}
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BlockType {
     Data, Meta
@@ -196,6 +207,8 @@ pub fn seq_num_is_parity(seq_num       : u32,
 pub fn calc_meta_block_dup_write_pos_s(version        : Version,
                                        data_par_burst : Option<(usize, usize, usize)>)
                                        -> SmallVec<[u64; 32]> {
+    check_ver_consistent_with_opt!(version, data_par_burst);
+
     let block_size = ver_to_block_size(version) as u64;
 
     let mut res = calc_meta_block_dup_write_indices(data_par_burst);
@@ -250,6 +263,8 @@ pub fn calc_data_block_write_pos(version        : Version,
                                  seq_num        : u32,
                                  data_par_burst : Option<(usize, usize, usize)>)
                                  -> u64 {
+    check_ver_consistent_with_opt!(version, data_par_burst);
+
     let block_size = ver_to_block_size(version) as u64;
 
     calc_data_block_write_index(seq_num,
@@ -377,6 +392,8 @@ pub fn calc_data_chunk_write_pos(version  : Version,
                                  seq_num  : u32,
                                  data_par : Option<(usize, usize)>)
                                  -> Option<u64> {
+    check_ver_consistent_with_opt!(version, data_par);
+
     let data_size = ver_to_data_size(version);
 
     match calc_data_chunk_write_index(seq_num, data_par) {
