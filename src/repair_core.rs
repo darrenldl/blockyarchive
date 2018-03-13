@@ -298,9 +298,6 @@ pub fn repair_file(param : &Param)
                     reader.seek(SeekFrom::Start(pos))?;
                     reader.write(&block_buf)?;
                 }
-
-                // update stats
-                stats.lock().unwrap().blocks_decode_failed += repair_stats.missing_count as u64;
             },
             RSCodecState::NotReady => {},
         }
