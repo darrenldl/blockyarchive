@@ -100,8 +100,8 @@ pub fn setup_ctrlc_handler() -> Arc<AtomicBool> {
     let handler_stop_flag = Arc::clone(&stop_flag);
 
     ctrlc::set_handler(move || {
-        println!("Interrupted");
         handler_stop_flag.store(true, Ordering::SeqCst);
+        println!("Interrupted");
     }).expect("Failed to set Ctrl-C handler");
 
     println!("Press Ctrl-C to interrupt");
