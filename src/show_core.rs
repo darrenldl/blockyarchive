@@ -6,6 +6,7 @@ use super::misc_utils;
 use super::misc_utils::RequiredLenAndSeekTo;
 
 use super::cli_utils::report_ref_block_info;
+use super::cli_utils::setup_ctrlc_handler;
 
 use std::io::SeekFrom;
 
@@ -109,6 +110,8 @@ impl Param {
 
 pub fn show_file(param : &Param)
                  -> Result<Stats, Error> {
+    let ctrlc_stop_flag = setup_ctrlc_handler();
+
     if param.guess_burst {
         println!("Guessing burst error resistance level");
         println!();
@@ -116,7 +119,8 @@ pub fn show_file(param : &Param)
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&param.in_file,
                                              false,
-                                             param.pr_verbosity_level)? {
+                                             param.pr_verbosity_level,
+                                             &ctrlc_stop_flag)? {
                 None => { return Err(Error::with_message("Failed to find reference block")); },
                 Some(x) => x,
             };
@@ -176,6 +180,8 @@ pub fn show_file(param : &Param)
     let mut bytes_processed : u64 = 0;
 
     loop {
+        break_if_atomic_bool!(ctrlc_stop_flag);
+
         if bytes_processed > required_len { break; }
 
         let lazy_read_res = block_utils::read_block_lazily(&mut block,
