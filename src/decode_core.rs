@@ -330,7 +330,7 @@ pub fn decode(param           : &Param,
                                                      block.get_seq_num(),
                                                      data_par_shards)
             {
-                writer.seek(SeekFrom::Start(write_to as u64))?;
+                writer.seek(SeekFrom::Start(write_pos as u64))?;
 
                 writer.write(sbx_block::slice_data_buf(ref_block.get_version(),
                                                        &buffer))?;

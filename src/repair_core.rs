@@ -203,7 +203,8 @@ pub fn repair_file(param : &Param)
     let mut rs_codec = RSRepairer::new(version,
                                        &ref_block,
                                        data_par_burst.unwrap().0,
-                                       data_par_burst.unwrap().1);
+                                       data_par_burst.unwrap().1,
+                                       data_par_burst.unwrap().2);
 
     reporter.start();
 
@@ -279,7 +280,7 @@ pub fn repair_file(param : &Param)
         match codec_state {
             RSCodecState::Ready => {
                 let (repair_stats, repaired_blocks) =
-                    rs_codec.repair_with_block_sync(seq_num, burst);
+                    rs_codec.repair_with_block_sync(seq_num);
 
                 if repair_stats.successful {
                     stats.lock().unwrap().data_or_par_blocks_repaired +=

@@ -16,6 +16,7 @@ use super::Error;
 pub struct RSRepairer {
     index          : usize,
     rs_codec       : ReedSolomon,
+    data_par_burst : Option<(usize, usize, usize)>,
     version        : Version,
     buf            : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     buf_present    : SmallVec<[bool; 32]>,
@@ -70,10 +71,11 @@ macro_rules! add_index {
 }
 
 impl RSRepairer {
-    pub fn new(version           : Version,
-               ref_block         : &Block,
-               data_shards       : usize,
-               parity_shards     : usize) -> RSRepairer {
+    pub fn new(version       : Version,
+               ref_block     : &Block,
+               data_shards   : usize,
+               parity_shards : usize,
+               burst         : usize) -> RSRepairer {
         let block_size = ver_to_block_size(version);
 
         let buf : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
@@ -82,13 +84,14 @@ impl RSRepairer {
             smallvec![false; data_shards + parity_shards];
 
         RSRepairer {
-            index       : 0,
-            rs_codec    : ReedSolomon::new(data_shards,
+            index          : 0,
+            rs_codec       : ReedSolomon::new(data_shards,
                                            parity_shards).unwrap(),
+            data_par_burst : Some((data_shards, parity_shards, burst)),
             version,
             buf,
             buf_present,
-            ref_block   : ref_block.clone(),
+            ref_block      : ref_block.clone(),
         }
     }
 
@@ -141,8 +144,7 @@ impl RSRepairer {
     }
 
     pub fn repair_with_block_sync(&mut self,
-                                  seq_num : u32,
-                                  burst   : usize)
+                                  seq_num : u32)
                                   ->
         (RSRepairStats,
          SmallVec<[(u64, &[u8]); 32]>)
@@ -190,12 +192,11 @@ impl RSRepairer {
                 }
             }
             for i in 0..block_set_size as usize {
+                let cur_seq_num = first_seq_num_in_cur_set + i as u32;
                 if !self.buf_present[i] {
-                    let pos = sbx_block::calc_rs_enabled_data_write_pos(first_seq_num_in_cur_set + i as u32,
-                                                                        self.version,
-                                                                        self.rs_codec.data_shard_count(),
-                                                                        self.rs_codec.parity_shard_count(),
-                                                                        burst);
+                    let pos = sbx_block::calc_data_block_write_pos(self.version,
+                                                                   cur_seq_num,
+                                                                   self.data_par_burst);
                     repaired_blocks.push((pos, sbx_block::slice_buf(self.version,
                                                                     &self.buf[i])));
                 }
