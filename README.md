@@ -38,7 +38,12 @@ Modularity and ease of maintenance will be of high priority during development a
 - [x] sorter
   - [x] basic sequential sorting for base SBX versions(1, 2, 3)
   - [x] burst error resistance aware sorting for versions(17, 18, 19)
-- [ ] code refactoring and polishing
+- [x] code refactoring and polishing
+  - largely complete - a lot of massive rewrites have been made
+  - but small code refactoring is still ongoing
+- [x] UI/UX polishing
+- [ ] setup basic test suite
+- [ ] setup fuzzing suite
 
 ## Notes
 
