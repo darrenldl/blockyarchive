@@ -192,15 +192,12 @@ pub fn seq_num_is_parity(seq_num       : u32,
     }
 }
 
-pub fn calc_rs_enabled_meta_dup_write_pos_s(version              : Version,
-                                            parity_shards        : usize,
-                                            burst_err_resistance : usize)
-                                            -> SmallVec<[u64; 32]> {
+pub fn calc_meta_block_dup_write_pos_s(version        : Version,
+                                       data_par_burst : Option<(usize, usize, usize)>)
+                                       -> SmallVec<[u64; 32]> {
     let block_size = ver_to_block_size(version) as u64;
 
-    let mut res =
-        calc_rs_enabled_meta_dup_write_indices(parity_shards,
-                                               burst_err_resistance);
+    let mut res = calc_meta_dup_write_indices(data_par_burst);
 
     for i in res.iter_mut() {
         *i = *i * block_size;
@@ -209,203 +206,244 @@ pub fn calc_rs_enabled_meta_dup_write_pos_s(version              : Version,
     res
 }
 
-pub fn calc_rs_enabled_meta_dup_write_indices(parity_shards        : usize,
-                                              burst_err_resistance : usize)
-                                              -> SmallVec<[u64; 32]> {
-    let mut res : SmallVec<[u64; 32]> =
-        SmallVec::with_capacity(1 + parity_shards);
+pub fn calc_meta_block_dup_write_indices(data_par_burst : Option<(usize, usize, usize)>)
+                                         -> SmallVec<[u64; 32]> {
+    match data_par_burst {
+        Some((_, parity, burst)) => {
+            let mut res : SmallVec<[u64; 32]> =
+                SmallVec::with_capacity(1 + parity_shards);
 
-    for i in 1..1 + parity_shards as u64 {
-        res.push(i * (1 + burst_err_resistance) as u64);
+            for i in 1..1 + parity_shards as u64 {
+                res.push(i * (1 + burst_err_resistance) as u64);
+            }
+
+            res
+        },
+        None => {
+            SmallVec::new()
+        }
     }
-
-    res
 }
 
-pub fn calc_rs_enabled_meta_all_write_pos_s(version              : Version,
-                                            parity_shards        : usize,
-                                            burst_err_resistance : usize)
-                                            -> SmallVec<[u64; 32]> {
-    let mut res = calc_rs_enabled_meta_dup_write_pos_s(version,
-                                                       parity_shards,
-                                                       burst_err_resistance);
+pub fn calc_meta_block_all_write_pos_s(version        : Version,
+                                       data_par_burst : Option<(usize, usize, usize)>)
+                                       -> SmallVec<[u64; 32]> {
+    let mut res = calc_meta_block_dup_write_pos_s(version,
+                                                  data_par_brust);
 
     res.push(0);
 
     res
 }
 
-pub fn calc_rs_enabled_meta_all_write_indices(parity_shards        : usize,
-                                              burst_err_resistance : usize)
-                                              -> SmallVec<[u64; 32]> {
-    let mut res = calc_rs_enabled_meta_dup_write_indices(parity_shards,
-                                                         burst_err_resistance);
+pub fn calc_meta_all_write_indices(data_par_burst : Option<(usize, usize, usize)>)
+                                   -> SmallVec<[u64; 32]> {
+    let mut res = calc_rs_enabled_meta_dup_write_indices(data_par_burst);
 
     res.push(0);
 
     res
 }
 
-pub fn calc_rs_enabled_data_write_pos(seq_num              : u32,
-                                      version              : Version,
-                                      data_shards          : usize,
-                                      parity_shards        : usize,
-                                      burst_err_resistance : usize) -> u64 {
+pub fn calc_data_block_write_pos(seq_num        : u32,
+                                 version        : Version,
+                                 data_par_burst : Option<(usize, usize, usize)>)
+                                 -> u64 {
     let block_size = ver_to_block_size(version) as u64;
 
-    calc_rs_enabled_data_write_index(seq_num,
-                                     data_shards,
-                                     parity_shards,
-                                     burst_err_resistance) * block_size
+    calc_data_block_write_index(seq_num,
+                                data_shards,
+                                parity_shards,
+                                burst_err_resistance) * block_size
 }
 
-pub fn calc_rs_enabled_data_write_index(seq_num              : u32,
-                                        data_shards          : usize,
-                                        parity_shards        : usize,
-                                        burst_err_resistance : usize) -> u64 {
+pub fn calc_data_block_write_index(seq_num        : u32,
+                                   data_par_burst : Option<(usize, usize, usize)>)
+                                   -> u64 {
     // the following transforms seq num to data index
     // then do the transformation based on data index
     assert!(seq_num >= SBX_FIRST_DATA_SEQ_NUM as u32);
 
-    if burst_err_resistance == 0 {
-        return parity_shards as u64 + seq_num as u64;
-    }
-
     // calculate data index
-    let index = seq_num as u64 - SBX_FIRST_DATA_SEQ_NUM as u64;
+    let index = (seq_num - SBX_FIRST_DATA_SEQ_NUM) as u64;
 
-    let data_shards          = data_shards      as u64;
-    let parity_shards        = parity_shards    as u64;
-    let burst_err_resistance = burst_err_resistance as u64;
-
-    let super_block_set_size = (data_shards + parity_shards) * burst_err_resistance;
-
-    // sub A block sets partitioning deals with the super block set
-    // of the sequential data index arrangement
-    // i.e. sub A = partitioning of input
-    //
-    // sub B block sets partitioning deals with the super block set
-    // of the interleaving data index arrangement
-    // i.e. sub B = partitioning of output
-    //
-    // sub A block set partitioning slices at total shards interval
-    // sub B block set partitioning slices at burst resistance level interval
-    let sub_a_block_set_size = data_shards + parity_shards;
-    let sub_b_block_set_size = burst_err_resistance;
-
-    // calculate the index of the start of super block set with
-    // respect to the data index
-    let super_block_set_index    = index / super_block_set_size;
-    // calculate index of current seq num inside the current super block set
-    let index_in_super_block_set = index % super_block_set_size;
-
-    // calculate the index of the start of sub A block set inside
-    // the current super block set
-    let sub_a_block_set_index    = index_in_super_block_set / sub_a_block_set_size;
-    // calculate index of current seq num inside the current sub A block set
-    let index_in_sub_a_block_set = index_in_super_block_set % sub_a_block_set_size;
-
-    let sub_b_block_set_index    = index_in_sub_a_block_set;
-    let index_in_sub_b_block_set = sub_a_block_set_index;
-
-    let new_index_in_super_block_set =
-        sub_b_block_set_index * sub_b_block_set_size + index_in_sub_b_block_set;
-
-    // M = data_shards
-    // N = parity_shards
-    //
-    // calculate the number of metadata blocks before the current
-    // seq num in the interleaving scheme
-    let meta_block_count =
-        if super_block_set_index == 0 { // first super block set
-            // one metadata block at front of first (1 + N) sub B blocks
-            if sub_b_block_set_index < 1 + parity_shards {
-                1 + sub_b_block_set_index
-            } else {
-                1 + parity_shards
+    match data_par_burst {
+        None                        => {
+            index
+        },
+        Some((data, parity, burst)) => {
+            if burst_err_resistance == 0 {
+                return parity_shards as u64 + seq_num as u64;
             }
-        } else {
-            1 + parity_shards
-        };
 
-    // finally calculate the index in interleaving data index arrangement
-    let new_index =
-    // number of metadata blocks in front
-        meta_block_count
+            let data_shards          = data   as u64;
+            let parity_shards        = parity as u64;
+            let burst_err_resistance = burst  as u64;
 
-    // index of start of super block set
-        + (super_block_set_size * super_block_set_index)
+            let super_block_set_size = (data_shards + parity_shards) * burst_err_resistance;
 
-    // index inside the super block set
-        + new_index_in_super_block_set;
+            // sub A block sets partitioning deals with the super block set
+            // of the sequential data index arrangement
+            // i.e. sub A = partitioning of input
+            //
+            // sub B block sets partitioning deals with the super block set
+            // of the interleaving data index arrangement
+            // i.e. sub B = partitioning of output
+            //
+            // sub A block set partitioning slices at total shards interval
+            // sub B block set partitioning slices at burst resistance level interval
+            let sub_a_block_set_size = data_shards + parity_shards;
+            let sub_b_block_set_size = burst_err_resistance;
 
-    new_index
+            // calculate the index of the start of super block set with
+            // respect to the data index
+            let super_block_set_index    = index / super_block_set_size;
+            // calculate index of current seq num inside the current super block set
+            let index_in_super_block_set = index % super_block_set_size;
+
+            // calculate the index of the start of sub A block set inside
+            // the current super block set
+            let sub_a_block_set_index    = index_in_super_block_set / sub_a_block_set_size;
+            // calculate index of current seq num inside the current sub A block set
+            let index_in_sub_a_block_set = index_in_super_block_set % sub_a_block_set_size;
+
+            let sub_b_block_set_index    = index_in_sub_a_block_set;
+            let index_in_sub_b_block_set = sub_a_block_set_index;
+
+            let new_index_in_super_block_set =
+                sub_b_block_set_index * sub_b_block_set_size + index_in_sub_b_block_set;
+
+            // M = data_shards
+            // N = parity_shards
+            //
+            // calculate the number of metadata blocks before the current
+            // seq num in the interleaving scheme
+            let meta_block_count =
+                if super_block_set_index == 0 { // first super block set
+                    // one metadata block at front of first (1 + N) sub B blocks
+                    if sub_b_block_set_index < 1 + parity_shards {
+                        1 + sub_b_block_set_index
+                    } else {
+                        1 + parity_shards
+                    }
+                } else {
+                    1 + parity_shards
+                };
+
+            // finally calculate the index in interleaving data index arrangement
+            let new_index =
+            // number of metadata blocks in front
+                meta_block_count
+
+            // index of start of super block set
+                + (super_block_set_size * super_block_set_index)
+
+            // index inside the super block set
+                + new_index_in_super_block_set;
+
+            new_index
+        }
+    }
 }
 
-pub fn calc_rs_enabled_seq_num_at_index(index                : u64,
-                                        data_shards          : usize,
-                                        parity_shards        : usize,
-                                        burst_err_resistance : usize) -> u32 {
-    // the following essentially does the same index transformation in
-    // calc_rs_enabled_data_write_index does but in reverse order
-    if burst_err_resistance == 0 {
-        if index < 1 + parity_shards as u64 {
-            return 0;
-        } else {
-            return (index - parity_shards as u64) as u32;
+pub fn calc_data_chunk_write_index(seq_num        : u32,
+                                   data_par_burst : Option<(usize, usize, usize)>)
+                                   -> Option<u32> {
+    if seq_num < SBX_FIRST_DATA_SEQ_NUM {
+        None
+    } else {
+        let index = seq_num - SBX_FIRST_DATA_SEQ_NUM;
+
+        match data_par_burst {
+            None                        => {
+                Some(index)
+            },
+            Some((data, parity, burst)) => {
+                if seq_num_is_parity(seq_num, data, parity) {
+                    None
+                } else {
+                    let block_set_index    =
+                        data_index / (data_shards + parity_shards) as u32;
+                    let index_in_block_set =
+                        data_index % (data_shards + parity_shards) as u32;
+
+                    Some(block_set_index * data as u32 + index_in_block_set)
+                }
+            }
         }
     }
+}
 
-    let data_shards          = data_shards      as u64;
-    let parity_shards        = parity_shards    as u64;
-    let burst_err_resistance = burst_err_resistance as u64;
+pub fn calc_seq_num_at_index(index          : u64,
+                             data_par_burst : Option<(usize, usize, usize)>)
+                             -> u32 {
+    match data_par_burst {
+        None                        => {
+            index as u32
+        },
+        Some((data, parity, burst)) => {
+            // the following essentially does the same index transformation in
+            // calc_rs_enabled_data_write_index does but in reverse order
+            if burst_err_resistance == 0 {
+                if index < 1 + parity_shards as u64 {
+                    return 0;
+                } else {
+                    return (index - parity_shards as u64) as u32;
+                }
+            }
 
-    // handle metadata seq nums first
-    if index < (1 + parity_shards) * (1 + burst_err_resistance) {
-        if index % (1 + burst_err_resistance) == 0 {
-            return 0;
+            let data_shards          = data_shards      as u64;
+            let parity_shards        = parity_shards    as u64;
+            let burst_err_resistance = burst_err_resistance as u64;
+
+            // handle metadata seq nums first
+            if index < (1 + parity_shards) * (1 + burst_err_resistance) {
+                if index % (1 + burst_err_resistance) == 0 {
+                    return 0;
+                }
+            }
+
+            let meta_block_count =
+            // M = data shards
+            // N = parity_shards
+            // B = burst_err_resistance
+            //
+            // if index is in first 1 + N block set
+                if index < (1 + parity_shards) * (1 + burst_err_resistance) {
+                    1 + index / (1 + burst_err_resistance)
+                } else {
+                    1 + parity_shards
+                };
+
+            let super_block_set_size = (data_shards + parity_shards) * burst_err_resistance;
+
+            let sub_a_block_set_size = data_shards + parity_shards;
+            let sub_b_block_set_size = burst_err_resistance;
+
+            let index_without_meta = index - meta_block_count;
+
+            let super_block_set_index    = index_without_meta / super_block_set_size;
+            let index_in_super_block_set = index_without_meta % super_block_set_size;
+
+            let sub_b_block_set_index    = index_in_super_block_set / sub_b_block_set_size;
+            let index_in_sub_b_block_set = index_in_super_block_set % sub_b_block_set_size;
+
+            let sub_a_block_set_index    = index_in_sub_b_block_set;
+            let index_in_sub_a_block_set = sub_b_block_set_index;
+
+            let old_index_in_super_block_set =
+                sub_a_block_set_index * sub_a_block_set_size + index_in_sub_a_block_set;
+
+            let old_index =
+            // index of start of super block set
+                (super_block_set_size * super_block_set_index)
+
+            // index inside the super block set
+                + old_index_in_super_block_set;
+
+            (old_index as u32) + SBX_FIRST_DATA_SEQ_NUM as u32
         }
     }
-
-    let meta_block_count =
-    // M = data shards
-    // N = parity_shards
-    // B = burst_err_resistance
-    //
-    // if index is in first 1 + N block set
-        if index < (1 + parity_shards) * (1 + burst_err_resistance) {
-            1 + index / (1 + burst_err_resistance)
-        } else {
-            1 + parity_shards
-        };
-
-    let super_block_set_size = (data_shards + parity_shards) * burst_err_resistance;
-
-    let sub_a_block_set_size = data_shards + parity_shards;
-    let sub_b_block_set_size = burst_err_resistance;
-
-    let index_without_meta = index - meta_block_count;
-
-    let super_block_set_index    = index_without_meta / super_block_set_size;
-    let index_in_super_block_set = index_without_meta % super_block_set_size;
-
-    let sub_b_block_set_index    = index_in_super_block_set / sub_b_block_set_size;
-    let index_in_sub_b_block_set = index_in_super_block_set % sub_b_block_set_size;
-
-    let sub_a_block_set_index    = index_in_sub_b_block_set;
-    let index_in_sub_a_block_set = sub_b_block_set_index;
-
-    let old_index_in_super_block_set =
-        sub_a_block_set_index * sub_a_block_set_size + index_in_sub_a_block_set;
-
-    let old_index =
-    // index of start of super block set
-        (super_block_set_size * super_block_set_index)
-
-    // index inside the super block set
-        + old_index_in_super_block_set;
-
-    (old_index as u32) + SBX_FIRST_DATA_SEQ_NUM as u32
 }
 
 impl Block {
@@ -519,35 +557,6 @@ impl Block {
             && seq_num_is_parity(self.get_seq_num(),
                                  data_shards,
                                  parity_shards)
-    }
-
-    pub fn data_index(&self,
-                      data_par_shards : Option<(usize, usize)>)
-                      -> Option<u32> {
-        match self.data {
-            Data::Meta(_) => None,
-            Data::Data    => {
-                let data_index =
-                    self.header.seq_num
-                    - SBX_FIRST_DATA_SEQ_NUM as u32;
-
-                match data_par_shards {
-                    None                               => Some(data_index),
-                    Some((data_shards, parity_shards)) => {
-                        if self.is_parity(data_shards, parity_shards) {
-                            None
-                        } else {
-                            let set_index =
-                                data_index / (data_shards + parity_shards) as u32;
-                            let index_in_set =
-                                data_index % (data_shards + parity_shards) as u32;
-
-                            Some(set_index * data_shards as u32 + index_in_set)
-                        }
-                    }
-                }
-            }
-        }
     }
 
     pub fn get_meta_ref_by_id(&self,
