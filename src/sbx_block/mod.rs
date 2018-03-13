@@ -283,11 +283,11 @@ pub fn calc_data_block_write_index(seq_num        : u32,
 
     match data_par_burst {
         None                        => {
-            index
+            1 + index
         },
         Some((data, parity, burst)) => {
             if burst == 0 {
-                return parity as u64 + seq_num as u64;
+                return (1 + parity) as u64 + index as u64;
             }
 
             let data_shards          = data   as u64;
