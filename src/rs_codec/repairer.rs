@@ -35,19 +35,25 @@ impl<'a> fmt::Display for RSRepairStats<'a> {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         if self.missing_count > 0 {
             if self.successful {
-                write!(f, "Repair successful : ")?;
+                write!(f, "Repair successful for ")?;
             } else {
-                write!(f, "Repair failed     : ")?;
+                write!(f, "Repair failed     for ")?;
             }
-            write!(f, "block set [{} - {}] ", self.start_seq_num, self.start_seq_num + self.present.len() as u32)?;
+
+            write!(f, "block set [{} - {}], block no. : ",
+                   self.start_seq_num,
+                   self.start_seq_num + self.present.len() as u32 - 1)?;
+
             let mut first_num = true;
             for i in 0..self.present.len() {
                 if !self.present[i] {
                     if !first_num {
                         write!(f, ", ")?;
-                        first_num = false;
                     }
+
                     write!(f, "{}", self.start_seq_num + i as u32)?;
+
+                    first_num = false;
                 }
             }
             Ok(())

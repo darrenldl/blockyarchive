@@ -106,6 +106,20 @@ impl fmt::Display for Stats {
         writeln!(f, "Number of blocks failed to repair (data) : {}", self.data_or_par_blocks_repair_failed)?;
         writeln!(f, "Time elapsed                             : {:02}:{:02}:{:02}", hour, minute, second)?;
 
+        if self.blocks_decode_failed == 0 {
+            writeln!(f, "No repairs required")?;
+        } else {
+            if self.data_or_par_blocks_repair_failed == 0 {
+                writeln!(f, "All corrupted/missing blocks were repaired successfully")?;
+            } else {
+                if self.blocks_decode_failed == self.data_or_par_blocks_repair_failed {
+                    writeln!(f, "All repairs failed")?;
+                } else {
+                    writeln!(f, "Some repairs failed")?;
+                }
+            }
+        }
+
         Ok(())
     }
 }
