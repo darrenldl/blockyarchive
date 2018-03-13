@@ -40,9 +40,15 @@ impl<'a> fmt::Display for RSRepairStats<'a> {
                 write!(f, "Repair failed     for ")?;
             }
 
-            write!(f, "block set [{} - {}], block no. : ",
+            write!(f, "block set [{}...{}], ",
                    self.start_seq_num,
                    self.start_seq_num + self.present.len() as u32 - 1)?;
+
+            if self.successful {
+                write!(f, "repaired block no. : ")?;
+            } else {
+                write!(f, "failed   block no. : ")?;
+            }
 
             let mut first_num = true;
             for i in 0..self.present.len() {
