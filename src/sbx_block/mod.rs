@@ -410,8 +410,8 @@ pub fn calc_seq_num_at_index(index          : u64,
             index as u32
         },
         Some((data, parity, burst)) => {
-            // the following essentially does the same index transformation in
-            // calc_rs_enabled_data_write_index does but in reverse order
+            // the following essentially reverses the index transformation in
+            // calc_data_block_write_index
             if burst == 0 {
                 if index < 1 + parity as u64 {
                     return 0;
