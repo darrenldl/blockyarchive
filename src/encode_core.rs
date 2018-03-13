@@ -359,51 +359,14 @@ pub fn encode_file(param : &Param)
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
-        let mut data_blocks_written     = 0;
-        let mut data_par_blocks_written = 0;
-
         // read data in
         let read_res =
             reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data))?;
 
-        if read_res.len_read == 0 {
-            if let Some(ref mut rs_codec) = rs_codec {
-                // check if the current batch of RS blocks are filled
-                if (block.get_seq_num() - SBX_FIRST_DATA_SEQ_NUM)
-                    % rs_codec.total_shard_count() as u32 != 0
-                {
-                    // fill remaining slots with padding
-                    loop {
-                        // write padding
-                        write_data_block(param,
-                                         &mut block,
-                                         &mut padding,
-                                         &mut writer)?;
+        if read_res.len_read == 0 { break; }
 
-                        data_blocks_written += 1;
-
-                        // keep writing until parity shards are ready
-                        // then break loop
-                        if let Some(parity_to_use) =
-                            rs_codec.encode_no_block_sync(&padding)
-                        {
-                            for p in parity_to_use.iter_mut() {
-                                write_data_block(param,
-                                                 &mut block,
-                                                 p,
-                                                 &mut writer)?;
-
-                                data_par_blocks_written += 1;
-                            }
-
-                            break;
-                        }
-                    }
-                }
-            }
-
-            break; // break outer loop
-        }
+        let mut data_blocks_written     = 0;
+        let mut data_par_blocks_written = 0;
 
         stats.lock().unwrap().data_padding_bytes +=
             sbx_block::write_padding(param.version, read_res.len_read, &mut data);
@@ -440,6 +403,41 @@ pub fn encode_file(param : &Param)
         // update stats
         stats.lock().unwrap().data_blocks_written     += data_blocks_written;
         stats.lock().unwrap().data_par_blocks_written += data_par_blocks_written;
+    }
+
+    if let Some(ref mut rs_codec) = rs_codec {
+        // check if the current batch of RS blocks are filled
+        if (block.get_seq_num() - SBX_FIRST_DATA_SEQ_NUM)
+            % rs_codec.total_shard_count() as u32 != 0
+        {
+            // fill remaining slots with padding
+            loop {
+                // write padding
+                write_data_block(param,
+                                 &mut block,
+                                 &mut padding,
+                                 &mut writer)?;
+
+                stats.lock().unwrap().data_blocks_written += 1;
+
+                // keep writing until parity shards are ready
+                // then break loop
+                if let Some(parity_to_use) =
+                    rs_codec.encode_no_block_sync(&padding)
+                {
+                    for p in parity_to_use.iter_mut() {
+                        write_data_block(param,
+                                         &mut block,
+                                         p,
+                                         &mut writer)?;
+
+                        stats.lock().unwrap().data_par_blocks_written += 1;
+                    }
+
+                    break;
+                }
+            }
+        }
     }
 
     if param.meta_enabled {
