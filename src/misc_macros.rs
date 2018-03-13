@@ -13,12 +13,20 @@ macro_rules! get_ref_block {
     (
         $param:expr, $no_meta:expr, $stop_flag:expr
     ) => {{
+        use std::sync::atomic::Ordering;
+
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&$param.in_file,
                                              $no_meta,
                                              $param.pr_verbosity_level,
                                              &$stop_flag)? {
-                None => { return Err(Error::with_message("Failed to find reference block")); },
+                None => {
+                    if $stop_flag.load(Ordering::SeqCst) {
+                        return Ok(None)
+                    } else {
+                        return Err(Error::with_message("Failed to find reference block"));
+                    }
+                },
                 Some(x) => x,
             };
 

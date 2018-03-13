@@ -415,7 +415,7 @@ fn hash(param           : &Param,
 }
 
 pub fn decode_file(param : &Param)
-                   -> Result<Stats, Error> {
+                   -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler();
 
     let (ref_block_pos, ref_block) = get_ref_block!(param,
@@ -477,5 +477,5 @@ pub fn decode_file(param : &Param)
                                &ref_block,
                                &ctrlc_stop_flag)?;
 
-    Ok(stats)
+    Ok(Some(stats))
 }

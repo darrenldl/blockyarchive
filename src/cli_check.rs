@@ -34,7 +34,8 @@ pub fn check<'a>(matches : &ArgMatches<'a>) -> i32 {
                            matches.is_present("verbose"),
                            pr_verbosity_level);
     match check_core::check_file(&param) {
-        Ok(s)  => exit_with_msg!(ok => "{}", s),
-        Err(e) => exit_with_msg!(op => "{}", e)
+        Ok(Some(s)) => exit_with_msg!(ok => "{}", s),
+        Ok(None)    => exit_with_msg!(ok => ""),
+        Err(e)      => exit_with_msg!(op => "{}", e),
     }
 }

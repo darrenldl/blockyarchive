@@ -124,7 +124,7 @@ impl fmt::Display for Stats {
 }
 
 pub fn check_file(param : &Param)
-                  -> Result<Stats, Error> {
+                  -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler();
 
     let (_, ref_block) = get_ref_block!(param, ctrlc_stop_flag);
@@ -203,5 +203,5 @@ pub fn check_file(param : &Param)
 
     let stats = stats.lock().unwrap().clone();
 
-    Ok(stats)
+    Ok(Some(stats))
 }
