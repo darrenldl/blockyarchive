@@ -325,9 +325,11 @@ pub fn decode(param           : &Param,
             }
 
             // write data block
-            if let Some(data_index) = block.data_index(data_par_shards) {
-                let write_to = data_index as u64 * data_size;
-
+            if let Some(write_pos) =
+                sbx_block::calc_data_chunk_write_pos(ref_block.get_version(),
+                                                     block.get_seq_num(),
+                                                     data_par_shards)
+            {
                 writer.seek(SeekFrom::Start(write_to as u64))?;
 
                 writer.write(sbx_block::slice_data_buf(ref_block.get_version(),

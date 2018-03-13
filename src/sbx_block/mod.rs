@@ -245,16 +245,14 @@ pub fn calc_meta_all_write_indices(data_par_burst : Option<(usize, usize, usize)
     res
 }
 
-pub fn calc_data_block_write_pos(seq_num        : u32,
-                                 version        : Version,
+pub fn calc_data_block_write_pos(version        : Version,
+                                 seq_num        : u32,
                                  data_par_burst : Option<(usize, usize, usize)>)
                                  -> u64 {
     let block_size = ver_to_block_size(version) as u64;
 
     calc_data_block_write_index(seq_num,
-                                data_shards,
-                                parity_shards,
-                                burst_err_resistance) * block_size
+                                data_par_burst) * block_size
 }
 
 pub fn calc_data_block_write_index(seq_num        : u32,
@@ -346,8 +344,8 @@ pub fn calc_data_block_write_index(seq_num        : u32,
     }
 }
 
-pub fn calc_data_chunk_write_index(seq_num        : u32,
-                                   data_par_burst : Option<(usize, usize, usize)>)
+pub fn calc_data_chunk_write_index(seq_num  : u32,
+                                   data_par : Option<(usize, usize)>)
                                    -> Option<u32> {
     if seq_num < SBX_FIRST_DATA_SEQ_NUM {
         None
@@ -355,10 +353,10 @@ pub fn calc_data_chunk_write_index(seq_num        : u32,
         let index = seq_num - SBX_FIRST_DATA_SEQ_NUM;
 
         match data_par_burst {
-            None                        => {
+            None                 => {
                 Some(index)
             },
-            Some((data, parity, burst)) => {
+            Some((data, parity)) => {
                 if seq_num_is_parity(seq_num, data, parity) {
                     None
                 } else {
@@ -371,6 +369,18 @@ pub fn calc_data_chunk_write_index(seq_num        : u32,
                 }
             }
         }
+    }
+}
+
+pub fn calc_data_chunk_write_pos(version  : Version,
+                                 seq_num  : u32,
+                                 data_par : Option<(usize, usize)>)
+                                 -> Option<u64> {
+    let data_size = ver_to_data_size(version);
+
+    match calc_data_chunk_write_index(seq_num, data_par) {
+        None    => None,
+        Some(x) => Some(x * data_size)
     }
 }
 

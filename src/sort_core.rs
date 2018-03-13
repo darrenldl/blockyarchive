@@ -144,13 +144,14 @@ pub fn sort_file(param : &Param)
                                     ref_block_pos,
                                     ref_block);
 
-    let mut data_shards = None;
-    let mut parity_shards = None;
-
-    if rs_enabled {
-        data_shards   = Some(get_RSD_from_ref_block!(ref_block_pos, ref_block, "sort"));
-        parity_shards = Some(get_RSP_from_ref_block!(ref_block_pos, ref_block, "sort"));
-    }
+    let data_par_burst =
+        if rs_enabled {
+            Some((get_RSD_from_ref_block!(ref_block_pos, ref_block, "sort"),
+                  get_RSP_from_ref_block!(ref_block_pos, ref_block, "sort"),
+                  burst))
+        } else {
+            None
+        };
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
@@ -198,35 +199,23 @@ pub fn sort_file(param : &Param)
 
         if block.is_meta() {
             if !meta_written {
-                writer.seek(SeekFrom::Start(0))?;
-                writer.write(sbx_block::slice_buf(version,
-                                                  &buffer))?;
+                let write_pos_s =
+                    sbx_block::calc_meta_block_all_write_pos_s(version,
+                                                               data_par_burst);
 
-                if rs_enabled {
-                    let write_pos_s =
-                        sbx_block::calc_rs_enabled_meta_dup_write_pos_s(version,
-                                                                        parity_shards.unwrap(),
-                                                                        burst);
-                    for p in write_pos_s.iter() {
-                        writer.seek(SeekFrom::Start(*p))?;
-                        writer.write(sbx_block::slice_buf(version,
-                                                          &buffer))?;
-                    }
+                for p in write_pos_s.iter() {
+                    writer.seek(SeekFrom::Start(*p))?;
+                    writer.write(sbx_block::slice_buf(version,
+                                                      &buffer))?;
                 }
 
                 meta_written = true;
             }
         } else {
             let write_pos =
-                if rs_enabled {
-                    sbx_block::calc_rs_enabled_data_write_pos(block.get_seq_num(),
-                                                              version,
-                                                              data_shards.unwrap(),
-                                                              parity_shards.unwrap(),
-                                                              burst)
-                } else {
-                    block.get_seq_num() as u64 * block_size
-                };
+                sbx_block::calc_data_block_write_pos(version,
+                                                     block.get_seq_num(),
+                                                     data_par_burst);
 
             writer.seek(SeekFrom::Start(write_pos))?;
             writer.write(sbx_block::slice_buf(version,
