@@ -215,6 +215,8 @@ pub fn repair_file(param : &Param)
                                                                  parity_shards,
                                                                  burst).iter()
         {
+            break_if_atomic_bool!(ctrlc_stop_flag);
+
             reader.seek(SeekFrom::Start(*p))?;
             reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
             match block.sync_from_buffer(&buffer, Some(&pred)) {
@@ -237,6 +239,8 @@ pub fn repair_file(param : &Param)
 
     // repair data blocks
     for seq_num in 1..SBX_LAST_SEQ_NUM {
+        break_if_atomic_bool!(ctrlc_stop_flag);
+
         if stats.lock().unwrap().units_so_far() >= total_block_count { break; }
 
         let pos = sbx_block::calc_rs_enabled_data_write_pos(seq_num,
