@@ -60,15 +60,22 @@ pub mod from_orig_file_size {
                                              -> u64 {
         assert!(ver_uses_rs(version));
 
+        let data_shards   = data_shards   as u64;
+        let parity_shards = parity_shards as u64;
+
         let chunk_size  = ver_to_data_size(version) as u64;
         let data_chunks = (size + (chunk_size - 1)) / chunk_size;
 
         let meta_block_count = 1 + parity_shards as u64;
-        let block_set_size   =
-            (data_shards + parity_shards) as u64;
-        let block_set_count  =
-            (data_chunks + (block_set_size - 1)) / block_set_size;
 
-        meta_block_count + block_set_count * block_set_size
+        let data_block_set_size  = data_shards;
+        let data_block_set_count =
+            (data_chunks + (data_block_set_size - 1)) / data_block_set_size;
+
+        let encoded_data_block_set_size  = data_shards + parity_shards;
+        let encoded_data_block_set_count = data_block_set_count;
+
+        meta_block_count
+            + encoded_data_block_set_count * encoded_data_block_set_size
     }
 }
