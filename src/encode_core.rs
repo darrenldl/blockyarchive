@@ -176,6 +176,8 @@ fn pack_metadata(block         : &mut Block,
                  stats         : &Stats,
                  file_metadata : &fs::Metadata,
                  hash          : Option<multihash::HashBytes>) {
+    block.set_seq_num(0);
+
     let meta = block.meta_mut().unwrap();
 
     { // add file name
