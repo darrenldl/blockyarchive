@@ -15,7 +15,6 @@ use super::file_writer::FileWriterParam;
 
 use super::sbx_specs::SBX_SCAN_BLOCK_SIZE;
 
-use file_utils::from_orig_file_size::calc_rs_enabled_total_block_count;
 
 use super::multihash;
 use super::multihash::*;
@@ -149,15 +148,22 @@ pub fn repair_file(param : &Param)
 
     let block_size = ver_to_block_size(version);
 
-    let data_shards   = get_RSD_from_ref_block!(ref_block_pos, ref_block, "repair");
-    let parity_shards = get_RSP_from_ref_block!(ref_block_pos, ref_block, "repair");
+    let burst = get_burst_or_guess!(param,
+                                    ref_block_pos,
+                                    ref_block);
 
-    let total_block_count =
+    let data_par_burst =
+        Some((get_RSD_from_ref_block!(ref_block_pos, ref_block, "repair"),
+              get_RSP_from_ref_block!(ref_block_pos, ref_block, "repair"),
+              burst));
+
+    let total_block_count = {
+        use file_utils::from_orig_file_size::calc_rs_enabled_total_block_count;
         match ref_block.get_FSZ().unwrap() {
             Some(x) =>
                 calc_rs_enabled_total_block_count(version,
-                                                  data_shards,
-                                                  parity_shards,
+                                                  data_par_burst.unwrap().0,
+                                                  data_par_burst.unwrap().1,
                                                   x),
             None    => {
                 print_block!(
@@ -169,13 +175,10 @@ pub fn repair_file(param : &Param)
                 let metadata = file_utils::get_file_metadata(&param.in_file)?;
                 metadata.len() / block_size as u64
             },
-        };
+        }
+    };
 
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, total_block_count)));
-
-    let burst = get_burst_or_guess!(param,
-                                    ref_block_pos,
-                                    ref_block);
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : true,
@@ -199,8 +202,8 @@ pub fn repair_file(param : &Param)
 
     let mut rs_codec = RSRepairer::new(version,
                                        &ref_block,
-                                       data_shards,
-                                       parity_shards);
+                                       data_par_burst.unwrap().0,
+                                       data_par_burst.unwrap().1);
 
     reporter.start();
 
@@ -211,9 +214,8 @@ pub fn repair_file(param : &Param)
 
         ref_block.sync_to_buffer(None, &mut buffer).unwrap();
 
-        for p in sbx_block::calc_rs_enabled_meta_all_write_pos_s(version,
-                                                                 parity_shards,
-                                                                 burst).iter()
+        for p in sbx_block::calc_meta_block_all_write_pos_s(version,
+                                                            data_par_burst).iter()
         {
             break_if_atomic_bool!(ctrlc_stop_flag);
 
@@ -243,11 +245,9 @@ pub fn repair_file(param : &Param)
 
         if stats.lock().unwrap().units_so_far() >= total_block_count { break; }
 
-        let pos = sbx_block::calc_rs_enabled_data_write_pos(seq_num,
-                                                            version,
-                                                            data_shards,
-                                                            parity_shards,
-                                                            burst);
+        let pos = sbx_block::calc_data_block_write_pos(version,
+                                                       seq_num,
+                                                       data_par_burst);
 
         reader.seek(SeekFrom::Start(pos))?;
 
