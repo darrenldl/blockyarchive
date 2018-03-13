@@ -6,6 +6,8 @@ use std::sync::mpsc::{channel, sync_channel, Sender, SyncSender, Receiver};
 use super::sbx_specs::{SBX_SCAN_BLOCK_SIZE};
 use super::integer_utils::IntegerUtils;
 
+use std::path::PathBuf;
+
 #[derive(Debug, PartialEq)]
 pub enum HexError {
     InvalidHexString,
@@ -144,14 +146,30 @@ pub fn calc_required_len_and_seek_to_from_byte_range
 }
 
 pub fn make_path(path_parts : &[&str]) -> String {
-    fn strip_slash(string : &str) -> &str {
+    fn strip_slash_prefix(string : &str) -> &str {
+        let str_len = string.len();
+        match str_len {
+            0 => string,
+            1 => match &string[0..1] { "/" => "", _ => string },
+            _ => { let char_1st = &string[0..1];
+                   if char_1st == "/" || char_1st == "\\" {
+                       &string[1..]
+                   } else {
+                       string
+                   }
+            }
+        }
+    }
+    fn strip_slash_suffix(string : &str) -> &str {
         let str_len = string.len();
         match str_len {
             0 => string,
             1 => match &string[0..1] { "/" => "", _ => string },
             _ => { let char_last     = &string[str_len - 1..];
                    let char_2nd_last = &string[str_len - 2..];
-                   if char_last == "/" && char_2nd_last != "\\" {
+                   if (char_last == "/" || char_last == "\\")
+                   && char_2nd_last != "\\"
+                   {
                        &string[0..str_len - 1]
                    } else {
                        string
@@ -160,15 +178,13 @@ pub fn make_path(path_parts : &[&str]) -> String {
         }
     }
 
-    let mut string = String::with_capacity(200);
-    let len = path_parts.len();
-    for i in 0..len {
-        string.push_str(strip_slash(path_parts[i]));
-        if i != len - 1 {
-            string.push('/');
-        }
+    let mut path = PathBuf::new();
+    for p in path_parts.iter() {
+        path.push(
+            strip_slash_prefix(
+                strip_slash_suffix(p)));
     }
-    string
+    path.to_string_lossy().to_string()
 }
 
 pub fn buffer_is_blank(buf : &[u8]) -> bool {
