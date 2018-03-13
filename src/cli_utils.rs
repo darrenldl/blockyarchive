@@ -11,6 +11,24 @@ pub fn in_file_arg<'a, 'b>() -> Arg<'a, 'b> {
         .index(1)
 }
 
+pub fn out_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("out")
+        .value_name("OUT")
+        .index(2)
+}
+
+pub fn out_file_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("out_file")
+        .value_name("OUTFILE")
+        .index(2)
+}
+
+pub fn out_dir_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("out_dir")
+        .value_name("OUTDIR")
+        .index(2)
+}
+
 pub fn pr_verbosity_level_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("pr_verbosity_level")
         .value_name("LEVEL")
