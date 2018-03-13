@@ -7,6 +7,8 @@ use super::file_writer::FileWriter;
 use super::file_writer::FileWriterParam;
 use super::sbx_block::BlockType;
 
+use std::sync::atomic::AtomicBool;
+
 use std::sync::{Arc, Mutex};
 use std::fs;
 use super::file_utils;
@@ -109,7 +111,8 @@ pub fn read_block_lazily(block  : &mut Block,
 
 pub fn get_ref_block(in_file            : &str,
                      use_any_block_type : bool,
-                     pr_verbosity_level : PRVerbosityLevel)
+                     pr_verbosity_level : PRVerbosityLevel,
+                     stop_flag          : &Arc<AtomicBool>)
                      -> Result<Option<(u64, Block)>, Error> {
     let metadata = file_utils::get_file_metadata(in_file)?;
 
@@ -138,6 +141,8 @@ pub fn get_ref_block(in_file            : &str,
     let mut bytes_processed : u64 = 0;
 
     loop {
+        break_if_atomic_bool!(stop_flag);
+
         let lazy_read_res = read_block_lazily(&mut block,
                                               &mut buffer,
                                               &mut reader)?;

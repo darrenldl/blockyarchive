@@ -95,14 +95,16 @@ go through the entire file as a result.
 This operation does not respect the misalignment and range requirements.")
 }
 
-pub fn setup_ctrl_c_handler(loop_stop_flag : &Arc<AtomicBool>) {
-    let loop_stop_flag = Arc::clone(&loop_stop_flag);
+pub fn setup_ctrlc_handler() -> Arc<AtomicBool> {
+    let stop_flag         = Arc::new(AtomicBool::new(false));
+    let handler_stop_flag = Arc::clone(&stop_flag);
 
     ctrlc::set_handler(move || {
         println!("Interrupted");
-        loop_stop_flag.store(true, Ordering::Relaxed);
+        handler_stop_flag.store(true, Ordering::SeqCst);
     }).expect("Failed to set Ctrl-C handler");
 
-    println!("This mode can be safely interrupted via Ctrl-C");
-    println!();
+    println!("Press Ctrl-C to interrupt");
+
+    stop_flag
 }
