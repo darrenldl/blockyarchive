@@ -155,6 +155,8 @@ pub fn check_file(param : &Param)
     reporter.start();
 
     loop {
+        break_if_atomic_bool!(ctrlc_stop_flag);
+
         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                             &mut buffer))?;
 
