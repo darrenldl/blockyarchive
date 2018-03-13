@@ -194,21 +194,8 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
 
     let ver_usize = ver_to_usize(ref_block.get_version());
 
-    let data_shards = match ref_block.get_RSD().unwrap() {
-        None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSD field(must be present to guess the burst error resistance level for version {})",
-                                                          ref_block_pos,
-                                                          ref_block_pos,
-                                                          ver_usize))); },
-        Some(x) => x,
-    } as usize;
-
-    let parity_shards = match ref_block.get_RSP().unwrap() {
-        None => { return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field(must be present to guess the burst error resistance level for version {})",
-                                                          ref_block_pos,
-                                                          ref_block_pos,
-                                                          ver_usize))); },
-        Some(x) => x,
-    } as usize;
+    let data_shards   = get_RSD_from_ref_block!(ref_block_pos, ref_block, "guess the burst error resistance level");
+    let parity_shards = get_RSP_from_ref_block!(ref_block_pos, ref_block, "guess the burst error resistance level");
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
         [0; SBX_LARGEST_BLOCK_SIZE];
@@ -263,10 +250,11 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
     for level in 0..mismatches_for_level.len() {
         for index in 0..seq_nums.len() {
             let expected_seq_num =
-                sbx_block::calc_rs_enabled_seq_num_at_index(index as u64,
-                                                            data_shards,
-                                                            parity_shards,
-                                                            level);
+                sbx_block::calc_seq_num_at_index(index as u64,
+                                                 Some((data_shards,
+                                                       parity_shards,
+                                                       level)));
+
             if let Some(seq_num) = seq_nums[index] {
                 if seq_num != expected_seq_num {
                     mismatches_for_level[level] += 1;

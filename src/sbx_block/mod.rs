@@ -17,6 +17,7 @@ use super::sbx_specs::{Version,
                        SBX_FILE_UID_LEN,
                        SBX_FIRST_DATA_SEQ_NUM,
                        ver_to_block_size,
+                       ver_to_data_size,
                        ver_uses_rs};
 use self::crc::*;
 
@@ -197,7 +198,7 @@ pub fn calc_meta_block_dup_write_pos_s(version        : Version,
                                        -> SmallVec<[u64; 32]> {
     let block_size = ver_to_block_size(version) as u64;
 
-    let mut res = calc_meta_dup_write_indices(data_par_burst);
+    let mut res = calc_meta_block_dup_write_indices(data_par_burst);
 
     for i in res.iter_mut() {
         *i = *i * block_size;
@@ -211,10 +212,10 @@ pub fn calc_meta_block_dup_write_indices(data_par_burst : Option<(usize, usize, 
     match data_par_burst {
         Some((_, parity, burst)) => {
             let mut res : SmallVec<[u64; 32]> =
-                SmallVec::with_capacity(1 + parity_shards);
+                SmallVec::with_capacity(1 + parity);
 
-            for i in 1..1 + parity_shards as u64 {
-                res.push(i * (1 + burst_err_resistance) as u64);
+            for i in 1..1 + parity as u64 {
+                res.push(i * (1 + burst) as u64);
             }
 
             res
@@ -229,16 +230,16 @@ pub fn calc_meta_block_all_write_pos_s(version        : Version,
                                        data_par_burst : Option<(usize, usize, usize)>)
                                        -> SmallVec<[u64; 32]> {
     let mut res = calc_meta_block_dup_write_pos_s(version,
-                                                  data_par_brust);
+                                                  data_par_burst);
 
     res.push(0);
 
     res
 }
 
-pub fn calc_meta_all_write_indices(data_par_burst : Option<(usize, usize, usize)>)
+pub fn calc_meta_block_all_write_indices(data_par_burst : Option<(usize, usize, usize)>)
                                    -> SmallVec<[u64; 32]> {
-    let mut res = calc_rs_enabled_meta_dup_write_indices(data_par_burst);
+    let mut res = calc_meta_block_dup_write_indices(data_par_burst);
 
     res.push(0);
 
@@ -270,8 +271,8 @@ pub fn calc_data_block_write_index(seq_num        : u32,
             index
         },
         Some((data, parity, burst)) => {
-            if burst_err_resistance == 0 {
-                return parity_shards as u64 + seq_num as u64;
+            if burst == 0 {
+                return parity as u64 + seq_num as u64;
             }
 
             let data_shards          = data   as u64;
@@ -352,7 +353,7 @@ pub fn calc_data_chunk_write_index(seq_num  : u32,
     } else {
         let index = seq_num - SBX_FIRST_DATA_SEQ_NUM;
 
-        match data_par_burst {
+        match data_par {
             None                 => {
                 Some(index)
             },
@@ -361,9 +362,9 @@ pub fn calc_data_chunk_write_index(seq_num  : u32,
                     None
                 } else {
                     let block_set_index    =
-                        data_index / (data_shards + parity_shards) as u32;
+                        index / (data + parity) as u32;
                     let index_in_block_set =
-                        data_index % (data_shards + parity_shards) as u32;
+                        index % (data + parity) as u32;
 
                     Some(block_set_index * data as u32 + index_in_block_set)
                 }
@@ -380,7 +381,7 @@ pub fn calc_data_chunk_write_pos(version  : Version,
 
     match calc_data_chunk_write_index(seq_num, data_par) {
         None    => None,
-        Some(x) => Some(x * data_size)
+        Some(x) => Some(x as u64 * data_size as u64)
     }
 }
 
@@ -394,17 +395,19 @@ pub fn calc_seq_num_at_index(index          : u64,
         Some((data, parity, burst)) => {
             // the following essentially does the same index transformation in
             // calc_rs_enabled_data_write_index does but in reverse order
-            if burst_err_resistance == 0 {
-                if index < 1 + parity_shards as u64 {
+            if burst == 0 {
+                if index < 1 + parity as u64 {
                     return 0;
                 } else {
-                    return (index - parity_shards as u64) as u32;
+                    let data_index = index - (1 + parity) as u64;
+
+                    return (data_index + 1) as u32;
                 }
             }
 
-            let data_shards          = data_shards      as u64;
-            let parity_shards        = parity_shards    as u64;
-            let burst_err_resistance = burst_err_resistance as u64;
+            let data_shards          = data   as u64;
+            let parity_shards        = parity as u64;
+            let burst_err_resistance = burst  as u64;
 
             // handle metadata seq nums first
             if index < (1 + parity_shards) * (1 + burst_err_resistance) {
