@@ -220,7 +220,7 @@ fn write_meta_blocks(param         : &Param,
                      file_metadata : &fs::Metadata,
                      hash          : Option<multihash::HashBytes>,
                      block         : &mut Block,
-                     buf           : &mut [u8],
+                     buffer        : &mut [u8],
                      writer        : &mut FileWriter)
                      -> Result<(), Error> {
     // pack metadata into the block
@@ -230,20 +230,24 @@ fn write_meta_blocks(param         : &Param,
                   file_metadata,
                   hash);
 
+    match block.sync_to_buffer(None, buffer) {
+        Ok(()) => {},
+        Err(_) => { return Err(Error::with_message("Too much metadata")); }
+    }
+
     let write_pos_s =
         sbx_block::calc_meta_block_all_write_pos_s(param.version,
                                                    param.data_par_burst);
 
     for &p in write_pos_s.iter() {
-        block.set_seq_num(0);
+        writer.seek(SeekFrom::Start(p))?;
 
-        block_sync_and_write(block,
-                             buf,
-                             writer,
-                             p)?;
+        writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
 
         stats.lock().unwrap().meta_blocks_written += 1;
     }
+
+    block.add1_seq_num().unwrap();
 
     Ok(())
 }
