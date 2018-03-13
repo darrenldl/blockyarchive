@@ -290,8 +290,10 @@ pub fn repair_file(param : &Param)
                         repair_stats.missing_count as u64;
                 }
 
-                print_if_verbose!(param, reporter =>
-                                  "{}", repair_stats;);
+                if repair_stats.missing_count > 0 {
+                    print_if_verbose!(param, reporter =>
+                                      "{}", repair_stats;);
+                }
 
                 // write the repaired data blocks
                 for &(pos, block_buf) in repaired_blocks.iter() {
