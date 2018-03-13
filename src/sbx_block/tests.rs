@@ -10,7 +10,9 @@ fn test_calc_rs_enabled_meta_write_indices() {
         const PARITY : usize = 2;
         const BURST  : usize = 4;
 
-        let indices = calc_rs_enabled_meta_dup_write_indices(PARITY, BURST);
+        let data_par_burst = Some((0, PARITY, BURST));
+
+        let indices = calc_meta_block_dup_write_indices(data_par_burst);
 
         assert_eq!(2, indices.len());
 
@@ -21,7 +23,9 @@ fn test_calc_rs_enabled_meta_write_indices() {
         const PARITY : usize = 1;
         const BURST  : usize = 2;
 
-        let indices = calc_rs_enabled_meta_dup_write_indices(PARITY, BURST);
+        let data_par_burst = Some((0, PARITY, BURST));
+
+        let indices = calc_meta_block_dup_write_indices(data_par_burst);
 
         assert_eq!(1, indices.len());
 
@@ -31,7 +35,9 @@ fn test_calc_rs_enabled_meta_write_indices() {
         const PARITY : usize = 2;
         const BURST  : usize = 11;
 
-        let indices = calc_rs_enabled_meta_dup_write_indices(PARITY, BURST);
+        let data_par_burst = Some((0, PARITY, BURST));
+
+        let indices = calc_meta_block_dup_write_indices(data_par_burst);
 
         assert_eq!(2, indices.len());
 
@@ -47,6 +53,9 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
         const PARITY : usize = 2;
         const TOTAL  : usize = DATA + PARITY;
         const BURST  : usize = 4;
+
+        let data_par_burst = Some((DATA, PARITY, BURST));
+
         let table : [u32; 2 * (TOTAL * BURST) + (1 + PARITY)] =
             [00, 01, 06, 11, 16,
              00, 02, 07, 12, 17,
@@ -63,10 +72,9 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
         // go through data seq num
         for seq in 1..40 {
             let write_index =
-                calc_rs_enabled_data_write_index(seq,
-                                                 DATA,
-                                                 PARITY,
-                                                 BURST) as usize;
+                calc_data_block_write_index(seq,
+                                            data_par_burst) as usize;
+
             assert_eq!(table[write_index], seq);
         }
 
@@ -76,10 +84,8 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
 
             if seq > 0 {
                 let write_index =
-                    calc_rs_enabled_data_write_index(seq,
-                                                     DATA,
-                                                     PARITY,
-                                                     BURST) as usize;
+                    calc_data_block_write_index(seq,
+                                                data_par_burst) as usize;
 
                 assert_eq!(index, write_index);
             }
@@ -90,6 +96,9 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
         const PARITY : usize = 1;
         const TOTAL  : usize = DATA + PARITY;
         const BURST  : usize = 2;
+
+        let data_par_burst = Some((DATA, PARITY, BURST));
+
         let table : [u32; 5 * (TOTAL * BURST) + (1 + PARITY)] =
             [00, 01, 03,
              00, 02, 04,
@@ -109,10 +118,9 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
         // go through data seq num
         for seq in 1..20 {
             let write_index =
-                calc_rs_enabled_data_write_index(seq,
-                                                 DATA,
-                                                 PARITY,
-                                                 BURST) as usize;
+                calc_data_block_write_index(seq,
+                                            data_par_burst) as usize;
+
             assert_eq!(table[write_index], seq);
         }
 
@@ -122,10 +130,8 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
 
             if seq > 0 {
                 let write_index =
-                    calc_rs_enabled_data_write_index(seq,
-                                                     DATA,
-                                                     PARITY,
-                                                     BURST) as usize;
+                    calc_data_block_write_index(seq,
+                                                data_par_burst) as usize;
 
                 assert_eq!(index, write_index);
             }
@@ -136,6 +142,9 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
         const PARITY : usize = 2;
         const TOTAL  : usize = DATA + PARITY;
         const BURST  : usize = 11;
+
+        let data_par_burst = Some((DATA, PARITY, BURST));
+
         let table : [u32; 1 * (TOTAL * BURST) + (1 + PARITY)] =
             [00, 01, 13, 25, 37, 49, 61, 73, 85,  97,  109, 121,
              00, 02, 14, 26, 38, 50, 62, 74, 86,  98,  110, 122,
@@ -153,10 +162,9 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
         // go through data seq num
         for seq in 1..132 {
             let write_index =
-                calc_rs_enabled_data_write_index(seq,
-                                                 DATA,
-                                                 PARITY,
-                                                 BURST) as usize;
+                calc_data_block_write_index(seq,
+                                            data_par_burst) as usize;
+
             assert_eq!(table[write_index], seq);
         }
 
@@ -166,10 +174,8 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
 
             if seq > 0 {
                 let write_index =
-                    calc_rs_enabled_data_write_index(seq,
-                                                     DATA,
-                                                     PARITY,
-                                                     BURST) as usize;
+                    calc_data_block_write_index(seq,
+                                                data_par_burst) as usize;
 
                 assert_eq!(index, write_index);
             }
@@ -184,6 +190,9 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
         const PARITY : usize = 2;
         const TOTAL  : usize = DATA + PARITY;
         const BURST  : usize = 4;
+
+        let data_par_burst = Some((DATA, PARITY, BURST));
+
         let table : [u32; 2 * (TOTAL * BURST) + (1 + PARITY)] =
             [00, 01, 06, 11, 16,
              00, 02, 07, 12, 17,
@@ -200,10 +209,8 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
         // go through the table
         for index in 0..table.len() {
             let seq_num_from_index =
-                calc_rs_enabled_seq_num_at_index(index as u64,
-                                                 DATA,
-                                                 PARITY,
-                                                 BURST);
+                calc_seq_num_at_index(index as u64,
+                                      data_par_burst);
 
             assert_eq!(table[index], seq_num_from_index);
         }
@@ -213,6 +220,9 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
         const PARITY : usize = 1;
         const TOTAL  : usize = DATA + PARITY;
         const BURST  : usize = 2;
+
+        let data_par_burst = Some((DATA, PARITY, BURST));
+
         let table : [u32; 5 * (TOTAL * BURST) + (1 + PARITY)] =
             [00, 01, 03,
              00, 02, 04,
@@ -232,10 +242,8 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
         // go through the table
         for index in 0..table.len() {
             let seq_num_from_index =
-                calc_rs_enabled_seq_num_at_index(index as u64,
-                                                 DATA,
-                                                 PARITY,
-                                                 BURST);
+                calc_seq_num_at_index(index as u64,
+                                      data_par_burst);
 
             assert_eq!(table[index], seq_num_from_index);
         }
@@ -245,6 +253,9 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
         const PARITY : usize = 2;
         const TOTAL  : usize = DATA + PARITY;
         const BURST  : usize = 11;
+
+        let data_par_burst = Some((DATA, PARITY, BURST));
+
         let table : [u32; 1 * (TOTAL * BURST) + (1 + PARITY)] =
             [00, 01, 13, 25, 37, 49, 61, 73, 85,  97,  109, 121,
              00, 02, 14, 26, 38, 50, 62, 74, 86,  98,  110, 122,
@@ -262,10 +273,8 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
         // go through the table
         for index in 0..table.len() {
             let seq_num_from_index =
-                calc_rs_enabled_seq_num_at_index(index as u64,
-                                                 DATA,
-                                                 PARITY,
-                                                 BURST);
+                calc_seq_num_at_index(index as u64,
+                                      data_par_burst);
 
             assert_eq!(table[index], seq_num_from_index);
         }
@@ -282,15 +291,13 @@ quickcheck! {
         let parity_shards = 1 + parity_shards % 256;
         let burst         = burst % sbx_specs::SBX_MAX_BURST_ERR_RESISTANCE;
 
-        let index = calc_rs_enabled_data_write_index(seq_num,
-                                                     data_shards,
-                                                     parity_shards,
-                                                     burst);
+        let data_par_burst = Some((data_shards, parity_shards, burst));
 
-        let seq_num_from_index = calc_rs_enabled_seq_num_at_index(index,
-                                                                  data_shards,
-                                                                  parity_shards,
-                                                                  burst);
+        let index = calc_data_block_write_index(seq_num,
+                                                data_par_burst);
+
+        let seq_num_from_index = calc_seq_num_at_index(index,
+                                                       data_par_burst);
 
         seq_num_from_index == seq_num
     }
