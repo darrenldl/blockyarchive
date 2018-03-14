@@ -348,7 +348,7 @@ pub fn calc_data_block_write_index(seq_num        : u32,
 
             // finally calculate the index in interleaving data index arrangement
             let new_index =
-            // number of metadata blocks in front
+            // number of metadata blocks in front of the data block
                 meta_block_count
 
             // index of start of super block set
