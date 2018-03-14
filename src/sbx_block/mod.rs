@@ -276,18 +276,20 @@ pub fn calc_data_block_write_index(seq_num        : u32,
                                    -> u64 {
     // the following transforms seq num to data index
     // then do the transformation based on data index
-    assert!(seq_num >= SBX_FIRST_DATA_SEQ_NUM as u32);
+    assert!(seq_num >= SBX_FIRST_DATA_SEQ_NUM);
 
-    // calculate data index
+    // calculate the sequential data index
     let index = (seq_num - SBX_FIRST_DATA_SEQ_NUM) as u64;
 
     match data_par_burst {
         None                        => {
-            1 + index
+            SBX_FIRST_DATA_SEQ_NUM as u64 + index
         },
         Some((data, parity, burst)) => {
             if burst == 0 {
-                return (1 + parity) as u64 + index as u64;
+                let meta_block_count = 1 + parity as u64;
+
+                return meta_block_count + index;
             }
 
             let data_shards          = data   as u64;
@@ -427,17 +429,19 @@ pub fn calc_seq_num_at_index(index          : u64,
             let burst_err_resistance = burst  as u64;
 
             // handle metadata seq nums first
-            if index < (1 + parity_shards) * (1 + burst_err_resistance) {
-                if index % (1 + burst_err_resistance) == 0 {
-                    return 0;
-                }
-            }
-
-            let meta_block_count =
             // M = data shards
             // N = parity_shards
             // B = burst_err_resistance
             //
+            // if index is in first 1 + N block set
+            if index < (1 + parity_shards) * (1 + burst_err_resistance)
+            // and index is in front of a sub B block set
+                && index % (1 + burst_err_resistance) == 0
+            {
+                return 0;
+            }
+
+            let meta_block_count =
             // if index is in first 1 + N block set
                 if index < (1 + parity_shards) * (1 + burst_err_resistance) {
                     1 + index / (1 + burst_err_resistance)
@@ -445,13 +449,17 @@ pub fn calc_seq_num_at_index(index          : u64,
                     1 + parity_shards
                 };
 
+            // same block set sizes from `calc_data_block_write_index`
             let super_block_set_size = (data_shards + parity_shards) * burst_err_resistance;
 
             let sub_a_block_set_size = data_shards + parity_shards;
             let sub_b_block_set_size = burst_err_resistance;
 
+            // calculate the transformed data index
+            // not the original sequential data index yet
             let index_without_meta = index - meta_block_count;
 
+            // reverse the transformation done in `calc_data_block_write_index`
             let super_block_set_index    = index_without_meta / super_block_set_size;
             let index_in_super_block_set = index_without_meta % super_block_set_size;
 
@@ -464,6 +472,7 @@ pub fn calc_seq_num_at_index(index          : u64,
             let old_index_in_super_block_set =
                 sub_a_block_set_index * sub_a_block_set_size + index_in_sub_a_block_set;
 
+            // calculate the original sequential data index
             let old_index =
             // index of start of super block set
                 (super_block_set_size * super_block_set_index)
