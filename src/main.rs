@@ -60,6 +60,9 @@ use general_error::ErrorKind;
 #[macro_use]
 mod misc_macros;
 
+#[macro_use]
+mod block_preds;
+
 mod multihash;
 mod multihash_tests;
 mod misc_utils;

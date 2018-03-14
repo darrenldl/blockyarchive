@@ -171,14 +171,7 @@ pub fn sort_file(param : &Param)
 
     let mut meta_written = false;
 
-    let pred = {
-        let version = ref_block.get_version();
-        let uid     = ref_block.get_uid();
-        move |block : &Block| -> bool {
-            block.get_version() == version
-                && block.get_uid() == uid
-        }
-    };
+    let pred = block_pred_same_ver_uid!(ref_block);
 
     reporter.start();
 

@@ -205,14 +205,7 @@ pub fn repair_file(param : &Param)
                                                   "blocks",
                                                   param.pr_verbosity_level));
 
-    let pred = {
-        let version = ref_block.get_version();
-        let uid     = ref_block.get_uid();
-        move |block : &Block| -> bool {
-            block.get_version() == version
-                && block.get_uid() == uid
-        }
-    };
+    let pred = block_pred_same_ver_uid!(ref_block);
 
     let mut rs_codec = RSRepairer::new(version,
                                        &ref_block,

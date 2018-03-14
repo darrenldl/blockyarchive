@@ -217,14 +217,7 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
 
     let mut blocks_processed = 0;
 
-    let pred = {
-        let version = ref_block.get_version();
-        let uid     = ref_block.get_uid();
-        move |block : &Block| -> bool {
-            block.get_version() == version
-                && block.get_uid() == uid
-        }
-    };
+    let pred = block_pred_same_ver_uid!(ref_block);
 
     // record first up to 1000 seq nums
     loop {
