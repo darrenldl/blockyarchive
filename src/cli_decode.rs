@@ -32,13 +32,13 @@ OUT is provided and is not a directory, then it is used directly."))
 pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
     let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
-    let in_file  = get_in_file!(matches);
-    let out_file = matches.value_of("out");
+    let in_file = get_in_file!(matches);
+    let out     = matches.value_of("out");
 
     let param = Param::new(matches.is_present("no_meta"),
                            matches.is_present("force"),
                            in_file,
-                           out_file,
+                           out,
                            matches.is_present("verbose"),
                            pr_verbosity_level);
     match decode_core::decode_file(&param) {

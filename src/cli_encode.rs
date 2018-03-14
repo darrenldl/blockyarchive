@@ -96,8 +96,8 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
             None
         };
 
-    let in_file  = get_in_file!(matches);
-    let out_file = match matches.value_of("out_file") {
+    let in_file = get_in_file!(matches);
+    let out     = match matches.value_of("out") {
         None    => format!("{}.sbx", in_file),
         Some(x) => {
             if file_utils::check_if_file_is_dir(x) {
@@ -108,9 +108,9 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
         }
     };
 
-    exit_if_file!(exists &out_file
+    exit_if_file!(exists &out
                   => matches.is_present("force")
-                  => "File \"{}\" already exists", out_file);
+                  => "File \"{}\" already exists", out);
 
     let hash_type = match matches.value_of("hash_type") {
         None    => multihash::HashType::SHA256,
@@ -128,7 +128,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                            matches.is_present("no_meta"),
                            hash_type,
                            in_file,
-                           &out_file,
+                           &out,
                            pr_verbosity_level);
     match encode_core::encode_file(&param) {
         Ok(s)  => exit_with_msg!(ok => "{}", s),
