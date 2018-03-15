@@ -2,7 +2,6 @@
 
 use super::*;
 use sbx_specs;
-use misc_utils;
 
 #[test]
 fn test_calc_rs_enabled_meta_write_indices() {
