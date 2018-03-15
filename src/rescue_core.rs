@@ -236,7 +236,7 @@ pub fn rescue_from_file(param : &Param)
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
-        if stats.lock().unwrap().bytes_processed > required_len {
+        if stats.lock().unwrap().bytes_processed >= required_len {
             break;
         }
 
