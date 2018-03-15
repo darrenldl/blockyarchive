@@ -5,14 +5,14 @@ VERSIONS=(1 2 3)
 # Encode in all 3 versions
 for ver in ${VERSIONS[*]}; do
   echo "Encoding in version $ver"
-  ./osbx encode --sbx-version $ver -f dummy dummy$ver.sbx
+  ./rsbx encode --sbx-version $ver -f dummy dummy$ver.sbx
   echo ""
 done
 
 # Decode all of them
 for ver in ${VERSIONS[*]}; do
   echo "Decoding version $ver container"
-  ./osbx decode -f dummy$ver.sbx dummy$ver
+  ./rsbx decode -f dummy$ver.sbx dummy$ver
   echo ""
 done
 

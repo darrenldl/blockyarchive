@@ -6,7 +6,7 @@ brew install opam                   # Homebrew, OSX Mavericks or later
 # port install opam                   # MacPort
 
 # Pin the project
-opam pin add osbx . -n
+opam pin add rsbx . -n
 
 # Initial build
-opam install osbx
+opam install rsbx

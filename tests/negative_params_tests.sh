@@ -2,7 +2,7 @@
 
 truncate -s 1M dummy
 
-./osbx encode dummy -f &> /dev/null
+./rsbx encode dummy -f &> /dev/null
 
 VALS=(1 0 -1)
 

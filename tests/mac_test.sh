@@ -9,11 +9,11 @@ eval `opam config env`
 
 # Pin the project
 cd ..
-opam pin add osbx . -n
+opam pin add rsbx . -n
 
 # Build
-opam uninstall osbx
-opam install osbx
+opam uninstall rsbx
+opam install rsbx
 
 # Verify version
-osbx --version
+rsbx --version
