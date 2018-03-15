@@ -45,6 +45,7 @@ macro_rules! get_pr_verbosity_level {
     (
         $matches:expr
     ) => {{
+        use progress_report;
         match $matches.value_of("pr_verbosity_level") {
             None    => progress_report::PRVerbosityLevel::L2,
             Some(x) => match progress_report::string_to_verbosity_level(x) {

@@ -1,9 +1,9 @@
-use super::super::reed_solomon_erasure::ReedSolomon;
-use super::super::smallvec::SmallVec;
-use super::super::sbx_block;
-use super::super::sbx_specs::Version;
-use super::super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-use super::super::sbx_specs::ver_to_block_size;
+use reed_solomon_erasure::ReedSolomon;
+use smallvec::SmallVec;
+use sbx_block;
+use sbx_specs::{Version,
+                SBX_LARGEST_BLOCK_SIZE,
+                ver_to_block_size};
 
 pub struct RSEncoder {
     index    : usize,

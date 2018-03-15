@@ -1,17 +1,18 @@
-use super::super::reed_solomon_erasure::ReedSolomon;
-use super::super::smallvec::SmallVec;
-use super::super::sbx_specs::Version;
-use super::super::sbx_block::BlockType;
-use super::super::sbx_block::Block;
-use super::super::sbx_specs::ver_to_block_size;
-use super::super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-use super::super::sbx_specs::SBX_FIRST_DATA_SEQ_NUM;
-use super::*;
-use super::super::sbx_block;
+use reed_solomon_erasure::ReedSolomon;
+use smallvec::SmallVec;
+use sbx_block;
+use sbx_block::{BlockType,
+                Block};
+use sbx_specs::{Version,
+                ver_to_block_size,
+                SBX_LARGEST_BLOCK_SIZE,
+                SBX_FIRST_DATA_SEQ_NUM};
 
 use std::fmt;
 
-use super::Error;
+use super::RSCodecState;
+
+use general_error::Error;
 
 pub struct RSRepairer {
     index          : usize,

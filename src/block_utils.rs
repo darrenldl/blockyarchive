@@ -1,31 +1,32 @@
-use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-use super::sbx_specs::SBX_SCAN_BLOCK_SIZE;
-use super::sbx_block::Block;
-use super::file_reader::FileReader;
-use super::file_reader::FileReaderParam;
-use super::file_writer::FileWriter;
-use super::file_writer::FileWriterParam;
-use super::sbx_block::BlockType;
-
 use std::sync::atomic::AtomicBool;
 
 use std::sync::{Arc, Mutex};
 use std::fs;
-use super::file_utils;
+
+use file_reader::{FileReader,
+                  FileReaderParam};
+use file_writer::{FileWriter,
+                  FileWriterParam};
+use sbx_block::{Block,
+                BlockType};
+
+use file_utils;
 
 use smallvec::SmallVec;
 
-use super::sbx_block;
+use sbx_block;
 
-use super::sbx_specs::{ver_to_usize,
-                       ver_uses_rs,
-                       SBX_FILE_UID_LEN,
-                       SBX_MAX_BURST_ERR_RESISTANCE};
+use sbx_specs::{ver_to_usize,
+                ver_uses_rs,
+                ver_to_block_size,
+                SBX_LARGEST_BLOCK_SIZE,
+                SBX_FILE_UID_LEN,
+                SBX_SCAN_BLOCK_SIZE,
+                SBX_MAX_BURST_ERR_RESISTANCE};
 
-use super::progress_report::*;
+use progress_report::*;
 
-use super::sbx_specs::ver_to_block_size;
-use super::Error;
+use general_error::Error;
 
 pub struct LazyReadResult {
     pub len_read : usize,

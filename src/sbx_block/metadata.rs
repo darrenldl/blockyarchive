@@ -1,7 +1,7 @@
+use std;
 use std::string;
 
-use super::super::multihash;
-use std;
+use multihash;
 use super::Error;
 
 #[derive(Clone, Debug, PartialEq)]

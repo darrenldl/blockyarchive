@@ -10,18 +10,18 @@ mod metadata_tests;
 use self::header::Header;
 pub use self::metadata::Metadata;
 pub use self::metadata::MetadataID;
-use super::smallvec::SmallVec;
+use smallvec::SmallVec;
 
-use super::sbx_specs::{Version,
-                       SBX_HEADER_SIZE,
-                       SBX_FILE_UID_LEN,
-                       SBX_FIRST_DATA_SEQ_NUM,
-                       ver_to_block_size,
-                       ver_to_data_size,
-                       ver_uses_rs};
+use sbx_specs::{Version,
+                SBX_HEADER_SIZE,
+                SBX_FILE_UID_LEN,
+                SBX_FIRST_DATA_SEQ_NUM,
+                ver_to_block_size,
+                ver_to_data_size,
+                ver_uses_rs};
 use self::crc::*;
 
-use super::multihash;
+use multihash;
 
 macro_rules! make_meta_getter {
     (

@@ -1,9 +1,9 @@
 use std;
-use super::super::sbx_specs::{Version,
-                              SBX_FILE_UID_LEN,
-                              SBX_FIRST_DATA_SEQ_NUM,
-                              SBX_SIGNATURE};
-use super::super::sbx_specs;
+use sbx_specs::{Version,
+                SBX_FILE_UID_LEN,
+                SBX_FIRST_DATA_SEQ_NUM,
+                SBX_SIGNATURE};
+use sbx_specs;
 use super::BlockType;
 
 use super::crc::*;

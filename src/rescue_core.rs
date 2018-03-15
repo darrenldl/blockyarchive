@@ -1,45 +1,45 @@
 use std::sync::{Arc, Mutex};
 use std::fs;
 use std::fmt;
-use super::file_utils;
 use std::io::SeekFrom;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 
-use super::misc_utils;
-use super::misc_utils::RequiredLenAndSeekTo;
+use file_utils;
 
-use super::progress_report::*;
-use super::log::*;
+use misc_utils;
+use misc_utils::RequiredLenAndSeekTo;
 
-use super::cli_utils::setup_ctrlc_handler;
+use progress_report::*;
+use log::*;
 
-use super::file_reader::FileReader;
-use super::file_reader::FileReaderParam;
-use super::file_writer::FileWriter;
-use super::file_writer::FileWriterParam;
+use cli_utils::setup_ctrlc_handler;
 
-use super::sbx_specs::SBX_SCAN_BLOCK_SIZE;
+use file_reader::{FileReader,
+                  FileReaderParam};
+use file_writer::{FileWriter,
+                  FileWriterParam};
 
-use super::multihash;
-use super::multihash::*;
+use multihash;
+use multihash::*;
 
-use super::Error;
-use super::sbx_specs::Version;
+use general_error::Error;
 
-use super::sbx_block::{Block, BlockType};
-use super::sbx_block;
-use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-use super::sbx_specs::SBX_FILE_UID_LEN;
-use super::sbx_specs::{ver_to_block_size,
-                       ver_to_data_size,
-                       ver_uses_rs};
+use sbx_block;
+use sbx_block::{Block, BlockType};
+use sbx_specs::{Version,
+                SBX_LARGEST_BLOCK_SIZE,
+                SBX_FILE_UID_LEN,
+                SBX_SCAN_BLOCK_SIZE,
+                ver_to_block_size,
+                ver_to_data_size,
+                ver_uses_rs};
 
-use super::block_utils;
+use block_utils;
 
 use nom::digit;
 use std::num::ParseIntError;
-use super::integer_utils::IntegerUtils;
+use integer_utils::IntegerUtils;
 
 pub struct Param {
     in_file            : String,
