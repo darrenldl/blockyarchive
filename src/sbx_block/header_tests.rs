@@ -5,7 +5,7 @@ use super::header::Header;
 use super::Error;
 use super::super::rand_utils::fill_random_bytes;
 
-extern crate rand;
+use rand;
 
 #[test]
 fn test_from_bytes_versions() {

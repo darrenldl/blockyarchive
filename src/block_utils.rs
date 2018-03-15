@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex};
 use std::fs;
 use super::file_utils;
 
-use super::smallvec::SmallVec;
+use smallvec::SmallVec;
 
 use super::sbx_block;
 

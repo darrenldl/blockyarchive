@@ -10,6 +10,8 @@ extern crate nom;
 extern crate clap;
 use clap::*;
 
+extern crate rand;
+
 extern crate chrono;
 
 extern crate pond;
@@ -17,10 +19,16 @@ extern crate pond;
 extern crate futures;
 
 extern crate smallvec;
+use smallvec::SmallVec;
 
 extern crate ctrlc;
 
+extern crate crc_ccitt;
+
 extern crate reed_solomon_erasure;
+
+extern crate ring;
+extern crate blake2_c;
 
 macro_rules! smallvec {
     [

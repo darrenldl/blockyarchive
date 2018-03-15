@@ -129,10 +129,8 @@ pub mod specs {
 }
 
 pub mod hash {
-    extern crate ring;
-    extern crate blake2_c;
-
-    use self::blake2_c::blake2b;
+    use blake2_c::blake2b;
+    use ring;
 
     use super::*;
 
