@@ -2,18 +2,18 @@
 
 truncate -s 100M dummy
 
-./osbx decode dummy
+./rsbx decode dummy
 
 echo ""
 
-./osbx show dummy
+./rsbx show dummy
 
 echo ""
 
-./osbx rescue dummy .
+./rsbx rescue dummy .
 
 echo ""
 
-./osbx rescue dummy . log
+./rsbx rescue dummy . log
 
 rm log
