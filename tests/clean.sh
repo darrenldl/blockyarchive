@@ -1,13 +1,13 @@
 #!/bin/bash
 
-rm dummy*
+rm dummy* &>/dev/null
 
-rm *.sbx
+rm *.sbx &>/dev/null
 
-rm rescued_data/*
+rm rescued_data/* &>/dev/null
 
-rm rescue_log
+rm rescue_log &>/dev/null
 
-rm filler*
+rm filler* &>/dev/null
 
-rm out_test/*
+rm out_test/* &>/dev/null
