@@ -195,3 +195,13 @@ macro_rules! break_if_atomic_bool {
         }
     }}
 }
+
+macro_rules! break_if_bytes_processed_reaches_required_len {
+    (
+        $bytes_processed:expr, $required_len:expr
+    ) => {{
+        if $bytes_processed >= $required_len {
+            break;
+        }
+    }}
+}
