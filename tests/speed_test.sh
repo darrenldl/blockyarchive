@@ -1,19 +1,23 @@
 #!/bin/bash
 
+./copy_release.sh
+
 truncate -s 100M dummy
 
-./rsbx decode dummy
+./rsbx_release decode dummy
 
 echo ""
 
-./rsbx show dummy
+./rsbx_release show dummy
 
 echo ""
 
-./rsbx rescue dummy .
+mkdir rescued_data &>/dev/null
+
+./rsbx_release rescue dummy rescued_data
 
 echo ""
 
-./rsbx rescue dummy . log
+./rsbx_release rescue dummy . log
 
 rm log
