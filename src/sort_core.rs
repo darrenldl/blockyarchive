@@ -2,7 +2,6 @@ use std::sync::{Arc, Mutex};
 use std::fs;
 use std::fmt;
 use file_utils;
-use misc_utils;
 use std::io::SeekFrom;
 
 use progress_report::*;
@@ -12,26 +11,18 @@ use file_reader::{FileReader,
 use file_writer::{FileWriter,
                   FileWriterParam};
 
-use sbx_specs::SBX_SCAN_BLOCK_SIZE;
-
-use multihash;
-use multihash::*;
-
 use general_error::Error;
 use sbx_specs::Version;
 
-use sbx_block::{Block, BlockType};
+use sbx_block::Block;
 use sbx_block;
 use sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use sbx_specs::{ver_to_block_size,
-                ver_to_data_size,
                 ver_uses_rs,
                 ver_to_usize};
 
 use cli_utils::report_ref_block_info;
 use cli_utils::setup_ctrlc_handler;
-
-use std::str::from_utf8;
 
 use time_utils;
 use block_utils;

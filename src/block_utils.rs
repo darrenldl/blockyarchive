@@ -5,8 +5,6 @@ use std::fs;
 
 use file_reader::{FileReader,
                   FileReaderParam};
-use file_writer::{FileWriter,
-                  FileWriterParam};
 use sbx_block::{Block,
                 BlockType};
 
@@ -20,7 +18,6 @@ use sbx_specs::{ver_to_usize,
                 ver_uses_rs,
                 ver_to_block_size,
                 SBX_LARGEST_BLOCK_SIZE,
-                SBX_FILE_UID_LEN,
                 SBX_SCAN_BLOCK_SIZE,
                 SBX_MAX_BURST_ERR_RESISTANCE};
 

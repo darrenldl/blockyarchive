@@ -2,11 +2,8 @@ use encode_core::Param;
 use encode_core;
 use sbx_specs::{SBX_FILE_UID_LEN,
                 Version,
-                string_to_ver,
-                ver_uses_rs,
-                ver_to_usize};
+                ver_uses_rs};
 use std::str::FromStr;
-use std::path::Path;
 
 use multihash;
 

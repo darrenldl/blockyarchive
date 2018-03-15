@@ -7,7 +7,6 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
-use std::thread::JoinHandle;
 use std::sync::Barrier;
 use std::thread;
 use std::time::Duration;

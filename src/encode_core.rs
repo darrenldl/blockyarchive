@@ -27,8 +27,7 @@ use rs_codec::RSEncoder;
 use sbx_block::{Block,
                 BlockType,
                 Metadata,
-                calc_data_block_write_pos,
-                calc_meta_block_dup_write_pos_s};
+                calc_data_block_write_pos};
 use sbx_block;
 use sbx_specs::{ver_to_usize,
                 ver_to_block_size,

@@ -1,5 +1,4 @@
 use std;
-use std::string;
 
 use multihash;
 use super::Error;

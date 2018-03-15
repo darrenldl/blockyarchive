@@ -1,5 +1,4 @@
 use file_error;
-use rs_codec;
 use log;
 use std::fmt;
 

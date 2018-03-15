@@ -1,8 +1,7 @@
 use reed_solomon_erasure::ReedSolomon;
 use smallvec::SmallVec;
 use sbx_block;
-use sbx_block::{BlockType,
-                Block};
+use sbx_block::Block;
 use sbx_specs::{Version,
                 ver_to_block_size,
                 SBX_LARGEST_BLOCK_SIZE,
@@ -11,8 +10,6 @@ use sbx_specs::{Version,
 use std::fmt;
 
 use super::RSCodecState;
-
-use general_error::Error;
 
 pub struct RSRepairer {
     index          : usize,

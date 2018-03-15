@@ -1,10 +1,5 @@
 use sort_core::Param;
-use sbx_specs::{SBX_FILE_UID_LEN,
-                Version,
-                string_to_ver,
-                ver_to_usize};
 use std::str::FromStr;
-use std::path::Path;
 
 use sort_core;
 use file_utils;

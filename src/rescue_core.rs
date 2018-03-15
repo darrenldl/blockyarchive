@@ -2,8 +2,6 @@ use std::sync::{Arc, Mutex};
 use std::fs;
 use std::fmt;
 use std::io::SeekFrom;
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::Ordering;
 
 use file_utils;
 
@@ -20,25 +18,17 @@ use file_reader::{FileReader,
 use file_writer::{FileWriter,
                   FileWriterParam};
 
-use multihash;
-use multihash::*;
-
 use general_error::Error;
+
+use sbx_specs::{SBX_LARGEST_BLOCK_SIZE,
+                SBX_SCAN_BLOCK_SIZE,
+                SBX_FILE_UID_LEN};
 
 use sbx_block;
 use sbx_block::{Block, BlockType};
-use sbx_specs::{Version,
-                SBX_LARGEST_BLOCK_SIZE,
-                SBX_FILE_UID_LEN,
-                SBX_SCAN_BLOCK_SIZE,
-                ver_to_block_size,
-                ver_to_data_size,
-                ver_uses_rs};
 
 use block_utils;
 
-use nom::digit;
-use std::num::ParseIntError;
 use integer_utils::IntegerUtils;
 
 pub struct Param {
@@ -119,7 +109,6 @@ impl ProgressReport for Stats {
 }
 
 mod parsers {
-    use nom::IResult;
     use nom::digit;
     use nom::newline;
     use std::num::ParseIntError;
@@ -177,8 +166,6 @@ impl Log for Stats {
 
     fn deserialize(&mut self, input : &[u8]) -> Result<(), ()> {
         use nom::IResult;
-        use std::cmp::min;
-
         match parsers::stats_p(input) {
             IResult::Done(_, Ok((bytes, _, meta, data))) => {
                 self.bytes_processed              =

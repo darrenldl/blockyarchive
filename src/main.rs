@@ -1,5 +1,3 @@
-#![allow(unused_imports)]
-
 #[cfg(test)]
 #[macro_use]
 extern crate quickcheck;
@@ -19,8 +17,6 @@ extern crate pond;
 extern crate futures;
 
 extern crate smallvec;
-use smallvec::SmallVec;
-
 extern crate ctrlc;
 
 extern crate crc_ccitt;
@@ -99,7 +95,6 @@ mod check_core;
 mod progress_report;
 
 mod file_reader;
-use file_reader::ReadResult;
 mod file_writer;
 
 #[macro_use]
@@ -116,9 +111,6 @@ mod cli_check;
 mod cli_sort;
 
 fn real_main () -> i32 {
-    use std::str::FromStr;
-    use std::path::Path;
-
     let matches = App::new("rsbx")
         .version(env!("CARGO_PKG_VERSION"))
         .author("Darren Ldl <darrenldldev@gmail.com>")

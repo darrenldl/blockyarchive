@@ -1,8 +1,6 @@
 use std::sync::{Arc, Mutex};
-use std::fs;
 use std::fmt;
 use file_utils;
-use misc_utils;
 use std::io::SeekFrom;
 
 use progress_report::*;
@@ -10,38 +8,25 @@ use cli_utils::setup_ctrlc_handler;
 
 use file_reader::{FileReader,
                   FileReaderParam};
-use file_writer::{FileWriter,
-                  FileWriterParam};
-
-use sbx_specs::SBX_SCAN_BLOCK_SIZE;
-
-
-use multihash;
-use multihash::*;
 
 use general_error::Error;
 use sbx_specs::Version;
 
-use sbx_block::{Block, BlockType};
+use sbx_block::Block;
 use sbx_block;
 use sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use sbx_specs::{ver_to_block_size,
-                ver_to_data_size,
                 ver_uses_rs,
                 SBX_LAST_SEQ_NUM,
-                SBX_FIRST_DATA_SEQ_NUM,
                 ver_to_usize};
 
 use cli_utils::report_ref_block_info;
-
-use std::str::from_utf8;
 
 use time_utils;
 use block_utils;
 
 use rs_codec::RSRepairer;
 use rs_codec::RSCodecState;
-use rs_codec::RSRepairStats;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
@@ -248,7 +233,8 @@ pub fn repair_file(param : &Param)
     }
 
     // repair data blocks
-    for seq_num in 1..SBX_LAST_SEQ_NUM {
+    let mut seq_num = 1;
+    while seq_num <= SBX_LAST_SEQ_NUM {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
         if stats.lock().unwrap().units_so_far() >= total_block_count { break; }
@@ -310,6 +296,8 @@ pub fn repair_file(param : &Param)
             },
             RSCodecState::NotReady => {},
         }
+
+        seq_num += 1;
     }
 
     if stats.lock().unwrap().blocks_decode_failed > 0 {

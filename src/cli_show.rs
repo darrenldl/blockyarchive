@@ -1,11 +1,6 @@
 use show_core::Param;
 use show_core;
-use sbx_specs::{SBX_FILE_UID_LEN,
-                Version,
-                string_to_ver,
-                ver_to_usize};
 use std::str::FromStr;
-use std::path::Path;
 
 use clap::*;
 use cli_utils::*;

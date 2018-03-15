@@ -15,8 +15,6 @@ use file_reader::{FileReader,
 use file_writer::{FileWriter,
                   FileWriterParam};
 
-use sbx_specs::SBX_SCAN_BLOCK_SIZE;
-
 use multihash;
 use multihash::*;
 
@@ -25,15 +23,12 @@ use cli_utils::report_ref_block_info;
 use general_error::Error;
 use sbx_specs::Version;
 
-use sbx_block::{Block, BlockType};
+use sbx_block::Block;
 use sbx_block;
 use sbx_specs::{ver_to_block_size,
                 SBX_LARGEST_BLOCK_SIZE,
-                ver_to_data_size,
                 ver_uses_rs,
                 ver_to_usize};
-
-use std::str::from_utf8;
 
 use time_utils;
 use block_utils;

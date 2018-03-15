@@ -9,8 +9,6 @@ use std::time::Duration;
 
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
-use std::thread::JoinHandle;
-use time_utils;
 
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -116,7 +114,7 @@ impl<T : 'static + Log + Send> LogHandler<T> {
     }
 
     pub fn read_from_file(&self) -> Result<(), Error> {
-        use super::{Error, ErrorKind};
+        use super::ErrorKind;
         use super::file_error;
 
         match self.log_file {
