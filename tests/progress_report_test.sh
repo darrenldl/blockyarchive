@@ -2,8 +2,8 @@
 
 truncate -s 50m dummy
 
-./osbx encode dummy --nometa -f
+./rsbx encode dummy --nometa -f
 
-# ./osbx encode dummy -f
+# ./rsbx encode dummy -f
 
-./osbx decode dummy.sbx dummy -f
+./rsbx decode dummy.sbx dummy -f
