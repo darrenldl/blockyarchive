@@ -1,4 +1,5 @@
 use repair_core::Param;
+use repair_core;
 use sbx_specs::{SBX_FILE_UID_LEN,
                 Version,
                 string_to_ver,

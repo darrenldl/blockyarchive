@@ -1,4 +1,5 @@
 use decode_core::Param;
+use decode_core;
 use sbx_specs::{SBX_FILE_UID_LEN,
                 Version,
                 string_to_ver,

@@ -26,6 +26,7 @@ macro_rules! exit_if_file {
     (
         exists $file:expr => $force_write:expr => $($x:expr),*
     ) => {{
+        use file_utils;
         if file_utils::check_if_file_exists($file)
             && !$force_write
         {
@@ -35,6 +36,7 @@ macro_rules! exit_if_file {
     (
         not_exists $file:expr => $($x:expr),*
     ) => {{
+        use file_utils;
         if !file_utils::check_if_file_exists($file) {
             exit_with_msg!(usr => $($x),*);
         }
@@ -241,7 +243,8 @@ macro_rules! parse_uid {
     (
         $buf:expr, $uid:expr
     ) => {{
-        use misc_utils::HexError::*;
+        use misc_utils::HexError;
+        use misc_utils;
         match misc_utils::hex_string_to_bytes($uid) {
             Ok(x) => {
                 if x.len() != SBX_FILE_UID_LEN {
@@ -252,10 +255,10 @@ macro_rules! parse_uid {
 
                 $buf.copy_from_slice(&x);
             },
-            Err(InvalidHexString) => {
+            Err(HexError::InvalidHexString) => {
                 exit_with_msg!(usr => "UID provided is not a valid hex string");
             },
-            Err(InvalidLen) => {
+            Err(HexError::InvalidLen) => {
                 exit_with_msg!(usr => "UID provided does not have the correct number of hex digits, provided : {}, need : {}",
                                $uid.len(),
                                SBX_FILE_UID_LEN * 2);

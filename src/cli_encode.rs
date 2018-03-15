@@ -1,4 +1,5 @@
 use encode_core::Param;
+use encode_core;
 use sbx_specs::{SBX_FILE_UID_LEN,
                 Version,
                 string_to_ver,
@@ -6,6 +7,12 @@ use sbx_specs::{SBX_FILE_UID_LEN,
                 ver_to_usize};
 use std::str::FromStr;
 use std::path::Path;
+
+use multihash;
+
+use file_utils;
+use misc_utils;
+use rand_utils;
 
 use clap::*;
 use cli_utils::*;
@@ -97,7 +104,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
         };
 
     let in_file = get_in_file!(matches);
-    let out     = match matches.value_of("out") {
+    let out = match matches.value_of("out") {
         None    => format!("{}.sbx", in_file),
         Some(x) => {
             if file_utils::check_if_file_is_dir(x) {
