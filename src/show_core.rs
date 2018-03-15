@@ -173,7 +173,7 @@ pub fn show_file(param : &Param)
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
-        if bytes_processed > required_len { break; }
+        if bytes_processed >= required_len { break; }
 
         let lazy_read_res = block_utils::read_block_lazily(&mut block,
                                                            &mut buffer,
