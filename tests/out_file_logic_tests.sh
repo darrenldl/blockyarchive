@@ -3,15 +3,12 @@
 echo "Generating test data"
 truncate -s 1K dummy
 
-echo ""
-
-mkdir out_test
-rm out_test/*
+mkdir out_test &>/dev/null
+rm out_test/* &>/dev/null
 
 echo "Testing encode output with no provided path"
-rm dummy.sbx
-echo ""
-./osbx encode dummy
+rm dummy.sbx &>/dev/null
+./rsbx encode dummy &>/dev/null
 
 if [ -f "dummy.sbx" ]; then
   echo "==> Okay"
@@ -19,11 +16,8 @@ else
   echo "==> NOT okay"
 fi
 
-echo ""
-
 echo "Testing encode output with provided full file path"
-echo ""
-./osbx encode dummy out_test/dummy1.sbx
+./rsbx encode dummy out_test/dummy1.sbx &>/dev/null
 
 if [ -f "out_test/dummy1.sbx" ]; then
   echo "==> Okay"
@@ -31,11 +25,8 @@ else
   echo "==> NOT okay"
 fi
 
-echo ""
-
 echo "Testing encode output with provided directory path"
-echo ""
-./osbx encode dummy out_test
+./rsbx encode dummy out_test &>/dev/null
 
 if [ -f "out_test/dummy.sbx" ]; then
   echo "==> Okay"
@@ -43,12 +34,9 @@ else
   echo "==> NOT okay"
 fi
 
-echo ""
-
 echo "Testing decode output with no provided path"
-rm dummy
-echo ""
-./osbx decode dummy.sbx
+rm dummy &>/dev/null
+./rsbx decode dummy.sbx &>/dev/null
 
 if [ -f "dummy" ]; then
   echo "==> Okay"
@@ -56,11 +44,8 @@ else
   echo "==> NOT okay"
 fi
 
-echo ""
-
 echo "Testing decode output with provided full file path"
-echo ""
-./osbx decode dummy.sbx out_test/decoded
+./rsbx decode dummy.sbx out_test/decoded &>/dev/null
 
 if [ -f "out_test/decoded" ]; then
   echo "==> Okay"
@@ -68,11 +53,8 @@ else
   echo "==> NOT okay"
 fi
 
-echo ""
-
 echo "Testing decode output with provided directory path"
-echo ""
-./osbx decode dummy.sbx out_test
+./rsbx decode dummy.sbx out_test &>/dev/null
 
 if [ -f "out_test/dummy" ]; then
   echo "==> Okay"
@@ -80,24 +62,17 @@ else
   echo "==> NOT okay"
 fi
 
-echo ""
-
 echo "Regenrating test data"
 truncate -s 1K dummy
-echo ""
 
 echo "Encode with no metadata"
-rm dummy.sbx
-echo ""
-./osbx encode dummy --no-meta
-
-echo ""
+rm dummy.sbx &>/dev/null
+./rsbx encode dummy --no-meta &>/dev/null
 
 echo "Repeating same tests for decoding"
 echo "Testing decode output with no provided path"
-rm dummy
-echo ""
-./osbx decode dummy.sbx
+rm dummy &>/dev/null
+./rsbx decode dummy.sbx &>/dev/null
 
 if [ ! -f "dummy" ]; then
   echo "==> Okay"
@@ -105,13 +80,10 @@ else
   echo "==> NOT okay"
 fi
 
-echo ""
-
-rm out_test/*
+rm out_test/* &>/dev/null
 
 echo "Testing decode output with provided full file path"
-echo ""
-./osbx decode dummy.sbx out_test/decoded
+./rsbx decode dummy.sbx out_test/decoded &>/dev/null
 
 if [ -f "out_test/decoded" ]; then
   echo "==> Okay"
@@ -119,11 +91,8 @@ else
   echo "==> NOT okay"
 fi
 
-echo ""
-
 echo "Testing decode output with provided directory path"
-echo ""
-./osbx decode dummy.sbx out_test
+./rsbx decode dummy.sbx out_test &>/dev/null
 
 if [ ! -f "out_test/dummy" ]; then
   echo "==> Okay"

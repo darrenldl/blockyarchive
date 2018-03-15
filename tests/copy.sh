@@ -2,14 +2,12 @@
 
 cd ..
 
-echo "Building osbx"
-jbuilder build @install
+echo "Building rsbx"
+cargo build
 echo ""
 
-echo "Copying osbx binary over"
-cp _build/default/src/osbx.exe ./tests/osbx
+echo "Copying rsbx binary over"
+cp target/debug/rsbx ./tests/rsbx
 echo ""
 
 cd tests
-
-

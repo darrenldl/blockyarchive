@@ -5,14 +5,14 @@ HASHES=("sha1" "sha256" "sha512" "blake2b-512")
 # Encode in all 4 hashes
 for h in ${HASHES[*]}; do
   echo "Encoding in hash $h"
-  ./osbx encode --hash $h -f dummy dummy$h.sbx
+  ./rsbx encode --hash $h -f dummy dummy$h.sbx
   echo ""
 done
 
 # Decode all of them
 for h in ${HASHES[*]}; do
   echo "Decoding hash $h container"
-  ./osbx decode -f dummy$h.sbx dummy$h
+  ./rsbx decode -f dummy$h.sbx dummy$h
   echo ""
 done
 
