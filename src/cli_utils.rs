@@ -64,7 +64,7 @@ pub fn from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
 down to the closest multiple of 128 bytes, after adding the bytes
 processed field from the log file(if specified). If this option is
 not specified, defaults to the start of file. Negative values are
-treated as 0. If FROM-BYTE exceeds the largest possible
+rejected. If FROM-BYTE exceeds the largest possible
 position(file size - 1), then it will be treated as (file size - 1).
 The rounding procedure is applied after all auto-adjustments.")
 }
