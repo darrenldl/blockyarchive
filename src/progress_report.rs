@@ -1,6 +1,6 @@
 #![allow(dead_code)]
-use super::time_utils;
-use super::misc_utils::f64_max;
+use time_utils;
+use misc_utils::f64_max;
 use std::io::Write;
 use std::io::stdout;
 use std::sync::Arc;

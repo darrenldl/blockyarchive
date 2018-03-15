@@ -1,7 +1,7 @@
 #![allow(dead_code)]
-use super::Error;
-use super::file_error::FileError;
-use super::file_error::to_err;
+use general_error::Error;
+use file_error::FileError;
+use file_error::to_err;
 use std::io::Read;
 use std::io::Write;
 use std::io::BufWriter;

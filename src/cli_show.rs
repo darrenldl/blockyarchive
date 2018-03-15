@@ -1,13 +1,13 @@
-use super::show_core::Param;
-use super::sbx_specs::{SBX_FILE_UID_LEN,
-                       Version,
-                       string_to_ver,
-                       ver_to_usize};
+use show_core::Param;
+use sbx_specs::{SBX_FILE_UID_LEN,
+                Version,
+                string_to_ver,
+                ver_to_usize};
 use std::str::FromStr;
 use std::path::Path;
 
-use super::*;
-use super::cli_utils::*;
+use clap::*;
+use cli_utils::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("show")

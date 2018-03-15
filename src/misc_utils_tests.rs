@@ -1,10 +1,10 @@
 #![cfg(test)]
 
-use super::misc_utils::*;
+use misc_utils::*;
 
 mod hex_tests {
     use super::*;
-    use super::super::rand_utils;
+    use rand_utils;
 
     #[test]
     fn hex_to_bytes_test_cases() {

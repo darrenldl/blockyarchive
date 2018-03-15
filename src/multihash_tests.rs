@@ -1,6 +1,5 @@
 #![cfg(test)]
-
-use super::multihash::*;
+use multihash::*;
 
 mod test_vectors {
     // SHA1, SHA256, SHA512 test vectors are copied from : https://www.di-mgt.com.au/sha_testvectors.html

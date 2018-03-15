@@ -1,14 +1,14 @@
 #![allow(dead_code)]
 
 use std::fs;
-use super::Error;
-use super::sbx_specs::Version;
-use super::sbx_specs::ver_to_data_size;
-use super::sbx_specs::ver_to_block_size;
-use super::sbx_specs::ver_uses_rs;
+use general_error::Error;
+use sbx_specs::{Version,
+                ver_to_data_size,
+                ver_to_block_size,
+                ver_uses_rs};
 
-use super::file_reader::FileReader;
-use super::file_reader::FileReaderParam;
+use file_reader::{FileReader,
+                  FileReaderParam};
 
 use std::path::Path;
 

@@ -1,5 +1,5 @@
-use super::clap::*;
-use super::sbx_block;
+use clap::*;
+use sbx_block;
 
 macro_rules! exit_with_msg {
     (

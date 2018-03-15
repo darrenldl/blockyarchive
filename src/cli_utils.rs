@@ -1,8 +1,8 @@
-use super::clap::*;
-use super::sbx_block;
+use clap::*;
+use sbx_block;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use super::ctrlc;
+use ctrlc;
 
 pub fn in_file_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("in_file")

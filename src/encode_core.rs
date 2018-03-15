@@ -1,43 +1,44 @@
 use std::sync::{Arc, Mutex};
 use std::fs;
 use std::fmt;
-use super::file_utils;
-use super::time_utils;
-use super::misc_utils;
+use file_utils;
+use time_utils;
+use misc_utils;
 use std::io::SeekFrom;
 
 use std::path::Path;
 
-use super::progress_report::*;
+use progress_report::*;
 
 use std::time::UNIX_EPOCH;
-use super::cli_utils::setup_ctrlc_handler;
+use cli_utils::setup_ctrlc_handler;
 
-use super::file_reader::FileReader;
-use super::file_reader::FileReaderParam;
-use super::file_writer::FileWriter;
-use super::file_writer::FileWriterParam;
+use file_reader::{FileReader,
+                  FileReaderParam};
+use file_writer::{FileWriter,
+                  FileWriterParam};
 
-use super::multihash;
+use multihash;
 
-use super::Error;
-use super::sbx_specs::Version;
-use super::rs_codec::RSEncoder;
+use general_error::Error;
+use sbx_specs::Version;
+use rs_codec::RSEncoder;
 
-use super::sbx_block::{Block, BlockType};
-use super::sbx_block;
-use super::sbx_block::Metadata;
-use super::sbx_specs::SBX_FILE_UID_LEN;
-use super::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-use super::sbx_specs::SBX_FIRST_DATA_SEQ_NUM;
-use super::sbx_specs::ver_forces_meta_enabled;
-use super::sbx_specs::{ver_to_usize,
-                       ver_to_block_size,
-                       ver_to_data_size,
-                       ver_uses_rs,
-                       ver_to_max_data_file_size};
-use super::sbx_block::{calc_data_block_write_pos,
-                       calc_meta_block_dup_write_pos_s};
+use sbx_block::{Block,
+                BlockType,
+                Metadata,
+                calc_data_block_write_pos,
+                calc_meta_block_dup_write_pos_s};
+use sbx_block;
+use sbx_specs::{ver_to_usize,
+                ver_to_block_size,
+                ver_to_data_size,
+                ver_forces_meta_enabled,
+                SBX_FILE_UID_LEN,
+                SBX_LARGEST_BLOCK_SIZE,
+                SBX_FIRST_DATA_SEQ_NUM,
+                ver_uses_rs,
+                ver_to_max_data_file_size};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {

@@ -3,8 +3,8 @@
 use std::cell::Cell;
 use std::sync::mpsc::{channel, sync_channel, Sender, SyncSender, Receiver};
 
-use super::sbx_specs::{SBX_SCAN_BLOCK_SIZE};
-use super::integer_utils::IntegerUtils;
+use sbx_specs::{SBX_SCAN_BLOCK_SIZE};
+use integer_utils::IntegerUtils;
 
 use std::path::PathBuf;
 

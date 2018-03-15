@@ -1,8 +1,8 @@
-use super::file_reader::FileReader;
-use super::file_reader::FileReaderParam;
-use super::file_writer::FileWriter;
-use super::file_writer::FileWriterParam;
-use super::Error;
+use file_reader::{FileReader,
+                  FileReaderParam};
+use file_writer::{FileWriter,
+                  FileWriterParam};
+use general_error::Error;
 use std::fmt;
 
 use std::time::Duration;
@@ -10,7 +10,7 @@ use std::time::Duration;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::thread::JoinHandle;
-use super::time_utils;
+use time_utils;
 
 use std::sync::Arc;
 use std::sync::Mutex;
