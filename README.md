@@ -42,7 +42,7 @@ Modularity and ease of maintenance will be of high priority during development a
   - largely complete - a lot of massive rewrites have been made
   - but small code refactoring is still ongoing
 - [x] UI/UX polishing
-- [ ] setup basic test suite
+- [x] setup basic test suite
 - [ ] setup fuzzing suite
 
 ## Notes
