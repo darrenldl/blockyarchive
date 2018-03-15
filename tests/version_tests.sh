@@ -20,8 +20,8 @@ for ver in ${VERSIONS[*]}; do
   echo "Comparing decoded version $ver container data to original"
   cmp dummy dummy$ver
   if [[ $? == 0 ]]; then
-    echo "==> No mismatches detected"
+    echo "==> Okay"
   else
-    echo "==> Mismatch detected"
+    echo "==> NOT okay"
   fi
 done
