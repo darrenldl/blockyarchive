@@ -10,6 +10,7 @@ mod metadata_tests;
 use self::header::Header;
 pub use self::metadata::Metadata;
 pub use self::metadata::MetadataID;
+pub use self::metadata::make_distribution_string;
 use smallvec::SmallVec;
 
 use sbx_specs::{Version,
@@ -54,11 +55,11 @@ pub enum BlockType {
     Data, Meta
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Error {
     IncorrectBlockType,
     IncorrectBufferSize,
-    TooMuchMetadata,
+    TooMuchMetadata(Vec<Metadata>),
     InvalidCRC,
     SeqNumOverflow,
     ParseError,

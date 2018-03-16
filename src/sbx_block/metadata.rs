@@ -69,6 +69,20 @@ pub fn id_to_bytes(id : MetadataID) -> [u8; 3] {
     }
 }
 
+pub fn id_to_str(id : MetadataID) -> &'static str {
+    use self::MetadataID::*;
+    match id {
+        FNM => "FNM",
+        SNM => "SNM",
+        FSZ => "FSZ",
+        FDT => "FDT",
+        SDT => "SDT",
+        HSH => "HSH",
+        RSD => "RSD",
+        RSP => "RSP",
+    }
+}
+
 pub fn meta_to_id(meta : &Metadata) -> MetadataID {
     match *meta {
         Metadata::FNM(_) => MetadataID::FNM,
@@ -83,12 +97,12 @@ pub fn meta_to_id(meta : &Metadata) -> MetadataID {
 }
 
 fn single_to_bytes(meta   : &Metadata,
-                   buffer : &mut [u8]) -> Result<usize, Error> {
+                   buffer : &mut [u8]) -> Result<usize, ()> {
     let total_size = single_meta_size(meta);
     let info_size  = single_info_size(meta);
 
     if buffer.len() < total_size {
-        return Err(Error::TooMuchMetadata);
+        return Err(());
     }
 
     use self::Metadata::*;
@@ -135,7 +149,11 @@ pub fn to_bytes(meta   : &[Metadata],
                 -> Result<(), Error> {
     let mut cur_pos = 0;
     for m in meta.iter() {
-        let size_written = single_to_bytes(m, &mut buffer[cur_pos..])?;
+        let size_written =
+            match single_to_bytes(m, &mut buffer[cur_pos..]) {
+                Ok(x)   => x,
+                Err(()) => { return Err(Error::TooMuchMetadata(meta.to_vec())); }
+            };
 
         cur_pos += size_written;
     }
@@ -146,6 +164,22 @@ pub fn to_bytes(meta   : &[Metadata],
     }
 
     Ok(())
+}
+
+pub fn make_distribution_string(meta : &[Metadata]) -> String {
+    let mut string = String::with_capacity(1000);
+    string.push_str("| ID | len | total len |\n");
+    for m in meta.iter() {
+        let id_str     = id_to_str(meta_to_id(m));
+        let total_size = single_meta_size(m);
+        let info_size  = single_info_size(m);
+
+        string.push_str(&format!("| {} | {:3} | {:3} |\n",
+                                 id_str,
+                                 info_size,
+                                 total_size));
+    }
+    string
 }
 
 mod parsers {

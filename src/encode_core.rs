@@ -27,7 +27,9 @@ use rs_codec::RSEncoder;
 use sbx_block::{Block,
                 BlockType,
                 Metadata,
-                calc_data_block_write_pos};
+                calc_data_block_write_pos,
+                make_distribution_string};
+
 use sbx_block;
 use sbx_specs::{ver_to_usize,
                 ver_to_block_size,
@@ -234,7 +236,11 @@ fn write_meta_blocks(param         : &Param,
 
     match block.sync_to_buffer(None, buffer) {
         Ok(()) => {},
-        Err(_) => { return Err(Error::with_message("Too much metadata")); }
+        Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
+            let msg = make_distribution_string(m);
+            return Err(Error::with_message(&msg))
+        },
+        Err(_) => unreachable!(),
     }
 
     let write_pos_s =
@@ -277,7 +283,11 @@ fn block_sync_and_write(block  : &mut Block,
                         -> Result<(), Error> {
     match block.sync_to_buffer(None, buffer) {
         Ok(()) => {},
-        Err(_) => { return Err(Error::with_message("Too much metadata")); }
+        Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
+            let msg = make_distribution_string(m);
+            return Err(Error::with_message(&msg))
+        },
+        Err(_) => unreachable!(),
     }
 
     writer.seek(SeekFrom::Start(pos))?;
