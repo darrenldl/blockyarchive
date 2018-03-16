@@ -5,6 +5,8 @@ use sbx_specs::{SBX_FILE_UID_LEN,
                 ver_uses_rs};
 use std::str::FromStr;
 
+use std::path::Path;
+
 use multihash;
 
 use file_utils;
@@ -105,6 +107,8 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
         None    => format!("{}.sbx", in_file),
         Some(x) => {
             if file_utils::check_if_file_is_dir(x) {
+                let path = Path::new(in_file);
+                let in_file = path.file_name().unwrap().to_string_lossy();
                 misc_utils::make_path(&[x,
                                         &format!("{}.sbx", in_file)])
             } else {
