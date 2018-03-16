@@ -4,6 +4,8 @@
 
 truncate -s 100M dummy
 
+./rsbx_release encode --sbx-version 19 --rs-data 10 --rs-parity 2 dummy -f
+
 ./rsbx_release decode dummy
 
 echo ""
