@@ -20,6 +20,7 @@ for ver in ${VERSIONS[*]}; do
 
         echo "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
         ./rsbx encode --sbx-version $ver -f dummy $container_name \
+               --hash sha1 \
                --rs-data $data_shards --rs-parity $parity_shards &>/dev/null
 
         echo "Corrupting at $parity_shards random positions"
@@ -29,12 +30,12 @@ for ver in ${VERSIONS[*]}; do
             corrupt $pos $container_name
         done
 
-        echo "Repairing $container_name"
+        echo "Repairing"
         ./rsbx repair -y $container_name &>/dev/null
 
         output_name=dummy_$data_shards\_$parity_shards
 
-        echo "Decoding $container_name"
+        echo "Decoding"
         ./rsbx decode -f $container_name $output_name &>/dev/null
 
         echo "Comparing decoded data to original"
