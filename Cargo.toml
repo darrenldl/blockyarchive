@@ -17,7 +17,7 @@ keywords    = [
     "SeqBox",
     "backup",
     "data-recovery",
-    "forward-error-correction",
+    "reed-solomon",
     "archive"
 ]
 
