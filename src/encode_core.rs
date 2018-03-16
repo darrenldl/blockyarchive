@@ -237,7 +237,8 @@ fn write_meta_blocks(param         : &Param,
     match block.sync_to_buffer(None, buffer) {
         Ok(()) => {},
         Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
-            return Err(Error::with_message(&make_too_much_meta_err_string(m)));
+            return Err(Error::with_message(
+                &make_too_much_meta_err_string(block.get_version(), m)));
         },
         Err(_) => unreachable!(),
     }
@@ -283,7 +284,8 @@ fn block_sync_and_write(block  : &mut Block,
     match block.sync_to_buffer(None, buffer) {
         Ok(()) => {},
         Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
-            return Err(Error::with_message(&make_too_much_meta_err_string(m)));
+            return Err(Error::with_message(
+                &make_too_much_meta_err_string(block.get_version(), m)));
         },
         Err(_) => unreachable!(),
     }

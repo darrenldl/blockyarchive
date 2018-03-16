@@ -1,6 +1,8 @@
 use std;
 
 use multihash;
+use sbx_specs::{Version,
+                ver_to_data_size};
 use super::Error;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -166,33 +168,36 @@ pub fn to_bytes(meta   : &[Metadata],
     Ok(())
 }
 
-pub fn make_too_much_meta_err_string(meta : &[Metadata]) -> String {
-    let msg = make_distribution_string(meta);
+pub fn make_too_much_meta_err_string(version : Version,
+                                     meta    : &[Metadata]) -> String {
+    let msg = make_distribution_string(version, meta);
 
     format!("Too much metadata, distribution :\n{}", &msg)
 }
 
-pub fn make_distribution_string(meta : &[Metadata]) -> String {
+pub fn make_distribution_string(version : Version,
+                                meta    : &[Metadata]) -> String {
     let mut string = String::with_capacity(1000);
     string.push_str("|  ID | Length | Total length |\n");
+
+    let mut overall_total = 0;
+    let max_size = ver_to_data_size(version);
 
     for i in 0..meta.len() {
         let id_str     = id_to_str(meta_to_id(&meta[i]));
         let total_size = single_meta_size(&meta[i]);
         let info_size  = single_info_size(&meta[i]);
-        let possibly_new_line =
-            if i == meta.len() - 1 {
-                ""
-            } else {
-                "\n"
-            };
 
-        string.push_str(&format!("| {} | {:6} |       {:6} |{}",
+        overall_total += total_size;
+
+        string.push_str(&format!("| {} | {:6} |       {:6} |\n",
                                  id_str,
                                  info_size,
-                                 total_size,
-                                 possibly_new_line));
+                                 total_size));
     }
+    string.push_str("\n");
+    string.push_str(&format!("Overall total length : {:6}\n", overall_total));
+    string.push_str(&format!("Maximum total length : {:6}", max_size));
     string
 }
 
