@@ -166,18 +166,32 @@ pub fn to_bytes(meta   : &[Metadata],
     Ok(())
 }
 
+pub fn make_too_much_meta_err_string(meta : &[Metadata]) -> String {
+    let msg = make_distribution_string(meta);
+
+    format!("Too much metadata, distribution :\n{}", &msg)
+}
+
 pub fn make_distribution_string(meta : &[Metadata]) -> String {
     let mut string = String::with_capacity(1000);
-    string.push_str("| ID | len | total len |\n");
-    for m in meta.iter() {
-        let id_str     = id_to_str(meta_to_id(m));
-        let total_size = single_meta_size(m);
-        let info_size  = single_info_size(m);
+    string.push_str("|  ID | Length | Total length |\n");
 
-        string.push_str(&format!("| {} | {:3} | {:3} |\n",
+    for i in 0..meta.len() {
+        let id_str     = id_to_str(meta_to_id(&meta[i]));
+        let total_size = single_meta_size(&meta[i]);
+        let info_size  = single_info_size(&meta[i]);
+        let possibly_new_line =
+            if i == meta.len() - 1 {
+                ""
+            } else {
+                "\n"
+            };
+
+        string.push_str(&format!("| {} | {:6} |       {:6} |{}",
                                  id_str,
                                  info_size,
-                                 total_size));
+                                 total_size,
+                                 possibly_new_line));
     }
     string
 }

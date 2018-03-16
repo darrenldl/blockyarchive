@@ -28,7 +28,7 @@ use sbx_block::{Block,
                 BlockType,
                 Metadata,
                 calc_data_block_write_pos,
-                make_distribution_string};
+                make_too_much_meta_err_string};
 
 use sbx_block;
 use sbx_specs::{ver_to_usize,
@@ -237,8 +237,7 @@ fn write_meta_blocks(param         : &Param,
     match block.sync_to_buffer(None, buffer) {
         Ok(()) => {},
         Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
-            let msg = make_distribution_string(m);
-            return Err(Error::with_message(&msg))
+            return Err(Error::with_message(&make_too_much_meta_err_string(m)));
         },
         Err(_) => unreachable!(),
     }
@@ -284,8 +283,7 @@ fn block_sync_and_write(block  : &mut Block,
     match block.sync_to_buffer(None, buffer) {
         Ok(()) => {},
         Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
-            let msg = make_distribution_string(m);
-            return Err(Error::with_message(&msg))
+            return Err(Error::with_message(&make_too_much_meta_err_string(m)));
         },
         Err(_) => unreachable!(),
     }

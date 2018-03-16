@@ -11,6 +11,7 @@ use self::header::Header;
 pub use self::metadata::Metadata;
 pub use self::metadata::MetadataID;
 pub use self::metadata::make_distribution_string;
+pub use self::metadata::make_too_much_meta_err_string;
 use smallvec::SmallVec;
 
 use sbx_specs::{Version,
