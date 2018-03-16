@@ -45,3 +45,9 @@ echo "========================================"
 echo "Starting output file path logic tests"
 echo "========================================"
 ./out_file_logic_tests.sh
+
+# corruption tests
+echo "========================================"
+echo "Starting corruption tests"
+echo "========================================"
+./corruption_tests.sh
