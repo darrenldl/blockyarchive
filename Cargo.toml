@@ -14,12 +14,9 @@ homepage    = "https://github.com/darrenldl/rust-SeqBox"
 repository  = "https://github.com/darrenldl/rust-SeqBox"
 
 keywords    = [
-    "reed-solomon",
     "SeqBox",
-    "sbx",
     "backup",
     "data-recovery",
-    "FEC",
     "forward-error-correction",
     "archive"
 ]
