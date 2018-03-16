@@ -371,8 +371,8 @@ fn pr_verbosity_level_to_settings (level:PRVerbosityLevel) -> VerbositySettings 
     match level {
         PRVerbosityLevel::L0 => VerbositySettings { verbose_while_active : false,
                                                     verbose_when_done    : false, },
-        PRVerbosityLevel::L1 => VerbositySettings { verbose_while_active : true,
-                                                    verbose_when_done    : false, },
+        PRVerbosityLevel::L1 => VerbositySettings { verbose_while_active : false,
+                                                    verbose_when_done    : true,  },
         PRVerbosityLevel::L2 => VerbositySettings { verbose_while_active : true,
                                                     verbose_when_done    : true,  },
     }
