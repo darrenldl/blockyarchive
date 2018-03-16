@@ -1,21 +1,34 @@
 [package]
-name = "rsbx"
+name    = "rsbx"
 version = "0.9.0"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
+build   = "build.rs"
+exclude = [
+    "tests/*",
+    "crc-ccitt/*"
+]
 
 description = "Enhanced implementation of SeqBox in Rust"
 
 homepage    = "https://github.com/darrenldl/rust-SeqBox"
 repository  = "https://github.com/darrenldl/rust-SeqBox"
 
-keywords    = ["reed-solomon", "SeqBox", "sbx", "backup", "data-recovery", "FEC", "forward-error-correction", "archive"]
+keywords    = [
+    "reed-solomon",
+    "SeqBox",
+    "sbx",
+    "backup",
+    "data-recovery",
+    "FEC",
+    "forward-error-correction",
+    "archive"
+]
 
 categories  = ["command-line-utilities", "encoding"]
 
 license     = "MIT"
 
 [dependencies]
-crc-ccitt            = { version = "1.0", path = "crc-ccitt" }
 reed-solomon-erasure = "3.0"
 ring                 = "0.12.1"
 hex-slice            = "0.1.2"

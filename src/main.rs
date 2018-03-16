@@ -19,12 +19,12 @@ extern crate futures;
 extern crate smallvec;
 extern crate ctrlc;
 
-extern crate crc_ccitt;
-
 extern crate reed_solomon_erasure;
 
 extern crate ring;
 extern crate blake2_c;
+
+mod crc_ccitt;
 
 macro_rules! smallvec {
     [
