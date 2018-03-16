@@ -12,8 +12,10 @@ keywords    = ["reed-solomon", "SeqBox", "sbx", "backup", "data-recovery", "FEC"
 
 categories  = ["command-line-utilities", "encoding"]
 
+license     = "MIT"
+
 [dependencies]
-crc-ccitt            = { path = "crc-ccitt" }
+crc-ccitt            = { version = "1.0", path = "crc-ccitt" }
 reed-solomon-erasure = "3.0"
 ring                 = "0.12.1"
 hex-slice            = "0.1.2"
