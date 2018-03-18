@@ -89,22 +89,6 @@ macro_rules! codec_ready {
     }}
 }
 
-macro_rules! assert_not_ready {
-    (
-        $self:ident
-    ) => {{
-        assert!(!codec_ready!($self));
-    }}
-}
-
-macro_rules! assert_ready {
-    (
-        $self:ident
-    ) => {{
-        assert!( codec_ready!($self));
-    }}
-}
-
 impl RSRepairer {
     pub fn new(version       : Version,
                ref_block     : &Block,
