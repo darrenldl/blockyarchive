@@ -1,3 +1,7 @@
+## 0.9.2
+- Made decode mode output file path determination more robust
+  - Only the file part of the SNM field is used rather than the entire path when computing the final output path
+
 ## 0.9.1
 - Fixed encode mode output file determination logic
   - Prior to this version, encode mode would append the entire input path to the output path if output path is a directory, instead of just appending only the file name part
