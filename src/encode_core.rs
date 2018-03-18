@@ -35,7 +35,6 @@ use sbx_specs::{ver_to_usize,
                 ver_forces_meta_enabled,
                 SBX_FILE_UID_LEN,
                 SBX_LARGEST_BLOCK_SIZE,
-                SBX_FIRST_DATA_SEQ_NUM,
                 ver_uses_rs,
                 ver_to_max_data_file_size};
 
@@ -418,35 +417,29 @@ pub fn encode_file(param : &Param)
     }
 
     if let Some(ref mut rs_codec) = rs_codec {
-        // check if the current batch of RS blocks are filled
-        if (block.get_seq_num() - SBX_FIRST_DATA_SEQ_NUM)
-            % rs_codec.total_shard_count() as u32 != 0
-        {
-            // fill remaining slots with padding
-            loop {
-                // write padding
-                write_data_block(param,
-                                 &mut block,
-                                 &mut padding,
-                                 &mut writer)?;
+        // fill remaining slots with padding if required
+        let slots_to_fill_in = rs_codec.unfilled_slot_count();
+        for i in 0..slots_to_fill_in {
+            // write padding
+            write_data_block(param,
+                             &mut block,
+                             &mut padding,
+                             &mut writer)?;
 
-                stats.lock().unwrap().data_blocks_written += 1;
+            stats.lock().unwrap().data_blocks_written += 1;
 
-                // keep writing until parity shards are ready
-                // then break loop
-                if let Some(parity_to_use) =
-                    rs_codec.encode_no_block_sync(&padding)
-                {
-                    for p in parity_to_use.iter_mut() {
-                        write_data_block(param,
-                                         &mut block,
-                                         p,
-                                         &mut writer)?;
+            // if at last iteration
+            if i == slots_to_fill_in - 1 {
+                let parity_to_use =
+                    rs_codec.encode_no_block_sync(&padding).unwrap();
 
-                        stats.lock().unwrap().data_par_blocks_written += 1;
-                    }
+                for p in parity_to_use.iter_mut() {
+                    write_data_block(param,
+                                     &mut block,
+                                     p,
+                                     &mut writer)?;
 
-                    break;
+                    stats.lock().unwrap().data_par_blocks_written += 1;
                 }
             }
         }

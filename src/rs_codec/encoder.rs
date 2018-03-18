@@ -17,7 +17,7 @@ macro_rules! add_index {
         $self:ident, $val:expr
     ) => {{
         $self.index =
-            ($self.index + $val) % $self.rs_codec.data_shard_count();
+            ($self.index + $val) % ($self.rs_codec.data_shard_count() + 1);
     }};
     (
         1 => $self:ident
@@ -30,7 +30,7 @@ macro_rules! codec_ready {
     (
         $self:ident
     ) => {{
-        $self.index == $self.rs_codec.data_shard_count() - 1
+        $self.index == $self.rs_codec.data_shard_count()
     }}
 }
 
@@ -52,13 +52,18 @@ impl RSEncoder {
         }
     }
 
-    pub fn total_shard_count(&self) -> usize {
-        self.rs_codec.total_shard_count()
+    pub fn unfilled_slot_count(&self) -> usize {
+        self.rs_codec.data_shard_count() - self.index
     }
 
     pub fn encode_no_block_sync(&mut self,
                                 data : &[u8])
                                 -> Option<&mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>> {
+        if codec_ready!(self) {
+            // reset index by wrapping around
+            add_index!(1 => self);
+        }
+
         let data = sbx_block::slice_data_buf(self.version, data);
 
         let version  = self.version;
@@ -77,15 +82,12 @@ impl RSEncoder {
                                        &mut parity).unwrap();
         }
 
-        let res =
-            if codec_ready!(self) {
-                Some(par_buf)
-            } else {
-                None
-            };
-
         add_index!(1 => self);
 
-        res
+        if codec_ready!(self) {
+            Some(par_buf)
+        } else {
+            None
+        }
     }
 }
