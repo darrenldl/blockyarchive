@@ -1,4 +1,11 @@
 # rust-SeqBox
+[![Build Status](https://travis-ci.org/darrenldl/rust-SeqBox.svg?branch=master)](https://travis-ci.org/darrenldl/rust-SeqBox)
+[![Build status](https://ci.appveyor.com/api/projects/status/ho6v99qysi9l8p6d?svg=true)](https://ci.appveyor.com/project/darrenldl/rust-seqbox)
+[![Crates](https://img.shields.io/crates/v/rsbx.svg)](https://crates.io/crates/rsbx)
+[![dependency status](https://deps.rs/repo/github/darrenldl/rsbx/status.svg)](https://deps.rs/repo/github/darrenldl/rsbx)
+
+[Documentation](https://github.com/darrenldl/rust-SeqBox/wiki)
+
 Enhanced implementation of SeqBox in Rust
 
 SeqBox is a single-file archive format designed by [Marco Pontello](https://github.com/MarcoPon) that facilitates sector level data recovery for when file system metadata is corrupted/missing, while the archive itself still exists as a normal file on file system.
@@ -20,6 +27,10 @@ Rsbx is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), 
 As rsbx is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
 
 Modularity and ease of maintenance will be of high priority during development as well for easy maintenance in future.
+
+## Getting started
+#### Installation
+#### Screencasts & usage guides
 
 ## Progress
 - [x] encoder
