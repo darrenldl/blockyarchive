@@ -30,33 +30,16 @@ Modularity and ease of maintenance will be of high priority during development a
 
 ## Getting started
 #### Installation
-#### Screencasts & usage guides
+rsbx is available via Cargo
+```
+cargo install rsbx
+```
 
-## Progress
-- [x] encoder
-  - [x] base SBX versions(1, 2, 3)
-  - [x] error recovery enabled SBX versions(17, 18, 19)
-  - [x] burst error resistance arrangement
-- [x] decoder
-  - [x] all SBX versions(1, 2, 3, 17, 18, 19)
-- [x] rescuer
-  - [x] all SBX versions(1, 2, 3, 17, 18, 19)
-- [x] shower
-  - [x] all SBX versions(1, 2, 3, 17, 18, 19)
-- [x] repairer
-  - [x] error recovery enabled SBX versions(17, 18, 19)
-    - [x] repairing code with burst error resistant pattern awareness
-- [x] sorter
-  - [x] basic sequential sorting for base SBX versions(1, 2, 3)
-  - [x] burst error resistance aware sorting for versions(17, 18, 19)
-- [x] code refactoring and polishing
-  - largely complete - a lot of massive rewrites have been made
-  - but small code refactoring is still ongoing
-- [x] UI/UX polishing
-- [x] setup basic test suite
-- [ ] setup fuzzing suite
+#### Usage guides & screencasts
+The [wiki](https://github.com/darrenldl/rust-SeqBox/wiki) contains comprehensive guides and resources.
 
-## Notes
+## Changelog
+[Changelog](CHANGELOG.md)
 
 ## Specification
 [Sbx format](SBX_FORMAT.md)
