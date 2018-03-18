@@ -414,7 +414,10 @@ pub fn decode_file(param : &Param)
         if ref_block.is_data() {
             None
         } else {
-            ref_block.get_FNM().unwrap()
+            match ref_block.get_FNM().unwrap() {
+                None    => None,
+                Some(x) => Some(file_utils::get_file_name_part_of_path(&x))
+            }
         };
 
     // compute output file name
@@ -422,7 +425,7 @@ pub fn decode_file(param : &Param)
         None => {
             match recorded_file_name {
                 None    => { return Err(Error::with_message("No original file name was found in SBX container and no output file name/path was provided")); },
-                Some(x) => x.clone()
+                Some(x) => x
             }
         },
         Some(ref out) => {
