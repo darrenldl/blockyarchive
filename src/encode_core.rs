@@ -428,10 +428,11 @@ pub fn encode_file(param : &Param)
 
             stats.lock().unwrap().data_blocks_written += 1;
 
-            // if at last iteration
-            if i == slots_to_fill_in - 1 {
-                let parity_to_use =
-                    rs_codec.encode_no_block_sync(&padding).unwrap();
+            if let Some(parity_to_use) =
+                rs_codec.encode_no_block_sync(&padding)
+            {
+                // this should only be executed at the last iteration
+                assert_eq!(i, slots_to_fill_in - 1);
 
                 for p in parity_to_use.iter_mut() {
                     write_data_block(param,
