@@ -5,7 +5,7 @@ exit_code=0
 VERSIONS=(17 18 19)
 
 corrupt() {
-    dd if=/dev/zero of=$2 bs=1 count=1 seek=$1 conv=notrunc &>/dev/null
+    dd if=/dev/zero of=$3 bs=$2 count=1 seek=$1 conv=notrunc &>/dev/null
 }
 
 file_size=$[1024 * 1024 * 1]
@@ -18,26 +18,37 @@ for ver in ${VERSIONS[*]}; do
         if   [[ $ver == 17 ]]; then
             data_shards=$((1 + RANDOM % 128))
             parity_shards=$((1 + RANDOM % 128))
+            burst=$((1 + RANDOM % 10))
         elif [[ $ver == 18 ]]; then
             data_shards=$((1 + RANDOM % 128))
             parity_shards=$((1 + RANDOM % 128))
+            burst=$((1 + RANDOM % 10))
         else
             data_shards=$((1 + RANDOM % 128))
             parity_shards=$((1 + RANDOM % 128))
+            burst=$((1 + RANDOM % 10))
         fi
 
-        container_name=corrupt_$data_shards\_$parity_shards\_$ver.sbx
+        container_name=burst_$data_shards\_$parity_shards\_$burst\_$ver.sbx
 
-        echo "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
         ./rsbx encode --sbx-version $ver -f dummy $container_name \
                --hash sha1 \
-               --rs-data $data_shards --rs-parity $parity_shards &>/dev/null
+               --rs-data $data_shards --rs-parity $parity_shards \
+               --burst $burst &>/dev/null
 
-        echo "Corrupting at $parity_shards random positions"
+        if   [[ $ver == 17 ]]; then
+            byte_count=$[$burst * 512]
+        elif [[ $ver == 18 ]]; then
+            byte_count=$[$burst * 128]
+        else
+            byte_count=$[$burst * 4096]
+        fi
+
+        echo "Corrupting at $parity_shards random positions, burst error size is $burst"
         for (( p=0; p < $parity_shards; p++ )); do
             pos=$((RANDOM % $file_size))
             # echo "#$p corruption, corrupting byte at position : $pos"
-            corrupt $pos $container_name
+            corrupt $pos $byte_count $container_name
         done
 
         echo "Repairing"
