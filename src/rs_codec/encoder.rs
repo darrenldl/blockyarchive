@@ -26,6 +26,14 @@ macro_rules! add_index {
     }}
 }
 
+macro_rules! codec_ready {
+    (
+        $self:ident
+    ) => {{
+        $self.index == $self.rs_codec.data_shard_count() - 1
+    }}
+}
+
 impl RSEncoder {
     pub fn new(version       : Version,
                data_shards   : usize,
@@ -57,9 +65,6 @@ impl RSEncoder {
         let rs_codec = &self.rs_codec;
         let par_buf  = &mut self.par_buf;
 
-        let data_shards = rs_codec.data_shard_count();
-        let index       = self.index;
-
         {
             let mut parity : SmallVec<[&mut [u8]; 32]> =
                 SmallVec::with_capacity(par_buf.len());
@@ -67,17 +72,20 @@ impl RSEncoder {
             for p in par_buf.iter_mut() {
                 parity.push(sbx_block::slice_data_buf_mut(version, p));
             }
-            rs_codec.encode_single_sep(index,
+            rs_codec.encode_single_sep(self.index,
                                        data,
                                        &mut parity).unwrap();
         }
 
+        let res =
+            if codec_ready!(self) {
+                Some(par_buf)
+            } else {
+                None
+            };
+
         add_index!(1 => self);
 
-        if index == data_shards - 1 {
-            Some(par_buf)
-        } else {
-            None
-        }
+        res
     }
 }
