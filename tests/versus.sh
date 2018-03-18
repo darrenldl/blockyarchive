@@ -13,9 +13,9 @@ rm dummy_rsbx.sbx &>/dev/null
 ./rsbx encode dummy dummy_rsbx.sbx -f --uid $uid &>/dev/null
 
 cmp -i 512 dummy_official.sbx dummy_rsbx.sbx
-
 if [[ $? == 0 ]]; then
   echo "==> Okay"
 else
   echo "==> NOT okay"
+  exit 1
 fi

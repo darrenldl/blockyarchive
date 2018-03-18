@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cd tests
+
 ./copy.sh
 
 echo "Generating test data"
@@ -51,3 +53,5 @@ echo "========================================"
 echo "Starting corruption tests"
 echo "========================================"
 ./corruption_tests.sh
+
+exit 1
