@@ -1,5 +1,7 @@
 #!/bin/bash
 
+exit_code=0
+
 echo "Generating random uids"
 uid1=$(cat /dev/urandom | tr -dc 0-9A-F | fold -w 12 | head -n 1)
 uid2=$(cat /dev/urandom | tr -dc 0-9A-F | fold -w 12 | head -n 1)
@@ -26,16 +28,19 @@ if [ ! -f "rescued_data2/"$uid1 ]; then
   echo "==> Okay"
 else
   echo "==> NOT okay"
+  exit_code=1
 fi
 if [ ! -f "rescued_data2/"$uid2 ]; then
     echo "==> Okay"
 else
     echo "==> NOT okay"
+    exit_code=1
 fi
 if [ ! -f "rescued_data2/"$uid3 ]; then
     echo "==> Okay"
 else
     echo "==> NOT okay"
+    exit_code=1
 fi
 
 echo "Rescuing from dummy disk 2 with "$uid1
@@ -44,16 +49,19 @@ if [ -f "rescued_data2/"$uid1 ]; then
     echo "==> Okay"
 else
     echo "==> NOT okay"
+    exit_code=1
 fi
 if [ ! -f "rescued_data2/"$uid2 ]; then
     echo "==> Okay"
 else
     echo "==> NOT okay"
+    exit_code=1
 fi
 if [ ! -f "rescued_data2/"$uid3 ]; then
     echo "==> Okay"
 else
     echo "==> NOT okay"
+    exit_code=1
 fi
 
 echo "Decoding rescued file"
@@ -65,4 +73,7 @@ if [[ $? == 0 ]]; then
     echo "==> Okay"
 else
     echo "==> NOT okay"
+    exit_code=1
 fi
+
+exit $exit_code

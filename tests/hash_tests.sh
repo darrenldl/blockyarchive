@@ -1,5 +1,7 @@
 #!/bin/bash
 
+exit_code=0
+
 HASHES=("sha1" "sha256" "sha512" "blake2b-512")
 
 # Record the hashes
@@ -15,6 +17,7 @@ for h in ${HASHES[*]}; do
   output=$(./rsbx encode --hash $h -f dummy dummy$h.sbx | grep "${a[$i]}" )
   if [[ $output == "" ]]; then
       echo "==> NOT okay"
+      exit_code=1
   else
       echo "==> Okay"
   fi
@@ -35,5 +38,8 @@ for h in ${HASHES[*]}; do
     echo "==> Okay"
   else
     echo "==> NOT okay"
+    exit_code=1
   fi
 done
+
+exit $exit_code

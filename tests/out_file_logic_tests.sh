@@ -1,5 +1,7 @@
 #!/bin/bash
 
+exit_code=0
+
 echo "Generating test data"
 truncate -s 1K dummy
 
@@ -14,6 +16,7 @@ if [ -f "dummy.sbx" ]; then
   echo "==> Okay"
 else
   echo "==> NOT okay"
+  exit_code=1
 fi
 
 echo "Testing encode output with provided full file path"
@@ -23,6 +26,7 @@ if [ -f "out_test/dummy1.sbx" ]; then
   echo "==> Okay"
 else
   echo "==> NOT okay"
+  exit_code=1
 fi
 
 echo "Testing encode output with provided directory path"
@@ -32,6 +36,7 @@ if [ -f "out_test/dummy.sbx" ]; then
   echo "==> Okay"
 else
   echo "==> NOT okay"
+  exit_code=1
 fi
 
 echo "Testing decode output with no provided path"
@@ -42,6 +47,7 @@ if [ -f "dummy" ]; then
   echo "==> Okay"
 else
   echo "==> NOT okay"
+  exit_code=1
 fi
 
 echo "Testing decode output with provided full file path"
@@ -51,6 +57,7 @@ if [ -f "out_test/decoded" ]; then
   echo "==> Okay"
 else
   echo "==> NOT okay"
+  exit_code=1
 fi
 
 echo "Testing decode output with provided directory path"
@@ -60,6 +67,7 @@ if [ -f "out_test/dummy" ]; then
   echo "==> Okay"
 else
   echo "==> NOT okay"
+  exit_code=1
 fi
 
 echo "Regenrating test data"
@@ -78,6 +86,7 @@ if [ ! -f "dummy" ]; then
   echo "==> Okay"
 else
   echo "==> NOT okay"
+  exit_code=1
 fi
 
 rm out_test/* &>/dev/null
@@ -89,6 +98,7 @@ if [ -f "out_test/decoded" ]; then
   echo "==> Okay"
 else
   echo "==> NOT okay"
+  exit_code=1
 fi
 
 echo "Testing decode output with provided directory path"
@@ -98,4 +108,7 @@ if [ ! -f "out_test/dummy" ]; then
   echo "==> Okay"
 else
   echo "==> NOT okay"
+  exit_code=1
 fi
+
+exit $exit_code

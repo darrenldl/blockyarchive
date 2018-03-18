@@ -1,5 +1,7 @@
 #!/bin/bash
 
+exit_code=0
+
 VERSIONS=(1 2 3 17 18 19)
 
 # Encode in all 3 versions
@@ -23,5 +25,8 @@ for ver in ${VERSIONS[*]}; do
     echo "==> Okay"
   else
     echo "==> NOT okay"
+    exit_code=1
   fi
 done
+
+exit $exit_code

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+exit_code=0
+
 VERSIONS=(1 2 3 17 18 19)
 
 # Encode in all 6 versions
@@ -58,5 +60,8 @@ for f in $FILES; do
     echo "==> Okay"
   else
     echo "==> NOT okay"
+    exit_code=1
   fi
 done
+
+exit $exit_code

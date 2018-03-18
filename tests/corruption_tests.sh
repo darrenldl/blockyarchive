@@ -1,5 +1,7 @@
 #!/bin/bash
 
+exit_code=0
+
 VERSIONS=(17 18 19)
 
 corrupt() {
@@ -44,6 +46,9 @@ for ver in ${VERSIONS[*]}; do
             echo "==> Okay"
         else
             echo "==> NOT okay"
+            exit_code=1
         fi
     done
 done
+
+exit $exit_code
