@@ -127,11 +127,9 @@ impl RSRepairer {
     pub fn mark_present(&mut self) -> RSCodecState {
         assert_not_ready!(self);
 
-        let index = self.index;
+        self.buf_present[self.index] = true;
 
         add_index!(1 => self);
-
-        self.buf_present[index] = true;
 
         if codec_ready!(self) {
             RSCodecState::Ready
@@ -143,11 +141,9 @@ impl RSRepairer {
     pub fn mark_missing(&mut self) -> RSCodecState {
         assert_not_ready!(self);
 
-        let index = self.index;
+        self.buf_present[self.index] = false;
 
         add_index!(1 => self);
-
-        self.buf_present[index] = false;
 
         if codec_ready!(self) {
             RSCodecState::Ready
