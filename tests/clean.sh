@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cd tests
+
 rm dummy* &>/dev/null
 
 rm *.sbx &>/dev/null
