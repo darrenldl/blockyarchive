@@ -11,7 +11,7 @@ branches:
 script:
   - cargo build --verbose --all
   - cargo test  --verbose --all
-  - bash tests/dev_test.sh
+  - bash tests/dev_tests.sh
 
 env:
   global:
