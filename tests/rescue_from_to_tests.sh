@@ -1,5 +1,7 @@
 #!/bin/bash
 
+exit_code=0
+
 echo "Creating empty files"
 touch dummy_empty1
 touch dummy_empty2
@@ -22,11 +24,13 @@ if [ -f "rescued_data/DEADBEEF0001" ]; then
   echo "===> Okay"
 else
   echo "===> NOT okay"
+  exit_code=1
 fi
 if [ ! -f "rescued_data/DEADBEEF0002" ]; then
   echo "===> Okay"
 else
   echo "===> NOT okay"
+  exit_code=1
 fi
 
 echo "Checking that rsbx only decodes second block"
@@ -36,11 +40,13 @@ if [ ! -f "rescued_data/DEADBEEF0001" ]; then
   echo "===> Okay"
 else
   echo "===> NOT okay"
+  exit_code=1
 fi
 if [ -f "rescued_data/DEADBEEF0002" ]; then
   echo "===> Okay"
 else
   echo "===> NOT okay"
+  exit_code=1
 fi
 
 echo "Checking that rsbx decodes both blocks"
@@ -50,9 +56,13 @@ if [ -f "rescued_data/DEADBEEF0001" ]; then
   echo "===> Okay"
 else
   echo "===> NOT okay"
+  exit_code=1
 fi
 if [ -f "rescued_data/DEADBEEF0002" ]; then
   echo "===> Okay"
 else
   echo "===> NOT okay"
+  exit_code=1
 fi
+
+exit $exit_code
