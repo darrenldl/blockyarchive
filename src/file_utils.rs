@@ -79,3 +79,8 @@ pub mod from_orig_file_size {
             + encoded_data_block_set_count * encoded_data_block_set_size
     }
 }
+
+pub fn get_file_name_part_of_path(path : &str) -> String {
+    let path = Path::new(path);
+    path.file_name().unwrap().to_string_lossy().to_string()
+}

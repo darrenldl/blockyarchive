@@ -6,8 +6,6 @@ use time_utils;
 use misc_utils;
 use std::io::SeekFrom;
 
-use std::path::Path;
-
 use progress_report::*;
 
 use std::time::UNIX_EPOCH;
@@ -185,12 +183,10 @@ fn pack_metadata(block         : &mut Block,
     let meta = block.meta_mut().unwrap();
 
     { // add file name
-        let path      = Path::new(&param.in_file);
-        let file_name = path.file_name().unwrap().to_string_lossy().to_string();
+        let file_name = file_utils::get_file_name_part_of_path(&param.in_file);
         meta.push(Metadata::FNM(file_name)); }
     { // add sbx file name
-        let path      = Path::new(&param.out_file);
-        let file_name = path.file_name().unwrap().to_string_lossy().to_string();
+        let file_name = file_utils::get_file_name_part_of_path(&param.out_file);
         meta.push(Metadata::SNM(file_name)); }
     { // add file size
         meta.push(Metadata::FSZ(file_metadata
