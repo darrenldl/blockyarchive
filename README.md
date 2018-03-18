@@ -26,8 +26,6 @@ Rsbx is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), 
 ## Goals
 As rsbx is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
 
-Modularity and ease of maintenance will be of high priority during development as well for easy maintenance in future.
-
 ## Getting started
 #### Installation
 rsbx is available via Cargo
@@ -35,7 +33,7 @@ rsbx is available via Cargo
 cargo install rsbx
 ```
 
-#### Usage guides & screencasts
+#### Usage guides & screencasts & other resources
 The [wiki](https://github.com/darrenldl/rust-SeqBox/wiki) contains comprehensive guides and resources.
 
 ## Changelog
