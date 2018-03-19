@@ -111,6 +111,27 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     println!();
 
+    if ver_uses_rs(version) {
+        let (_, par, burst) = data_par_burst.unwrap();
+
+        println!("Error correction parameters interpretation");
+        println!("========================================");
+        if burst == 0 {
+            println!("    The container can tolerate corruption of up to {} SBX blocks",
+                     par);
+        } else {
+            println!("    The container can tolerate corruption of up to {} burst SBX block corruptions,
+    each burst error may be up to {} blocks({} bytes) in size.",
+                     par,
+                     burst,
+                     burst * ver_to_block_size(version));
+            println!();
+            println!("    Note that the actual tolerance depends on the behaviour of the file system.");
+        }
+
+        println!();
+    }
+
     println!(    "File and container size");
     println!(    "========================================");
     println!(    "    File size                    : {}", in_file_size);
