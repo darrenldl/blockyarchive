@@ -1,3 +1,9 @@
+## 0.9.3
+- Various UI/UX improvements in subcommands
+  - Added --info-only flag to encode mode to show info about encoding
+  - Added file and container sizes to encode mode stats
+- Added calc mode to show detailed info about encoding configuration
+
 ## 0.9.2
 - Made decode mode output file path determination more robust
   - Only the file part of the SNM field is used rather than the entire path when computing the final output path
