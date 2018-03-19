@@ -4,8 +4,7 @@ use std::fs;
 use general_error::Error;
 use sbx_specs::{Version,
                 ver_to_data_size,
-                ver_to_block_size,
-                ver_uses_rs};
+                ver_to_block_size};
 
 use file_reader::{FileReader,
                   FileReaderParam};
@@ -53,30 +52,44 @@ pub mod from_container_metadata {
 
 pub mod from_orig_file_size {
     use super::*;
-    pub fn calc_rs_enabled_total_block_count(version       : Version,
-                                             data_shards   : usize,
-                                             parity_shards : usize,
-                                             size          : u64)
-                                             -> u64 {
-        assert!(ver_uses_rs(version));
-
-        let data_shards   = data_shards   as u64;
-        let parity_shards = parity_shards as u64;
-
+    pub fn calc_total_block_count_exc_burst_gaps(version        : Version,
+                                                 data_par_burst : Option<(usize, usize, usize)>,
+                                                 size           : u64)
+                                                 -> u64 {
         let chunk_size  = ver_to_data_size(version) as u64;
         let data_chunks = (size + (chunk_size - 1)) / chunk_size;
 
-        let meta_block_count = 1 + parity_shards as u64;
+        match data_par_burst {
+            None                    => {
+                let meta_block_count = 1;
+                let data_block_count = data_chunks;
 
-        let data_block_set_size  = data_shards;
-        let data_block_set_count =
-            (data_chunks + (data_block_set_size - 1)) / data_block_set_size;
+                meta_block_count + data_block_count
+            },
+            Some((data, parity, _)) => {
+                let data_shards   = data   as u64;
+                let parity_shards = parity as u64;
 
-        let encoded_data_block_set_size  = data_shards + parity_shards;
-        let encoded_data_block_set_count = data_block_set_count;
+                let meta_block_count = 1 + parity_shards as u64;
 
-        meta_block_count
-            + encoded_data_block_set_count * encoded_data_block_set_size
+                let data_block_set_size  = data_shards;
+                let data_block_set_count =
+                    (data_chunks + (data_block_set_size - 1)) / data_block_set_size;
+
+                let encoded_data_block_set_size  = data_shards + parity_shards;
+                let encoded_data_block_set_count = data_block_set_count;
+
+                meta_block_count
+                    + encoded_data_block_set_count * encoded_data_block_set_size
+            }
+        }
+    }
+
+    pub fn calc_container_size(version        : Version,
+                               data_par_burst : Option<(usize, usize, usize)>,
+                               size           : u64)
+                               -> u64 {
+        0
     }
 }
 
