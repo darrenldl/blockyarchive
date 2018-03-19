@@ -46,6 +46,8 @@ pub struct Stats {
     pub data_blocks_written     : u32,
     pub data_par_blocks_written : u32,
     pub data_padding_bytes      : usize,
+    pub in_file_size            : u64,
+    pub out_file_size           : u64,
     total_data_blocks           : u32,
     start_time                  : f64,
     end_time                    : f64,
@@ -67,6 +69,8 @@ impl fmt::Display for Stats {
             self.data_blocks_written as usize
             * data_size
             - self.data_padding_bytes;
+        let in_file_size            = self.in_file_size;
+        let out_file_size           = self.out_file_size;
         let time_elapsed            = (self.end_time - self.start_time) as i64;
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
@@ -81,6 +85,8 @@ impl fmt::Display for Stats {
             writeln!(f, "Number of blocks written (data only)       : {}", data_blocks_written)?;
             writeln!(f, "Number of blocks written (data parity)     : {}", data_par_blocks_written)?;
             writeln!(f, "Amount of data encoded (bytes)             : {}", data_bytes_encoded)?;
+            writeln!(f, "File size                                  : {}", in_file_size)?;
+            writeln!(f, "SBX container size                         : {}", out_file_size)?;
             writeln!(f, "Hash                                       : {}", match self.hash_bytes {
                 None        => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
@@ -96,6 +102,8 @@ impl fmt::Display for Stats {
             writeln!(f, "Number of blocks written (metadata) : {}", meta_blocks_written)?;
             writeln!(f, "Number of blocks written (data)     : {}", data_blocks_written)?;
             writeln!(f, "Amount of data encoded (bytes)      : {}", data_bytes_encoded)?;
+            writeln!(f, "File size                           : {}", in_file_size)?;
+            writeln!(f, "SBX container size                  : {}", out_file_size)?;
             writeln!(f, "Hash                                : {}", match self.hash_bytes {
                 None    => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
@@ -156,6 +164,8 @@ impl Stats {
             data_par_blocks_written : 0,
             data_padding_bytes      : 0,
             total_data_blocks,
+            in_file_size            : 0,
+            out_file_size           : 0,
             start_time              : 0.,
             end_time                : 0.,
         }
@@ -464,6 +474,10 @@ pub fn encode_file(param : &Param)
 
     reporter.stop();
 
+    stats.lock().unwrap().in_file_size  = reader.metadata()?.len();
+    stats.lock().unwrap().out_file_size = writer.metadata()?.len();
+
     let stats = stats.lock().unwrap().clone();
+
     Ok(stats)
 }
