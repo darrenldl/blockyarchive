@@ -5,7 +5,7 @@ exit_code=0
 VERSIONS=(17 18 19)
 
 corrupt() {
-    dd if=/dev/zero of=$3 bs=1 count=$2 seek=$1 conv=notrunc &>/dev/null
+    dd if=/dev/zero of=$3 bs=$2 count=$3 seek=$1 conv=notrunc &>/dev/null
 }
 
 file_size=$[1024 * 1024 * 1]
@@ -37,18 +37,18 @@ for ver in ${VERSIONS[*]}; do
                --burst $burst &>/dev/null
 
         if   [[ $ver == 17 ]]; then
-            byte_count=$[$burst * 512]
+            block_size=512
         elif [[ $ver == 18 ]]; then
-            byte_count=$[$burst * 128]
+            block_size=128
         else
-            byte_count=$[$burst * 4096]
+            block_size=4096
         fi
 
         echo "Corrupting at $parity_shards random positions, burst error size is $burst"
         for (( p=0; p < $parity_shards; p++ )); do
-            pos=$((RANDOM % $file_size))
+            pos=$(( (RANDOM % $file_size) / $block_size ))
             # echo "#$p corruption, corrupting byte at position : $pos"
-            corrupt $pos $byte_count $container_name
+            corrupt $pos $block_size $burst $container_name
         done
 
         echo "Repairing"
