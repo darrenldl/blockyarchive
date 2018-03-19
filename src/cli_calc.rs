@@ -59,22 +59,32 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
                                                              data_par_burst,
                                                              in_file_size);
 
-    println!(    "SBX container version        : {}", ver_to_usize(version));
-    println!(    "SBX container block size     : {}", ver_to_block_size(version));
-    println!(    "SBX container data  size     : {}", ver_to_data_size(version));
+    println!(    "SBX container info");
+    println!(    "========================================");
+    println!(    "    SBX container version        : {}", ver_to_usize(version));
+    println!(    "    SBX container block size     : {}", ver_to_block_size(version));
+    println!(    "    SBX container data  size     : {}", ver_to_data_size(version));
 
+    println!();
+
+    println!(    "Error correction info");
+    println!(    "========================================");
     if ver_uses_rs(version) {
-        println!("RS data   shard count        : {}", data_par_burst.unwrap().0);
-        println!("RS parity shard count        : {}", data_par_burst.unwrap().1);
-        println!("Burst error resistance level : {}", data_par_burst.unwrap().2);
+        println!("    RS data   shard count        : {}", data_par_burst.unwrap().0);
+        println!("    RS parity shard count        : {}", data_par_burst.unwrap().1);
+        println!("    Burst error resistance level : {}", data_par_burst.unwrap().2);
     } else {
-        println!("RS data   shard count        : {}", "version does not use RS");
-        println!("RS parity shard count        : {}", "version does not use RS");
-        println!("Burst error resistance level : {}", "version does not support burst error resistance");
+        println!("    RS data   shard count        : {}", "version does not use RS");
+        println!("    RS parity shard count        : {}", "version does not use RS");
+        println!("    Burst error resistance level : {}", "version does not support burst error resistance");
     }
 
-    println!(    "File size                    : {}", in_file_size);
-    println!(    "SBX container size           : {}", out_file_size);
+    println!();
+
+    println!(    "File and container size");
+    println!(    "========================================");
+    println!(    "    File size                    : {}", in_file_size);
+    println!(    "    SBX container size           : {}", out_file_size);
 
     exit_with_msg!(ok => "")
 }
