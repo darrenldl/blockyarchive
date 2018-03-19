@@ -109,6 +109,7 @@ mod cli_show;
 mod cli_repair;
 mod cli_check;
 mod cli_sort;
+mod cli_calc;
 
 fn real_main () -> i32 {
     let matches = App::new("rsbx")
@@ -122,6 +123,7 @@ fn real_main () -> i32 {
         .subcommand(cli_repair::sub_command())
         .subcommand(cli_check::sub_command())
         .subcommand(cli_sort::sub_command())
+        .subcommand(cli_calc::sub_command())
         .get_matches();
 
     if      let Some(matches) = matches.subcommand_matches("encode") {
