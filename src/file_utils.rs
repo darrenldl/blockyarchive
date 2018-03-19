@@ -134,6 +134,15 @@ pub mod from_orig_file_size {
                 block_size * block_count
             },
             Some((data, parity, burst)) => {
+                if burst == 0 {
+                    let block_count =
+                        calc_total_block_count_exc_burst_gaps(version,
+                                                              data_par_burst,
+                                                              size);
+
+                    return block_size * block_count;
+                }
+
                 let data_block_count =
                     calc_data_block_count_exc_burst_gaps(version,
                                                          data_par_burst,
