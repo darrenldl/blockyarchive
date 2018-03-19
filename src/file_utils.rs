@@ -139,15 +139,21 @@ pub mod from_orig_file_size {
                                                          data_par_burst,
                                                          size);
 
-                let last_seq_num = (data_block_count - 1) as u32;
+                let last_seq_num = data_block_count as u32;
+
+                let last_data_index = last_seq_num - 1;
 
                 let super_block_set_size = ((data + parity) * burst) as u32;
 
+                let first_data_index_in_block_set =
+                    (last_data_index / super_block_set_size) * super_block_set_size;
+
                 let first_seq_num_in_block_set =
-                    (last_seq_num / super_block_set_size) * super_block_set_size;
+                    first_data_index_in_block_set + 1;
 
                 let mut last_index = 0;
-                for seq_num in first_seq_num_in_block_set..last_seq_num {
+                let mut seq_num = first_seq_num_in_block_set;
+                while seq_num <= last_seq_num {
                     let index =
                         sbx_block::calc_data_block_write_index(seq_num,
                                                                data_par_burst);
@@ -155,6 +161,8 @@ pub mod from_orig_file_size {
                     if index > last_index {
                         last_index = index;
                     }
+
+                    seq_num += 1;
                 }
 
                 block_size * (last_index + 1)
