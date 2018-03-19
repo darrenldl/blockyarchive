@@ -56,10 +56,10 @@ pub mod from_container_metadata {
 pub mod from_orig_file_size {
     use super::*;
 
-    pub fn calc_data_block_count_exc_burst_gaps(version        : Version,
-                                                data_par_burst : Option<(usize, usize, usize)>,
-                                                size           : u64)
-                                                -> u64 {
+    pub fn calc_data_only_and_parity_block_count_exc_burst_gaps(version : Version,
+                                                                data_par_burst : Option<(usize, usize, usize)>,
+                                                                size           : u64)
+                                                                -> (u64, u64) {
         let chunk_size  = ver_to_data_size(version) as u64;
         let data_chunks = (size + (chunk_size - 1)) / chunk_size;
 
@@ -69,7 +69,7 @@ pub mod from_orig_file_size {
 
                 let data_block_count = data_chunks;
 
-                data_block_count
+                (data_block_count, 0)
             },
             Some((data, parity, _)) => {
                 assert!( ver_uses_rs(version));
@@ -81,12 +81,24 @@ pub mod from_orig_file_size {
                 let data_block_set_count =
                     (data_chunks + (data_block_set_size - 1)) / data_block_set_size;
 
-                let encoded_data_block_set_size  = data_shards + parity_shards;
                 let encoded_data_block_set_count = data_block_set_count;
 
-                encoded_data_block_set_count * encoded_data_block_set_size
+                (encoded_data_block_set_count * data_shards,
+                 encoded_data_block_set_count * parity_shards)
             }
         }
+    }
+
+    pub fn calc_data_block_count_exc_burst_gaps(version        : Version,
+                                                data_par_burst : Option<(usize, usize, usize)>,
+                                                size           : u64)
+                                                -> u64 {
+        let (data, parity) =
+            calc_data_only_and_parity_block_count_exc_burst_gaps(version,
+                                                                 data_par_burst,
+                                                                 size);
+
+        data + parity
     }
 
     pub fn calc_total_block_count_exc_burst_gaps(version        : Version,
