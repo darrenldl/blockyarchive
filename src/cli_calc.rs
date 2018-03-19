@@ -10,7 +10,6 @@ use file_utils;
 
 use clap::*;
 use cli_utils::*;
-
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("calc")
         .about("Compute and display detailed information given a configuration")
@@ -59,11 +58,36 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
                                                              data_par_burst,
                                                              in_file_size);
 
-    println!(    "SBX container info");
+    let total_block_count =
+        file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps(version,
+                                                                               data_par_burst,
+                                                                               in_file_size);
+
+    let (data_only_block_count, parity_block_count) =
+        file_utils::from_orig_file_size::calc_data_only_and_parity_block_count_exc_burst_gaps(version,
+                                                                                              data_par_burst,
+                                                                                              in_file_size);
+
+    println!(    "SBX container general info");
     println!(    "========================================");
     println!(    "    SBX container version        : {}", ver_to_usize(version));
     println!(    "    SBX container block size     : {}", ver_to_block_size(version));
     println!(    "    SBX container data  size     : {}", ver_to_data_size(version));
+
+    println!();
+
+    println!(    "SBX block distribution");
+    println!(    "========================================");
+    if ver_uses_rs(version) {
+        println!("    Metadata    block count      : {}", 1 + data_par_burst.unwrap().1);
+        println!("    Data only   block count      : {}", data_only_block_count);
+        println!("    Data parity block count      : {}", parity_block_count);
+        println!("    Total       block count      : {}", total_block_count);
+    } else {
+        println!("    Metadata block count         : {}", 1);
+        println!("    Data     block count         : {}", data_only_block_count);
+        println!("    Total    block count         : {}", total_block_count);
+    }
 
     println!();
 
