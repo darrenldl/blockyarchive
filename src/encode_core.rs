@@ -35,7 +35,6 @@ use sbx_specs::{ver_to_usize,
                 ver_forces_meta_enabled,
                 SBX_FILE_UID_LEN,
                 SBX_LARGEST_BLOCK_SIZE,
-                SBX_FIRST_DATA_SEQ_NUM,
                 ver_uses_rs,
                 ver_to_max_data_file_size};
 
@@ -47,6 +46,8 @@ pub struct Stats {
     pub data_blocks_written     : u32,
     pub data_par_blocks_written : u32,
     pub data_padding_bytes      : usize,
+    pub in_file_size            : u64,
+    pub out_file_size           : u64,
     total_data_blocks           : u32,
     start_time                  : f64,
     end_time                    : f64,
@@ -68,6 +69,8 @@ impl fmt::Display for Stats {
             self.data_blocks_written as usize
             * data_size
             - self.data_padding_bytes;
+        let in_file_size            = self.in_file_size;
+        let out_file_size           = self.out_file_size;
         let time_elapsed            = (self.end_time - self.start_time) as i64;
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
@@ -82,6 +85,8 @@ impl fmt::Display for Stats {
             writeln!(f, "Number of blocks written (data only)       : {}", data_blocks_written)?;
             writeln!(f, "Number of blocks written (data parity)     : {}", data_par_blocks_written)?;
             writeln!(f, "Amount of data encoded (bytes)             : {}", data_bytes_encoded)?;
+            writeln!(f, "File size                                  : {}", in_file_size)?;
+            writeln!(f, "SBX container size                         : {}", out_file_size)?;
             writeln!(f, "Hash                                       : {}", match self.hash_bytes {
                 None        => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
@@ -97,6 +102,8 @@ impl fmt::Display for Stats {
             writeln!(f, "Number of blocks written (metadata) : {}", meta_blocks_written)?;
             writeln!(f, "Number of blocks written (data)     : {}", data_blocks_written)?;
             writeln!(f, "Amount of data encoded (bytes)      : {}", data_bytes_encoded)?;
+            writeln!(f, "File size                           : {}", in_file_size)?;
+            writeln!(f, "SBX container size                  : {}", out_file_size)?;
             writeln!(f, "Hash                                : {}", match self.hash_bytes {
                 None    => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
@@ -157,6 +164,8 @@ impl Stats {
             data_par_blocks_written : 0,
             data_padding_bytes      : 0,
             total_data_blocks,
+            in_file_size            : 0,
+            out_file_size           : 0,
             start_time              : 0.,
             end_time                : 0.,
         }
@@ -418,35 +427,30 @@ pub fn encode_file(param : &Param)
     }
 
     if let Some(ref mut rs_codec) = rs_codec {
-        // check if the current batch of RS blocks are filled
-        if (block.get_seq_num() - SBX_FIRST_DATA_SEQ_NUM)
-            % rs_codec.total_shard_count() as u32 != 0
-        {
-            // fill remaining slots with padding
-            loop {
-                // write padding
-                write_data_block(param,
-                                 &mut block,
-                                 &mut padding,
-                                 &mut writer)?;
+        // fill remaining slots with padding if required
+        let slots_to_fill_in = rs_codec.unfilled_slot_count();
+        for i in 0..slots_to_fill_in {
+            // write padding
+            write_data_block(param,
+                             &mut block,
+                             &mut padding,
+                             &mut writer)?;
 
-                stats.lock().unwrap().data_blocks_written += 1;
+            stats.lock().unwrap().data_blocks_written += 1;
 
-                // keep writing until parity shards are ready
-                // then break loop
-                if let Some(parity_to_use) =
-                    rs_codec.encode_no_block_sync(&padding)
-                {
-                    for p in parity_to_use.iter_mut() {
-                        write_data_block(param,
-                                         &mut block,
-                                         p,
-                                         &mut writer)?;
+            if let Some(parity_to_use) =
+                rs_codec.encode_no_block_sync(&padding)
+            {
+                // this should only be executed at the last iteration
+                assert_eq!(i, slots_to_fill_in - 1);
 
-                        stats.lock().unwrap().data_par_blocks_written += 1;
-                    }
+                for p in parity_to_use.iter_mut() {
+                    write_data_block(param,
+                                     &mut block,
+                                     p,
+                                     &mut writer)?;
 
-                    break;
+                    stats.lock().unwrap().data_par_blocks_written += 1;
                 }
             }
         }
@@ -470,6 +474,10 @@ pub fn encode_file(param : &Param)
 
     reporter.stop();
 
+    stats.lock().unwrap().in_file_size  = reader.metadata()?.len();
+    stats.lock().unwrap().out_file_size = writer.metadata()?.len();
+
     let stats = stats.lock().unwrap().clone();
+
     Ok(stats)
 }

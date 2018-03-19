@@ -17,12 +17,20 @@ macro_rules! add_index {
         $self:ident, $val:expr
     ) => {{
         $self.index =
-            ($self.index + $val) % $self.rs_codec.data_shard_count();
+            ($self.index + $val) % ($self.rs_codec.data_shard_count() + 1);
     }};
     (
         1 => $self:ident
     ) => {{
         add_index!($self, 1);
+    }}
+}
+
+macro_rules! codec_ready {
+    (
+        $self:ident
+    ) => {{
+        $self.index == $self.rs_codec.data_shard_count()
     }}
 }
 
@@ -44,21 +52,23 @@ impl RSEncoder {
         }
     }
 
-    pub fn total_shard_count(&self) -> usize {
-        self.rs_codec.total_shard_count()
+    pub fn unfilled_slot_count(&self) -> usize {
+        self.rs_codec.data_shard_count() - self.index
     }
 
     pub fn encode_no_block_sync(&mut self,
                                 data : &[u8])
                                 -> Option<&mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>> {
+        if codec_ready!(self) {
+            // reset index by wrapping around
+            add_index!(1 => self);
+        }
+
         let data = sbx_block::slice_data_buf(self.version, data);
 
         let version  = self.version;
         let rs_codec = &self.rs_codec;
         let par_buf  = &mut self.par_buf;
-
-        let data_shards = rs_codec.data_shard_count();
-        let index       = self.index;
 
         {
             let mut parity : SmallVec<[&mut [u8]; 32]> =
@@ -67,14 +77,14 @@ impl RSEncoder {
             for p in par_buf.iter_mut() {
                 parity.push(sbx_block::slice_data_buf_mut(version, p));
             }
-            rs_codec.encode_single_sep(index,
+            rs_codec.encode_single_sep(self.index,
                                        data,
                                        &mut parity).unwrap();
         }
 
         add_index!(1 => self);
 
-        if index == data_shards - 1 {
+        if codec_ready!(self) {
             Some(par_buf)
         } else {
             None

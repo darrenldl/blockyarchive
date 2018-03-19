@@ -1,7 +1,11 @@
+use std::time::UNIX_EPOCH;
 use encode_core::Param;
 use encode_core;
 use sbx_specs::{SBX_FILE_UID_LEN,
                 Version,
+                ver_to_usize,
+                ver_to_block_size,
+                ver_to_data_size,
                 ver_uses_rs};
 use std::str::FromStr;
 
@@ -10,6 +14,7 @@ use multihash;
 use file_utils;
 use misc_utils;
 use rand_utils;
+use time_utils;
 
 use clap::*;
 use cli_utils::*;
@@ -42,35 +47,19 @@ DIR/INFILE.sbx."))
 never skipped for version 17, 18, 19.
 This means this option has no effect for version 17, 18, 19."))
         .arg(pr_verbosity_level_arg())
-        .arg(Arg::with_name("sbx_version")
-             .value_name("SBX-VERSION")
-             .long("sbx-version")
-             .takes_value(true)
-             .help("SBX container version, one of :
-                    | SBX block size | Reed-Solomon | Burst error resistance |
-(default)  1        |      512 bytes |  not enabled |          not supported |
-           2        |      128 bytes |  not enabled |          not supported |
-           3        |     4096 bytes |  not enabled |          not supported |
-          17 (0x11) |      512 bytes |      enabled |              supported |
-          18 (0x12) |      128 bytes |      enabled |              supported |
-          19 (0x13) |     4096 bytes |      enabled |              supported |"))
+        .arg(sbx_version_arg())
         .arg(Arg::with_name("uid")
              .value_name("UID-HEX")
              .long("uid")
              .takes_value(true)
              .help("Alternative file uid in hex(by default uid is randomly generated).
 Uid must be exactly 6 bytes(12 hex digits) in length."))
-        .arg(Arg::with_name("rs_data")
-             .value_name("SHARD")
-             .long("rs-data")
-             .takes_value(true)
-             .help("Reed-Solomon data shard count"))
-        .arg(Arg::with_name("rs_parity")
-             .value_name("SHARD")
-             .long("rs-parity")
-             .takes_value(true)
-             .help("Reed-Solomon parity shard count"))
+        .arg(rs_data_arg())
+        .arg(rs_parity_arg())
         .arg(burst_arg())
+        .arg(Arg::with_name("info_only")
+             .long("info-only")
+             .help("Only display information about encoding then exit"))
 }
 
 pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
@@ -114,10 +103,6 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
         }
     };
 
-    exit_if_file!(exists &out
-                  => matches.is_present("force")
-                  => "File \"{}\" already exists", out);
-
     let hash_type = match matches.value_of("hash_type") {
         None    => multihash::HashType::SHA256,
         Some(x) => match multihash::string_to_hash_type(x) {
@@ -128,16 +113,77 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
-    let param = Param::new(version,
-                           &uid,
-                           data_par_burst,
-                           matches.is_present("no_meta"),
-                           hash_type,
-                           in_file,
-                           &out,
-                           pr_verbosity_level);
-    match encode_core::encode_file(&param) {
-        Ok(s)  => exit_with_msg!(ok => "{}", s),
-        Err(e) => exit_with_msg!(op => "{}", e)
+    if matches.is_present("info_only") {
+        let in_file_meta  = match file_utils::get_file_metadata(in_file) {
+            Ok(x)  => x,
+            Err(_) => exit_with_msg!(usr => "Failed to get metadata of \"{}\"",
+                                     in_file)
+        };
+
+        let in_file_size = in_file_meta.len();
+
+        let in_file_mod_time = match in_file_meta.modified() {
+            Ok(t)  => match t.duration_since(UNIX_EPOCH) {
+                Ok(t)  => Some(t.as_secs() as i64),
+                Err(_) => None,
+            },
+            Err(_) => None
+        };
+
+        let in_file_mod_time_str = match in_file_mod_time {
+            None    => "N/A".to_string(),
+            Some(x) => match (time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::UTC),
+                              time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::Local)) {
+                (Some(u), Some(l)) => format!("{} (UTC)  {} (Local)", u, l),
+                _                  => "Invalid file modification time".to_string(),
+            }
+        };
+
+        let out_file_size =
+            file_utils::from_orig_file_size::calc_container_size(version,
+                                                                 data_par_burst,
+                                                                 in_file_size);
+
+        if ver_uses_rs(version) {
+            println!("File name                    : {}", in_file);
+            println!("SBX container name           : {}", out);
+            println!("SBX container version        : {}", ver_to_usize(version));
+            println!("SBX container block size     : {}", ver_to_block_size(version));
+            println!("SBX container data  size     : {}", ver_to_data_size(version));
+            println!("RS data   shard count        : {}", data_par_burst.unwrap().0);
+            println!("RS parity shard count        : {}", data_par_burst.unwrap().1);
+            println!("Burst error resistance level : {}", data_par_burst.unwrap().2);
+            println!("File size                    : {}", in_file_size);
+            println!("SBX container size           : {}", out_file_size);
+            println!("File modification time       : {}", in_file_mod_time_str);
+        } else {
+            println!("File name                : {}", in_file);
+            println!("SBX container name       : {}", out);
+            println!("SBX container version    : {}", ver_to_usize(version));
+            println!("SBX container block size : {}", ver_to_block_size(version));
+            println!("SBX container data  size : {}", ver_to_data_size(version));
+            println!("File size                : {}", in_file_size);
+            println!("SBX container size       : {}", out_file_size);
+            println!("File modification time   : {}", in_file_mod_time_str);
+        }
+
+        exit_with_msg!(ok => "")
+    } else {
+        exit_if_file!(exists &out
+                      => matches.is_present("force")
+                      => "File \"{}\" already exists", out);
+
+        let param = Param::new(version,
+                               &uid,
+                               data_par_burst,
+                               matches.is_present("no_meta"),
+                               hash_type,
+                               in_file,
+                               &out,
+                               pr_verbosity_level);
+        match encode_core::encode_file(&param) {
+            Ok(s)  => exit_with_msg!(ok => "{}", s),
+            Err(e) => exit_with_msg!(op => "{}", e)
+        }
     }
 }

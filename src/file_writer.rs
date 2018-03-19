@@ -8,6 +8,7 @@ use std::io::BufWriter;
 use std::io::SeekFrom;
 use std::fs::File;
 use std::io::Seek;
+use std::fs::Metadata;
 use std::fs::OpenOptions;
 
 macro_rules! flush {
@@ -59,6 +60,15 @@ macro_rules! file_op {
         match $self.file {
             Buffered(ref mut f)   => f.$op($input),
             Unbuffered(ref mut f) => f.$op($input),
+        }
+    }};
+    (
+        $self:ident get_metadata
+    ) => {{
+        use self::FileHandle::*;
+        match $self.file {
+            Buffered(ref f)   => f.get_ref().metadata(),
+            Unbuffered(ref f) => f.metadata(),
         }
     }}
 }
@@ -145,6 +155,13 @@ impl FileWriter {
         match file_op!(self seek => SeekFrom::Current(0)) {
             Ok(pos) => Ok(pos),
             Err(e)  => Err(to_err(FileError::new(e.kind(), &self.path)))
+        }
+    }
+
+    pub fn metadata(&self) -> Result<Metadata, Error> {
+        match file_op!(self get_metadata) {
+            Ok(data) => Ok(data),
+            Err(e)   => Err(to_err(FileError::new(e.kind(), &self.path)))
         }
     }
 }

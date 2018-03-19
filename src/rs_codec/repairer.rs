@@ -72,12 +72,20 @@ macro_rules! add_index {
         $self:ident, $val:expr
     ) => {{
         $self.index =
-            ($self.index + $val) % $self.rs_codec.total_shard_count();
+            ($self.index + $val) % ($self.rs_codec.total_shard_count() + 1);
     }};
     (
         1 => $self:ident
     ) => {{
         add_index!($self, 1);
+    }}
+}
+
+macro_rules! codec_ready {
+    (
+        $self:ident
+    ) => {{
+        $self.index == $self.rs_codec.total_shard_count()
     }}
 }
 
@@ -107,6 +115,8 @@ impl RSRepairer {
     }
 
     pub fn get_block_buffer(&mut self) -> &mut [u8] {
+        assert_not_ready!(self);
+
         let index = self.index;
 
         self.buf_present[index] = true;
@@ -115,13 +125,13 @@ impl RSRepairer {
     }
 
     pub fn mark_present(&mut self) -> RSCodecState {
-        let index = self.index;
+        assert_not_ready!(self);
+
+        self.buf_present[self.index] = true;
 
         add_index!(1 => self);
 
-        self.buf_present[index] = true;
-
-        if index == self.rs_codec.total_shard_count() - 1 {
+        if codec_ready!(self) {
             RSCodecState::Ready
         } else {
             RSCodecState::NotReady
@@ -129,24 +139,24 @@ impl RSRepairer {
     }
 
     pub fn mark_missing(&mut self) -> RSCodecState {
-        let index = self.index;
+        assert_not_ready!(self);
+
+        self.buf_present[self.index] = false;
 
         add_index!(1 => self);
 
-        self.buf_present[index] = false;
-
-        if index == self.rs_codec.total_shard_count() - 1 {
+        if codec_ready!(self) {
             RSCodecState::Ready
         } else {
             RSCodecState::NotReady
         }
     }
 
-    pub fn missing_count(&self) -> usize {
+    fn missing_count(&self) -> usize {
         self.rs_codec.total_shard_count() - self.present_count()
     }
 
-    pub fn present_count(&self) -> usize {
+    fn present_count(&self) -> usize {
         let mut count = 0;
         for p in self.buf_present.iter() {
             if *p { count += 1; }
@@ -160,7 +170,9 @@ impl RSRepairer {
         (RSRepairStats,
          SmallVec<[(u64, &[u8]); 32]>)
     {
-        assert_eq!(0, self.index);
+        assert_ready!(self);
+
+        add_index!(1 => self);
 
         let mut repaired_blocks =
             SmallVec::with_capacity(self.rs_codec.parity_shard_count());

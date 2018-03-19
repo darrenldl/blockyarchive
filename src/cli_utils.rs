@@ -95,6 +95,37 @@ pub fn burst_arg<'a, 'b>() -> Arg<'a, 'b> {
         .help("Burst error resistance level")
 }
 
+pub fn sbx_version_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("sbx_version")
+        .value_name("SBX-VERSION")
+        .long("sbx-version")
+        .takes_value(true)
+        .help("SBX container version, one of :
+                    | SBX block size | Reed-Solomon | Burst error resistance |
+(default)  1        |      512 bytes |  not enabled |          not supported |
+           2        |      128 bytes |  not enabled |          not supported |
+           3        |     4096 bytes |  not enabled |          not supported |
+          17 (0x11) |      512 bytes |      enabled |              supported |
+          18 (0x12) |      128 bytes |      enabled |              supported |
+          19 (0x13) |     4096 bytes |      enabled |              supported |")
+}
+
+pub fn rs_data_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("rs_data")
+        .value_name("SHARD")
+        .long("rs-data")
+        .takes_value(true)
+        .help("Reed-Solomon data shard count")
+}
+
+pub fn rs_parity_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("rs_parity")
+        .value_name("SHARD")
+        .long("rs-parity")
+        .takes_value(true)
+        .help("Reed-Solomon parity shard count")
+}
+
 pub fn report_ref_block_info(ref_block_pos : u64,
                              ref_block     : &sbx_block::Block) {
     println!("Using {} block as reference block, located at byte {} (0x{:X})",

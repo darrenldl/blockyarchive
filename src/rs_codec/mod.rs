@@ -1,3 +1,19 @@
+macro_rules! assert_not_ready {
+    (
+        $self:ident
+    ) => {{
+        assert!(!codec_ready!($self));
+    }}
+}
+
+macro_rules! assert_ready {
+    (
+        $self:ident
+    ) => {{
+        assert!( codec_ready!($self));
+    }}
+}
+
 mod encoder;
 pub use self::encoder::RSEncoder;
 
