@@ -5,7 +5,7 @@ exit_code=0
 VERSIONS=(17 18 19)
 
 corrupt() {
-    dd if=/dev/zero of=$3 bs=$2 count=1 seek=$1 conv=notrunc &>/dev/null
+    dd if=/dev/zero of=$3 bs=1 count=$2 seek=$1 conv=notrunc &>/dev/null
 }
 
 file_size=$[1024 * 1024 * 1]
