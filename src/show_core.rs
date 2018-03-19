@@ -218,7 +218,7 @@ pub fn show_file(param : &Param)
                      } else {
                          ver_to_usize(block.get_version()).to_string()
                      });
-            println!("RS data count          : {}",
+            println!("RS data shard count    : {}",
                      if ver_uses_rs(block.get_version()) {
                          match block.get_RSD().unwrap() {
                              None    => "N/A".to_string(),
@@ -227,7 +227,7 @@ pub fn show_file(param : &Param)
                      } else {
                          "version does not use RS".to_string()
                      });
-            println!("RS parity count        : {}",
+            println!("RS parity shard count  : {}",
                      if ver_uses_rs(block.get_version()) {
                          match block.get_RSP().unwrap() {
                              None    => "N/A".to_string(),
