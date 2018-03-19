@@ -70,7 +70,13 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     println!(    "SBX container general info");
     println!(    "========================================");
-    println!(    "    SBX container version        : {}", ver_to_usize(version));
+    if ver_uses_rs(version) {
+        println!("    SBX container version        : {} (0x{:X})",
+                 ver_to_usize(version),
+                 ver_to_usize(version));
+    } else {
+        println!("    SBX container version        : {}", ver_to_usize(version));
+    }
     println!(    "    SBX container block size     : {}", ver_to_block_size(version));
     println!(    "    SBX container data  size     : {}", ver_to_data_size(version));
 
