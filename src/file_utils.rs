@@ -160,6 +160,12 @@ pub mod from_orig_file_size {
                                                          data_par_burst,
                                                          size);
 
+                if data_block_count == 0 {
+                    let meta_block_count = 1 + parity as u64;
+
+                    return block_size * meta_block_count
+                }
+
                 let last_seq_num = data_block_count as u32;
 
                 let last_data_index = last_seq_num - 1;
