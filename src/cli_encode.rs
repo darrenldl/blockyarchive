@@ -47,34 +47,15 @@ DIR/INFILE.sbx."))
 never skipped for version 17, 18, 19.
 This means this option has no effect for version 17, 18, 19."))
         .arg(pr_verbosity_level_arg())
-        .arg(Arg::with_name("sbx_version")
-             .value_name("SBX-VERSION")
-             .long("sbx-version")
-             .takes_value(true)
-             .help("SBX container version, one of :
-                    | SBX block size | Reed-Solomon | Burst error resistance |
-(default)  1        |      512 bytes |  not enabled |          not supported |
-           2        |      128 bytes |  not enabled |          not supported |
-           3        |     4096 bytes |  not enabled |          not supported |
-          17 (0x11) |      512 bytes |      enabled |              supported |
-          18 (0x12) |      128 bytes |      enabled |              supported |
-          19 (0x13) |     4096 bytes |      enabled |              supported |"))
+        .arg(sbx_version_arg())
         .arg(Arg::with_name("uid")
              .value_name("UID-HEX")
              .long("uid")
              .takes_value(true)
              .help("Alternative file uid in hex(by default uid is randomly generated).
 Uid must be exactly 6 bytes(12 hex digits) in length."))
-        .arg(Arg::with_name("rs_data")
-             .value_name("SHARD")
-             .long("rs-data")
-             .takes_value(true)
-             .help("Reed-Solomon data shard count"))
-        .arg(Arg::with_name("rs_parity")
-             .value_name("SHARD")
-             .long("rs-parity")
-             .takes_value(true)
-             .help("Reed-Solomon parity shard count"))
+        .arg(rs_data_arg())
+        .arg(rs_parity_arg())
         .arg(burst_arg())
         .arg(Arg::with_name("info_only")
              .long("info-only")
