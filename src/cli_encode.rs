@@ -122,10 +122,6 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
         }
     };
 
-    exit_if_file!(exists &out
-                  => matches.is_present("force")
-                  => "File \"{}\" already exists", out);
-
     let hash_type = match matches.value_of("hash_type") {
         None    => multihash::HashType::SHA256,
         Some(x) => match multihash::string_to_hash_type(x) {
@@ -192,6 +188,10 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
         exit_with_msg!(ok => "")
     } else {
+        exit_if_file!(exists &out
+                      => matches.is_present("force")
+                      => "File \"{}\" already exists", out);
+
         let param = Param::new(version,
                                &uid,
                                data_par_burst,
