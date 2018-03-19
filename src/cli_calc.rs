@@ -68,9 +68,9 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
         println!("RS parity shard count        : {}", data_par_burst.unwrap().1);
         println!("Burst error resistance level : {}", data_par_burst.unwrap().2);
     } else {
-        println!("RS data   shard count        : {}", "N/A");
-        println!("RS parity shard count        : {}", "N/A");
-        println!("Burst error resistance level : {}", "N/A");
+        println!("RS data   shard count        : {}", "version does not use RS");
+        println!("RS parity shard count        : {}", "version does not use RS");
+        println!("Burst error resistance level : {}", "version does not support burst error resistance");
     }
 
     println!(    "File size                    : {}", in_file_size);
