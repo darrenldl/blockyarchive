@@ -112,19 +112,35 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
     println!();
 
     if ver_uses_rs(version) {
-        let (_, par, burst) = data_par_burst.unwrap();
+        let (data, par, burst) = data_par_burst.unwrap();
+
+        let block_size = ver_to_block_size(version);
 
         println!("Error correction parameters interpretation");
         println!("========================================");
         if burst == 0 {
-            println!("    The container can tolerate corruption of up to {} SBX blocks",
-                     par);
-        } else {
-            println!("    The container can tolerate corruption of up to {} burst SBX block corruptions,
-    each burst error may be up to {} blocks({} bytes) in size.",
+            println!("    The container can tolerate corruption of {} SBX blocks(totalling {} bytes) in
+    every set of {} consecutive blocks({} bytes).",
                      par,
+                     par * block_size,
+                     data + par,
+                     (data + par) * block_size);
+        } else {
+            println!("    The container can tolerate {} burst SBX block corruptions in
+    every set of {} consecutive blocks({} bytes).
+
+    Each burst error may be up to {} blocks({} bytes) in size.
+
+    In total, {} bytes(aligned at block boundary) may be corrupted in
+    any set of {} consecutive blocks({} bytes).",
+                     par,
+                     (data + par) * burst,
+                     (data + par) * burst * block_size,
                      burst,
-                     burst * ver_to_block_size(version));
+                     burst * block_size,
+                     par * burst * block_size,
+                     (data + par) * burst,
+                     (data + par) * burst * block_size);
             println!();
             println!("    Note that the actual tolerance depends on the behaviour of the file system.");
         }
