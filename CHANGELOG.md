@@ -4,7 +4,7 @@
   - Added file and container sizes to encode mode stats
 - Added calc mode to show detailed info about encoding configuration
 
-## 0.9.2
+## 0.9.2 (forgot to publish, whoops)
 - Made decode mode output file path determination more robust
   - Only the file part of the SNM field is used rather than the entire path when computing the final output path
 - Added `--info-only` flag to encode mode
