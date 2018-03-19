@@ -71,6 +71,9 @@ Uid must be exactly 6 bytes(12 hex digits) in length."))
              .takes_value(true)
              .help("Reed-Solomon parity shard count"))
         .arg(burst_arg())
+        .arg(Arg::with_name("info_only")
+             .long("info-only")
+             .help("Only display information about encoding then exit"))
 }
 
 pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
