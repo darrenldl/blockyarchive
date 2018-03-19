@@ -157,13 +157,12 @@ pub fn repair_file(param : &Param)
               burst));
 
     let total_block_count = {
-        use file_utils::from_orig_file_size::calc_rs_enabled_total_block_count;
+        use file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps;
         match ref_block.get_FSZ().unwrap() {
             Some(x) =>
-                calc_rs_enabled_total_block_count(version,
-                                                  data_par_burst.unwrap().0,
-                                                  data_par_burst.unwrap().1,
-                                                  x),
+                calc_total_block_count_exc_burst_gaps(version,
+                                                      data_par_burst,
+                                                      x),
             None    => {
                 print_block!(
                     "";
