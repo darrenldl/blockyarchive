@@ -1,3 +1,13 @@
+## 0.9.4
+- Added fields to stats display in encode mode
+  - uid
+  - file size
+  - container size
+- Added fields to stats display in decode mode
+  - uid
+  - file size
+  - container size
+
 ## 0.9.3
 - Various UI/UX improvements in subcommands
   - Added --info-only flag to encode mode to show info about encoding
