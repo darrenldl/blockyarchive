@@ -7,6 +7,7 @@
   - uid
   - file size
   - container size
+- General output text polishing
 
 ## 0.9.3
 - Various UI/UX improvements in subcommands
