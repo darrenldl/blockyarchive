@@ -44,6 +44,8 @@ pub struct Stats {
     pub data_blocks_decoded     : u64,
     pub data_par_blocks_decoded : u64,
     pub blocks_decode_failed    : u64,
+    pub in_file_size            : u64,
+    pub out_file_size           : u64,
     total_blocks                : u64,
     start_time                  : f64,
     end_time                    : f64,
@@ -79,6 +81,8 @@ impl fmt::Display for Stats {
             writeln!(f, "Number of blocks decoded (data only)   : {}", self.data_blocks_decoded)?;
             writeln!(f, "Number of blocks decoded (data parity) : {}", self.data_par_blocks_decoded)?;
             writeln!(f, "Number of blocks failed to decode      : {}", self.blocks_decode_failed)?;
+            writeln!(f, "File size                              : {}", self.in_file_size)?;
+            writeln!(f, "SBX container size                     : {}", self.out_file_size)?;
             writeln!(f, "Time elapsed                           : {:02}:{:02}:{:02}", hour, minute, second)?;
             writeln!(f, "Recorded hash                          : {}", match *recorded_hash {
                 None        => "N/A".to_string(),
@@ -102,6 +106,8 @@ impl fmt::Display for Stats {
             writeln!(f, "Number of blocks decoded (metadata) : {}", self.meta_blocks_decoded)?;
             writeln!(f, "Number of blocks decoded (data)     : {}", self.data_blocks_decoded)?;
             writeln!(f, "Number of blocks failed to decode   : {}", self.blocks_decode_failed)?;
+            writeln!(f, "File size                           : {}", self.in_file_size)?;
+            writeln!(f, "SBX container size                  : {}", self.out_file_size)?;
             writeln!(f, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)?;
             writeln!(f, "Recorded hash                       : {}", match *recorded_hash {
                 None        => "N/A".to_string(),
@@ -196,6 +202,8 @@ impl Stats {
             meta_blocks_decoded     : 0,
             data_blocks_decoded     : 0,
             data_par_blocks_decoded : 0,
+            in_file_size            : file_metadata.len(),
+            out_file_size           : 0,
             total_blocks,
             start_time              : 0.,
             end_time                : 0.,
@@ -347,6 +355,8 @@ pub fn decode(param           : &Param,
             "Warning : Reference block is not a metadata block, output file may contain data padding";
             "";)
     }
+
+    stats.lock().unwrap().out_file_size = writer.metadata()?.len();
 
     let res = stats.lock().unwrap().clone();
 
