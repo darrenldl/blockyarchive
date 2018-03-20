@@ -89,6 +89,15 @@ if [[ $? != 0 ]]; then
     test_failed=$[$test_failed+1]
 fi
 
+# sort tests
+echo "========================================"
+echo "Starting sort tests"
+echo "========================================"
+./sort_tests.sh
+if [[ $? != 0 ]]; then
+    test_failed=$[$test_failed+1]
+fi
+
 if [[ $test_failed == 0 ]]; then
     echo "All tests passed"
     exit 0
