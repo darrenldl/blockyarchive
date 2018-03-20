@@ -27,6 +27,7 @@ use sbx_block::Block;
 use sbx_block;
 use sbx_specs::{ver_to_block_size,
                 SBX_LARGEST_BLOCK_SIZE,
+                SBX_FILE_UID_LEN,
                 ver_uses_rs,
                 ver_to_usize};
 
@@ -37,6 +38,7 @@ const HASH_FILE_BLOCK_SIZE : usize = 4096;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
+    uid                         : [u8; SBX_FILE_UID_LEN],
     version                     : Version,
     pub meta_blocks_decoded     : u64,
     pub data_blocks_decoded     : u64,
@@ -66,6 +68,8 @@ impl fmt::Display for Stats {
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
         if rs_enabled {
+            writeln!(f, "File UID                               : {}",
+                     misc_utils::bytes_to_upper_hex_string(&self.uid))?;
             writeln!(f, "SBX version                            : {} (0x{:X})",
                      ver_to_usize(self.version),
                      ver_to_usize(self.version))?;
@@ -90,6 +94,8 @@ impl fmt::Display for Stats {
                                                     misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
         } else {
+            writeln!(f, "File UID                            : {}",
+                     misc_utils::bytes_to_upper_hex_string(&self.uid))?;
             writeln!(f, "SBX version                         : {}", ver_to_usize(self.version))?;
             writeln!(f, "Block size used in decoding         : {}", block_size)?;
             writeln!(f, "Number of blocks processed          : {}", self.units_so_far())?;
@@ -184,6 +190,7 @@ impl Stats {
             calc_total_block_count(ref_block.get_version(),
                                    file_metadata);
         Stats {
+            uid                     : ref_block.get_uid(),
             version                 : ref_block.get_version(),
             blocks_decode_failed    : 0,
             meta_blocks_decoded     : 0,
