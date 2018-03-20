@@ -81,8 +81,8 @@ impl fmt::Display for Stats {
             writeln!(f, "Number of blocks decoded (data only)   : {}", self.data_blocks_decoded)?;
             writeln!(f, "Number of blocks decoded (data parity) : {}", self.data_par_blocks_decoded)?;
             writeln!(f, "Number of blocks failed to decode      : {}", self.blocks_decode_failed)?;
-            writeln!(f, "File size                              : {}", self.in_file_size)?;
-            writeln!(f, "SBX container size                     : {}", self.out_file_size)?;
+            writeln!(f, "File size                              : {}", self.out_file_size)?;
+            writeln!(f, "SBX container size                     : {}", self.in_file_size)?;
             writeln!(f, "Time elapsed                           : {:02}:{:02}:{:02}", hour, minute, second)?;
             writeln!(f, "Recorded hash                          : {}", match *recorded_hash {
                 None        => "N/A".to_string(),
@@ -106,8 +106,8 @@ impl fmt::Display for Stats {
             writeln!(f, "Number of blocks decoded (metadata) : {}", self.meta_blocks_decoded)?;
             writeln!(f, "Number of blocks decoded (data)     : {}", self.data_blocks_decoded)?;
             writeln!(f, "Number of blocks failed to decode   : {}", self.blocks_decode_failed)?;
-            writeln!(f, "File size                           : {}", self.in_file_size)?;
-            writeln!(f, "SBX container size                  : {}", self.out_file_size)?;
+            writeln!(f, "File size                           : {}", self.out_file_size)?;
+            writeln!(f, "SBX container size                  : {}", self.in_file_size)?;
             writeln!(f, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)?;
             writeln!(f, "Recorded hash                       : {}", match *recorded_hash {
                 None        => "N/A".to_string(),
