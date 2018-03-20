@@ -27,6 +27,7 @@ use sbx_block::Block;
 use sbx_block;
 use sbx_specs::{ver_to_block_size,
                 SBX_LARGEST_BLOCK_SIZE,
+                SBX_FILE_UID_LEN,
                 ver_uses_rs,
                 ver_to_usize};
 
@@ -37,11 +38,14 @@ const HASH_FILE_BLOCK_SIZE : usize = 4096;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
+    uid                         : [u8; SBX_FILE_UID_LEN],
     version                     : Version,
     pub meta_blocks_decoded     : u64,
     pub data_blocks_decoded     : u64,
     pub data_par_blocks_decoded : u64,
     pub blocks_decode_failed    : u64,
+    pub in_file_size            : u64,
+    pub out_file_size           : u64,
     total_blocks                : u64,
     start_time                  : f64,
     end_time                    : f64,
@@ -66,6 +70,8 @@ impl fmt::Display for Stats {
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
         if rs_enabled {
+            writeln!(f, "File UID                               : {}",
+                     misc_utils::bytes_to_upper_hex_string(&self.uid))?;
             writeln!(f, "SBX version                            : {} (0x{:X})",
                      ver_to_usize(self.version),
                      ver_to_usize(self.version))?;
@@ -75,6 +81,8 @@ impl fmt::Display for Stats {
             writeln!(f, "Number of blocks decoded (data only)   : {}", self.data_blocks_decoded)?;
             writeln!(f, "Number of blocks decoded (data parity) : {}", self.data_par_blocks_decoded)?;
             writeln!(f, "Number of blocks failed to decode      : {}", self.blocks_decode_failed)?;
+            writeln!(f, "File size                              : {}", self.out_file_size)?;
+            writeln!(f, "SBX container size                     : {}", self.in_file_size)?;
             writeln!(f, "Time elapsed                           : {:02}:{:02}:{:02}", hour, minute, second)?;
             writeln!(f, "Recorded hash                          : {}", match *recorded_hash {
                 None        => "N/A".to_string(),
@@ -90,12 +98,16 @@ impl fmt::Display for Stats {
                                                     misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
         } else {
+            writeln!(f, "File UID                            : {}",
+                     misc_utils::bytes_to_upper_hex_string(&self.uid))?;
             writeln!(f, "SBX version                         : {}", ver_to_usize(self.version))?;
             writeln!(f, "Block size used in decoding         : {}", block_size)?;
             writeln!(f, "Number of blocks processed          : {}", self.units_so_far())?;
             writeln!(f, "Number of blocks decoded (metadata) : {}", self.meta_blocks_decoded)?;
             writeln!(f, "Number of blocks decoded (data)     : {}", self.data_blocks_decoded)?;
             writeln!(f, "Number of blocks failed to decode   : {}", self.blocks_decode_failed)?;
+            writeln!(f, "File size                           : {}", self.out_file_size)?;
+            writeln!(f, "SBX container size                  : {}", self.in_file_size)?;
             writeln!(f, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)?;
             writeln!(f, "Recorded hash                       : {}", match *recorded_hash {
                 None        => "N/A".to_string(),
@@ -184,11 +196,14 @@ impl Stats {
             calc_total_block_count(ref_block.get_version(),
                                    file_metadata);
         Stats {
+            uid                     : ref_block.get_uid(),
             version                 : ref_block.get_version(),
             blocks_decode_failed    : 0,
             meta_blocks_decoded     : 0,
             data_blocks_decoded     : 0,
             data_par_blocks_decoded : 0,
+            in_file_size            : file_metadata.len(),
+            out_file_size           : 0,
             total_blocks,
             start_time              : 0.,
             end_time                : 0.,
@@ -340,6 +355,8 @@ pub fn decode(param           : &Param,
             "Warning : Reference block is not a metadata block, output file may contain data padding";
             "";)
     }
+
+    stats.lock().unwrap().out_file_size = writer.metadata()?.len();
 
     let res = stats.lock().unwrap().clone();
 

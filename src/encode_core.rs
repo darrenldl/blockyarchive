@@ -40,6 +40,7 @@ use sbx_specs::{ver_to_usize,
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
+    uid                         : [u8; SBX_FILE_UID_LEN],
     version                     : Version,
     hash_bytes                  : Option<multihash::HashBytes>,
     pub meta_blocks_written     : u32,
@@ -75,6 +76,8 @@ impl fmt::Display for Stats {
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
         if rs_enabled {
+            writeln!(f, "File UID                                   : {}",
+                     misc_utils::bytes_to_upper_hex_string(&self.uid))?;
             writeln!(f, "SBX version                                : {} (0x{:X})",
                      ver_to_usize(self.version),
                      ver_to_usize(self.version))?;
@@ -95,6 +98,8 @@ impl fmt::Display for Stats {
             })?;
             writeln!(f, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)
         } else {
+            writeln!(f, "File UID                            : {}",
+                     misc_utils::bytes_to_upper_hex_string(&self.uid))?;
             writeln!(f, "SBX version                         : {}", ver_to_usize(self.version))?;
             writeln!(f, "Block size used in encoding         : {}", block_size)?;
             writeln!(f, "Data  size used in encoding         : {}", data_size)?;
@@ -157,6 +162,7 @@ impl Stats {
         let total_data_blocks =
             calc_data_chunk_count(param.version, file_metadata) as u32;
         Stats {
+            uid                     : param.uid,
             version                 : param.version,
             hash_bytes              : None,
             meta_blocks_written     : 0,
