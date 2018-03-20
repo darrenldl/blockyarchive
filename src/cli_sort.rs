@@ -10,7 +10,7 @@ use cli_utils::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("sort")
-        .about("Sort SBX blocks in container")
+        .about("Sort SBX blocks in container, can also be used to readjust burst error resistance level")
         .arg(in_file_arg()
              .help("SBX container to sort"))
         .arg(out_file_arg()
