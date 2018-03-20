@@ -7,7 +7,7 @@ VERSIONS=(1 2 3 17 18 19)
 touch dummy
 
 for ver in ${VERSIONS[*]}; do
-    for (( i=0; i < 10; i++ )); do
+    for (( i=0; i < 3; i++ )); do
         actual_file_size=$((RANDOM % 4096))
         truncate -s $actual_file_size dummy
 
@@ -31,7 +31,7 @@ for ver in ${VERSIONS[*]}; do
             parity_shards=$((1 + RANDOM % 128))
         fi
 
-        burst=$((1 + RANDOM % 10))
+        burst=$((RANDOM % 15))
 
         echo "Testing for version $ver, data = $data_shards, parity = $parity_shards, burst = $burst"
 
