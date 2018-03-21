@@ -25,6 +25,13 @@ use progress_report::*;
 
 use general_error::Error;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum RefBlockChoice {
+    Any,
+    Prefer(BlockType),
+    MustBe(BlockType),
+}
+
 pub struct LazyReadResult {
     pub len_read : usize,
     pub usable   : bool,
@@ -108,7 +115,7 @@ pub fn read_block_lazily(block  : &mut Block,
 }
 
 pub fn get_ref_block(in_file            : &str,
-                     use_any_block_type : bool,
+                     ref_block_choice   : RefBlockChoice,
                      pr_verbosity_level : PRVerbosityLevel,
                      stop_flag          : &Arc<AtomicBool>)
                      -> Result<Option<(u64, Block)>, Error> {
@@ -167,19 +174,54 @@ pub fn get_ref_block(in_file            : &str,
             }
         }
 
-        if use_any_block_type {
-            if let Some(_) = meta_block { break; }
-            if let Some(_) = data_block { break; }
-        } else {
-            if let Some(_) = meta_block { break; }
+        match ref_block_choice {
+            RefBlockChoice::Any        => {
+                if let Some(_) = meta_block { break; }
+                if let Some(_) = data_block { break; }
+            },
+            RefBlockChoice::Prefer(bt) |
+            RefBlockChoice::MustBe(bt) => match bt {
+                BlockType::Meta => {
+                    if let Some(_) = meta_block { break; }
+                },
+                BlockType::Data => {
+                    if let Some(_) = data_block { break; }
+                }
+            },
         }
     }
 
     reporter.stop();
 
-    Ok(if      let Some(x) = meta_block { Some(x) }
-       else if let Some(x) = data_block { Some(x) }
-       else                             { None    })
+    Ok(match ref_block_choice {
+        RefBlockChoice::Any        => match (meta_block, data_block) {
+            (Some(m), _      ) => Some(m),
+            (_      , Some(d)) => Some(d),
+            (None,    None   ) => None,
+        },
+        RefBlockChoice::Prefer(bt) => match bt {
+            BlockType::Meta => match (meta_block, data_block) {
+                (Some(m), _      ) => Some(m),
+                (_      , Some(d)) => Some(d),
+                (None,    None   ) => None,
+            },
+            BlockType::Data => match (meta_block, data_block) {
+                (_      , Some(d)) => Some(d),
+                (Some(m), _      ) => Some(m),
+                (None,    None   ) => None,
+            }
+        },
+        RefBlockChoice::MustBe(bt) => match bt {
+            BlockType::Meta => match (meta_block, data_block) {
+                (Some(m), _      ) => Some(m),
+                (_      , _      ) => None,
+            },
+            BlockType::Data => match (meta_block, data_block) {
+                (_      , Some(d)) => Some(d),
+                (_      , _      ) => None,
+            }
+        }
+    })
 }
 
 pub fn guess_burst_err_resistance_level(in_file       : &str,

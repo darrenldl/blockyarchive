@@ -28,6 +28,9 @@ use block_utils;
 use rs_codec::RSRepairer;
 use rs_codec::RSCodecState;
 
+use block_utils::RefBlockChoice;
+use sbx_block::BlockType;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
     version                              : Version,
@@ -136,14 +139,12 @@ pub fn repair_file(param : &Param)
     let ctrlc_stop_flag = setup_ctrlc_handler();
 
     let (ref_block_pos, mut ref_block) = get_ref_block!(param,
-                                                        false,
+                                                        RefBlockChoice::MustBe(BlockType::Meta),
                                                         ctrlc_stop_flag);
 
     let version = ref_block.get_version();
 
     return_if_not_ver_uses_rs!(version);
-
-    return_if_ref_not_meta!(ref_block_pos, ref_block, "repair");
 
     let block_size = ver_to_block_size(version);
 

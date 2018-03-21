@@ -27,6 +27,9 @@ use sbx_specs::ver_uses_rs;
 use time_utils;
 use block_utils;
 
+use block_utils::RefBlockChoice;
+use sbx_block::BlockType;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
     pub bytes_processed : u64,
@@ -109,7 +112,7 @@ pub fn show_file(param : &Param)
 
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&param.in_file,
-                                             false,
+                                             RefBlockChoice::MustBe(BlockType::Meta),
                                              param.pr_verbosity_level,
                                              &ctrlc_stop_flag)? {
                 None => { return Err(Error::with_message("Failed to find reference block")); },

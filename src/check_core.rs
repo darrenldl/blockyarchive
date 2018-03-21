@@ -23,10 +23,12 @@ use sbx_specs::{SBX_LARGEST_BLOCK_SIZE,
 use time_utils;
 use block_utils;
 
+use block_utils::RefBlockChoice;
+
 use cli_utils::report_ref_block_info;
 
 pub struct Param {
-    no_meta            : bool,
+    ref_block_choice   : RefBlockChoice,
     report_blank       : bool,
     in_file            : String,
     verbose            : bool,
@@ -34,13 +36,13 @@ pub struct Param {
 }
 
 impl Param {
-    pub fn new(no_meta            : bool,
+    pub fn new(ref_block_choice   : RefBlockChoice,
                report_blank       : bool,
                in_file            : &str,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel) -> Param {
         Param {
-            no_meta,
+            ref_block_choice,
             report_blank,
             in_file  : String::from(in_file),
             verbose,

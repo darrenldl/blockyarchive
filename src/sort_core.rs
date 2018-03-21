@@ -27,8 +27,10 @@ use cli_utils::setup_ctrlc_handler;
 use time_utils;
 use block_utils;
 
+use block_utils::RefBlockChoice;
+
 pub struct Param {
-    no_meta            : bool,
+    ref_block_choice   : RefBlockChoice,
     in_file            : String,
     out_file           : String,
     verbose            : bool,
@@ -37,14 +39,14 @@ pub struct Param {
 }
 
 impl Param {
-    pub fn new(no_meta            : bool,
+    pub fn new(ref_block_choice   : RefBlockChoice,
                in_file            : &str,
                out_file           : &str,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel,
                burst              : Option<usize>) -> Param {
         Param {
-            no_meta,
+            ref_block_choice,
             in_file  : String::from(in_file),
             out_file : String::from(out_file),
             verbose,
