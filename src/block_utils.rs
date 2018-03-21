@@ -217,7 +217,7 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
 
     let pred = block_pred_same_ver_uid!(ref_block);
 
-    // record first up to 1000 seq nums
+    // record first up to 1 + parity count + 1000 seq nums
     loop {
         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                             &mut buffer))?;
