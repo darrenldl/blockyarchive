@@ -11,8 +11,39 @@ rsbx returns
   - This applies to encoding, decoding, rescuing (showing does not generate any files)
   - This is mainly for in case the partial data is useful to the user
 
+## Block handling in general
+#### Block validity
+Block is valid if
+- Header can be parsed
+- CRC-CCITT is correct
+
+#### Handling of duplicate metadata in metadata block given the block is valid
+- For a given ID, only the first occurance of the metadata will be used
+  e.g. if there are two FNM metadata fields in the metadata block, only the first (in terms of byte order) will be used
+
+## Finding reference block
+1. The entire SBX container is scanned using alignment of 128 bytes, 128 is used as it is the largest common divisor of 512(block size for version 1), 128(block size for verion 2), and 4096(block size for version 3)
+  - if any block type is allowed
+    - the first whatever valid block(i.e. valid metadata or data block) will be used as reference block
+  - else
+    - if there is any valid metadata block in SBX container, then the first one will be used as reference block
+    - else the first valid data block will be used as reference block
+
+## Guessing burst error resistance level
+1. Read sequence numbers of first up to **1 + parity shard count + 1000** blocks
+- if block is valid, record the sequence number
+- else mark the sequence number as missing
+2. Go through level 0 to 1000(inclusive), calculate supposed sequence number at each block position, record number of mismatches for each level
+- if sequence number was marked missing, then it is ignored and checked for mismatch
+3. return the level with least amount of mismatches
+
 ## Encode workflow
-1. If metadata is enabled, the following file metadata are gathered from file or retrieved from user input : file name, SBX file name, file size, file last modification time, encoding start time
+1. If metadata is enabled, the following file metadata are gathered from file or retrieved from user input
+- file name
+- SBX file name
+- file size
+- file last modification time
+- encoding start time
 2. If metadata is enabled, then a partial metadata block is written into the output file as filler
   - The written metadata block is valid, but does not contain the actual file hash, a filler pattern of 0x00 is used in place of the hash part of the multihash(the header and length indicator of multihash are still valid)
 3. Load version specific data sized chunk one at a time from input file to encode and output(and if metadata is enabled, Multihash hash state/ctx is updated as well(the actual hash state/ctx used depends on hash type, defaults to SHA256)
@@ -20,34 +51,21 @@ rsbx returns
 4. If metadata is enabled, the encoder seeks back to starting position of output file and overwrites the metadata block with one that contains the actual hash
 
 ## Decode workflow
-Metadata block is valid if and only if
-- Header can be parsed
-- All metadata fields(duplicate or not) can be parsed successfully
-  - Duplicate refers to metadata fields with the same ID
-- All remaining space is filled with 0x1A pattern
-- Version(specifically alignment/block size) matches reference block(see below)
-- CRC-CCITT is correct
+Metadata block is valid if
+- Basic block validity criteria are satisfied(see **Block handling in general above**)
+- Version and uid matches reference block(see below)
+- Several aspects are relaxed and allowed to not conform to `SBX_FORMAT`
+  - Metadata fields are optional, i.e. do not have to be parsable
+  - Padding of 0x1A is not mandatory
 
 Data block is valid if and only if
-- Header can be parsed
+- Basic block validity criteria are satisfied(see **Block handling in general above**)
 - Version and uid matches reference block(see below)
-- CRC-CCITT is correct
 
-1. A reference block is retrieved first(which is used for guidance on alignment, version, and uid)
-  - the entire SBX container is scanned using alignment of 128 bytes, 128 is used as it is the largest common divisor of 512(block size for version 1), 128(block size for verion 2), and 4096(block size for version 3)
-  - if no-meta flag is specified
-    - the first whatever valid block(i.e. valid metadata or data block) will be used as reference block
-  - else
-    - if there is any valid metadata block in SBX container, then the first one will be used as reference block
-    - else the first valid data block will be used as reference block
-  - if the version of reference block is 1, 2, or 3
-    - the block can be either `Data` or `Meta`, and all metadata fields are optional
-  - else if the version of reference block is 17, 18, or 19
-    - the block must be `Meta`, and metadata fields `RSD`, `RSP` must be present
+1. A reference block is retrieved first and is used for guidance on alignment, version, and uid(see **Finding reference block** procedure specified above)
 2. Scan for valid blocks from start of SBX container to decode and output using reference block's block size as alignment
   - if a block is invalid, nothing is done
   - if a block is valid, and is a metadata block, nothing is done
-  - if a block is valid, and is a metadata parity block, nothing is done
   - if a block is valid, and is a data parity block, nothing is done
   - if a block is valid, and is a data block, then it will be written to the writepos at output file, where writepos = (sequence number - 1) * block size of reference block in bytes
 3. If possible, truncate output file to remove data padding done for the last block during encoding
@@ -61,10 +79,6 @@ Data block is valid if and only if
 #### Handling of duplicate metadata/data blocks
 - First valid metadata block will be used(if exists)
 - For all other data blocks, the last seen valid data block will be used for a given sequence number
-
-#### Handling of duplicate metadata in metadata block given the block is valid
-- For a given ID, only the first occurance of the metadata will be used
-  e.g. if there are two FNM metadata fields in the metadata block, only the first (in terms of byte order) will be used
 
 #### Handling of corrupted/missing blocks
 - Corrupted blocks or missing blocks are not repaired in this mode
