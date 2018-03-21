@@ -19,7 +19,13 @@ Block is valid if
 
 #### Handling of duplicate metadata in metadata block given the block is valid
 - For a given ID, only the first occurance of the metadata will be used
-  e.g. if there are two FNM metadata fields in the metadata block, only the first (in terms of byte order) will be used
+  - e.g. if there are two FNM metadata fields in the metadata block, only the first (in terms of byte order) will be used
+- This applies to everywhere where metadata fields need to be accessed
+
+#### Handling of incorrect metadata fields in metadata block given the block is valid
+- To avoid propogation of error into core logic, incorrect fields either fail the parsing stage, or are filtered out immediately after the parsing stage. That is, invalid metadata fields are never accessible by other modules.
+- This tradeoff means rsbx's error messages regarding metadata fields will be very coarse. For example, if the recorded file name is not a valid UTF-8 string, the core logic code will only see the field as missing, as it is dropped by the `sbx_block` module during parsing, and would not be able to tell whether the field is missing or incorrect, and would not be able to tell the user why the field is incorrect, etc.
+- This overall means trading flexibility for security.
 
 ## Finding reference block
 1. The entire SBX container is scanned using alignment of 128 bytes, 128 is used as it is the largest common divisor of 512(block size for version 1), 128(block size for verion 2), and 4096(block size for version 3)
