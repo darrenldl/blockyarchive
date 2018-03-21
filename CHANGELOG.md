@@ -8,6 +8,7 @@
   - file size
   - container size
 - General output text polishing
+- Fixed repair mode code to handle block sets with blocks missing due to truncation properly
 
 ## 0.9.3
 - Various UI/UX improvements in subcommands
