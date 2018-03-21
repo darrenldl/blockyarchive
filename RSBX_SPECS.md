@@ -125,7 +125,7 @@ Data block is valid if and only if
 - For each sequence number, calculate the block position and try to parse
 - Each valid block is loaded into the RS codec, and repair process starts for the current block set when the current block set is filled
 7. If current blockset contains enough blocks for repair, but repair process failed to start due to the block count reaching the calculated total block count
-- This indicates missing blocks due to truncation
+- This indicates blocks are missing due to truncation
 - The the RS codec is invoked once to attempt repair, and write out remaining blocks if repair is successful
 
 ## Check workflow
