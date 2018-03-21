@@ -39,6 +39,7 @@ Block is valid if
 1. Read sequence numbers of first up to **1 + parity shard count + 1000** blocks
 - if block is valid, record the sequence number
 - else mark the sequence number as missing
+- a ref block is required to provide guidance on version and uid accepted
 2. Go through level 0 to 1000(inclusive), calculate supposed sequence number at each block position, record number of mismatches for each level
 - if sequence number was marked missing, then it is ignored and checked for mismatch
 3. return the level with least amount of mismatches
@@ -110,10 +111,22 @@ Data block is valid if and only if
 - all displaying of blocks are immediate(no buffering of blocks)
 
 ## Repair workflow
-1. Load metadata block and the 3 parity blocks, repair any of the 4 blocks if necessary
-2. Load up to M + N blocks sequentially, where M is the number of data shards and N is the number of parity shards
-3. Check CRC of all blocks and record invalid blocks
-4. Reconstruct the invalid blocks if possible
+1. A reference block is retrieved first and is used for guidance on alignment, version, and uid(see **Finding reference block** procedure specified above)
+- a metadata block must be used as reference block in this mode
+2. If the version of ref block does not use RS, then exit
+3. If `RSD` and `RSP` fields are not found in the ref block, then exit
+4. Total block count is then calculated from
+- `FSZ` field in ref block if present
+- otherwise is estimated the container size
+5. Go through all positions where metadata blocks are stored in container
+- if the metadata block is valid, nothing is done
+- else the metadata block is overwritten by the reference block
+6. Go through sequence numbers sequentially until the block count reaches calculated total block count
+- For each sequence number, calculate the block position and try to parse
+- Each valid block is loaded into the RS codec, and repair process starts for the current block set when the current block set is filled
+7. If current blockset contains enough blocks for repair, but repair process failed to start due to the block count reaching the calculated total block count
+- This indicates missing blocks due to truncation
+- The the RS codec is invoked once to attempt repair, and write out remaining blocks if repair is successful
 
 ## Check workflow
 1. A reference block is retrieved first(which is used for guidance on alignment, version, and uid)
