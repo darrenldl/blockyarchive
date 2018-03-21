@@ -129,26 +129,14 @@ Data block is valid if and only if
 - The the RS codec is invoked once to attempt repair, and write out remaining blocks if repair is successful
 
 ## Check workflow
-1. A reference block is retrieved first(which is used for guidance on alignment, version, and uid)
-  - the entire SBX container is scanned using alignment of 128 bytes, 128 is used as it is the largest common divisor of 512(block size for version 1), 128(block size for verion 2), and 4096(block size for version 3)
-  - if no-meta flag is specified
-    - the first whatever valid block(i.e. valid metadata or data block) will be used as reference block
-  - else
-    - if there is any valid metadata block in SBX container, then the first one will be used as reference block
-    - else the first valid data block will be used as reference block
-  - if the version of reference block is 1, 2, or 3
-    - the block can be either `Data` or `Meta`, and all metadata fields are optional
-  - else if the version of reference block is 17, 18, or 19
-    - the block must be `Meta`, and metadata fields `RSD`, `RSP` must be present
+1. A reference block is retrieved first and is used for guidance on alignment, version, and uid(see **Finding reference block** procedure specified above)
 2. Scan for valid blocks from start of SBX container to decode and output using reference block's block size as alignment
-  - if a block is invalid, and error message is shown
-  - if a block is valid, nothing is done
+- if a block is invalid, and error message is shown
+- if a block is valid, nothing is done
+- By default, completely blank sections are ignored as they usually indicate gaps introduced by the burst error resistance pattern
 
 #### Handling of irreparable blocks
 - Output sequence number of the blocks to log
-
-#### Handling of duplicate, out of order blocks, or block sequence number jumps
-- Halt repair process
 
 ## Sort workflow
 1. Check if destination has sufficient space for a complete replica of the current file(may not be sufficient estimate)
