@@ -124,6 +124,14 @@ impl RSRepairer {
         sbx_block::slice_buf_mut(self.version, &mut self.buf[index])
     }
 
+    pub fn total_slot_count(&self) -> usize {
+        self.rs_codec.total_shard_count()
+    }
+
+    pub fn unfilled_slot_count(&self) -> usize {
+        self.rs_codec.total_shard_count() - self.index
+    }
+
     pub fn mark_present(&mut self) -> RSCodecState {
         assert_not_ready!(self);
 
