@@ -2,7 +2,9 @@
 
 cd tests
 
-./copy.sh
+./copy_release.sh
+
+mv rsbx_release rsbx
 
 test_failed=0
 
