@@ -139,17 +139,13 @@ Data block is valid if and only if
 - Output sequence number of the blocks to log
 
 ## Sort workflow
-1. Check if destination has sufficient space for a complete replica of the current file(may not be sufficient estimate)
-2. Read block from input file sequentailly, write to position calculated from sequence number and block size to output file
+1. Read block from input file sequentailly, and write to position calculated from sequence number, block size and burst error resistance level to output file
+- The burst error resistance level by default is guessed using the **Guessing burst error resistance level** procedure specified above
+- The first metadata block is used for all metadata blocks in output container
+- The last valid data block is used for each sequence number
 
 #### Handling of missing blocks
 - Jumps/gaps caused by missing blocks are left to file system to handle(i.e. this may result in sparse file, or file with blank data in the gaps)
-
-#### Handling of corrupted blocks
-- Still write to output file
-
-#### Handling of duplicate metadata/data blocks
-- Append block to FILENAME.TIME.rSBX.leftover, where FILENAME is the specified archive name(not the name stored in metadata), TIME is string of format "%Y-%M-%D_%h%m" of the start of the sorting process
 
 ## To successfully encode a file
 - File size must be within threshold
@@ -163,12 +159,11 @@ Data block is valid if and only if
 - If data padding was done for the last block, then at least one valid metadata block must exist and the first block amongst the valid metadata blocks needs to contain a field for the file size in order for truncation of the output file to happen
 
 ## To successfully rescue your SBX container
-- Get enough valid SBX blocks of your container such that a successful decoding may take place
+- Get enough valid SBX blocks of your container such that a successful decoding or repair may take place
 
 ## To successfully repair your SBX container
 - The container has metadata block(or enough metadata parity blocks to reconstruct if corrupted/missing)
-- The container blocks are sorted by the sequence number in increasing order
-- The container has no duplicate blocks
+- The blocks' sequence numbers are in consistent order
 - The container has enough valid parity blocks to correct all errors
 
 ## To successfully sort your SBX container
