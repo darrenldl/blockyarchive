@@ -1,4 +1,5 @@
 # Specification of rust-SeqBox
+The specification is only concerned with actual data operations rather than UI/UX related matter.
 
 ## Exit code
 rsbx returns
@@ -146,6 +147,9 @@ Data block is valid if and only if
 
 #### Handling of missing blocks
 - Jumps/gaps caused by missing blocks are left to file system to handle(i.e. this may result in sparse file, or file with blank data in the gaps)
+
+## Calc workflow
+Calc mode only operates at UI/UX level and does not handle any file data, thus it is not documented here.
 
 ## To successfully encode a file
 - File size must be within threshold
