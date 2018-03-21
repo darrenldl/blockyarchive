@@ -15,7 +15,7 @@ Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for 
 ## Enhancements
 This implementation adds forward error correction on top of the SeqBox format by adding support for Reed-Solomon erasure code, and also allows arranging the blocks such that burst sector errors can be tolerated.
 
-Rsbx is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), but much more optimized.
+rsbx is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), but much more optimized.
 
 ## Features overall
 - Data recovery that does not depend on file system metadata(sector level recovery)
@@ -42,7 +42,7 @@ The [wiki](https://github.com/darrenldl/rust-SeqBox/wiki) contains comprehensive
 ## Specification
 [Sbx format](SBX_FORMAT.md)
 
-[Rsbx specs](RSBX_SPECS.md)
+[rsbx specs](RSBX_SPECS.md)
 
 ## Contributions
 Contributions are welcome. Note that by submitting contributions, you agree to license your work under the same license used by this project(MIT).
@@ -52,7 +52,7 @@ I would like to thank [Marco](https://github.com/MarcoPon) (official SeqBox auth
 
 I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of the osbx project, of which most of the designs are carried over to rsbx, and also his further feedback on this project as well.
 
-The design of the readable rate in progress report text is copied from Arch Linux pacman's progress bar design.
+The design of the readable rate in progress report text is copied from [Arch Linux pacman](https://wiki.archlinux.org/index.php/Pacman)'s progress bar design.
 
 The design of block set interleaving arrangement in RS enabled versions is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html). The interleaving provides resistance against burst sector errors.
 
