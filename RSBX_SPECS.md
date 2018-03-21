@@ -99,12 +99,9 @@ Data block is valid if and only if
 
 ## Show workflow
 1. Scan for metadata blocks from start of provided file using 128 bytes alignment
-  - if block scanned has sequence number 0, then
-    - if the block is a valid metadatablock, it will be collected
-    - up to some specified maximum number of blocks are collected(defaults to 1)
-  - else
-    - nothing is done
-2. Metadata of collected list of metadata blocks are displayed
+- if show all flag is supplied, all valid metadata blocks are displayed
+- else only the first valid metadata block are displayed
+- all displaying of blocks are immediate(no buffering of blocks)
 
 ## Repair workflow
 1. Load metadata block and the 3 parity blocks, repair any of the 4 blocks if necessary
