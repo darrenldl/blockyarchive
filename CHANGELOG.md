@@ -11,6 +11,8 @@
 - Fixed repair mode code to handle block sets with blocks missing due to truncation properly
 - Fixed encode mode code to avoid writing extraneous RS block set
   - Previously if data read finishes right at the end of a block set, the RS codec would write out an extra RS block set with data blocks being just padding
+- Added --dry-run flag to repair mode
+- Added displaying of position in file of blocks requiring repair in repair mode
 
 ## 0.9.3
 - Various UI/UX improvements in subcommands
