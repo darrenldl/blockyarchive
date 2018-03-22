@@ -1,4 +1,4 @@
-## 0.9.4
+## 1.0.0
 - Added fields to stats display in encode mode
   - uid
   - file size
