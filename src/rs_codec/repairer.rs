@@ -23,15 +23,19 @@ pub struct RSRepairer {
 }
 
 pub struct RSRepairStats<'a> {
-    pub successful    : bool,
-    pub start_seq_num : u32,
-    pub present       : &'a SmallVec<[bool; 32]>,
-    pub missing_count : usize,
-    pub present_count : usize,
+    pub version        : Version,
+    pub data_par_burst : Option<(usize, usize, usize)>,
+    pub successful     : bool,
+    pub start_seq_num  : u32,
+    pub present        : &'a SmallVec<[bool; 32]>,
+    pub missing_count  : usize,
+    pub present_count  : usize,
 }
 
 impl<'a> fmt::Display for RSRepairStats<'a> {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
+        let block_size = ver_to_block_size(self.version) as u64;
+
         if self.missing_count > 0 {
             if self.successful {
                 write!(f, "Repair successful for ")?;
@@ -52,11 +56,21 @@ impl<'a> fmt::Display for RSRepairStats<'a> {
             let mut first_num = true;
             for i in 0..self.present.len() {
                 if !self.present[i] {
+                    let seq_num = self.start_seq_num + i as u32;
+
                     if !first_num {
-                        write!(f, ", ")?;
+                        writeln!(f, "")?;
                     }
 
-                    write!(f, "{}", self.start_seq_num + i as u32)?;
+                    let index     =
+                        sbx_block::calc_data_block_write_index(seq_num,
+                                                               self.data_par_burst);
+                    let block_pos = index * block_size;
+
+                    write!(f, "{} at byte {} (0x{:X})",
+                           seq_num,
+                           block_pos,
+                           block_pos)?;
 
                     first_num = false;
                 }
@@ -239,11 +253,13 @@ impl RSRepairer {
             }
         }
 
-        (RSRepairStats { successful,
-                         start_seq_num : first_seq_num_in_cur_set,
-                         present       : &self.buf_present,
-                         missing_count : self.missing_count(),
-                         present_count : self.present_count(), },
+        (RSRepairStats { version        : self.version,
+                         data_par_burst : self.data_par_burst,
+                         successful,
+                         start_seq_num  : first_seq_num_in_cur_set,
+                         present        : &self.buf_present,
+                         missing_count  : self.missing_count(),
+                         present_count  : self.present_count(), },
          repaired_blocks)
     }
 }
