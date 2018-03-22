@@ -168,6 +168,38 @@ fn update_rs_codec_and_stats(version     : Version,
     }
 }
 
+fn repair_blocks_and_update_stats_using_repair_stats(param       : &Param,
+                                                     cur_seq_num : u32,
+                                                     rs_codec    : &mut RSRepairer,
+                                                     stats       : &Arc<Mutex<Stats>>,
+                                                     reader      : &mut FileReader,
+                                                     reporter    : &ProgressReporter<Stats>)
+                                                     -> Result<(), Error> {
+    let (repair_stats, repaired_blocks) =
+        rs_codec.repair_with_block_sync(cur_seq_num);
+
+    if repair_stats.successful {
+        stats.lock().unwrap().data_or_par_blocks_repaired +=
+            repair_stats.missing_count as u64;
+    } else {
+        stats.lock().unwrap().data_or_par_blocks_repair_failed +=
+            repair_stats.missing_count as u64;
+    }
+
+    if repair_stats.missing_count > 0 {
+        print_if_verbose!(param, reporter =>
+                          "{}", repair_stats;);
+    }
+
+    // write the repaired data blocks
+    for &(pos, block_buf) in repaired_blocks.iter() {
+        reader.seek(SeekFrom::Start(pos))?;
+        reader.write(&block_buf)?;
+    }
+
+    Ok(())
+}
+
 pub fn repair_file(param : &Param)
                    -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler();
@@ -292,27 +324,12 @@ pub fn repair_file(param : &Param)
 
         match codec_state {
             RSCodecState::Ready => {
-                let (repair_stats, repaired_blocks) =
-                    rs_codec.repair_with_block_sync(seq_num);
-
-                if repair_stats.successful {
-                    stats.lock().unwrap().data_or_par_blocks_repaired +=
-                        repair_stats.missing_count as u64;
-                } else {
-                    stats.lock().unwrap().data_or_par_blocks_repair_failed +=
-                        repair_stats.missing_count as u64;
-                }
-
-                if repair_stats.missing_count > 0 {
-                    print_if_verbose!(param, reporter =>
-                                      "{}", repair_stats;);
-                }
-
-                // write the repaired data blocks
-                for &(pos, block_buf) in repaired_blocks.iter() {
-                    reader.seek(SeekFrom::Start(pos))?;
-                    reader.write(&block_buf)?;
-                }
+                repair_blocks_and_update_stats_using_repair_stats(&param,
+                                                                  seq_num,
+                                                                  &mut rs_codec,
+                                                                  &stats,
+                                                                  &mut reader,
+                                                                  &reporter)?;
             },
             RSCodecState::NotReady => {},
         }
