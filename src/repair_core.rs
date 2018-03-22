@@ -116,6 +116,7 @@ impl fmt::Display for Stats {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {
     in_file            : String,
+    dry_run            : bool,
     verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
     burst              : Option<usize>,
@@ -123,11 +124,13 @@ pub struct Param {
 
 impl Param {
     pub fn new(in_file            : &str,
+               dry_run            : bool,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel,
                burst              : Option<usize>) -> Param {
         Param {
             in_file : String::from(in_file),
+            dry_run,
             verbose,
             pr_verbosity_level,
             burst,
@@ -191,10 +194,12 @@ fn repair_blocks_and_update_stats_using_repair_stats(param       : &Param,
                           "{}", repair_stats;);
     }
 
-    // write the repaired data blocks
-    for &(pos, block_buf) in repaired_blocks.iter() {
-        reader.seek(SeekFrom::Start(pos))?;
-        reader.write(&block_buf)?;
+    if !param.dry_run {
+        // write the repaired data blocks
+        for &(pos, block_buf) in repaired_blocks.iter() {
+            reader.seek(SeekFrom::Start(pos))?;
+            reader.write(&block_buf)?;
+        }
     }
 
     Ok(())
@@ -246,7 +251,7 @@ pub fn repair_file(param : &Param)
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, total_block_count)));
 
     let mut reader = FileReader::new(&param.in_file,
-                                     FileReaderParam { write    : true,
+                                     FileReaderParam { write    : !param.dry_run,
                                                        buffered : true  })?;
 
     let mut block = Block::dummy();
@@ -290,7 +295,9 @@ pub fn repair_file(param : &Param)
                     reader.seek(SeekFrom::Start(*p))?;
 
                     ref_block.sync_to_buffer(None, &mut buffer).unwrap();
-                    reader.write(sbx_block::slice_buf(version, &buffer))?;
+                    if !param.dry_run {
+                        reader.write(sbx_block::slice_buf(version, &buffer))?;
+                    }
 
                     stats.lock().unwrap().meta_blocks_repaired += 1;
                 }
