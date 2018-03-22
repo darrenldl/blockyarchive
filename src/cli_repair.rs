@@ -18,6 +18,9 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .short("y")
              .long("skip-warning")
              .help("Skip warning about in-place automatic repairs"))
+        .arg(Arg::with_name("dry_run")
+             .long("dry-run")
+             .help("Only do repairs in memory, does not modify anything"))
 }
 
 pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
@@ -27,7 +30,9 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let burst = get_burst_opt!(matches);
 
-    if !matches.is_present("skip_warning") {
+    if !matches.is_present("skip_warning")
+        && !matches.is_present("dry_run")
+    {
         print_block!(
             "Warning :";
             "";
@@ -45,6 +50,7 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
     }
 
     let param = Param::new(in_file,
+                           matches.is_present("dry_run"),
                            matches.is_present("verbose"),
                            pr_verbosity_level,
                            burst);

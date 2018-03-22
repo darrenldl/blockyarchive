@@ -116,6 +116,7 @@ impl fmt::Display for Stats {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {
     in_file            : String,
+    dry_run            : bool,
     verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
     burst              : Option<usize>,
@@ -123,11 +124,13 @@ pub struct Param {
 
 impl Param {
     pub fn new(in_file            : &str,
+               dry_run            : bool,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel,
                burst              : Option<usize>) -> Param {
         Param {
             in_file : String::from(in_file),
+            dry_run,
             verbose,
             pr_verbosity_level,
             burst,
@@ -166,6 +169,40 @@ fn update_rs_codec_and_stats(version     : Version,
             rs_codec.mark_present()
         }
     }
+}
+
+fn repair_blocks_and_update_stats_using_repair_stats(param       : &Param,
+                                                     cur_seq_num : u32,
+                                                     rs_codec    : &mut RSRepairer,
+                                                     stats       : &Arc<Mutex<Stats>>,
+                                                     reader      : &mut FileReader,
+                                                     reporter    : &ProgressReporter<Stats>)
+                                                     -> Result<(), Error> {
+    let (repair_stats, repaired_blocks) =
+        rs_codec.repair_with_block_sync(cur_seq_num);
+
+    if repair_stats.successful {
+        stats.lock().unwrap().data_or_par_blocks_repaired +=
+            repair_stats.missing_count as u64;
+    } else {
+        stats.lock().unwrap().data_or_par_blocks_repair_failed +=
+            repair_stats.missing_count as u64;
+    }
+
+    if repair_stats.missing_count > 0 {
+        print_if_verbose!(param, reporter =>
+                          "{}", repair_stats;);
+    }
+
+    if !param.dry_run {
+        // write the repaired data blocks
+        for &(pos, block_buf) in repaired_blocks.iter() {
+            reader.seek(SeekFrom::Start(pos))?;
+            reader.write(&block_buf)?;
+        }
+    }
+
+    Ok(())
 }
 
 pub fn repair_file(param : &Param)
@@ -214,7 +251,7 @@ pub fn repair_file(param : &Param)
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, total_block_count)));
 
     let mut reader = FileReader::new(&param.in_file,
-                                     FileReaderParam { write    : true,
+                                     FileReaderParam { write    : !param.dry_run,
                                                        buffered : true  })?;
 
     let mut block = Block::dummy();
@@ -258,7 +295,9 @@ pub fn repair_file(param : &Param)
                     reader.seek(SeekFrom::Start(*p))?;
 
                     ref_block.sync_to_buffer(None, &mut buffer).unwrap();
-                    reader.write(sbx_block::slice_buf(version, &buffer))?;
+                    if !param.dry_run {
+                        reader.write(sbx_block::slice_buf(version, &buffer))?;
+                    }
 
                     stats.lock().unwrap().meta_blocks_repaired += 1;
                 }
@@ -292,72 +331,17 @@ pub fn repair_file(param : &Param)
 
         match codec_state {
             RSCodecState::Ready => {
-                let (repair_stats, repaired_blocks) =
-                    rs_codec.repair_with_block_sync(seq_num);
-
-                if repair_stats.successful {
-                    stats.lock().unwrap().data_or_par_blocks_repaired +=
-                        repair_stats.missing_count as u64;
-                } else {
-                    stats.lock().unwrap().data_or_par_blocks_repair_failed +=
-                        repair_stats.missing_count as u64;
-                }
-
-                if repair_stats.missing_count > 0 {
-                    print_if_verbose!(param, reporter =>
-                                      "{}", repair_stats;);
-                }
-
-                // write the repaired data blocks
-                for &(pos, block_buf) in repaired_blocks.iter() {
-                    reader.seek(SeekFrom::Start(pos))?;
-                    reader.write(&block_buf)?;
-                }
+                repair_blocks_and_update_stats_using_repair_stats(&param,
+                                                                  seq_num,
+                                                                  &mut rs_codec,
+                                                                  &stats,
+                                                                  &mut reader,
+                                                                  &reporter)?;
             },
             RSCodecState::NotReady => {},
         }
 
         seq_num += 1;
-    }
-
-    // handle last block set if it was cut off due to truncation
-    let unfilled_slots = rs_codec.unfilled_slot_count();
-    let total_slots    = rs_codec.total_slot_count();
-    if unfilled_slots < total_slots {
-        let mut i = 0;
-        while  seq_num <= SBX_LAST_SEQ_NUM
-            && i       <  unfilled_slots
-        {
-            match rs_codec.mark_missing() {
-                RSCodecState::NotReady => assert!(i <  unfilled_slots),
-                RSCodecState::Ready    => assert!(i == unfilled_slots - 1),
-            }
-
-            seq_num += 1;
-            i       += 1;
-        }
-
-        let (repair_stats, repaired_blocks) =
-            rs_codec.repair_with_block_sync(seq_num);
-
-        if repair_stats.successful {
-            stats.lock().unwrap().data_or_par_blocks_repaired +=
-                repair_stats.missing_count as u64;
-        } else {
-            stats.lock().unwrap().data_or_par_blocks_repair_failed +=
-                repair_stats.missing_count as u64;
-        }
-
-        if repair_stats.missing_count > 0 {
-            print_if_verbose!(param, reporter =>
-                              "{}", repair_stats;);
-        }
-
-        // write the repaired data blocks
-        for &(pos, block_buf) in repaired_blocks.iter() {
-            reader.seek(SeekFrom::Start(pos))?;
-            reader.write(&block_buf)?;
-        }
     }
 
     if stats.lock().unwrap().blocks_decode_failed > 0 {

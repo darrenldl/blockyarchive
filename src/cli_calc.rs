@@ -12,7 +12,7 @@ use clap::*;
 use cli_utils::*;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("calc")
-        .about("Compute and display detailed information given an encoding configuration")
+        .about("Calculate and display detailed information given an encoding configuration")
         .arg(Arg::with_name("in_file_size")
              .value_name("INFILE-SIZE")
              .required(true)

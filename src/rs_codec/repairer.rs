@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use reed_solomon_erasure::ReedSolomon;
 use smallvec::SmallVec;
 use sbx_block;
@@ -22,15 +23,19 @@ pub struct RSRepairer {
 }
 
 pub struct RSRepairStats<'a> {
-    pub successful    : bool,
-    pub start_seq_num : u32,
-    pub present       : &'a SmallVec<[bool; 32]>,
-    pub missing_count : usize,
-    pub present_count : usize,
+    pub version        : Version,
+    pub data_par_burst : Option<(usize, usize, usize)>,
+    pub successful     : bool,
+    pub start_seq_num  : u32,
+    pub present        : &'a SmallVec<[bool; 32]>,
+    pub missing_count  : usize,
+    pub present_count  : usize,
 }
 
 impl<'a> fmt::Display for RSRepairStats<'a> {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
+        let block_size = ver_to_block_size(self.version) as u64;
+
         if self.missing_count > 0 {
             if self.successful {
                 write!(f, "Repair successful for ")?;
@@ -38,7 +43,7 @@ impl<'a> fmt::Display for RSRepairStats<'a> {
                 write!(f, "Repair failed     for ")?;
             }
 
-            write!(f, "block set [{}...{}], ",
+            write!(f, "block set [{}..={}], ",
                    self.start_seq_num,
                    self.start_seq_num + self.present.len() as u32 - 1)?;
 
@@ -51,11 +56,21 @@ impl<'a> fmt::Display for RSRepairStats<'a> {
             let mut first_num = true;
             for i in 0..self.present.len() {
                 if !self.present[i] {
+                    let seq_num = self.start_seq_num + i as u32;
+
                     if !first_num {
-                        write!(f, ", ")?;
+                        writeln!(f, "")?;
                     }
 
-                    write!(f, "{}", self.start_seq_num + i as u32)?;
+                    let index     =
+                        sbx_block::calc_data_block_write_index(seq_num,
+                                                               self.data_par_burst);
+                    let block_pos = index * block_size;
+
+                    write!(f, "{} at byte {} (0x{:X})",
+                           seq_num,
+                           block_pos,
+                           block_pos)?;
 
                     first_num = false;
                 }
@@ -124,12 +139,16 @@ impl RSRepairer {
         sbx_block::slice_buf_mut(self.version, &mut self.buf[index])
     }
 
-    pub fn total_slot_count(&self) -> usize {
-        self.rs_codec.total_shard_count()
+    pub fn active(&self) -> bool {
+        self.unfilled_slot_count() < self.total_slot_count()
     }
 
     pub fn unfilled_slot_count(&self) -> usize {
-        self.rs_codec.total_shard_count() - self.index
+        self.total_slot_count() - self.index
+    }
+
+    pub fn total_slot_count(&self) -> usize {
+        self.rs_codec.total_shard_count()
     }
 
     pub fn mark_present(&mut self) -> RSCodecState {
@@ -234,12 +253,13 @@ impl RSRepairer {
             }
         }
 
-        (RSRepairStats {
-            successful,
-            start_seq_num : first_seq_num_in_cur_set,
-            present       : &self.buf_present,
-            missing_count : self.missing_count(),
-            present_count : self.present_count(), },
+        (RSRepairStats { version        : self.version,
+                         data_par_burst : self.data_par_burst,
+                         successful,
+                         start_seq_num  : first_seq_num_in_cur_set,
+                         present        : &self.buf_present,
+                         missing_count  : self.missing_count(),
+                         present_count  : self.present_count(), },
          repaired_blocks)
     }
 }

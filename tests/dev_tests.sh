@@ -4,8 +4,6 @@ cd tests
 
 ./copy_release.sh
 
-mv rsbx_release rsbx
-
 test_failed=0
 
 echo "Generating test data"
@@ -105,6 +103,15 @@ echo "========================================"
 echo "Starting file size calculation tests"
 echo "========================================"
 ./file_size_calc_tests.sh
+if [[ $? != 0 ]]; then
+    test_failed=$[$test_failed+1]
+fi
+
+# container truncation tests
+echo "========================================"
+echo "Starting truncated container repair tests"
+echo "========================================"
+./repair_truncated_tests.sh
 if [[ $? != 0 ]]; then
     test_failed=$[$test_failed+1]
 fi
