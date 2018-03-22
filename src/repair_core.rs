@@ -354,27 +354,12 @@ pub fn repair_file(param : &Param)
             i       += 1;
         }
 
-        let (repair_stats, repaired_blocks) =
-            rs_codec.repair_with_block_sync(seq_num);
-
-        if repair_stats.successful {
-            stats.lock().unwrap().data_or_par_blocks_repaired +=
-                repair_stats.missing_count as u64;
-        } else {
-            stats.lock().unwrap().data_or_par_blocks_repair_failed +=
-                repair_stats.missing_count as u64;
-        }
-
-        if repair_stats.missing_count > 0 {
-            print_if_verbose!(param, reporter =>
-                              "{}", repair_stats;);
-        }
-
-        // write the repaired data blocks
-        for &(pos, block_buf) in repaired_blocks.iter() {
-            reader.seek(SeekFrom::Start(pos))?;
-            reader.write(&block_buf)?;
-        }
+        repair_blocks_and_update_stats_using_repair_stats(&param,
+                                                          seq_num,
+                                                          &mut rs_codec,
+                                                          &stats,
+                                                          &mut reader,
+                                                          &reporter)?;
     }
 
     if stats.lock().unwrap().blocks_decode_failed > 0 {
