@@ -337,31 +337,6 @@ pub fn repair_file(param : &Param)
         seq_num += 1;
     }
 
-    // handle last block set if it was cut off due to truncation
-    let unfilled_slots = rs_codec.unfilled_slot_count();
-    let total_slots    = rs_codec.total_slot_count();
-    if unfilled_slots < total_slots {
-        let mut i = 0;
-        while  seq_num <= SBX_LAST_SEQ_NUM
-            && i       <  unfilled_slots
-        {
-            match rs_codec.mark_missing() {
-                RSCodecState::NotReady => assert!(i <  unfilled_slots),
-                RSCodecState::Ready    => assert!(i == unfilled_slots - 1),
-            }
-
-            seq_num += 1;
-            i       += 1;
-        }
-
-        repair_blocks_and_update_stats_using_repair_stats(&param,
-                                                          seq_num,
-                                                          &mut rs_codec,
-                                                          &stats,
-                                                          &mut reader,
-                                                          &reporter)?;
-    }
-
     if stats.lock().unwrap().blocks_decode_failed > 0 {
         print_if_verbose!(param, reporter => "";);
     }
