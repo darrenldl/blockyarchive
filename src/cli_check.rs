@@ -23,7 +23,7 @@ pub fn check<'a>(matches : &ArgMatches<'a>) -> i32 {
     let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
     let in_file  = get_in_file!(matches);
-    let param = Param::new(matches.is_present("no_meta"),
+    let param = Param::new(get_ref_block_choice!(matches),
                            matches.is_present("report_blank"),
                            in_file,
                            matches.is_present("verbose"),

@@ -34,6 +34,8 @@ use sbx_specs::{ver_to_block_size,
 use time_utils;
 use block_utils;
 
+use block_utils::RefBlockChoice;
+
 const HASH_FILE_BLOCK_SIZE : usize = 4096;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -148,7 +150,7 @@ impl fmt::Display for Stats {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Param {
-    no_meta            : bool,
+    ref_block_choice   : RefBlockChoice,
     force_write        : bool,
     in_file            : String,
     out_file           : Option<String>,
@@ -157,14 +159,14 @@ pub struct Param {
 }
 
 impl Param {
-    pub fn new(no_meta            : bool,
+    pub fn new(ref_block_choice   : RefBlockChoice,
                force_write        : bool,
                in_file            : &str,
                out_file           : Option<&str>,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel) -> Param {
         Param {
-            no_meta,
+            ref_block_choice,
             force_write,
             in_file  : String::from(in_file),
             out_file : match out_file {
@@ -469,7 +471,7 @@ pub fn decode_file(param : &Param)
     }
 
     // regenerate param
-    let param = Param::new(param.no_meta,
+    let param = Param::new(param.ref_block_choice,
                            param.force_write,
                            &param.in_file,
                            Some(&out_file_path),

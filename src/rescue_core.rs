@@ -270,12 +270,14 @@ pub fn rescue_from_file(param : &Param)
         }
 
         // write block out
-        let uid_str = misc_utils::bytes_to_upper_hex_string(&block.get_uid());
-        let path    = misc_utils::make_path(&[&param.out_dir, &uid_str]);
+        let uid_str    = misc_utils::bytes_to_upper_hex_string(&block.get_uid());
+        let path       = misc_utils::make_path(&[&param.out_dir, &uid_str]);
         let mut writer = FileWriter::new(&path,
                                          FileWriterParam { read     : false,
                                                            append   : true,
                                                            buffered : false  })?;
+
+        // use the original bytes which are still in the buffer
         writer.write(sbx_block::slice_buf(block.get_version(), &buffer))?;
 
         // update log file

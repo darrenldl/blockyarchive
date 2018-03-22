@@ -40,7 +40,7 @@ The [wiki](https://github.com/darrenldl/rust-SeqBox/wiki) contains comprehensive
 [Changelog](CHANGELOG.md)
 
 ## Specification
-[Sbx format](SBX_FORMAT.md)
+[SBX format](SBX_FORMAT.md)
 
 [rsbx specs](RSBX_SPECS.md)
 

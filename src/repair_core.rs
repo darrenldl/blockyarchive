@@ -29,6 +29,9 @@ use block_utils;
 use rs_codec::RSRepairer;
 use rs_codec::RSCodecState;
 
+use block_utils::RefBlockChoice;
+use sbx_block::BlockType;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Stats {
     version                              : Version,
@@ -170,14 +173,12 @@ pub fn repair_file(param : &Param)
     let ctrlc_stop_flag = setup_ctrlc_handler();
 
     let (ref_block_pos, mut ref_block) = get_ref_block!(param,
-                                                        false,
+                                                        RefBlockChoice::MustBe(BlockType::Meta),
                                                         ctrlc_stop_flag);
 
     let version = ref_block.get_version();
 
     return_if_not_ver_uses_rs!(version);
-
-    return_if_ref_not_meta!(ref_block_pos, ref_block, "repair");
 
     let block_size = ver_to_block_size(version);
 
@@ -317,6 +318,46 @@ pub fn repair_file(param : &Param)
         }
 
         seq_num += 1;
+    }
+
+    // handle last block set if it was cut off due to truncation
+    let unfilled_slots = rs_codec.unfilled_slot_count();
+    let total_slots    = rs_codec.total_slot_count();
+    if unfilled_slots < total_slots {
+        let mut i = 0;
+        while  seq_num <= SBX_LAST_SEQ_NUM
+            && i       <  unfilled_slots
+        {
+            match rs_codec.mark_missing() {
+                RSCodecState::NotReady => assert!(i <  unfilled_slots),
+                RSCodecState::Ready    => assert!(i == unfilled_slots - 1),
+            }
+
+            seq_num += 1;
+            i       += 1;
+        }
+
+        let (repair_stats, repaired_blocks) =
+            rs_codec.repair_with_block_sync(seq_num);
+
+        if repair_stats.successful {
+            stats.lock().unwrap().data_or_par_blocks_repaired +=
+                repair_stats.missing_count as u64;
+        } else {
+            stats.lock().unwrap().data_or_par_blocks_repair_failed +=
+                repair_stats.missing_count as u64;
+        }
+
+        if repair_stats.missing_count > 0 {
+            print_if_verbose!(param, reporter =>
+                              "{}", repair_stats;);
+        }
+
+        // write the repaired data blocks
+        for &(pos, block_buf) in repaired_blocks.iter() {
+            reader.seek(SeekFrom::Start(pos))?;
+            reader.write(&block_buf)?;
+        }
     }
 
     if stats.lock().unwrap().blocks_decode_failed > 0 {

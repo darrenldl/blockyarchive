@@ -263,3 +263,18 @@ macro_rules! parse_uid {
         }
     }}
 }
+
+macro_rules! get_ref_block_choice {
+    (
+        $matches:expr
+    ) => {{
+        use block_utils::RefBlockChoice::*;
+        use sbx_block::BlockType;
+
+        if $matches.is_present("no_meta") {
+            Prefer(BlockType::Meta)
+        } else {
+            Any
+        }
+    }}
+}

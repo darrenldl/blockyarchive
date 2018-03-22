@@ -30,7 +30,7 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
     let in_file = get_in_file!(matches);
     let out     = matches.value_of("out");
 
-    let param = Param::new(matches.is_present("no_meta"),
+    let param = Param::new(get_ref_block_choice!(matches),
                            matches.is_present("force"),
                            in_file,
                            out,

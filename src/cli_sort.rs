@@ -49,7 +49,7 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
-    let param = Param::new(matches.is_present("no-meta"),
+    let param = Param::new(get_ref_block_choice!(matches),
                            in_file,
                            &out_file,
                            matches.is_present("verbose"),
