@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use reed_solomon_erasure::ReedSolomon;
 use smallvec::SmallVec;
 use sbx_block;
