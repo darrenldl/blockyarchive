@@ -9,14 +9,23 @@ rsbx returns
 
 ## Error handling behaviour in general
 - rsbx does **not** remove the generated file(s) even in case of failure
-  - This applies to encoding, decoding, rescuing (showing does not generate any files)
+  - This applies to encoding, decoding, repairing, rescuing, and sorting
+    - calculating, checking, showing do not generate any files
   - This is mainly for in case the partial data is useful to the user
 
 ## Block handling in general
-#### Block validity
+#### Basic block validity
 Block is valid if
 - Header can be parsed
 - CRC-CCITT is correct
+
+#### Metadata block validity
+Metadata block is valid if
+- Basic block validity criteria are satisfied
+- Several aspects are relaxed and allowed to not conform to `SBX_FORMAT`
+  - Metadata fields are optional
+    - They can be missing or unparsable
+  - Padding using 0x1A is not mandatory
 
 #### Handling of duplicate metadata in metadata block given the block is valid
 - For a given ID, only the first occurance of the metadata will be used
@@ -24,9 +33,9 @@ Block is valid if
 - This applies to everywhere where metadata fields need to be accessed
 
 #### Handling of incorrect metadata fields in metadata block given the block is valid
-- To avoid propogation of error into core logic, incorrect fields either fail the parsing stage, or are filtered out immediately after the parsing stage. That is, invalid metadata fields are never accessible by other modules.
-- This tradeoff means rsbx's error messages regarding metadata fields will be very coarse. For example, if the recorded file name is not a valid UTF-8 string, the core logic code will only see the field as missing, as it is dropped by the `sbx_block` module during parsing, and would not be able to tell whether the field is missing or incorrect, and would not be able to tell the user why the field is incorrect, etc.
-- This overall means trading flexibility for security.
+- To avoid propogation of errors into core logic, incorrect fields either fail to be parsed in the parsing stage, or are filtered out immediately after the parsing stage. That is, invalid metadata fields are never accessible by other modules.
+- This tradeoff means rsbx's error messages regarding metadata fields will be very coarse. For example, if the recorded file name is not a valid UTF-8 string, the core logic code will only see the field as missing, as it is dropped by the `sbx_block` module during parsing, and would not be able to tell whether the field is missing or incorrect, and also would not be able to tell the user why the field was not accessible, etc.
+- This overall means trading flexibility and information granularity for better security.
 
 ## Finding reference block
 1. The entire SBX container is scanned using alignment of 128 bytes, 128 is used as it is the largest common divisor of 512(block size for version 1), 128(block size for verion 2), and 4096(block size for version 3)
@@ -60,14 +69,11 @@ Block is valid if
 
 ## Decode workflow
 Metadata block is valid if
-- Basic block validity criteria are satisfied(see **Block handling in general above**)
+- Metadata block validity criteria are satisfied(see **Block handling in general** above)
 - Version and uid matches reference block(see below)
-- Several aspects are relaxed and allowed to not conform to `SBX_FORMAT`
-  - Metadata fields are optional, i.e. do not have to be parsable
-  - Padding of 0x1A is not mandatory
 
 Data block is valid if and only if
-- Basic block validity criteria are satisfied(see **Block handling in general above**)
+- Basic block validity criteria are satisfied(see **Block handling in general** above)
 - Version and uid matches reference block(see below)
 
 1. A reference block is retrieved first and is used for guidance on alignment, version, and uid(see **Finding reference block** procedure specified above)
@@ -112,6 +118,14 @@ Data block is valid if and only if
 - all displaying of blocks are immediate(no buffering of blocks)
 
 ## Repair workflow
+Metadata block is valid if
+- Metadata block validity criteria are satisfied(see **Block handling in general** above)
+- Version and uid matches reference block(see below)
+
+Data block is valid if and only if
+- Basic block validity criteria are satisfied(see **Block handling in general** above)
+- Version and uid matches reference block(see below)
+
 1. A reference block is retrieved first and is used for guidance on alignment, version, and uid(see **Finding reference block** procedure specified above)
 - a metadata block must be used as reference block in this mode
 2. If the version of ref block does not use RS, then exit
@@ -140,7 +154,16 @@ Data block is valid if and only if
 - Output sequence number of the blocks to log
 
 ## Sort workflow
-1. Read block from input file sequentailly, and write to position calculated from sequence number, block size and burst error resistance level to output file
+Metadata block is valid if
+- Metadata block validity criteria are satisfied(see **Block handling in general** above)
+- Version and uid matches reference block(see below)
+
+Data block is valid if and only if
+- Basic block validity criteria are satisfied(see **Block handling in general** above)
+- Version and uid matches reference block(see below)
+
+1. A reference block is retrieved first and is used for guidance on alignment, version, and uid(see **Finding reference block** procedure specified above)
+2. Read block from input file sequentailly, and write to position calculated from sequence number, block size and burst error resistance level to output file
 - The burst error resistance level by default is guessed using the **Guessing burst error resistance level** procedure specified above
 - The first metadata block is used for all metadata blocks in output container
 - The last valid data block is used for each sequence number
