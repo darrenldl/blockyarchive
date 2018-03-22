@@ -26,7 +26,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .help("File to encode"))
         .arg(out_arg()
              .help("SBX container name (defaults to INFILE.sbx). If OUT is a
-directory(DIR), then the final file will be stored as
+directory(DIR), then the final file is stored as
 DIR/INFILE.sbx."))
         .arg(Arg::with_name("force")
              .short("f")
