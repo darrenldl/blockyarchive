@@ -28,7 +28,7 @@ As rsbx is to be used largely as a backup utility, security/robustness of the co
 
 ## Getting started
 #### Installation
-rsbx is available via Cargo
+rsbx is available via `cargo`
 ```
 cargo install rsbx
 ```
