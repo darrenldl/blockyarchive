@@ -434,29 +434,31 @@ pub fn encode_file(param : &Param)
 
     if let Some(ref mut rs_codec) = rs_codec {
         // fill remaining slots with padding if required
-        let slots_to_fill_in = rs_codec.unfilled_slot_count();
-        for i in 0..slots_to_fill_in {
-            // write padding
-            write_data_block(param,
-                             &mut block,
-                             &mut padding,
-                             &mut writer)?;
+        if rs_codec.active() {
+            let slots_to_fill = rs_codec.unfilled_slot_count();
+            for i in 0..slots_to_fill {
+                // write padding
+                write_data_block(param,
+                                 &mut block,
+                                 &mut padding,
+                                 &mut writer)?;
 
-            stats.lock().unwrap().data_blocks_written += 1;
+                stats.lock().unwrap().data_blocks_written += 1;
 
-            if let Some(parity_to_use) =
-                rs_codec.encode_no_block_sync(&padding)
-            {
-                // this should only be executed at the last iteration
-                assert_eq!(i, slots_to_fill_in - 1);
+                if let Some(parity_to_use) =
+                    rs_codec.encode_no_block_sync(&padding)
+                {
+                    // this should only be executed at the last iteration
+                    assert_eq!(i, slots_to_fill - 1);
 
-                for p in parity_to_use.iter_mut() {
-                    write_data_block(param,
-                                     &mut block,
-                                     p,
-                                     &mut writer)?;
+                    for p in parity_to_use.iter_mut() {
+                        write_data_block(param,
+                                         &mut block,
+                                         p,
+                                         &mut writer)?;
 
-                    stats.lock().unwrap().data_par_blocks_written += 1;
+                        stats.lock().unwrap().data_par_blocks_written += 1;
+                    }
                 }
             }
         }
