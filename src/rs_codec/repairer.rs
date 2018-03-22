@@ -234,12 +234,11 @@ impl RSRepairer {
             }
         }
 
-        (RSRepairStats {
-            successful,
-            start_seq_num : first_seq_num_in_cur_set,
-            present       : &self.buf_present,
-            missing_count : self.missing_count(),
-            present_count : self.present_count(), },
+        (RSRepairStats { successful,
+                         start_seq_num : first_seq_num_in_cur_set,
+                         present       : &self.buf_present,
+                         missing_count : self.missing_count(),
+                         present_count : self.present_count(), },
          repaired_blocks)
     }
 }
