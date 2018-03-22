@@ -107,6 +107,15 @@ if [[ $? != 0 ]]; then
     test_failed=$[$test_failed+1]
 fi
 
+# container truncation tests
+echo "========================================"
+echo "Starting truncated container repair tests"
+echo "========================================"
+./repair_truncated_tests.sh
+if [[ $? != 0 ]]; then
+    test_failed=$[$test_failed+1]
+fi
+
 if [[ $test_failed == 0 ]]; then
     echo "All tests passed"
     exit 0
