@@ -1,5 +1,5 @@
 # Specification of rust-SeqBox
-The specification is only concerned with actual data operations rather than UI/UX related matter.
+The specification is concerned only with actual data operations, UI/UX related matters are ignored.
 
 ## Exit code
 rsbx returns
