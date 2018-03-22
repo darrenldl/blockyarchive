@@ -7,6 +7,7 @@ use progress_report::*;
 use cli_utils::setup_ctrlc_handler;
 
 use file_reader::{FileReader,
+                  ReadResult,
                   FileReaderParam};
 
 use general_error::Error;
@@ -131,6 +132,39 @@ impl Param {
     }
 }
 
+fn update_rs_codec_and_stats(version     : Version,
+                             pred        : &Fn(&Block) -> bool,
+                             read_res    : &ReadResult,
+                             block       : &mut Block,
+                             cur_seq_num : u32,
+                             rs_codec    : &mut RSRepairer,
+                             stats       : &Arc<Mutex<Stats>>)
+                             -> RSCodecState {
+    let block_size = ver_to_block_size(version);
+
+    if read_res.len_read < block_size {   // read an incomplete block
+        stats.lock().unwrap().blocks_decode_failed += 1;
+        rs_codec.mark_missing()
+    } else if let Err(_) = block.sync_from_buffer(rs_codec.get_block_buffer(),
+                                                  Some(pred)) {
+        stats.lock().unwrap().blocks_decode_failed += 1;
+        rs_codec.mark_missing()
+    } else {
+        if block.get_seq_num() != cur_seq_num {
+            stats.lock().unwrap().blocks_decode_failed += 1;
+            rs_codec.mark_missing()
+        } else {
+            if block.is_meta() {
+                stats.lock().unwrap().meta_blocks_decoded += 1;
+            } else {
+                stats.lock().unwrap().data_or_par_blocks_decoded += 1;
+            }
+
+            rs_codec.mark_present()
+        }
+    }
+}
+
 pub fn repair_file(param : &Param)
                    -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler();
@@ -247,27 +281,13 @@ pub fn repair_file(param : &Param)
         let read_res = reader.read(rs_codec.get_block_buffer())?;
 
         let codec_state =
-            if read_res.len_read < block_size {   // read an incomplete block
-                stats.lock().unwrap().blocks_decode_failed += 1;
-                rs_codec.mark_missing()
-            } else if let Err(_) = block.sync_from_buffer(rs_codec.get_block_buffer(),
-                                                          Some(&pred)) {
-                stats.lock().unwrap().blocks_decode_failed += 1;
-                rs_codec.mark_missing()
-            } else {
-                if block.get_seq_num() != seq_num {
-                    stats.lock().unwrap().blocks_decode_failed += 1;
-                    rs_codec.mark_missing()
-                } else {
-                    if block.is_meta() {
-                        stats.lock().unwrap().meta_blocks_decoded += 1;
-                    } else {
-                        stats.lock().unwrap().data_or_par_blocks_decoded += 1;
-                    }
-
-                    rs_codec.mark_present()
-                }
-            };
+            update_rs_codec_and_stats(version,
+                                      &pred,
+                                      &read_res,
+                                      &mut block,
+                                      seq_num,
+                                      &mut rs_codec,
+                                      &stats);
 
         match codec_state {
             RSCodecState::Ready => {
