@@ -12,8 +12,8 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(out_arg()
              .help("Decoded file name. If OUT is not provided, then name stored in sbx
 container is used if present. If OUT is provided and is a
-directory(DIR) then output file is stored as DIR/STORED_NAME. If
-OUT is provided and is not a directory, then it is used directly."))
+directory then output file is stored as OUT/STORED_NAME. If OUT
+is provided and is not a directory, then it is used directly."))
         .arg(Arg::with_name("force")
              .short("f")
              .long("force")
