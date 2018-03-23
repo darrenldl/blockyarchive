@@ -1,3 +1,6 @@
+## 1.0.1
+- Added displaying of metadata block repairs in repair mode when verbose flag is supplied
+
 ## 1.0.0
 - Added fields to stats display in encode mode
   - uid
