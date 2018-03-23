@@ -161,9 +161,18 @@ pub mod from_orig_file_size {
                                                          size);
 
                 if data_block_count == 0 {
-                    let meta_block_count = 1 + parity as u64;
+                    let mut max_file_size = 0;
+                    for &p in sbx_block::calc_meta_block_all_write_pos_s(version,
+                                                                         data_par_burst).iter()
+                    {
+                        let file_size = p + block_size;
 
-                    return block_size * meta_block_count
+                        if file_size > max_file_size {
+                            max_file_size = file_size;
+                        }
+                    }
+
+                    return max_file_size;
                 }
 
                 let last_seq_num = data_block_count as u32;
