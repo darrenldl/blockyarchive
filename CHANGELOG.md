@@ -1,3 +1,6 @@
+## 1.0.2
+- Fixed wording of error correction parameters interpretation strings in calc mode
+
 ## 1.0.1
 - Added displaying of metadata block repairs in repair mode when verbose flag is supplied
 

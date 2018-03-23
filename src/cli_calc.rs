@@ -119,30 +119,43 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
         println!("Error correction parameters interpretation");
         println!("========================================");
         if burst == 0 {
-            println!("    The container can tolerate corruption of {} SBX blocks(totalling {} bytes) in
-    every set of {} consecutive blocks({} bytes).",
+            println!("    The container can tolerate {} SBX block corruptions
+    in any block set.
+
+    A block set consists of {} blocks({} bytes).
+
+    In total, {} blocks({} bytes) may be corrupted in
+    any block set.",
                      par,
-                     par * block_size,
-                     data + par,
-                     (data + par) * block_size);
+                     (data + par),
+                     (data + par) * block_size,
+                     par,
+                     par * block_size);
         } else {
             println!("    The container can tolerate {} burst SBX block corruptions in
-    every set of {} consecutive blocks({} bytes).
+    any super block set({} interleaved block sets).
+
+    A block set consists of {} blocks({} bytes).
+
+    A super block set consists of {} blocks({} bytes).
 
     Each burst error may be up to {} blocks({} bytes) in size.
 
-    In total, {} bytes(aligned at block boundary) may be corrupted in
-    any set of {} consecutive blocks({} bytes).",
+    In total, {} blocks({} bytes) may be corrupted in
+    any super block set.
+
+    Note that the actual tolerance depends on the behaviour of
+    the file system.",
                      par,
+                     burst,
+                     (data + par),
+                     (data + par) * block_size,
                      (data + par) * burst,
                      (data + par) * burst * block_size,
                      burst,
                      burst * block_size,
-                     par * burst * block_size,
-                     (data + par) * burst,
-                     (data + par) * burst * block_size);
-            println!();
-            println!("    Note that the actual tolerance depends on the behaviour of the file system.");
+                     par * burst,
+                     par * burst * block_size);
         }
 
         println!();
