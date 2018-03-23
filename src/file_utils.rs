@@ -172,14 +172,14 @@ pub mod from_orig_file_size {
 
                 let super_block_set_size = ((data + parity) * burst) as u32;
 
-                let first_data_index_in_block_set =
+                let first_data_index_in_last_block_set =
                     (last_data_index / super_block_set_size) * super_block_set_size;
 
-                let first_seq_num_in_block_set =
-                    first_data_index_in_block_set + 1;
+                let first_seq_num_in_last_block_set =
+                    first_data_index_in_last_block_set + 1;
 
                 let mut last_index = 0;
-                let mut seq_num = first_seq_num_in_block_set;
+                let mut seq_num = first_seq_num_in_last_block_set;
                 while seq_num <= last_seq_num {
                     let index =
                         sbx_block::calc_data_block_write_index(seq_num,
