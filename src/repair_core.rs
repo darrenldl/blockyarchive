@@ -278,21 +278,24 @@ pub fn repair_file(param : &Param)
 
         ref_block.sync_to_buffer(None, &mut buffer).unwrap();
 
-        for p in sbx_block::calc_meta_block_all_write_pos_s(version,
-                                                            data_par_burst).iter()
+        for &p in sbx_block::calc_meta_block_all_write_pos_s(version,
+                                                             data_par_burst).iter()
         {
             break_if_atomic_bool!(ctrlc_stop_flag);
 
-            reader.seek(SeekFrom::Start(*p))?;
+            reader.seek(SeekFrom::Start(p))?;
             reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
             match block.sync_from_buffer(&buffer, Some(&pred)) {
                 Ok(()) => {
                     stats.lock().unwrap().meta_blocks_decoded += 1;
                 },
                 Err(_) => {
+                    print_if_verbose!(param, reporter =>
+                                      "Replaced invalid metadata block at {} (0x{:X}) with reference block", p, p;);
+
                     stats.lock().unwrap().blocks_decode_failed += 1;
 
-                    reader.seek(SeekFrom::Start(*p))?;
+                    reader.seek(SeekFrom::Start(p))?;
 
                     ref_block.sync_to_buffer(None, &mut buffer).unwrap();
                     if !param.dry_run {
@@ -303,6 +306,10 @@ pub fn repair_file(param : &Param)
                 }
             }
         }
+    }
+
+    if stats.lock().unwrap().meta_blocks_repaired > 0 {
+        print_if_verbose!(param, reporter => "";);
     }
 
     // repair data blocks

@@ -137,7 +137,7 @@ macro_rules! get_burst_or_guess {
                                });
 
         print_if_verbose!($param =>
-                          "Using burst error resistance level {} for output container", burst;
+                          "Using burst error resistance level {} for the container", burst;
                           "";
         );
 

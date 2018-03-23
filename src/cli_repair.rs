@@ -30,6 +30,13 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let burst = get_burst_opt!(matches);
 
+    if matches.is_present("dry_run") {
+        print_block!(
+            "Note : This is a dry run only, the container is not modified.";
+            "";
+        );
+    }
+
     if !matches.is_present("skip_warning")
         && !matches.is_present("dry_run")
     {
