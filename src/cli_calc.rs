@@ -119,43 +119,44 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
         println!("Error correction parameters interpretation");
         println!("========================================");
         if burst == 0 {
-            println!("    The container can tolerate {} SBX block corruptions
-    in any block set.
-
-    A block set consists of {} blocks({} bytes).
-
-    In total, {} blocks({} bytes) may be corrupted in
-    any block set.",
-                     par,
-                     (data + par),
-                     (data + par) * block_size,
-                     par,
-                     par * block_size);
+            print_block!(
+                "    The container can tolerate {} SBX block corruptions", par;
+                "    in any block set.";
+                "";
+                "    A block set consists of {} blocks({} bytes).", (data + par), (data + par) * block_size;
+                "";
+                "    In total, {} blocks({} bytes) may be corrupted in", par, par * block_size;
+                "    any block set.";
+            );
         } else {
-            println!("    The container can tolerate {} burst SBX block corruptions in
-    any super block set({} interleaved block sets).
+            if burst == 1 {
+                print_block!(
+                    "    Warning :";
+                    "";
+                    "        Burst error resistance level of {} may not provide", burst;
+                    "        meaningful resistance";
+                    "";
+                );
+            }
 
-    A block set consists of {} blocks({} bytes).
+            let block_set_size       = data + par;
+            let super_block_set_size = (data + par) * burst;
 
-    A super block set consists of {} blocks({} bytes).
-
-    Each burst error may be up to {} blocks({} bytes) in size.
-
-    In total, {} blocks({} bytes) may be corrupted in
-    any super block set.
-
-    Note that the actual tolerance depends on the behaviour of
-    the file system.",
-                     par,
-                     burst,
-                     (data + par),
-                     (data + par) * block_size,
-                     (data + par) * burst,
-                     (data + par) * burst * block_size,
-                     burst,
-                     burst * block_size,
-                     par * burst,
-                     par * burst * block_size);
+            print_block!("    The container can tolerate {} burst SBX block corruptions in", par;
+                         "    any super block set({} interleaved block sets).", burst;
+                         "";
+                         "    A block set consists of {} blocks({} bytes).", block_set_size, block_set_size * block_size;
+                         "";
+                         "    A super block set consists of {} blocks({} bytes).", super_block_set_size, super_block_set_size * block_size;
+                         "";
+                         "    Each burst error may be up to {} blocks({} bytes) in size.", burst, burst * block_size;
+                         "";
+                         "    In total, {} sets of {} consecutive blocks({} bytes) may be", par, burst, burst * block_size;
+                         "    corrupted in any super block set.";
+                         "";
+                         "    Note that the actual tolerance depends on the behaviour of";
+                         "    the file system.";
+            );
         }
 
         println!();
