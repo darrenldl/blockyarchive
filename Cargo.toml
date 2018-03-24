@@ -5,7 +5,10 @@ authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 build   = "build.rs"
 exclude = [
     "tests/*",
-    "crc-ccitt/*"
+    "crc-ccitt/*",
+    "libcrc_crcccitt/*",
+    "appveyor.yml",
+    ".travis.yml"
 ]
 
 description   = "Enhanced implementation of SeqBox in Rust"
