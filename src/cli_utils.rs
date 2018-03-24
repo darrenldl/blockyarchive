@@ -60,13 +60,6 @@ pub fn from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
         .long("from")
         .visible_alias("skip-to")
         .takes_value(true)
-        .help("Start from byte FROM-BYTE. The position is automatically rounded
-down to the closest multiple of 128 bytes, after adding the bytes
-processed field from the log file(if specified). If this option is
-not specified, defaults to the start of file. Negative values are
-rejected. If FROM-BYTE exceeds the largest possible
-position(file size - 1), then it will be treated as (file size - 1).
-The rounding procedure is applied after all auto-adjustments.")
 }
 
 pub fn to_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
