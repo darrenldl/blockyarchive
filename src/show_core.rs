@@ -121,6 +121,8 @@ pub fn show_file(param : &Param)
 
         report_ref_block_info(ref_block_pos, &ref_block);
 
+        println!();
+
         if ver_uses_rs(ref_block.get_version()) {
             match block_utils::guess_burst_err_resistance_level(&param.in_file,
                                                                 ref_block_pos,
