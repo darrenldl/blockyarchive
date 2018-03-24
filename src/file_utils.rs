@@ -35,6 +35,27 @@ pub fn check_if_file_is_dir(file : &str) -> bool {
     Path::new(file).is_dir()
 }
 
+pub fn calc_meta_block_count_exc_burst_gaps(version        : Version,
+                                            meta_enabled   : Option<bool>,
+                                            data_par_burst : Option<(usize, usize, usize)>)
+                                            -> u64 {
+    match data_par_burst {
+        None                 => {
+            assert!(!ver_uses_rs(version));
+
+            let meta_enabled = meta_enabled.unwrap_or(true);
+
+            if meta_enabled { 1 }
+            else            { 0 }
+        },
+        Some((_, parity, _)) => {
+            assert!( ver_uses_rs(version));
+
+            1 + parity as u64
+        }
+    }
+}
+
 pub mod from_raw_file_metadata {
     use super::*;
     pub fn calc_data_chunk_count(version  : Version,
@@ -56,7 +77,7 @@ pub mod from_container_metadata {
 pub mod from_orig_file_size {
     use super::*;
 
-    pub fn calc_data_only_and_parity_block_count_exc_burst_gaps(version : Version,
+    pub fn calc_data_only_and_parity_block_count_exc_burst_gaps(version        : Version,
                                                                 data_par_burst : Option<(usize, usize, usize)>,
                                                                 size           : u64)
                                                                 -> (u64, u64) {
@@ -106,37 +127,17 @@ pub mod from_orig_file_size {
                                                  data_par_burst : Option<(usize, usize, usize)>,
                                                  size           : u64)
                                                  -> u64 {
+        let meta_block_count =
+            calc_meta_block_count_exc_burst_gaps(version,
+                                                 meta_enabled,
+                                                 data_par_burst);
+
         let data_block_count =
             calc_data_block_count_exc_burst_gaps(version,
                                                  data_par_burst,
                                                  size);
 
-        match data_par_burst {
-            None                 => {
-                let meta_enabled = meta_enabled.unwrap_or(true);
-
-                let meta_block_count =
-                    if meta_enabled {
-                        1
-                    } else {
-                        0
-                    };
-
-                let data_block_count =
-                    calc_data_block_count_exc_burst_gaps(version,
-                                                         data_par_burst,
-                                                         size);
-
-                meta_block_count + data_block_count
-            },
-            Some((_, parity, _)) => {
-                let parity_shards = parity as u64;
-
-                let meta_block_count = 1 + parity_shards as u64;
-
-                meta_block_count + data_block_count
-            }
-        }
+        meta_block_count + data_block_count
     }
 
     pub fn calc_container_size(version        : Version,

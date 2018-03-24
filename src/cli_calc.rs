@@ -67,6 +67,11 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
                                                                                data_par_burst,
                                                                                in_file_size);
 
+    let meta_block_count =
+        file_utils::calc_meta_block_count_exc_burst_gaps(version,
+                                                         meta_enabled,
+                                                         data_par_burst);
+
     let (data_only_block_count, parity_block_count) =
         file_utils::from_orig_file_size::calc_data_only_and_parity_block_count_exc_burst_gaps(version,
                                                                                               data_par_burst,
@@ -89,12 +94,12 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
     println!(    "SBX block distribution");
     println!(    "========================================");
     if ver_uses_rs(version) {
-        println!("    Metadata    block count      : {}", 1 + data_par_burst.unwrap().1);
+        println!("    Metadata    block count      : {}", meta_block_count);
         println!("    Data only   block count      : {}", data_only_block_count);
         println!("    Data parity block count      : {}", parity_block_count);
         println!("    Total       block count      : {}", total_block_count);
     } else {
-        println!("    Metadata block count         : {}", 1);
+        println!("    Metadata block count         : {}", meta_block_count);
         println!("    Data     block count         : {}", data_only_block_count);
         println!("    Total    block count         : {}", total_block_count);
     }
