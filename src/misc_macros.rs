@@ -205,3 +205,12 @@ macro_rules! break_if_reached_required_len {
         }
     }}
 }
+
+macro_rules! shadow_to_avoid_use {
+    (
+        $var:ident
+    ) => {
+        #[allow(unused_variables)]
+        let $var = ();
+    }
+}

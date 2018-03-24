@@ -102,6 +102,7 @@ pub mod from_orig_file_size {
     }
 
     pub fn calc_total_block_count_exc_burst_gaps(version        : Version,
+                                                 meta_enabled   : Option<bool>,
                                                  data_par_burst : Option<(usize, usize, usize)>,
                                                  size           : u64)
                                                  -> u64 {
@@ -112,7 +113,15 @@ pub mod from_orig_file_size {
 
         match data_par_burst {
             None                 => {
-                let meta_block_count = 1;
+                let meta_enabled = meta_enabled.unwrap_or(true);
+
+                let meta_block_count =
+                    if meta_enabled {
+                        1
+                    } else {
+                        0
+                    };
+
                 let data_block_count =
                     calc_data_block_count_exc_burst_gaps(version,
                                                          data_par_burst,
@@ -131,6 +140,7 @@ pub mod from_orig_file_size {
     }
 
     pub fn calc_container_size(version        : Version,
+                               meta_enabled   : Option<bool>,
                                data_par_burst : Option<(usize, usize, usize)>,
                                size           : u64)
                                -> u64 {
@@ -140,6 +150,7 @@ pub mod from_orig_file_size {
             None                        => {
                 let block_count =
                     calc_total_block_count_exc_burst_gaps(version,
+                                                          meta_enabled,
                                                           data_par_burst,
                                                           size);
 
@@ -149,6 +160,7 @@ pub mod from_orig_file_size {
                 if burst == 0 {
                     let block_count =
                         calc_total_block_count_exc_burst_gaps(version,
+                                                              meta_enabled,
                                                               data_par_burst,
                                                               size);
 
@@ -192,6 +204,7 @@ pub mod from_orig_file_size {
                 while seq_num <= last_seq_num {
                     let index =
                         sbx_block::calc_data_block_write_index(seq_num,
+                                                               meta_enabled,
                                                                data_par_burst);
 
                     if index > last_index {

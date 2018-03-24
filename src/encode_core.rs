@@ -137,7 +137,7 @@ impl Param {
     pub fn new(version            : Version,
                uid                : &[u8; SBX_FILE_UID_LEN],
                data_par_burst     : Option<(usize, usize, usize)>,
-               no_meta            : bool,
+               meta_enabled       : bool,
                hash_type          : multihash::HashType,
                in_file            : &str,
                out_file           : &str,
@@ -147,7 +147,7 @@ impl Param {
             uid            : uid.clone(),
             data_par_burst,
             rs_enabled     : ver_uses_rs(version),
-            meta_enabled   : ver_forces_meta_enabled(version) || !no_meta,
+            meta_enabled   : ver_forces_meta_enabled(version) || meta_enabled,
             hash_type,
             in_file        : String::from(in_file),
             out_file       : String::from(out_file),
@@ -279,6 +279,7 @@ fn write_data_block(param  : &Param,
     let write_pos =
         calc_data_block_write_pos(param.version,
                                   block.get_seq_num(),
+                                  Some(param.meta_enabled),
                                   param.data_par_burst);
 
     block_sync_and_write(block,

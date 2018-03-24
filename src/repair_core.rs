@@ -233,6 +233,7 @@ pub fn repair_file(param : &Param)
         match ref_block.get_FSZ().unwrap() {
             Some(x) =>
                 calc_total_block_count_exc_burst_gaps(version,
+                                                      None,
                                                       data_par_burst,
                                                       x),
             None    => {
@@ -324,6 +325,7 @@ pub fn repair_file(param : &Param)
 
         let pos = sbx_block::calc_data_block_write_pos(version,
                                                        seq_num,
+                                                       None,
                                                        data_par_burst);
 
         reader.seek(SeekFrom::Start(pos))?;

@@ -278,3 +278,11 @@ macro_rules! get_ref_block_choice {
         }
     }}
 }
+
+macro_rules! get_meta_enabled {
+    (
+        $matches:expr
+    ) => {{
+        !$matches.is_present("no_meta")
+    }}
+}
