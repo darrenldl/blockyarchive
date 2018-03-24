@@ -354,7 +354,10 @@ pub fn decode(param           : &Param,
     } else {
         print_block!(
             "";
-            "Warning : Reference block is not a metadata block, output file may contain data padding.";
+            "Warning :";
+            "";
+            "    Reference block is not a metadata block, output file";
+            "    may contain data padding.";
             "";)
     }
 
