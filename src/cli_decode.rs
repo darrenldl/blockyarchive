@@ -10,7 +10,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(in_file_arg()
              .help("SBX container to decode"))
         .arg(out_arg()
-             .help("Decoded file name. If OUT is not provided, then name stored in sbx
+             .help("Decoded file name. If OUT is not provided, then name stored in SBX
 container is used if present. If OUT is provided and is a
 directory then output file is stored as OUT/STORED_NAME. If OUT
 is provided and is not a directory, then it is used directly."))
