@@ -72,6 +72,7 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
         for seq in 1..40 {
             let write_index =
                 calc_data_block_write_index(seq,
+                                            None,
                                             data_par_burst) as usize;
 
             assert_eq!(table[write_index], seq);
@@ -84,6 +85,7 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
             if seq > 0 {
                 let write_index =
                     calc_data_block_write_index(seq,
+                                                None,
                                                 data_par_burst) as usize;
 
                 assert_eq!(index, write_index);
@@ -118,6 +120,7 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
         for seq in 1..20 {
             let write_index =
                 calc_data_block_write_index(seq,
+                                            None,
                                             data_par_burst) as usize;
 
             assert_eq!(table[write_index], seq);
@@ -130,6 +133,7 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
             if seq > 0 {
                 let write_index =
                     calc_data_block_write_index(seq,
+                                                None,
                                                 data_par_burst) as usize;
 
                 assert_eq!(index, write_index);
@@ -162,6 +166,7 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
         for seq in 1..132 {
             let write_index =
                 calc_data_block_write_index(seq,
+                                            None,
                                             data_par_burst) as usize;
 
             assert_eq!(table[write_index], seq);
@@ -174,6 +179,7 @@ fn test_calc_rs_enabled_data_write_index_simple_cases() {
             if seq > 0 {
                 let write_index =
                     calc_data_block_write_index(seq,
+                                                None,
                                                 data_par_burst) as usize;
 
                 assert_eq!(index, write_index);
@@ -209,6 +215,7 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
         for index in 0..table.len() {
             let seq_num_from_index =
                 calc_seq_num_at_index(index as u64,
+                                      None,
                                       data_par_burst);
 
             assert_eq!(table[index], seq_num_from_index);
@@ -242,6 +249,7 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
         for index in 0..table.len() {
             let seq_num_from_index =
                 calc_seq_num_at_index(index as u64,
+                                      None,
                                       data_par_burst);
 
             assert_eq!(table[index], seq_num_from_index);
@@ -273,6 +281,7 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
         for index in 0..table.len() {
             let seq_num_from_index =
                 calc_seq_num_at_index(index as u64,
+                                      None,
                                       data_par_burst);
 
             assert_eq!(table[index], seq_num_from_index);
@@ -293,9 +302,11 @@ quickcheck! {
         let data_par_burst = Some((data_shards, parity_shards, burst));
 
         let index = calc_data_block_write_index(seq_num,
+                                                None,
                                                 data_par_burst);
 
         let seq_num_from_index = calc_seq_num_at_index(index,
+                                                       None,
                                                        data_par_burst);
 
         seq_num_from_index == seq_num
