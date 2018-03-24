@@ -20,7 +20,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .help("Skip warning about in-place automatic repairs"))
         .arg(Arg::with_name("dry_run")
              .long("dry-run")
-             .help("Only do repairs in memory, does not modify anything"))
+             .help("Only do repairs in memory. The container will not be modified."))
 }
 
 pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
