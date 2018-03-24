@@ -290,8 +290,8 @@ pub fn calc_data_block_write_index(seq_num        : u32,
         None                        => {
             let meta_enabled = meta_enabled.unwrap_or(true);
 
-            if meta_enabled { index }
-            else            { SBX_FIRST_DATA_SEQ_NUM as u64 + index }
+            if meta_enabled { SBX_FIRST_DATA_SEQ_NUM as u64 + index }
+            else            { index }
         },
         Some((data, parity, burst)) => {
             shadow_to_avoid_use!(meta_enabled);
@@ -422,8 +422,8 @@ pub fn calc_seq_num_at_index(index          : u64,
         None                        => {
             let meta_enabled = meta_enabled.unwrap_or(true);
 
-            if meta_enabled { SBX_FIRST_DATA_SEQ_NUM + index as u32 }
-            else            { index as u32 }
+            if meta_enabled { index as u32 }
+            else            { SBX_FIRST_DATA_SEQ_NUM + index as u32 }
         },
         Some((data, parity, burst)) => {
             shadow_to_avoid_use!(meta_enabled);
