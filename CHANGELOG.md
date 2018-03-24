@@ -1,5 +1,9 @@
 ## 1.0.3
 - General output text polishing
+- Fixed container size calculation for when --no-meta flag is supplied
+- Fixed encode mode for when --no-meta flag is supplied
+  - Previously rsbx would leave a blank spot at where the metadata block would otherwise sit instead of skipping the metadata block properly
+  - SBX containers created with --no-meta flag enabled prior to this fix are still valid and can be decoded by rsbx successfully
 
 ## 1.0.2
 - Fixed wording of error correction parameters interpretation strings in calc mode
