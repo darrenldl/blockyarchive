@@ -1,3 +1,6 @@
+## 1.0.3
+- General output text polishing
+
 ## 1.0.2
 - Fixed wording of error correction parameters interpretation strings in calc mode
 - Fixed container size calculation for when file size is 0
