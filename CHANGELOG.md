@@ -1,3 +1,8 @@
+## 1.0.2
+- Fixed wording of error correction parameters interpretation strings in calc mode
+- Fixed container size calculation for when file size is 0
+  - Previously for RS enabled SBX versions, rsbx would fail to take burst gaps between metadata blocks into account
+
 ## 1.0.1
 - Added displaying of metadata block repairs in repair mode when verbose flag is supplied
 

@@ -110,10 +110,10 @@ mod parsers {
     named!(pub header_p <Header>,
            do_parse!(
                _sig : sig_p >>
-                   version      : ver_p >>
-                   crc          : be_u16 >>
+                   version : ver_p >>
+                   crc     : be_u16 >>
                    uid_raw : uid_p >>
-                   seq_num      : be_u32 >>
+                   seq_num : be_u32 >>
                    ({
                        let mut uid : [u8; 6] = [0; 6];
                        uid.copy_from_slice(uid_raw);
