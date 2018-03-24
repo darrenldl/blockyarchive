@@ -4,6 +4,9 @@
 - Fixed encode mode for when --no-meta flag is supplied
   - Previously rsbx would leave a blank spot at where the metadata block would otherwise sit instead of skipping the metadata block properly
   - SBX containers created with --no-meta flag enabled prior to this fix are still valid and can be decoded by rsbx successfully
+- Fixed reference block retrieval procedure related code
+  - Previously for decode, sort, and check mode, rsbx would interpret --no-meta flag incorrecty for reference block preference, namely any block type is allowed when the flag is absent, and metadata block is preferred when the flag is present, while it should be the other way around
+- Fixed a crash that occurs when sort mode is used with a SBX container of RS enabled version, and using data block as reference block
 
 ## 1.0.2
 - Fixed wording of error correction parameters interpretation strings in calc mode
