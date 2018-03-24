@@ -1,3 +1,6 @@
+## 1.0.4
+- Help messages polish
+
 ## 1.0.3
 - General output text polishing
 - Fixed container size calculation for when --no-meta flag is supplied
