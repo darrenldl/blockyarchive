@@ -282,6 +282,7 @@ pub fn guess_burst_err_resistance_level(in_file       : &str,
         for index in 0..seq_nums.len() {
             let expected_seq_num =
                 sbx_block::calc_seq_num_at_index(index as u64,
+                                                 None,
                                                  Some((data_shards,
                                                        parity_shards,
                                                        level)));

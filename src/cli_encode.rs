@@ -112,6 +112,8 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches);
 
+    let meta_enabled = get_meta_enabled!(matches);
+
     if matches.is_present("info_only") {
         let in_file_meta  = match file_utils::get_file_metadata(in_file) {
             Ok(x)  => x,
@@ -140,6 +142,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
         let out_file_size =
             file_utils::from_orig_file_size::calc_container_size(version,
+                                                                 Some(meta_enabled),
                                                                  data_par_burst,
                                                                  in_file_size);
 
@@ -175,7 +178,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
         let param = Param::new(version,
                                &uid,
                                data_par_burst,
-                               matches.is_present("no_meta"),
+                               meta_enabled,
                                hash_type,
                                in_file,
                                &out,

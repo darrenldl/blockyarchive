@@ -30,7 +30,9 @@ This means this option has no effect for version 17, 18, 19."))
 }
 
 pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let version   = get_version!(matches);
+    let version = get_version!(matches);
+
+    let meta_enabled = Some(get_meta_enabled!(matches));
 
     let in_file_size =
         match u64::from_str(matches.value_of("in_file_size").unwrap()) {
@@ -55,11 +57,13 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let out_file_size =
         file_utils::from_orig_file_size::calc_container_size(version,
+                                                             meta_enabled,
                                                              data_par_burst,
                                                              in_file_size);
 
     let total_block_count =
         file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps(version,
+                                                                               meta_enabled,
                                                                                data_par_burst,
                                                                                in_file_size);
 
@@ -134,7 +138,7 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
                     "    Warning :";
                     "";
                     "        Burst error resistance level of {} may not provide", burst;
-                    "        meaningful resistance";
+                    "        meaningful resistance.";
                     "";
                 );
             }

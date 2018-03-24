@@ -272,9 +272,17 @@ macro_rules! get_ref_block_choice {
         use sbx_block::BlockType;
 
         if $matches.is_present("no_meta") {
-            Prefer(BlockType::Meta)
-        } else {
             Any
+        } else {
+            Prefer(BlockType::Meta)
         }
+    }}
+}
+
+macro_rules! get_meta_enabled {
+    (
+        $matches:expr
+    ) => {{
+        !$matches.is_present("no_meta")
     }}
 }

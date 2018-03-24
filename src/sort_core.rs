@@ -199,6 +199,7 @@ pub fn sort_file(param : &Param)
             let write_pos =
                 sbx_block::calc_data_block_write_pos(version,
                                                      block.get_seq_num(),
+                                                     None,
                                                      data_par_burst);
 
             writer.seek(SeekFrom::Start(write_pos))?;

@@ -263,6 +263,7 @@ pub fn calc_meta_block_all_write_indices(data_par_burst : Option<(usize, usize, 
 
 pub fn calc_data_block_write_pos(version        : Version,
                                  seq_num        : u32,
+                                 meta_enabled   : Option<bool>,
                                  data_par_burst : Option<(usize, usize, usize)>)
                                  -> u64 {
     check_ver_consistent_with_opt!(version, data_par_burst);
@@ -270,10 +271,12 @@ pub fn calc_data_block_write_pos(version        : Version,
     let block_size = ver_to_block_size(version) as u64;
 
     calc_data_block_write_index(seq_num,
+                                meta_enabled,
                                 data_par_burst) * block_size
 }
 
 pub fn calc_data_block_write_index(seq_num        : u32,
+                                   meta_enabled   : Option<bool>,
                                    data_par_burst : Option<(usize, usize, usize)>)
                                    -> u64 {
     // the following transforms seq num to data index
@@ -285,9 +288,14 @@ pub fn calc_data_block_write_index(seq_num        : u32,
 
     match data_par_burst {
         None                        => {
-            SBX_FIRST_DATA_SEQ_NUM as u64 + index
+            let meta_enabled = meta_enabled.unwrap_or(true);
+
+            if meta_enabled { SBX_FIRST_DATA_SEQ_NUM as u64 + index }
+            else            { index }
         },
         Some((data, parity, burst)) => {
+            shadow_to_avoid_use!(meta_enabled);
+
             if burst == 0 {
                 let meta_block_count = 1 + parity as u64;
 
@@ -407,13 +415,19 @@ pub fn calc_data_chunk_write_pos(version  : Version,
 }
 
 pub fn calc_seq_num_at_index(index          : u64,
+                             meta_enabled   : Option<bool>,
                              data_par_burst : Option<(usize, usize, usize)>)
                              -> u32 {
     match data_par_burst {
         None                        => {
-            index as u32
+            let meta_enabled = meta_enabled.unwrap_or(true);
+
+            if meta_enabled { index as u32 }
+            else            { SBX_FIRST_DATA_SEQ_NUM + index as u32 }
         },
         Some((data, parity, burst)) => {
+            shadow_to_avoid_use!(meta_enabled);
+
             // the following essentially reverses the index transformation in
             // calc_data_block_write_index
             if burst == 0 {

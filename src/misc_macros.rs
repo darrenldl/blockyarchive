@@ -124,6 +124,10 @@ macro_rules! get_burst_or_guess {
     ) => {{
         let burst = unwrap_or!($param.burst,
                                if ver_uses_rs($ref_block.get_version()) {
+                                   return_if_ref_not_meta!($ref_block_pos,
+                                                           $ref_block,
+                                                           "guess burst error resistance level");
+
                                    unwrap_or!(block_utils::guess_burst_err_resistance_level(&$param.in_file,
                                                                                             $ref_block_pos,
                                                                                             &$ref_block)?,
@@ -204,4 +208,13 @@ macro_rules! break_if_reached_required_len {
             break;
         }
     }}
+}
+
+macro_rules! shadow_to_avoid_use {
+    (
+        $var:ident
+    ) => {
+        #[allow(unused_variables)]
+        let $var = ();
+    }
 }

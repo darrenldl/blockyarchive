@@ -64,6 +64,7 @@ impl<'a> fmt::Display for RSRepairStats<'a> {
 
                     let index     =
                         sbx_block::calc_data_block_write_index(seq_num,
+                                                               None,
                                                                self.data_par_burst);
                     let block_pos = index * block_size;
 
@@ -246,6 +247,7 @@ impl RSRepairer {
                 if !self.buf_present[i] {
                     let pos = sbx_block::calc_data_block_write_pos(self.version,
                                                                    cur_seq_num,
+                                                                   None,
                                                                    self.data_par_burst);
                     repaired_blocks.push((pos, sbx_block::slice_buf(self.version,
                                                                     &self.buf[i])));
