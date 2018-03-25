@@ -12,7 +12,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .help("SBX container to search for metadata"))
         .arg(Arg::with_name("show_all")
              .long("show-all")
-             .help("Show all metadata (by default only shows the first one)"))
+             .help("Show all metadata(by default only shows the first one)"))
         .arg(force_misalign_arg())
         .arg(pr_verbosity_level_arg())
         .arg(from_byte_arg()

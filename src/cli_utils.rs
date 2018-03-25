@@ -85,7 +85,6 @@ pub fn burst_arg<'a, 'b>() -> Arg<'a, 'b> {
         .value_name("LEVEL")
         .long("burst")
         .takes_value(true)
-        .help("Burst error resistance level")
 }
 
 pub fn sbx_version_arg<'a, 'b>() -> Arg<'a, 'b> {
@@ -131,9 +130,10 @@ pub fn report_ref_block_info(ref_block_pos : u64,
 pub fn guess_burst_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("guess_burst")
         .long("guess-burst")
-        .help("Guess burst error resistance level at start.
+        .help("Guess burst error resistance level(guesses up to 1000) at start.
 Note that this requires scanning for a reference block, and may
-go through the entire file as a result.
+go through the entire file as a result, thus may cause major delay
+before scanning for metadata blocks.
 This operation does not respect the misalignment and range requirements.")
 }
 

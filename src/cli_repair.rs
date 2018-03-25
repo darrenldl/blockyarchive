@@ -13,8 +13,9 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(pr_verbosity_level_arg())
         .arg(burst_arg()
              .help("Burst error resistance level used by the container.
-Use this if the level is above 1000, as rsbx will only guess up to 1000.
-Or use this when rsbx fails to guess correctly."))
+Use this if the level used by the container is above 1000,
+as rsbx will only guess up to 1000. Or use this when rsbx
+fails to guess correctly."))
         .arg(verbose_arg()
              .help("Show reference block info, successes and failures of all required repairs"))
         .arg(Arg::with_name("skip_warning")
