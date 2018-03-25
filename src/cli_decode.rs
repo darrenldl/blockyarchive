@@ -11,10 +11,10 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .help("SBX container to decode"))
         .arg(out_arg()
              .help("Decoded file name. If OUT is not provided, then the original file name
-stored in the SBX container is used if present. If OUT is provided and
-is a directory then the output file is stored as OUT/STOREDNAME if the
-original file name is stored in the SBX container. If OUT is provided
-and is not a directory, then it is used directly."))
+stored in the SBX container(STOREDNAME) is used if present. If OUT is
+provided and is a directory then the output file is stored as OUT/STOREDNAME
+if STOREDNAME is present. If OUT is provided and is not a directory, then
+it is used directly."))
         .arg(Arg::with_name("force")
              .short("f")
              .long("force")
