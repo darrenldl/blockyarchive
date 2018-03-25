@@ -1,5 +1,6 @@
 ## 1.0.4
 - Help messages polish
+- Added text in help messages about rsbx's limitations on burst error resistance level
 
 ## 1.0.3
 - General output text polishing
