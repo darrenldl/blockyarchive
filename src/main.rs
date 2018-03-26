@@ -79,6 +79,7 @@ mod block_utils;
 
 mod sbx_block;
 mod sbx_specs;
+mod sbx_specs_tests;
 
 mod log;
 

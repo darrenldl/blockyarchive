@@ -1,5 +1,9 @@
 #!/bin/bash
 
+cargo build
+
+cargo test
+
 files=(target/debug/rsbx)
 
 #for file in target/debug/rsbx-*[^\.d]; do
