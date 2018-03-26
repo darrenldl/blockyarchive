@@ -226,23 +226,159 @@ fn test_meta_to_id() {
 
 #[test]
 fn test_get_meta_ref_by_id() {
-    let metas = [Metadata::FNM("".to_string()),
-                 Metadata::SNM("".to_string()),
-                 Metadata::FSZ(0),
-                 Metadata::FDT(0),
-                 Metadata::SDT(0),
-                 Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
-                 Metadata::RSD(0),
-                 Metadata::RSP(0)];
+    {
+        let metas = [//Metadata::FNM("".to_string()),
+                     Metadata::SNM("".to_string()),
+                     Metadata::FSZ(0),
+                     Metadata::FDT(0),
+                     Metadata::SDT(0),
+                     Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
+                     Metadata::RSD(0),
+                     Metadata::RSP(0)];
 
-    assert_eq!(&Metadata::FNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::FNM, &metas).unwrap());
-    assert_eq!(&Metadata::SNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::SNM, &metas).unwrap());
-    assert_eq!(&Metadata::FSZ(0),  metadata::get_meta_ref_by_id(MetadataID::FSZ, &metas).unwrap());
-    assert_eq!(&Metadata::FDT(0),  metadata::get_meta_ref_by_id(MetadataID::FDT, &metas).unwrap());
-    assert_eq!(&Metadata::SDT(0),  metadata::get_meta_ref_by_id(MetadataID::SDT, &metas).unwrap());
-    assert_eq!(&Metadata::HSH((multihash::HashType::SHA1, Box::new([]))), metadata::get_meta_ref_by_id(MetadataID::HSH, &metas).unwrap());
-    assert_eq!(&Metadata::RSD(0),  metadata::get_meta_ref_by_id(MetadataID::RSD, &metas).unwrap());
-    assert_eq!(&Metadata::RSP(0),  metadata::get_meta_ref_by_id(MetadataID::RSP, &metas).unwrap());
+        assert_eq!(None, metadata::get_meta_ref_by_id(MetadataID::FNM, &metas));
+        assert_eq!(&Metadata::SNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::SNM, &metas).unwrap());
+        assert_eq!(&Metadata::FSZ(0),  metadata::get_meta_ref_by_id(MetadataID::FSZ, &metas).unwrap());
+        assert_eq!(&Metadata::FDT(0),  metadata::get_meta_ref_by_id(MetadataID::FDT, &metas).unwrap());
+        assert_eq!(&Metadata::SDT(0),  metadata::get_meta_ref_by_id(MetadataID::SDT, &metas).unwrap());
+        assert_eq!(&Metadata::HSH((multihash::HashType::SHA1, Box::new([]))), metadata::get_meta_ref_by_id(MetadataID::HSH, &metas).unwrap());
+        assert_eq!(&Metadata::RSD(0),  metadata::get_meta_ref_by_id(MetadataID::RSD, &metas).unwrap());
+        assert_eq!(&Metadata::RSP(0),  metadata::get_meta_ref_by_id(MetadataID::RSP, &metas).unwrap());
+    }
+    {
+        let metas = [Metadata::FNM("".to_string()),
+                     //Metadata::SNM("".to_string()),
+                     Metadata::FSZ(0),
+                     Metadata::FDT(0),
+                     Metadata::SDT(0),
+                     Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
+                     Metadata::RSD(0),
+                     Metadata::RSP(0)];
+
+        assert_eq!(&Metadata::FNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::FNM, &metas).unwrap());
+        assert_eq!(None, metadata::get_meta_ref_by_id(MetadataID::SNM, &metas));
+        assert_eq!(&Metadata::FSZ(0),  metadata::get_meta_ref_by_id(MetadataID::FSZ, &metas).unwrap());
+        assert_eq!(&Metadata::FDT(0),  metadata::get_meta_ref_by_id(MetadataID::FDT, &metas).unwrap());
+        assert_eq!(&Metadata::SDT(0),  metadata::get_meta_ref_by_id(MetadataID::SDT, &metas).unwrap());
+        assert_eq!(&Metadata::HSH((multihash::HashType::SHA1, Box::new([]))), metadata::get_meta_ref_by_id(MetadataID::HSH, &metas).unwrap());
+        assert_eq!(&Metadata::RSD(0),  metadata::get_meta_ref_by_id(MetadataID::RSD, &metas).unwrap());
+        assert_eq!(&Metadata::RSP(0),  metadata::get_meta_ref_by_id(MetadataID::RSP, &metas).unwrap());
+    }
+    {
+        let metas = [Metadata::FNM("".to_string()),
+                     Metadata::SNM("".to_string()),
+                     //Metadata::FSZ(0),
+                     Metadata::FDT(0),
+                     Metadata::SDT(0),
+                     Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
+                     Metadata::RSD(0),
+                     Metadata::RSP(0)];
+
+        assert_eq!(&Metadata::FNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::FNM, &metas).unwrap());
+        assert_eq!(&Metadata::SNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::SNM, &metas).unwrap());
+        assert_eq!(None,  metadata::get_meta_ref_by_id(MetadataID::FSZ, &metas));
+        assert_eq!(&Metadata::FDT(0),  metadata::get_meta_ref_by_id(MetadataID::FDT, &metas).unwrap());
+        assert_eq!(&Metadata::SDT(0),  metadata::get_meta_ref_by_id(MetadataID::SDT, &metas).unwrap());
+        assert_eq!(&Metadata::HSH((multihash::HashType::SHA1, Box::new([]))), metadata::get_meta_ref_by_id(MetadataID::HSH, &metas).unwrap());
+        assert_eq!(&Metadata::RSD(0),  metadata::get_meta_ref_by_id(MetadataID::RSD, &metas).unwrap());
+        assert_eq!(&Metadata::RSP(0),  metadata::get_meta_ref_by_id(MetadataID::RSP, &metas).unwrap());
+    }
+    {
+        let metas = [Metadata::FNM("".to_string()),
+                     Metadata::SNM("".to_string()),
+                     Metadata::FSZ(0),
+                     //Metadata::FDT(0),
+                     Metadata::SDT(0),
+                     Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
+                     Metadata::RSD(0),
+                     Metadata::RSP(0)];
+
+        assert_eq!(&Metadata::FNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::FNM, &metas).unwrap());
+        assert_eq!(&Metadata::SNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::SNM, &metas).unwrap());
+        assert_eq!(&Metadata::FSZ(0),  metadata::get_meta_ref_by_id(MetadataID::FSZ, &metas).unwrap());
+        assert_eq!(None,  metadata::get_meta_ref_by_id(MetadataID::FDT, &metas));
+        assert_eq!(&Metadata::SDT(0),  metadata::get_meta_ref_by_id(MetadataID::SDT, &metas).unwrap());
+        assert_eq!(&Metadata::HSH((multihash::HashType::SHA1, Box::new([]))), metadata::get_meta_ref_by_id(MetadataID::HSH, &metas).unwrap());
+        assert_eq!(&Metadata::RSD(0),  metadata::get_meta_ref_by_id(MetadataID::RSD, &metas).unwrap());
+        assert_eq!(&Metadata::RSP(0),  metadata::get_meta_ref_by_id(MetadataID::RSP, &metas).unwrap());
+    }
+    {
+        let metas = [Metadata::FNM("".to_string()),
+                     Metadata::SNM("".to_string()),
+                     Metadata::FSZ(0),
+                     Metadata::FDT(0),
+                     //Metadata::SDT(0),
+                     Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
+                     Metadata::RSD(0),
+                     Metadata::RSP(0)];
+
+        assert_eq!(&Metadata::FNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::FNM, &metas).unwrap());
+        assert_eq!(&Metadata::SNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::SNM, &metas).unwrap());
+        assert_eq!(&Metadata::FSZ(0),  metadata::get_meta_ref_by_id(MetadataID::FSZ, &metas).unwrap());
+        assert_eq!(&Metadata::FDT(0),  metadata::get_meta_ref_by_id(MetadataID::FDT, &metas).unwrap());
+        assert_eq!(None,  metadata::get_meta_ref_by_id(MetadataID::SDT, &metas));
+        assert_eq!(&Metadata::HSH((multihash::HashType::SHA1, Box::new([]))), metadata::get_meta_ref_by_id(MetadataID::HSH, &metas).unwrap());
+        assert_eq!(&Metadata::RSD(0),  metadata::get_meta_ref_by_id(MetadataID::RSD, &metas).unwrap());
+        assert_eq!(&Metadata::RSP(0),  metadata::get_meta_ref_by_id(MetadataID::RSP, &metas).unwrap());
+    }
+    {
+        let metas = [Metadata::FNM("".to_string()),
+                     Metadata::SNM("".to_string()),
+                     Metadata::FSZ(0),
+                     Metadata::FDT(0),
+                     Metadata::SDT(0),
+                     //Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
+                     Metadata::RSD(0),
+                     Metadata::RSP(0)];
+
+        assert_eq!(&Metadata::FNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::FNM, &metas).unwrap());
+        assert_eq!(&Metadata::SNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::SNM, &metas).unwrap());
+        assert_eq!(&Metadata::FSZ(0),  metadata::get_meta_ref_by_id(MetadataID::FSZ, &metas).unwrap());
+        assert_eq!(&Metadata::FDT(0),  metadata::get_meta_ref_by_id(MetadataID::FDT, &metas).unwrap());
+        assert_eq!(&Metadata::SDT(0),  metadata::get_meta_ref_by_id(MetadataID::SDT, &metas).unwrap());
+        assert_eq!(None, metadata::get_meta_ref_by_id(MetadataID::HSH, &metas));
+        assert_eq!(&Metadata::RSD(0),  metadata::get_meta_ref_by_id(MetadataID::RSD, &metas).unwrap());
+        assert_eq!(&Metadata::RSP(0),  metadata::get_meta_ref_by_id(MetadataID::RSP, &metas).unwrap());
+    }
+    {
+        let metas = [Metadata::FNM("".to_string()),
+                     Metadata::SNM("".to_string()),
+                     Metadata::FSZ(0),
+                     Metadata::FDT(0),
+                     Metadata::SDT(0),
+                     Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
+                     //Metadata::RSD(0),
+                     Metadata::RSP(0)];
+
+        assert_eq!(&Metadata::FNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::FNM, &metas).unwrap());
+        assert_eq!(&Metadata::SNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::SNM, &metas).unwrap());
+        assert_eq!(&Metadata::FSZ(0),  metadata::get_meta_ref_by_id(MetadataID::FSZ, &metas).unwrap());
+        assert_eq!(&Metadata::FDT(0),  metadata::get_meta_ref_by_id(MetadataID::FDT, &metas).unwrap());
+        assert_eq!(&Metadata::SDT(0),  metadata::get_meta_ref_by_id(MetadataID::SDT, &metas).unwrap());
+        assert_eq!(&Metadata::HSH((multihash::HashType::SHA1, Box::new([]))), metadata::get_meta_ref_by_id(MetadataID::HSH, &metas).unwrap());
+        assert_eq!(None,  metadata::get_meta_ref_by_id(MetadataID::RSD, &metas));
+        assert_eq!(&Metadata::RSP(0),  metadata::get_meta_ref_by_id(MetadataID::RSP, &metas).unwrap());
+    }
+    {
+        let metas = [Metadata::FNM("".to_string()),
+                     Metadata::SNM("".to_string()),
+                     Metadata::FSZ(0),
+                     Metadata::FDT(0),
+                     Metadata::SDT(0),
+                     Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
+                     Metadata::RSD(0),
+                     //Metadata::RSP(0)
+        ];
+
+        assert_eq!(&Metadata::FNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::FNM, &metas).unwrap());
+        assert_eq!(&Metadata::SNM("".to_string()), metadata::get_meta_ref_by_id(MetadataID::SNM, &metas).unwrap());
+        assert_eq!(&Metadata::FSZ(0),  metadata::get_meta_ref_by_id(MetadataID::FSZ, &metas).unwrap());
+        assert_eq!(&Metadata::FDT(0),  metadata::get_meta_ref_by_id(MetadataID::FDT, &metas).unwrap());
+        assert_eq!(&Metadata::SDT(0),  metadata::get_meta_ref_by_id(MetadataID::SDT, &metas).unwrap());
+        assert_eq!(&Metadata::HSH((multihash::HashType::SHA1, Box::new([]))), metadata::get_meta_ref_by_id(MetadataID::HSH, &metas).unwrap());
+        assert_eq!(&Metadata::RSD(0),  metadata::get_meta_ref_by_id(MetadataID::RSD, &metas).unwrap());
+        assert_eq!(None,  metadata::get_meta_ref_by_id(MetadataID::RSP, &metas));
+    }
 }
 
 #[test]
