@@ -2,7 +2,7 @@
 
 cargo build
 
-cargo test
+cargo build --tests
 
 files=(target/debug/rsbx)
 
