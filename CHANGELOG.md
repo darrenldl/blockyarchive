@@ -7,6 +7,8 @@
 - Bug fixes in following functions
   - Fixed `calc_required_len_and_seek_to_from_byte_range_inc`, issue #56
     - rescue core and show core uses this function to calculate seek to positions and number of bytes to read
+  - Fixed `make_path`, issue #57
+    - All modes that outputs files use this function to calculate final output path
 
 ## 1.0.3
 - General output text polishing
