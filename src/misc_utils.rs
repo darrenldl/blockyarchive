@@ -121,9 +121,11 @@ pub fn calc_required_len_and_seek_to_from_byte_range_inc
                                                             from_byte),
                                        last_possible_pos)
     };
+    let seek_to = u64::ensure_at_most(align(from_byte + bytes_so_far),
+                                      last_possible_pos);
     // bytes_so_far only affects seek_to
     RequiredLenAndSeekTo { required_len : to_byte - from_byte + 1,
-                           seek_to      : align(from_byte + bytes_so_far) }
+                           seek_to                                 }
 }
 
 pub fn make_path(path_parts : &[&str]) -> String {
