@@ -290,10 +290,24 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
 }
 
 quickcheck! {
-    fn qc_data_seq_num_to_index_to_seq_num(seq_num       : u32,
-                                           data_shards   : usize,
-                                           parity_shards : usize,
-                                           burst         : usize) -> bool {
+    fn qc_data_seq_num_to_index_to_seq_num(seq_num : u32) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+
+        let index = calc_data_block_write_index(seq_num,
+                                                None,
+                                                None);
+
+        let seq_num_from_index = calc_seq_num_at_index(index,
+                                                       None,
+                                                       None);
+
+        seq_num_from_index == seq_num
+    }
+
+    fn qc_data_seq_num_to_index_to_seq_num_rs_enabled(seq_num       : u32,
+                                                      data_shards   : usize,
+                                                      parity_shards : usize,
+                                                      burst         : usize) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
         let data_shards   = 1 + data_shards % 256;
         let parity_shards = 1 + parity_shards % 256;
@@ -397,4 +411,29 @@ fn test_sync_from_buffer_simple_cases() {
         assert!(!block.is_data());
         assert!(block.is_meta());
     }
+}
+
+#[test]
+fn test_seq_num_is_parity() {
+    assert_eq!(false, seq_num_is_parity(0, 0, 0));
+    assert_eq!(false, seq_num_is_parity(0, 1, 1));
+    assert_eq!(false, seq_num_is_parity(0, 128, 128));
+
+    assert_eq!(false, seq_num_is_parity(1, 3, 2));
+    assert_eq!(false, seq_num_is_parity(2, 3, 2));
+    assert_eq!(false, seq_num_is_parity(3, 3, 2));
+    assert_eq!(true,  seq_num_is_parity(4, 3, 2));
+    assert_eq!(true,  seq_num_is_parity(5, 3, 2));
+
+    assert_eq!(false, seq_num_is_parity(6, 3, 2));
+    assert_eq!(false, seq_num_is_parity(7, 3, 2));
+    assert_eq!(false, seq_num_is_parity(8, 3, 2));
+    assert_eq!(true,  seq_num_is_parity(9, 3, 2));
+    assert_eq!(true,  seq_num_is_parity(10, 3, 2));
+
+    assert_eq!(false, seq_num_is_parity(11, 3, 2));
+    assert_eq!(false, seq_num_is_parity(12, 3, 2));
+    assert_eq!(false, seq_num_is_parity(13, 3, 2));
+    assert_eq!(true,  seq_num_is_parity(14, 3, 2));
+    assert_eq!(true,  seq_num_is_parity(15, 3, 2));
 }
