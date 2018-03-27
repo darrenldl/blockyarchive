@@ -353,6 +353,59 @@ quickcheck! {
 
         seq_num_from_index == seq_num
     }
+
+    fn qc_data_block_write_pos_consistent_rs_disabled(seq_num : u32,
+                                                      meta_enabled : Option<bool>) -> bool {
+        calc_data_block_write_index(seq_num,
+                                    meta_enabled,
+                                    None) * ver_to_block_size(Version::V1) as u64
+            == calc_data_block_write_pos(Version::V1,
+                                         seq_num,
+                                         meta_enabled,
+                                         None)
+            && calc_data_block_write_index(seq_num,
+                                           meta_enabled,
+                                           None) * ver_to_block_size(Version::V2) as u64
+            == calc_data_block_write_pos(Version::V2,
+                                         seq_num,
+                                         meta_enabled,
+                                         None)
+            && calc_data_block_write_index(seq_num,
+                                           meta_enabled,
+                                           None) * ver_to_block_size(Version::V3) as u64
+            == calc_data_block_write_pos(Version::V3,
+                                         seq_num,
+                                         meta_enabled,
+                                         None)
+    }
+
+    fn qc_data_block_write_pos_consistent_rs_enabled(seq_num        : u32,
+                                                     meta_enabled   : Option<bool>,
+                                                     data_par_burst : (usize, usize, usize)) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+        let data_par_burst = Some(data_par_burst);
+            calc_data_block_write_index(seq_num,
+                                           meta_enabled,
+                                           data_par_burst) * ver_to_block_size(Version::V17) as u64
+            == calc_data_block_write_pos(Version::V17,
+                                         seq_num,
+                                         meta_enabled,
+                                         data_par_burst)
+            && calc_data_block_write_index(seq_num,
+                                           meta_enabled,
+                                           data_par_burst) * ver_to_block_size(Version::V18) as u64
+            == calc_data_block_write_pos(Version::V18,
+                                         seq_num,
+                                         meta_enabled,
+                                         data_par_burst)
+            && calc_data_block_write_index(seq_num,
+                                           meta_enabled,
+                                           data_par_burst) * ver_to_block_size(Version::V19) as u64
+            == calc_data_block_write_pos(Version::V19,
+                                         seq_num,
+                                         meta_enabled,
+                                         data_par_burst)
+    }
 }
 
 #[test]
