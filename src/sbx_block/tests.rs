@@ -356,6 +356,7 @@ quickcheck! {
 
     fn qc_data_block_write_pos_consistent_rs_disabled(seq_num : u32,
                                                       meta_enabled : Option<bool>) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
         calc_data_block_write_index(seq_num,
                                     meta_enabled,
                                     None) * ver_to_block_size(Version::V1) as u64
@@ -405,6 +406,22 @@ quickcheck! {
                                          seq_num,
                                          meta_enabled,
                                          data_par_burst)
+    }
+
+    fn qc_meta_block_write_indices_data_block_write_indices_disjoint_rs_disabled(seq_num : u32) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+
+        let meta_indices = calc_meta_block_all_write_indices(None);
+
+        let data_index = calc_data_block_write_index(seq_num, None, None);
+
+        for &m in meta_indices.iter() {
+            if data_index == m {
+                return false;
+            }
+        }
+
+        true
     }
 }
 
