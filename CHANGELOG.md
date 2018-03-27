@@ -1,6 +1,9 @@
 ## 1.0.4
 - Help messages polish
 - Added text in help messages about rsbx's limitations on burst error resistance level
+- Massively improved code coverage
+- Minor bug fixes in following functions
+  - Fixed `calc_required_len_and_seek_to_from_byte_range_inc`
 
 ## 1.0.3
 - General output text polishing
