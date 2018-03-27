@@ -72,5 +72,80 @@ mod from_orig_file_size {
                         && (data == (size + (data_size - 1)) / data_size)
                 })
         }
+
+        fn qc_calc_data_only_and_parity_block_count_exc_burst_gaps_rs_enabled(data_par_burst : (usize, usize, usize),
+                                                                              size           : u64)
+                                                                              -> bool {
+            let mut data_par_burst = data_par_burst;
+            data_par_burst.0 = if data_par_burst.0 == 0 { 1 } else { data_par_burst.0 };
+            data_par_burst.1 = if data_par_burst.1 == 0 { 1 } else { data_par_burst.1 };
+
+            let (data, parity, _) = data_par_burst;
+            let data = data as u64;
+            let parity = parity as u64;
+
+            ({
+                let version = Version::V17;
+
+                let (data_total, parity_total) =
+                    calc_data_only_and_parity_block_count_exc_burst_gaps(version, Some(data_par_burst), size);
+
+                let data_size = ver_to_data_size(version) as u64;
+
+                let data_chunks = (size + (data_size - 1)) / data_size;
+
+                let block_set_size = data + parity;
+
+                let block_set_count = (data_chunks + (block_set_size - 1)) / block_set_size;
+
+                data_total * data_size >= size
+                    && data_total % data == 0
+                    && parity_total % parity == 0
+                    && data_total / data == parity_total / parity
+                    && data_total / data == block_set_count
+            })
+                &&
+                ({
+                    let version = Version::V18;
+
+                    let (data_total, parity_total) =
+                        calc_data_only_and_parity_block_count_exc_burst_gaps(version, Some(data_par_burst), size);
+
+                    let data_size = ver_to_data_size(version) as u64;
+
+                    let data_chunks = (size + (data_size - 1)) / data_size;
+
+                    let block_set_size = data + parity;
+
+                    let block_set_count = (data_chunks + (block_set_size - 1)) / block_set_size;
+
+                    data_total * data_size >= size
+                        && data_total % data == 0
+                        && parity_total % parity == 0
+                        && data_total / data == parity_total / parity
+                        && data_total / data == block_set_count
+                })
+                &&
+                ({
+                    let version = Version::V19;
+
+                    let (data_total, parity_total) =
+                        calc_data_only_and_parity_block_count_exc_burst_gaps(version, Some(data_par_burst), size);
+
+                    let data_size = ver_to_data_size(version) as u64;
+
+                    let data_chunks = (size + (data_size - 1)) / data_size;
+
+                    let block_set_size = data + parity;
+
+                    let block_set_count = (data_chunks + (block_set_size - 1)) / block_set_size;
+
+                    data_total * data_size >= size
+                        && data_total % data == 0
+                        && parity_total % parity == 0
+                        && data_total / data == parity_total / parity
+                        && data_total / data == block_set_count
+                })
+        }
     }
 }
