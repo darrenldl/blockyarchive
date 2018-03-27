@@ -89,7 +89,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
                pr_verbosity_level : PRVerbosityLevel)
                -> ProgressReporter<T> {
         use self::ProgressElement::*;
-        let stats                = Arc::clone(stats);
+        let stats                   = Arc::clone(stats);
         let context                 =
             Arc::new(Mutex::new(Context::new(header,
                                              unit,
