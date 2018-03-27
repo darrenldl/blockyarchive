@@ -503,7 +503,7 @@ pub fn calc_seq_num_at_index(index          : u64,
 
 impl Block {
     pub fn new(version    : Version,
-               uid   : &[u8; SBX_FILE_UID_LEN],
+               uid        : &[u8; SBX_FILE_UID_LEN],
                block_type : BlockType)
                -> Block {
         match block_type {
