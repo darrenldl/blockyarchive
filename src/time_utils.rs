@@ -20,14 +20,13 @@ pub fn get_time_now(mode : TimeMode) -> f64 {
     sec as f64 + (nsec as f64 / 1_000_000_000.)
 }
 
-pub fn seconds_to_hms(total_secs : i64) -> (usize, usize, usize) {
-    use std::cmp::max;
-    let total_secs = max(total_secs, 0);
-    let hour   : usize = (total_secs / (60 * 60)) as usize;
-    let minute : usize = ((total_secs - (hour as i64) * 60 * 60) / 60) as usize;
-    let second : usize = (total_secs
+pub fn seconds_to_hms(total_secs : i64) -> (isize, isize, isize) {
+    let hour   : isize = (total_secs / (60 * 60)) as isize;
+    let minute : isize = ((total_secs - (hour as i64) * 60 * 60) / 60) as isize;
+    let second : isize = (total_secs
                           - (hour   as i64) * 60 * 60
-                          - (minute as i64) * 60) as usize;
+                          - (minute as i64) * 60) as isize;
+
     (hour, minute, second)
 }
 
