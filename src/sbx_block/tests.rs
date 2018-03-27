@@ -800,4 +800,17 @@ quickcheck! {
 
         seq_num == block.get_seq_num()
     }
+
+    fn qc_add_seq_num(seq_num : u32,
+                      val : u32) -> bool {
+        let seq_num = seq_num / 2;
+        let val     = seq_num / 2;
+        let mut block = Block::dummy();
+
+        block.set_seq_num(seq_num);
+
+        block.add_seq_num(val);
+
+        seq_num + val == block.get_seq_num()
+    }
 }
