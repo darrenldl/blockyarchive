@@ -23,16 +23,12 @@ macro_rules! impl_integer_utils {
                 fn round_down_to_multiple(val         : Self::Item,
                                           multiple_of : Self::Item)
                                           -> Self::Item {
-                    if multiple_of == 0 { return val; }
-
                     (val / multiple_of) * multiple_of
                 }
 
                 fn round_up_to_multiple(val         : Self::Item,
                                         multiple_of : Self::Item)
                                         -> Self::Item {
-                    if multiple_of == 0 { return val; }
-
                     ((val + (multiple_of - 1)) / multiple_of) * multiple_of
                 }
 
