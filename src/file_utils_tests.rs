@@ -20,3 +20,57 @@ quickcheck! {
             && (1 + parity as u64) == calc_meta_block_count_exc_burst_gaps(Version::V19, meta_enabled, Some(data_par_burst))
     }
 }
+
+mod from_orig_file_size {
+    use file_utils::from_orig_file_size::*;
+    use sbx_specs::*;
+
+    quickcheck! {
+        fn qc_calc_data_only_and_parity_block_count_exc_burst_gaps_rs_disabled(size : u64) -> bool {
+            ({
+                let version = Version::V1;
+
+                let (data, parity) =
+                    calc_data_only_and_parity_block_count_exc_burst_gaps(version, None, size);
+
+                let data_size = ver_to_data_size(version) as u64;
+
+                parity == 0
+                    && data * data_size >= size
+                    && ((size % data_size == 0 && data * data_size == size)
+                        || (size % data_size != 0 && data * data_size > size))
+                    && (data == (size + (data_size - 1)) / data_size)
+            })
+                &&
+                ({
+                    let version = Version::V2;
+
+                    let (data, parity) =
+                        calc_data_only_and_parity_block_count_exc_burst_gaps(version, None, size);
+
+                    let data_size = ver_to_data_size(version) as u64;
+
+                    parity == 0
+                        && data * data_size >= size
+                        && ((size % data_size == 0 && data * data_size == size)
+                            || (size % data_size != 0 && data * data_size > size))
+                        && (data == (size + (data_size - 1)) / data_size)
+                })
+                &&
+                ({
+                    let version = Version::V3;
+
+                    let (data, parity) =
+                        calc_data_only_and_parity_block_count_exc_burst_gaps(version, None, size);
+
+                    let data_size = ver_to_data_size(version) as u64;
+
+                    parity == 0
+                        && data * data_size >= size
+                        && ((size % data_size == 0 && data * data_size == size)
+                            || (size % data_size != 0 && data * data_size > size))
+                        && (data == (size + (data_size - 1)) / data_size)
+                })
+        }
+    }
+}
