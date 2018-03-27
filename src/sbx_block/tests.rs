@@ -879,3 +879,72 @@ quickcheck! {
             )
     }
 }
+
+quickcheck! {
+    fn qc_block_is_parity_matches_seq_num_is_parity(seq_num  : u32,
+                                                    data_par : (usize, usize))
+                                                    -> bool {
+        let mut data_par = data_par;
+        data_par.0 = if data_par.0 == 0 { 1 } else { data_par.0 };
+        data_par.1 = if data_par.1 == 0 { 1 } else { data_par.1 };
+
+        let (data, parity) = data_par;
+
+        ({
+            let version = Version::V1;
+            let mut block = Block::dummy();
+            block.set_version(version);
+            block.set_seq_num(seq_num);
+
+            block.is_parity(data, parity) == false
+        })
+        &&
+        ({
+            let version = Version::V2;
+            let mut block = Block::dummy();
+            block.set_version(version);
+            block.set_seq_num(seq_num);
+
+            block.is_parity(data, parity) == false
+        })
+        &&
+        ({
+            let version = Version::V3;
+            let mut block = Block::dummy();
+            block.set_version(version);
+            block.set_seq_num(seq_num);
+
+            block.is_parity(data, parity) == false
+        })
+        &&
+        ({
+            let version = Version::V17;
+            let mut block = Block::dummy();
+            block.set_version(version);
+            block.set_seq_num(seq_num);
+
+            block.is_parity(data, parity)
+                == seq_num_is_parity(seq_num, data, parity)
+        })
+        &&
+        ({
+            let version = Version::V18;
+            let mut block = Block::dummy();
+            block.set_version(version);
+            block.set_seq_num(seq_num);
+
+            block.is_parity(data, parity)
+                == seq_num_is_parity(seq_num, data, parity)
+        })
+        &&
+        ({
+            let version = Version::V19;
+            let mut block = Block::dummy();
+            block.set_version(version);
+            block.set_seq_num(seq_num);
+
+            block.is_parity(data, parity)
+                == seq_num_is_parity(seq_num, data, parity)
+        })
+    }
+}
