@@ -124,11 +124,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             // let start() know progress text has been printed
             runner_start_barrier.wait();
 
-            loop {
-                if runner_shutdown_flag.load(Ordering::SeqCst) {
-                    break;
-                }
-
+            while !runner_shutdown_flag.load(Ordering::SeqCst) {
                 thread::sleep(Duration::from_millis(300));
 
                 if runner_active_flag.load(Ordering::SeqCst) {
