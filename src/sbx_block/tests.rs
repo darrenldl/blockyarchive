@@ -423,6 +423,118 @@ quickcheck! {
 
         true
     }
+
+    fn qc_meta_block_write_indices_data_block_write_indices_disjoint_rs_enabled(seq_num        : u32,
+                                                                                data_par_burst : (usize, usize, usize)) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+
+        let meta_indices = calc_meta_block_all_write_indices(Some(data_par_burst));
+
+        let data_index = calc_data_block_write_index(seq_num, None, Some(data_par_burst));
+
+        for &m in meta_indices.iter() {
+            if data_index == m {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    fn qc_meta_block_write_pos_s_consistent_rs_disabled() -> bool {
+        {
+            let version      = Version::V1;
+            let block_size   = ver_to_block_size(version) as u64;
+            let meta_indices = calc_meta_block_all_write_indices(None);
+            let meta_pos_s   = calc_meta_block_all_write_pos_s(version, None);
+
+            for &m in meta_indices.iter() {
+                let mut found = false;
+                for &p in meta_pos_s.iter() {
+                    if m * block_size == p { found = true; }
+                }
+                if !found { return false; }
+            }
+        }
+        {
+            let version      = Version::V2;
+            let block_size   = ver_to_block_size(version) as u64;
+            let meta_indices = calc_meta_block_all_write_indices(None);
+            let meta_pos_s   = calc_meta_block_all_write_pos_s(version, None);
+
+            for &m in meta_indices.iter() {
+                let mut found = false;
+                for &p in meta_pos_s.iter() {
+                    if m * block_size == p { found = true; }
+                }
+                if !found { return false; }
+            }
+        }
+        {
+            let version      = Version::V3;
+            let block_size   = ver_to_block_size(version) as u64;
+            let meta_indices = calc_meta_block_all_write_indices(None);
+            let meta_pos_s   = calc_meta_block_all_write_pos_s(version, None);
+
+            for &m in meta_indices.iter() {
+                let mut found = false;
+                for &p in meta_pos_s.iter() {
+                    if m * block_size == p { found = true; }
+                }
+                if !found { return false; }
+            }
+        }
+
+        true
+    }
+
+    fn qc_meta_block_write_pos_s_consistent_rs_enabled(data_par_burst : (usize, usize, usize)) -> bool {
+        let data_par_burst = Some(data_par_burst);
+        {
+            let version      = Version::V17;
+            let block_size   = ver_to_block_size(version) as u64;
+            let meta_indices = calc_meta_block_all_write_indices(data_par_burst);
+            let meta_pos_s   = calc_meta_block_all_write_pos_s(version, data_par_burst);
+
+            for &m in meta_indices.iter() {
+                let mut found = false;
+                for &p in meta_pos_s.iter() {
+                    if m * block_size == p { found = true; }
+                }
+                if !found { return false; }
+            }
+        }
+        {
+            let version      = Version::V18;
+            let block_size   = ver_to_block_size(version) as u64;
+            let meta_indices = calc_meta_block_all_write_indices(data_par_burst);
+            let meta_pos_s   = calc_meta_block_all_write_pos_s(version, data_par_burst);
+
+            for &m in meta_indices.iter() {
+                let mut found = false;
+                for &p in meta_pos_s.iter() {
+                    if m * block_size == p { found = true; }
+                }
+                if !found { return false; }
+            }
+        }
+        {
+            let version      = Version::V19;
+            let block_size   = ver_to_block_size(version) as u64;
+            let meta_indices = calc_meta_block_all_write_indices(data_par_burst);
+            let meta_pos_s   = calc_meta_block_all_write_pos_s(version, data_par_burst);
+
+            for &m in meta_indices.iter() {
+                let mut found = false;
+                for &p in meta_pos_s.iter() {
+                    if m * block_size == p { found = true; }
+                }
+                if !found { return false; }
+            }
+        }
+
+        true
+    }
 }
 
 #[test]
