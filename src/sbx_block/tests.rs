@@ -2,6 +2,7 @@
 
 use super::*;
 use sbx_specs;
+use rand_utils;
 
 #[test]
 fn test_calc_rs_enabled_meta_write_indices() {
@@ -716,3 +717,57 @@ quickcheck! {
     }
 }
 
+#[test]
+fn test_get_version_simple_cases() {
+    let uid : [u8; 6] = [0; 6];
+    assert_eq!(Version::V1, Block::new(Version::V1, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V1, Block::new(Version::V1, &uid, BlockType::Data).get_version());
+
+    assert_eq!(Version::V2, Block::new(Version::V2, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V2, Block::new(Version::V2, &uid, BlockType::Data).get_version());
+
+    assert_eq!(Version::V3, Block::new(Version::V3, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V3, Block::new(Version::V3, &uid, BlockType::Data).get_version());
+
+    assert_eq!(Version::V17, Block::new(Version::V17, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V17, Block::new(Version::V17, &uid, BlockType::Data).get_version());
+
+    assert_eq!(Version::V18, Block::new(Version::V18, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V18, Block::new(Version::V18, &uid, BlockType::Data).get_version());
+
+    assert_eq!(Version::V19, Block::new(Version::V19, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V19, Block::new(Version::V19, &uid, BlockType::Data).get_version());
+}
+
+#[test]
+fn test_get_uid() {
+    let mut uid : [u8; 6] = [0; 6];
+    for _ in 0..1000 {
+        rand_utils::fill_random_bytes(&mut uid);
+
+        assert_eq!(uid, Block::new(Version::V1, &uid, BlockType::Data).get_uid());
+    }
+}
+
+#[test]
+fn test_set_uid() {
+    let mut uid : [u8; 6] = [0; 6];
+    let mut block = Block::dummy();
+    for _ in 0..1000 {
+        rand_utils::fill_random_bytes(&mut uid);
+
+        block.set_uid(uid);
+
+        assert_eq!(uid, block.get_uid());
+    }
+}
+
+quickcheck! {
+    fn qc_set_get_seq_num(seq_num : u32) -> bool {
+        let mut block = Block::dummy();
+
+        block.set_seq_num(seq_num);
+
+        seq_num == block.get_seq_num()
+    }
+}
