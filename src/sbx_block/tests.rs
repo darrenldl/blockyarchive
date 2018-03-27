@@ -442,7 +442,7 @@ fn test_sync_from_buffer_simple_cases() {
 }
 
 #[test]
-fn test_seq_num_is_parity() {
+fn test_seq_num_is_parity_simple_cases() {
     assert_eq!(false, seq_num_is_parity(0, 0, 0));
     assert_eq!(false, seq_num_is_parity(0, 1, 1));
     assert_eq!(false, seq_num_is_parity(0, 128, 128));
