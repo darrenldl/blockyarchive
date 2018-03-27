@@ -647,3 +647,72 @@ fn test_seq_num_is_parity_simple_cases() {
     assert_eq!(true,  seq_num_is_parity(14, 3, 2));
     assert_eq!(true,  seq_num_is_parity(15, 3, 2));
 }
+
+#[test]
+fn test_calc_data_chunk_write_index_simple_cases() {
+    assert_eq!(None, calc_data_chunk_write_index(0, None));
+    assert_eq!(None, calc_data_chunk_write_index(0, Some((1, 1))));
+
+    assert_eq!(Some(0), calc_data_chunk_write_index(1, Some((3, 2))));
+    assert_eq!(Some(1), calc_data_chunk_write_index(2, Some((3, 2))));
+    assert_eq!(Some(2), calc_data_chunk_write_index(3, Some((3, 2))));
+    assert_eq!(None,    calc_data_chunk_write_index(4, Some((3, 2))));
+    assert_eq!(None,    calc_data_chunk_write_index(5, Some((3, 2))));
+
+    assert_eq!(Some(3), calc_data_chunk_write_index(6, Some((3, 2))));
+    assert_eq!(Some(4), calc_data_chunk_write_index(7, Some((3, 2))));
+    assert_eq!(Some(5), calc_data_chunk_write_index(8, Some((3, 2))));
+    assert_eq!(None,    calc_data_chunk_write_index(9, Some((3, 2))));
+    assert_eq!(None,    calc_data_chunk_write_index(10, Some((3, 2))));
+
+    assert_eq!(Some(6), calc_data_chunk_write_index(11, Some((3, 2))));
+    assert_eq!(Some(7), calc_data_chunk_write_index(12, Some((3, 2))));
+    assert_eq!(Some(8), calc_data_chunk_write_index(13, Some((3, 2))));
+    assert_eq!(None,    calc_data_chunk_write_index(14, Some((3, 2))));
+    assert_eq!(None,    calc_data_chunk_write_index(15, Some((3, 2))));
+}
+
+quickcheck! {
+    fn qc_calc_data_chunk_write_index_rs_disabled(seq_num : u32) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+        seq_num - 1 == calc_data_chunk_write_index(seq_num, None).unwrap()
+    }
+
+    fn qc_calc_data_chunk_write_index_rs_enabled_ret_opt_correctly(seq_num  : u32,
+                                                                   data_par : (usize, usize))
+                                                                   -> bool {
+        let mut data_par = data_par;
+        data_par.0 = if data_par.0 == 0 { 1 } else { data_par.0 };
+        data_par.1 = if data_par.1 == 0 { 1 } else { data_par.1 };
+
+        let (data, parity) = data_par;
+
+        (seq_num == 0
+         && calc_data_chunk_write_index(seq_num, Some(data_par)) == None
+        )
+            || (seq_num_is_parity(seq_num, data, parity)
+                && calc_data_chunk_write_index(seq_num, Some(data_par)) == None
+            )
+            || (!seq_num_is_parity(seq_num, data, parity)
+                && calc_data_chunk_write_index(seq_num, Some(data_par)) != None)
+    }
+
+    fn qc_calc_data_chunk_write_index_rs_enabled_calc_correctly(data_par : (usize, usize)) -> bool {
+        let mut data_par = data_par;
+        data_par.0 = if data_par.0 == 0 { 1 } else { data_par.0 };
+        data_par.1 = if data_par.1 == 0 { 1 } else { data_par.1 };
+
+        let (data, parity) = data_par;
+
+        let mut data_chunk_index = 0;
+        for seq_num in 1..100_000 {
+            match calc_data_chunk_write_index(seq_num, Some(data_par)) {
+                None    => if !seq_num_is_parity(seq_num, data, parity) { return false; }
+                Some(x) => if x == data_chunk_index { data_chunk_index += 1; } else { return false; }
+            }
+        }
+
+        true
+    }
+}
+
