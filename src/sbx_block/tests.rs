@@ -740,6 +740,36 @@ fn test_get_version_simple_cases() {
 }
 
 #[test]
+fn test_set_version_simple_cases() {
+    let uid : [u8; 6] = [0; 6];
+    let mut block = Block::dummy();
+
+    block.set_version(Version::V1);
+    assert_eq!(Version::V1, Block::new(Version::V1, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V1, Block::new(Version::V1, &uid, BlockType::Data).get_version());
+
+    block.set_version(Version::V2);
+    assert_eq!(Version::V2, Block::new(Version::V2, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V2, Block::new(Version::V2, &uid, BlockType::Data).get_version());
+
+    block.set_version(Version::V3);
+    assert_eq!(Version::V3, Block::new(Version::V3, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V3, Block::new(Version::V3, &uid, BlockType::Data).get_version());
+
+    block.set_version(Version::V17);
+    assert_eq!(Version::V17, Block::new(Version::V17, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V17, Block::new(Version::V17, &uid, BlockType::Data).get_version());
+
+    block.set_version(Version::V18);
+    assert_eq!(Version::V18, Block::new(Version::V18, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V18, Block::new(Version::V18, &uid, BlockType::Data).get_version());
+
+    block.set_version(Version::V19);
+    assert_eq!(Version::V19, Block::new(Version::V19, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V19, Block::new(Version::V19, &uid, BlockType::Data).get_version());
+}
+
+#[test]
 fn test_get_uid() {
     let mut uid : [u8; 6] = [0; 6];
     for _ in 0..1000 {
