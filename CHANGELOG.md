@@ -2,7 +2,7 @@
 - Help messages polish
 - Added text in help messages about rsbx's limitations on burst error resistance level
 - Massively improved code coverage
-  - Added internal tests
+  - Added a lot of internal tests
   - Running main test suite through kcov for code coverage now as well
 - Bug fixes in following functions
   - Fixed `calc_required_len_and_seek_to_from_byte_range_inc`, issue #56
