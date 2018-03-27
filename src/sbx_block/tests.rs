@@ -290,7 +290,35 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
 }
 
 quickcheck! {
-    fn qc_data_seq_num_to_index_to_seq_num(seq_num : u32) -> bool {
+    fn qc_data_seq_num_to_index_to_seq_num_meta_disabled(seq_num : u32) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+
+        let index = calc_data_block_write_index(seq_num,
+                                                Some(false),
+                                                None);
+
+        let seq_num_from_index = calc_seq_num_at_index(index,
+                                                       Some(false),
+                                                       None);
+
+        seq_num_from_index == seq_num
+    }
+
+    fn qc_data_seq_num_to_index_to_seq_num_meta_enabled(seq_num : u32) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+
+        let index = calc_data_block_write_index(seq_num,
+                                                Some(true),
+                                                None);
+
+        let seq_num_from_index = calc_seq_num_at_index(index,
+                                                       Some(true),
+                                                       None);
+
+        seq_num_from_index == seq_num
+    }
+
+    fn qc_data_seq_num_to_index_to_seq_num_meta_default(seq_num : u32) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
 
         let index = calc_data_block_write_index(seq_num,
