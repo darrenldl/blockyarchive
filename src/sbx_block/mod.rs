@@ -374,11 +374,11 @@ pub fn calc_data_block_write_index(seq_num        : u32,
 
 pub fn calc_data_chunk_write_index(seq_num  : u32,
                                    data_par : Option<(usize, usize)>)
-                                   -> Option<u32> {
+                                   -> Option<u64> {
     if seq_num < SBX_FIRST_DATA_SEQ_NUM {
         None
     } else {
-        let index = seq_num - SBX_FIRST_DATA_SEQ_NUM;
+        let index = (seq_num - SBX_FIRST_DATA_SEQ_NUM) as u64;
 
         match data_par {
             None                 => {
@@ -389,11 +389,11 @@ pub fn calc_data_chunk_write_index(seq_num  : u32,
                     None
                 } else {
                     let block_set_index    =
-                        index / (data + parity) as u32;
+                        index / (data + parity) as u64;
                     let index_in_block_set =
-                        index % (data + parity) as u32;
+                        index % (data + parity) as u64;
 
-                    Some(block_set_index * data as u32 + index_in_block_set)
+                    Some(block_set_index * data as u64 + index_in_block_set)
                 }
             }
         }
