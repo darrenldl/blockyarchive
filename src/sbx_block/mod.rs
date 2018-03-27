@@ -743,10 +743,8 @@ impl Block {
 
         match self.data {
             Data::Meta(ref mut meta) => {
-                // parse if it is metadata and not parity block
-                // or if it is a RS parity block
-                if self.header.seq_num == 0
-                    || ver_uses_rs(self.header.version) {
+                // parse if it is metadata
+                if self.header.seq_num == 0 {
                     meta.clear();
                     let res = metadata::from_bytes(slice_buf!(data => self, buffer))?;
                     for r in res.into_iter() {
