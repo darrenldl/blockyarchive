@@ -97,9 +97,9 @@ pub struct RequiredLenAndSeekTo {
     pub seek_to      : u64,
 }
 
-pub fn calc_required_len_and_seek_to_from_byte_range
+pub fn calc_required_len_and_seek_to_from_byte_range_inc
     (from_byte         : Option<u64>,
-     to_byte           : Option<u64>,
+     to_byte_inc       : Option<u64>,
      force_misalign    : bool,
      bytes_so_far      : u64,
      last_possible_pos : u64) -> RequiredLenAndSeekTo
@@ -115,7 +115,7 @@ pub fn calc_required_len_and_seek_to_from_byte_range
         Some(n) => align(u64::ensure_at_most(n,
                                              last_possible_pos))
     };
-    let to_byte = match to_byte {
+    let to_byte = match to_byte_inc {
         None    => last_possible_pos,
         Some(n) => u64::ensure_at_most(u64::ensure_at_least(n,
                                                             from_byte),
