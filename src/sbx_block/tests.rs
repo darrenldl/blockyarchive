@@ -676,7 +676,7 @@ fn test_calc_data_chunk_write_index_simple_cases() {
 quickcheck! {
     fn qc_calc_data_chunk_write_index_rs_disabled(seq_num : u32) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
-        seq_num - 1 == calc_data_chunk_write_index(seq_num, None).unwrap()
+        seq_num as u64 - 1 == calc_data_chunk_write_index(seq_num, None).unwrap()
     }
 
     fn qc_calc_data_chunk_write_index_rs_enabled_ret_opt_correctly(seq_num  : u32,
@@ -812,5 +812,70 @@ quickcheck! {
         block.add_seq_num(val).unwrap();
 
         seq_num + val == block.get_seq_num()
+    }
+}
+
+quickcheck! {
+    fn qc_calc_data_chunk_write_pos_consistent_rs_disabled(seq_num : u32) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+
+        calc_data_chunk_write_index(seq_num,
+                                    None).unwrap() * ver_to_data_size(Version::V1) as u64
+            == calc_data_chunk_write_pos(Version::V1,
+                                         seq_num,
+                                         None).unwrap()
+            && calc_data_chunk_write_index(seq_num,
+                                           None).unwrap() * ver_to_data_size(Version::V2) as u64
+            == calc_data_chunk_write_pos(Version::V2,
+                                         seq_num,
+                                         None).unwrap()
+            && calc_data_chunk_write_index(seq_num,
+                                           None).unwrap() * ver_to_data_size(Version::V3) as u64
+            == calc_data_chunk_write_pos(Version::V3,
+                                         seq_num,
+                                         None).unwrap()
+    }
+
+    fn qc_calc_data_chunk_write_pos_consistent_rs_enabled(seq_num  : u32,
+                                                          data_par : (usize, usize)) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+        let (data, parity) = data_par;
+        let data_par = Some(data_par);
+
+        (seq_num_is_parity(seq_num, data, parity)
+         && calc_data_chunk_write_index(seq_num,
+                                        data_par) == None
+         && calc_data_chunk_write_pos(Version::V17,
+                                      seq_num,
+                                      data_par) == None
+         && calc_data_chunk_write_index(seq_num,
+                                        data_par) == None
+         && calc_data_chunk_write_pos(Version::V18,
+                                      seq_num,
+                                      data_par) == None
+         && calc_data_chunk_write_index(seq_num,
+                                        data_par) == None
+         && calc_data_chunk_write_pos(Version::V19,
+                                      seq_num,
+                                      data_par) == None
+        )
+            ||
+            (!seq_num_is_parity(seq_num, data, parity)
+             && calc_data_chunk_write_index(seq_num,
+                                            data_par).unwrap() * ver_to_data_size(Version::V17) as u64
+             == calc_data_chunk_write_pos(Version::V17,
+                                          seq_num,
+                                          data_par).unwrap()
+             && calc_data_chunk_write_index(seq_num,
+                                            data_par).unwrap() * ver_to_data_size(Version::V18) as u64
+             == calc_data_chunk_write_pos(Version::V18,
+                                          seq_num,
+                                          data_par).unwrap()
+             && calc_data_chunk_write_index(seq_num,
+                                            data_par).unwrap() * ver_to_data_size(Version::V19) as u64
+             == calc_data_chunk_write_pos(Version::V19,
+                                          seq_num,
+                                          data_par).unwrap()
+            )
     }
 }
