@@ -166,9 +166,12 @@ pub fn make_path(path_parts : &[&str]) -> String {
         if i == 0 {
             path_buf.push(path_parts[i]);
         } else {
-            path_buf.push(
+            let res =
                 strip_slash_prefix(
-                    strip_slash_suffix(path_parts[i])));
+                    strip_slash_suffix(path_parts[i]));
+            if res.len() > 0 {
+                path_buf.push(res);
+            }
         }
     }
     path_buf.to_string_lossy().to_string()

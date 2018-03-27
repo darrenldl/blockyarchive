@@ -154,4 +154,7 @@ fn test_make_path_simple_cases() {
     assert_eq!("/abcd/efgh", make_path(&["/abcd/", "efgh"]));
     assert_eq!("abcd/efgh", make_path(&["abcd/", "/efgh"]));
     assert_eq!("/abcd/efgh", make_path(&["/abcd", "efgh/"]));
+    assert_eq!("/efgh", make_path(&["/", "efgh/"]));
+    assert_eq!("/efgh", make_path(&["/", "efgh/", "/"]));
+    assert_eq!("test", make_path(&["test", "/"]));
 }
