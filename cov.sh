@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export RUSTFLAGS="-C link-dead-code"
+
 cargo build
 
 cargo build --tests
