@@ -158,3 +158,13 @@ fn test_make_path_simple_cases() {
     assert_eq!("/efgh", make_path(&["/", "efgh/", "/"]));
     assert_eq!("test", make_path(&["test", "/"]));
 }
+
+#[test]
+fn test_buffer_is_blank_simple_cases() {
+    let buffer : [u8; 100] = [0; 100];
+    assert!(buffer_is_blank(&buffer));
+    assert!(buffer_is_blank(&buffer[0..10]));
+    assert!(buffer_is_blank(&buffer[1..2]));
+    assert!(buffer_is_blank(&buffer[15..20]));
+    assert!(buffer_is_blank(&buffer[21..37]));
+}
