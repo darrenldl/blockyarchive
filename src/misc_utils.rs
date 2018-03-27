@@ -1,8 +1,5 @@
 #![allow(dead_code)]
 
-use std::cell::Cell;
-use std::sync::mpsc::{channel, sync_channel, Sender, SyncSender, Receiver};
-
 use sbx_specs::{SBX_SCAN_BLOCK_SIZE};
 use integer_utils::IntegerUtils;
 
@@ -86,22 +83,6 @@ pub fn slice_to_boxed<T> (slice : &[T]) -> Box<[T]>
     where T : Clone
 {
     slice_to_vec(slice).into_boxed_slice()
-}
-
-pub fn make_channel_for_ctx<T>() -> (Sender<T>, Cell<Option<Receiver<T>>>) {
-    let (tx, rx) = channel();
-
-    let rx = Cell::new(Some(rx));
-
-    (tx, rx)
-}
-
-pub fn make_sync_channel_for_ctx<T>(size : usize) -> (SyncSender<T>, Cell<Option<Receiver<T>>>) {
-    let (tx, rx) = sync_channel(size);
-
-    let rx = Cell::new(Some(rx));
-
-    (tx, rx)
 }
 
 pub fn ignore<T1, T2>(_ : Result<T1, T2>) {}
