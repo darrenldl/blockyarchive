@@ -116,7 +116,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             // waiting to be kickstarted
             runner_start_barrier.wait();
 
-            // print at least once so the header is on top
+            // print at least once so the header is at top
             print_progress::<T>(&mut runner_context.lock().unwrap(),
                                 &mut runner_stats.lock().unwrap(),
                                 false);
