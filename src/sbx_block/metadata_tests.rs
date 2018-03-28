@@ -1,7 +1,9 @@
 #![cfg(test)]
 
+use super::metadata::*;
 use super::metadata;
 use super::metadata::Metadata;
+use super::metadata::UncheckedMetadata;
 use super::metadata::MetadataID;
 use multihash;
 
@@ -554,5 +556,420 @@ fn test_get_meta_ref_mut_by_id() {
         assert_eq!(&mut Metadata::HSH((multihash::HashType::SHA1, Box::new([]))), metadata::get_meta_ref_mut_by_id(MetadataID::HSH, &mut metas).unwrap());
         assert_eq!(&mut Metadata::RSD(0),  metadata::get_meta_ref_mut_by_id(MetadataID::RSD, &mut metas).unwrap());
         assert_eq!(None,  metadata::get_meta_ref_mut_by_id(MetadataID::RSP, &mut metas));
+    }
+}
+
+#[test]
+fn test_filter_invalid_metadata_simple_cases() {
+    let invalid_utf8 : Vec<u8> = vec![0xc3, 0x28];
+    let valid_utf8   : Vec<u8> = vec![b'a', b'b', b'c', b'd'];
+
+    { // invalid FNM
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(invalid_utf8.clone()),
+                       UncheckedMetadata::SNM(valid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(1),
+                       UncheckedMetadata::RSP(1)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::SNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes),
+                          Metadata::RSD(1),
+                          Metadata::RSP(1)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
+    }
+    { // invalid SNM
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(valid_utf8.clone()),
+                       UncheckedMetadata::SNM(invalid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(1),
+                       UncheckedMetadata::RSP(1)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::FNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes),
+                          Metadata::RSD(1),
+                          Metadata::RSP(1)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
+    }
+    { // invalid RSD case 1
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(valid_utf8.clone()),
+                       UncheckedMetadata::SNM(valid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(0),
+                       UncheckedMetadata::RSP(1)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::FNM("abcd".to_string()),
+                          Metadata::SNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes),
+                          Metadata::RSP(1)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
+    }
+    { // invalid RSD case 2
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(valid_utf8.clone()),
+                       UncheckedMetadata::SNM(valid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(0),
+                       UncheckedMetadata::RSD(2),
+                       UncheckedMetadata::RSP(1)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::FNM("abcd".to_string()),
+                          Metadata::SNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes),
+                          Metadata::RSD(2),
+                          Metadata::RSP(1)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
+    }
+    { // invalid RSD case 3
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(valid_utf8.clone()),
+                       UncheckedMetadata::SNM(valid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(3),
+                       UncheckedMetadata::RSD(0),
+                       UncheckedMetadata::RSD(2),
+                       UncheckedMetadata::RSP(1)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::FNM("abcd".to_string()),
+                          Metadata::SNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes),
+                          Metadata::RSD(3),
+                          Metadata::RSD(2),
+                          Metadata::RSP(1)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
+    }
+    { // invalid RSP case 1
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(valid_utf8.clone()),
+                       UncheckedMetadata::SNM(valid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(1),
+                       UncheckedMetadata::RSP(0)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::FNM("abcd".to_string()),
+                          Metadata::SNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes),
+                          Metadata::RSD(1)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
+    }
+    { // invalid RSP case 2
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(valid_utf8.clone()),
+                       UncheckedMetadata::SNM(valid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(1),
+                       UncheckedMetadata::RSP(0),
+                       UncheckedMetadata::RSP(2)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::FNM("abcd".to_string()),
+                          Metadata::SNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes),
+                          Metadata::RSD(1),
+                          Metadata::RSP(2)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
+    }
+    { // invalid RSP case 3
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(valid_utf8.clone()),
+                       UncheckedMetadata::SNM(valid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(1),
+                       UncheckedMetadata::RSP(3),
+                       UncheckedMetadata::RSP(0),
+                       UncheckedMetadata::RSP(2)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::FNM("abcd".to_string()),
+                          Metadata::SNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes),
+                          Metadata::RSD(1),
+                          Metadata::RSP(3),
+                          Metadata::RSP(2)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
+    }
+    { // invalid RSD + RSP case 1
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(valid_utf8.clone()),
+                       UncheckedMetadata::SNM(valid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(2),
+                       UncheckedMetadata::RSP(255)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::FNM("abcd".to_string()),
+                          Metadata::SNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
+    }
+    { // invalid RSD + RSP case 2
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(valid_utf8.clone()),
+                       UncheckedMetadata::SNM(valid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(255),
+                       UncheckedMetadata::RSP(2)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::FNM("abcd".to_string()),
+                          Metadata::SNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
+    }
+    { // invalid RSD + RSP case 3
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(valid_utf8.clone()),
+                       UncheckedMetadata::SNM(valid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(255),
+                       UncheckedMetadata::RSD(1),
+                       UncheckedMetadata::RSP(2)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::FNM("abcd".to_string()),
+                          Metadata::SNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
+    }
+    { // invalid RSD + RSP case 4
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(valid_utf8.clone()),
+                       UncheckedMetadata::SNM(valid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(2),
+                       UncheckedMetadata::RSP(255),
+                       UncheckedMetadata::RSP(1)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::FNM("abcd".to_string()),
+                          Metadata::SNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
+    }
+    { // invalid RSD + RSP case 5
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(valid_utf8.clone()),
+                       UncheckedMetadata::SNM(valid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(1),
+                       UncheckedMetadata::RSD(255),
+                       UncheckedMetadata::RSP(2)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::FNM("abcd".to_string()),
+                          Metadata::SNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes),
+                          Metadata::RSD(1),
+                          Metadata::RSD(255),
+                          Metadata::RSP(2)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
+    }
+    { // invalid RSD + RSP case 6
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let raw = vec![UncheckedMetadata::FNM(valid_utf8.clone()),
+                       UncheckedMetadata::SNM(valid_utf8.clone()),
+                       UncheckedMetadata::FSZ(0),
+                       UncheckedMetadata::FDT(0),
+                       UncheckedMetadata::SDT(0),
+                       UncheckedMetadata::HSH(hbytes),
+                       UncheckedMetadata::RSD(2),
+                       UncheckedMetadata::RSP(1),
+                       UncheckedMetadata::RSP(255)];
+
+        let mut ctx = multihash::hash::Ctx::new(multihash::HashType::SHA1).unwrap();
+        ctx.update(b"hello");
+        let hbytes = ctx.finish_into_hash_bytes();
+
+        let expect = vec![Metadata::FNM("abcd".to_string()),
+                          Metadata::SNM("abcd".to_string()),
+                          Metadata::FSZ(0),
+                          Metadata::FDT(0),
+                          Metadata::SDT(0),
+                          Metadata::HSH(hbytes),
+                          Metadata::RSD(2),
+                          Metadata::RSP(1),
+                          Metadata::RSP(255)];
+
+        assert_eq!(expect, filter_invalid_metadata(raw));
     }
 }

@@ -271,9 +271,12 @@ mod parsers {
     );
 }
 
-fn filter_invalid_metadata(input : Vec<UncheckedMetadata>) -> Vec<Metadata> {
+pub fn filter_invalid_metadata(input : Vec<UncheckedMetadata>) -> Vec<Metadata> {
     use self::UncheckedMetadata::*;
     let mut res = Vec::with_capacity(input.len());
+
+    let mut rsd : Option<usize> = None;
+    let mut rsp : Option<usize> = None;
 
     for meta in input.into_iter() {
         let possibly_push : Option<Metadata> =
@@ -291,11 +294,15 @@ fn filter_invalid_metadata(input : Vec<UncheckedMetadata>) -> Vec<Metadata> {
                 SDT(x) => Some(Metadata::SDT(x)),
                 HSH(h) => Some(Metadata::HSH(h)),
                 RSD(d) => if 1 <= d {
+                    // only record first occurance
+                    if let None = rsd { rsd = Some(d as usize); }
                     Some(Metadata::RSD(d))
                 } else {
                     None
                 },
                 RSP(p) => if 1 <= p {
+                    // only record first occurance
+                    if let None = rsp { rsp = Some(p as usize); }
                     Some(Metadata::RSP(p))
                 } else {
                     None
@@ -307,6 +314,18 @@ fn filter_invalid_metadata(input : Vec<UncheckedMetadata>) -> Vec<Metadata> {
             Some(x) => { res.push(x) }
         }
     }
+
+    let res =
+        match (rsd, rsp) {
+            (Some(d), Some(p)) if d + p > 256 => {
+                // remove all RSD and RSP fields
+                res.into_iter()
+                    .filter(|x| meta_to_id(x) != MetadataID::RSD
+                            &&  meta_to_id(x) != MetadataID::RSP)
+                    .collect()
+            },
+            (..) => res
+        };
 
     res
 }
