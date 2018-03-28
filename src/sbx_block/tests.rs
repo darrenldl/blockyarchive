@@ -385,6 +385,10 @@ quickcheck! {
                                                      meta_enabled   : Option<bool>,
                                                      data_par_burst : (usize, usize, usize)) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
+        let mut data_par_burst = data_par_burst;
+        data_par_burst.0 = if data_par_burst.0 == 0 { 1 } else { data_par_burst.0 };
+        data_par_burst.1 = if data_par_burst.1 == 0 { 1 } else { data_par_burst.1 };
+
         let data_par_burst = Some(data_par_burst);
             calc_data_block_write_index(seq_num,
                                            meta_enabled,
