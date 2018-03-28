@@ -147,5 +147,87 @@ mod from_orig_file_size {
                         && data_total / data == block_set_count
                 })
         }
+        fn qc_calc_data_block_count_exc_burst_gaps_consistent_rs_disabled(size : u64)
+                                                                          -> bool {
+            ({
+                let version = Version::V1;
+
+                let (data_total, parity_total) =
+                    calc_data_only_and_parity_block_count_exc_burst_gaps(version, None, size);
+
+                let data_all_total =
+                    calc_data_block_count_exc_burst_gaps(version, None, size);
+
+                data_all_total == data_total + parity_total
+            })
+                &&
+                ({
+                    let version = Version::V2;
+
+                    let (data_total, parity_total) =
+                        calc_data_only_and_parity_block_count_exc_burst_gaps(version, None, size);
+
+                    let data_all_total =
+                        calc_data_block_count_exc_burst_gaps(version, None, size);
+
+                    data_all_total == data_total + parity_total
+                })
+                &&
+                ({
+                    let version = Version::V3;
+
+                    let (data_total, parity_total) =
+                        calc_data_only_and_parity_block_count_exc_burst_gaps(version, None, size);
+
+                    let data_all_total =
+                        calc_data_block_count_exc_burst_gaps(version, None, size);
+
+                    data_all_total == data_total + parity_total
+                })
+        }
+
+        fn qc_calc_data_block_count_exc_burst_gaps_consistent_rs_enabled(data_par_burst : (usize, usize, usize),
+                                                                         size           : u64)
+                                                                         -> bool {
+            let mut data_par_burst = data_par_burst;
+            data_par_burst.0 = if data_par_burst.0 == 0 { 1 } else { data_par_burst.0 };
+            data_par_burst.1 = if data_par_burst.1 == 0 { 1 } else { data_par_burst.1 };
+
+            ({
+                let version = Version::V17;
+
+                let (data_total, parity_total) =
+                    calc_data_only_and_parity_block_count_exc_burst_gaps(version, Some(data_par_burst), size);
+
+                let data_all_total =
+                    calc_data_block_count_exc_burst_gaps(version, Some(data_par_burst), size);
+
+                data_all_total == data_total + parity_total
+            })
+                &&
+                ({
+                    let version = Version::V18;
+
+                    let (data_total, parity_total) =
+                        calc_data_only_and_parity_block_count_exc_burst_gaps(version, Some(data_par_burst), size);
+
+                    let data_all_total =
+                        calc_data_block_count_exc_burst_gaps(version, Some(data_par_burst), size);
+
+                    data_all_total == data_total + parity_total
+                })
+                &&
+                ({
+                    let version = Version::V19;
+
+                    let (data_total, parity_total) =
+                        calc_data_only_and_parity_block_count_exc_burst_gaps(version, Some(data_par_burst), size);
+
+                    let data_all_total =
+                        calc_data_block_count_exc_burst_gaps(version, Some(data_par_burst), size);
+
+                    data_all_total == data_total + parity_total
+                })
+        }
     }
 }
