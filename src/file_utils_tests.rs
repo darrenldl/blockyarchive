@@ -406,4 +406,18 @@ mod from_orig_file_size {
         assert_eq!(128 * (2 + 3), calc_container_size(Version::V18, None, Some((1, 1, 3)), 0));
         assert_eq!(4096 * (2 + 3), calc_container_size(Version::V19, None, Some((1, 1, 3)), 0));
     }
+
+    quickcheck! {
+        fn qc_calc_container_size_rs_enabled_no_data(data_par_burst : (usize, usize, usize)) -> bool {
+            let mut data_par_burst = data_par_burst;
+            data_par_burst.0 = if data_par_burst.0 == 0 { 1 } else { data_par_burst.0 };
+            data_par_burst.1 = if data_par_burst.1 == 0 { 1 } else { data_par_burst.1 };
+
+            let (_, parity, burst) = data_par_burst;
+
+            (ver_to_block_size(Version::V17) * ((1 + parity) + parity * burst)) as u64 == calc_container_size(Version::V17, None, Some(data_par_burst), 0)
+                && (ver_to_block_size(Version::V18) * ((1 + parity) + parity * burst)) as u64 == calc_container_size(Version::V18, None, Some(data_par_burst), 0)
+                && (ver_to_block_size(Version::V19) * ((1 + parity) + parity * burst)) as u64 == calc_container_size(Version::V19, None, Some(data_par_burst), 0)
+        }
+    }
 }
