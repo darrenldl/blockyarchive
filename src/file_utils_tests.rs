@@ -391,7 +391,19 @@ mod from_orig_file_size {
         assert_eq!(4096 * 2, calc_container_size(Version::V3, None, None, 1));
 
         assert_eq!(512 * 2, calc_container_size(Version::V17, None, Some((1, 1, 0)), 0));
-        assert_eq!(512 * 2, calc_container_size(Version::V17, None, Some((1, 1, 0)), 0));
-        assert_eq!(512 * 2, calc_container_size(Version::V17, None, Some((1, 1, 0)), 0));
+        assert_eq!(128 * 2, calc_container_size(Version::V18, None, Some((1, 1, 0)), 0));
+        assert_eq!(4096 * 2, calc_container_size(Version::V19, None, Some((1, 1, 0)), 0));
+
+        assert_eq!(512 * (2 + 1), calc_container_size(Version::V17, None, Some((1, 1, 1)), 0));
+        assert_eq!(128 * (2 + 1), calc_container_size(Version::V18, None, Some((1, 1, 1)), 0));
+        assert_eq!(4096 * (2 + 1), calc_container_size(Version::V19, None, Some((1, 1, 1)), 0));
+
+        assert_eq!(512 * (2 + 2), calc_container_size(Version::V17, None, Some((1, 1, 2)), 0));
+        assert_eq!(128 * (2 + 2), calc_container_size(Version::V18, None, Some((1, 1, 2)), 0));
+        assert_eq!(4096 * (2 + 2), calc_container_size(Version::V19, None, Some((1, 1, 2)), 0));
+
+        assert_eq!(512 * (2 + 3), calc_container_size(Version::V17, None, Some((1, 1, 3)), 0));
+        assert_eq!(128 * (2 + 3), calc_container_size(Version::V18, None, Some((1, 1, 3)), 0));
+        assert_eq!(4096 * (2 + 3), calc_container_size(Version::V19, None, Some((1, 1, 3)), 0));
     }
 }
