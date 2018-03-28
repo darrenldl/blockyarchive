@@ -174,18 +174,12 @@ pub mod from_orig_file_size {
                                                          size);
 
                 if data_block_count == 0 {
-                    let mut max_file_size = 0;
-                    for &p in sbx_block::calc_meta_block_all_write_pos_s(version,
-                                                                         data_par_burst).iter()
-                    {
-                        let file_size = p + block_size;
+                    let write_pos_s = sbx_block::calc_meta_block_all_write_pos_s(version,
+                                                                                 data_par_burst);
 
-                        if file_size > max_file_size {
-                            max_file_size = file_size;
-                        }
-                    }
+                    let last_write_pos = write_pos_s[write_pos_s.len() - 1];
 
-                    return max_file_size;
+                    return last_write_pos + block_size;
                 }
 
                 let last_seq_num = data_block_count as u32;
