@@ -23,6 +23,7 @@ quickcheck! {
 
 mod from_orig_file_size {
     use file_utils::from_orig_file_size::*;
+    use file_utils::*;
     use sbx_specs::*;
 
     quickcheck! {
@@ -228,6 +229,35 @@ mod from_orig_file_size {
 
                     data_all_total == data_total + parity_total
                 })
+        }
+
+        fn qc_calc_total_block_count_exc_burst_gaps_consistent_rs_enabled(data_par_burst : (usize, usize, usize),
+                                                                          size           : u64)
+                                                                          -> bool {
+            let mut data_par_burst = data_par_burst;
+            data_par_burst.0 = if data_par_burst.0 == 0 { 1 } else { data_par_burst.0 };
+            data_par_burst.1 = if data_par_burst.1 == 0 { 1 } else { data_par_burst.1 };
+
+            ({
+                let version = Version::V17;
+                calc_meta_block_count_exc_burst_gaps(version, Some(false), Some(data_par_burst))
+                    + calc_data_block_count_exc_burst_gaps(version, Some(data_par_burst), size)
+                    == calc_total_block_count_exc_burst_gaps(version, Some(false), Some(data_par_burst), size)
+                    &&
+                    calc_meta_block_count_exc_burst_gaps(version, Some(true), Some(data_par_burst))
+                    + calc_data_block_count_exc_burst_gaps(version, Some(data_par_burst), size)
+                    == calc_total_block_count_exc_burst_gaps(version, Some(true), Some(data_par_burst), size)
+                    &&
+                    calc_meta_block_count_exc_burst_gaps(version, None, Some(data_par_burst))
+                    + calc_data_block_count_exc_burst_gaps(version, Some(data_par_burst), size)
+                    == calc_total_block_count_exc_burst_gaps(version, None, Some(data_par_burst), size)
+                    &&
+                    calc_total_block_count_exc_burst_gaps(version, Some(true), Some(data_par_burst), size)
+                    == calc_total_block_count_exc_burst_gaps(version, None, Some(data_par_burst), size)
+                    &&
+                    calc_total_block_count_exc_burst_gaps(version, Some(false), Some(data_par_burst), size)
+                    == calc_total_block_count_exc_burst_gaps(version, Some(true), Some(data_par_burst), size)
+            })
         }
     }
 }
