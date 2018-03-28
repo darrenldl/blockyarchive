@@ -367,4 +367,31 @@ mod from_orig_file_size {
                 })
         }
     }
+
+    #[test]
+    fn test_calc_container_size_simple_cases() {
+        assert_eq!(0, calc_container_size(Version::V1, Some(false), None, 0));
+        assert_eq!(0, calc_container_size(Version::V2, Some(false), None, 0));
+        assert_eq!(0, calc_container_size(Version::V3, Some(false), None, 0));
+        assert_eq!(512, calc_container_size(Version::V1, Some(true), None, 0));
+        assert_eq!(128, calc_container_size(Version::V2, Some(true), None, 0));
+        assert_eq!(4096, calc_container_size(Version::V3, Some(true), None, 0));
+        assert_eq!(512, calc_container_size(Version::V1, None, None, 0));
+        assert_eq!(128, calc_container_size(Version::V2, None, None, 0));
+        assert_eq!(4096, calc_container_size(Version::V3, None, None, 0));
+
+        assert_eq!(512, calc_container_size(Version::V1, Some(false), None, 1));
+        assert_eq!(128, calc_container_size(Version::V2, Some(false), None, 1));
+        assert_eq!(4096, calc_container_size(Version::V3, Some(false), None, 1));
+        assert_eq!(512 * 2, calc_container_size(Version::V1, Some(true), None, 1));
+        assert_eq!(128 * 2, calc_container_size(Version::V2, Some(true), None, 1));
+        assert_eq!(4096 * 2, calc_container_size(Version::V3, Some(true), None, 1));
+        assert_eq!(512 * 2, calc_container_size(Version::V1, None, None, 1));
+        assert_eq!(128 * 2, calc_container_size(Version::V2, None, None, 1));
+        assert_eq!(4096 * 2, calc_container_size(Version::V3, None, None, 1));
+
+        assert_eq!(512 * 2, calc_container_size(Version::V17, None, Some((1, 1, 0)), 0));
+        assert_eq!(512 * 2, calc_container_size(Version::V17, None, Some((1, 1, 0)), 0));
+        assert_eq!(512 * 2, calc_container_size(Version::V17, None, Some((1, 1, 0)), 0));
+    }
 }
