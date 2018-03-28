@@ -405,6 +405,54 @@ mod from_orig_file_size {
         assert_eq!(512 * (2 + 3), calc_container_size(Version::V17, None, Some((1, 1, 3)), 0));
         assert_eq!(128 * (2 + 3), calc_container_size(Version::V18, None, Some((1, 1, 3)), 0));
         assert_eq!(4096 * (2 + 3), calc_container_size(Version::V19, None, Some((1, 1, 3)), 0));
+
+        assert_eq!(1536, calc_container_size(Version::V17, None, Some((1, 1, 1)), 0));
+        assert_eq!(384, calc_container_size(Version::V18, None, Some((1, 1, 1)), 0));
+        assert_eq!(12288, calc_container_size(Version::V19, None, Some((1, 1, 1)), 0));
+
+        assert_eq!(2048, calc_container_size(Version::V17, None, Some((1, 1, 1)), 1));
+        assert_eq!(512, calc_container_size(Version::V18, None, Some((1, 1, 1)),  1));
+        assert_eq!(16384, calc_container_size(Version::V19, None, Some((1, 1, 1)), 1));
+
+        assert_eq!(4096, calc_container_size(Version::V17, None, Some((1, 1, 1)), 1024));
+        assert_eq!(2816, calc_container_size(Version::V18, None, Some((1, 1, 1)),  1024));
+        assert_eq!(16384, calc_container_size(Version::V19, None, Some((1, 1, 1)), 1024));
+
+        assert_eq!(12288, calc_container_size(Version::V17, None, Some((1, 1, 1)), 5000));
+        assert_eq!(11776, calc_container_size(Version::V18, None, Some((1, 1, 1)),  5000));
+        assert_eq!(24576, calc_container_size(Version::V19, None, Some((1, 1, 1)), 5000));
+
+        assert_eq!(2066432, calc_container_size(Version::V17, None, Some((1, 1, 1)), 1_000_000));
+        assert_eq!(2286080, calc_container_size(Version::V18, None, Some((1, 1, 1)),  1_000_000));
+        assert_eq!(2023424, calc_container_size(Version::V19, None, Some((1, 1, 1)), 1_000_000));
+
+        assert_eq!(12800, calc_container_size(Version::V17, None, Some((11, 3, 7)), 0));
+        assert_eq!(3200, calc_container_size(Version::V18, None, Some((11, 3, 7)), 0));
+        assert_eq!(102400, calc_container_size(Version::V19, None, Some((11, 3, 7)), 0));
+
+        assert_eq!(49152, calc_container_size(Version::V17, None, Some((11, 3, 7)), 1));
+        assert_eq!(12288, calc_container_size(Version::V18, None, Some((11, 3, 7)), 1));
+        assert_eq!(393216, calc_container_size(Version::V19, None, Some((11, 3, 7)), 1));
+
+        assert_eq!(49152, calc_container_size(Version::V17, None, Some((11, 3, 7)), 1024));
+        assert_eq!(12288, calc_container_size(Version::V18, None, Some((11, 3, 7)), 1024));
+        assert_eq!(393216, calc_container_size(Version::V19, None, Some((11, 3, 7)), 1024));
+
+        assert_eq!(49152, calc_container_size(Version::V17, None, Some((11, 3, 7)), 5000));
+        assert_eq!(12800, calc_container_size(Version::V18, None, Some((11, 3, 7)), 5000));
+        assert_eq!(393216, calc_container_size(Version::V19, None, Some((11, 3, 7)), 5000));
+
+        assert_eq!(50176, calc_container_size(Version::V17, None, Some((11, 3, 7)), 13000));
+        assert_eq!(25216, calc_container_size(Version::V18, None, Some((11, 3, 7)), 13000));
+        assert_eq!(393216, calc_container_size(Version::V19, None, Some((11, 3, 7)), 13000));
+
+        assert_eq!(1354240, calc_container_size(Version::V17, None, Some((11, 3, 7)), 1_000_000));
+        assert_eq!(1455616, calc_container_size(Version::V18, None, Some((11, 3, 7)), 1_000_000));
+        assert_eq!(1601536, calc_container_size(Version::V19, None, Some((11, 3, 7)), 1_000_000));
+
+        assert_eq!(38133760, calc_container_size(Version::V17, None, Some((11, 3, 7)), 29_000_000));
+        assert_eq!(42185728, calc_container_size(Version::V18, None, Some((11, 3, 7)), 29_000_000));
+        assert_eq!(37330944, calc_container_size(Version::V19, None, Some((11, 3, 7)), 29_000_000));
     }
 
     quickcheck! {
@@ -420,8 +468,8 @@ mod from_orig_file_size {
                 && (ver_to_block_size(Version::V19) * ((1 + parity) + parity * burst)) as u64 == calc_container_size(Version::V19, None, Some(data_par_burst), 0)
         }
 
-        fn qc_calc_container_size_rs_enabled(data_par_burst : (usize, usize, usize),
-                                             size           : u64) -> bool {
+        fn qc_calc_container_size_rs_enabled_not_too_off(data_par_burst : (usize, usize, usize),
+                                                         size           : u64) -> bool {
             let size = if size == 0 { 1 } else { size };
 
             let mut data_par_burst = data_par_burst;
