@@ -231,6 +231,71 @@ mod from_orig_file_size {
                 })
         }
 
+        fn qc_calc_total_block_count_exc_burst_gaps_consistent_rs_disabled(size : u64) -> bool {
+            ({
+                let version = Version::V1;
+                calc_meta_block_count_exc_burst_gaps(version, Some(false), None)
+                    + calc_data_block_count_exc_burst_gaps(version, None, size)
+                    == calc_total_block_count_exc_burst_gaps(version, Some(false), None, size)
+                    &&
+                    calc_meta_block_count_exc_burst_gaps(version, Some(true), None)
+                    + calc_data_block_count_exc_burst_gaps(version, None, size)
+                    == calc_total_block_count_exc_burst_gaps(version, Some(true), None, size)
+                    &&
+                    calc_meta_block_count_exc_burst_gaps(version, None, None)
+                    + calc_data_block_count_exc_burst_gaps(version, None, size)
+                    == calc_total_block_count_exc_burst_gaps(version, None, None, size)
+                    &&
+                    calc_total_block_count_exc_burst_gaps(version, Some(true), None, size)
+                    == calc_total_block_count_exc_burst_gaps(version, None, None, size)
+                    &&
+                    calc_total_block_count_exc_burst_gaps(version, Some(false), None, size) + 1
+                    == calc_total_block_count_exc_burst_gaps(version, Some(true), None, size)
+            })
+                &&
+                ({
+                    let version = Version::V2;
+                    calc_meta_block_count_exc_burst_gaps(version, Some(false), None)
+                        + calc_data_block_count_exc_burst_gaps(version, None, size)
+                        == calc_total_block_count_exc_burst_gaps(version, Some(false), None, size)
+                        &&
+                        calc_meta_block_count_exc_burst_gaps(version, Some(true), None)
+                        + calc_data_block_count_exc_burst_gaps(version, None, size)
+                        == calc_total_block_count_exc_burst_gaps(version, Some(true), None, size)
+                        &&
+                        calc_meta_block_count_exc_burst_gaps(version, None, None)
+                        + calc_data_block_count_exc_burst_gaps(version, None, size)
+                        == calc_total_block_count_exc_burst_gaps(version, None, None, size)
+                        &&
+                        calc_total_block_count_exc_burst_gaps(version, Some(true), None, size)
+                        == calc_total_block_count_exc_burst_gaps(version, None, None, size)
+                        &&
+                        calc_total_block_count_exc_burst_gaps(version, Some(false), None, size) + 1
+                        == calc_total_block_count_exc_burst_gaps(version, Some(true), None, size)
+                })
+                &&
+                ({
+                    let version = Version::V3;
+                    calc_meta_block_count_exc_burst_gaps(version, Some(false), None)
+                        + calc_data_block_count_exc_burst_gaps(version, None, size)
+                        == calc_total_block_count_exc_burst_gaps(version, Some(false), None, size)
+                        &&
+                        calc_meta_block_count_exc_burst_gaps(version, Some(true), None)
+                        + calc_data_block_count_exc_burst_gaps(version, None, size)
+                        == calc_total_block_count_exc_burst_gaps(version, Some(true), None, size)
+                        &&
+                        calc_meta_block_count_exc_burst_gaps(version, None, None)
+                        + calc_data_block_count_exc_burst_gaps(version, None, size)
+                        == calc_total_block_count_exc_burst_gaps(version, None, None, size)
+                        &&
+                        calc_total_block_count_exc_burst_gaps(version, Some(true), None, size)
+                        == calc_total_block_count_exc_burst_gaps(version, None, None, size)
+                        &&
+                        calc_total_block_count_exc_burst_gaps(version, Some(false), None, size) + 1
+                        == calc_total_block_count_exc_burst_gaps(version, Some(true), None, size)
+                })
+        }
+
         fn qc_calc_total_block_count_exc_burst_gaps_consistent_rs_enabled(data_par_burst : (usize, usize, usize),
                                                                           size           : u64)
                                                                           -> bool {
@@ -258,6 +323,48 @@ mod from_orig_file_size {
                     calc_total_block_count_exc_burst_gaps(version, Some(false), Some(data_par_burst), size)
                     == calc_total_block_count_exc_burst_gaps(version, Some(true), Some(data_par_burst), size)
             })
+                &&
+                ({
+                    let version = Version::V18;
+                    calc_meta_block_count_exc_burst_gaps(version, Some(false), Some(data_par_burst))
+                        + calc_data_block_count_exc_burst_gaps(version, Some(data_par_burst), size)
+                        == calc_total_block_count_exc_burst_gaps(version, Some(false), Some(data_par_burst), size)
+                        &&
+                        calc_meta_block_count_exc_burst_gaps(version, Some(true), Some(data_par_burst))
+                        + calc_data_block_count_exc_burst_gaps(version, Some(data_par_burst), size)
+                        == calc_total_block_count_exc_burst_gaps(version, Some(true), Some(data_par_burst), size)
+                        &&
+                        calc_meta_block_count_exc_burst_gaps(version, None, Some(data_par_burst))
+                        + calc_data_block_count_exc_burst_gaps(version, Some(data_par_burst), size)
+                        == calc_total_block_count_exc_burst_gaps(version, None, Some(data_par_burst), size)
+                        &&
+                        calc_total_block_count_exc_burst_gaps(version, Some(true), Some(data_par_burst), size)
+                        == calc_total_block_count_exc_burst_gaps(version, None, Some(data_par_burst), size)
+                        &&
+                        calc_total_block_count_exc_burst_gaps(version, Some(false), Some(data_par_burst), size)
+                        == calc_total_block_count_exc_burst_gaps(version, Some(true), Some(data_par_burst), size)
+                })
+                &&
+                ({
+                    let version = Version::V19;
+                    calc_meta_block_count_exc_burst_gaps(version, Some(false), Some(data_par_burst))
+                        + calc_data_block_count_exc_burst_gaps(version, Some(data_par_burst), size)
+                        == calc_total_block_count_exc_burst_gaps(version, Some(false), Some(data_par_burst), size)
+                        &&
+                        calc_meta_block_count_exc_burst_gaps(version, Some(true), Some(data_par_burst))
+                        + calc_data_block_count_exc_burst_gaps(version, Some(data_par_burst), size)
+                        == calc_total_block_count_exc_burst_gaps(version, Some(true), Some(data_par_burst), size)
+                        &&
+                        calc_meta_block_count_exc_burst_gaps(version, None, Some(data_par_burst))
+                        + calc_data_block_count_exc_burst_gaps(version, Some(data_par_burst), size)
+                        == calc_total_block_count_exc_burst_gaps(version, None, Some(data_par_burst), size)
+                        &&
+                        calc_total_block_count_exc_burst_gaps(version, Some(true), Some(data_par_burst), size)
+                        == calc_total_block_count_exc_burst_gaps(version, None, Some(data_par_burst), size)
+                        &&
+                        calc_total_block_count_exc_burst_gaps(version, Some(false), Some(data_par_burst), size)
+                        == calc_total_block_count_exc_burst_gaps(version, Some(true), Some(data_par_burst), size)
+                })
         }
     }
 }
