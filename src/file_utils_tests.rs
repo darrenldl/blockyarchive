@@ -419,5 +419,33 @@ mod from_orig_file_size {
                 && (ver_to_block_size(Version::V18) * ((1 + parity) + parity * burst)) as u64 == calc_container_size(Version::V18, None, Some(data_par_burst), 0)
                 && (ver_to_block_size(Version::V19) * ((1 + parity) + parity * burst)) as u64 == calc_container_size(Version::V19, None, Some(data_par_burst), 0)
         }
+
+        fn qc_calc_container_size_rs_enabled(data_par_burst : (usize, usize, usize),
+                                             size           : u64) -> bool {
+            let size = if size == 0 { 1 } else { size };
+
+            let mut data_par_burst = data_par_burst;
+            data_par_burst.0 = if data_par_burst.0 == 0 { 1 } else { data_par_burst.0 };
+            data_par_burst.1 = if data_par_burst.1 == 0 { 1 } else { data_par_burst.1 };
+            data_par_burst.2 = if data_par_burst.2 == 0 { 1 } else { data_par_burst.2 };
+
+            let (data, parity, burst) = data_par_burst;
+
+            let super_block_set_size = ((data + parity) * burst) as u64;
+
+            ({
+                let version = Version::V17;
+                let block_size = ver_to_block_size(version) as u64;
+                let container_size = calc_container_size(version, None, Some(data_par_burst), size);
+                let super_block_set_count_lower_bound = size / (super_block_set_size * block_size);
+                let super_block_set_count_upper_bound = (size + ((super_block_set_size * block_size) - 1)) / (super_block_set_size * block_size);
+                let container_size_lower_bound = ((1 + parity as u64) + super_block_set_count_lower_bound * super_block_set_size) * block_size;
+                let container_size_upper_bound = ((1 + parity as u64) + super_block_set_count_upper_bound * super_block_set_size) * block_size;
+
+                container_size % block_size == 0
+                    && container_size >= container_size_lower_bound
+                    && container_size <= container_size_upper_bound
+            })
+        }
     }
 }
