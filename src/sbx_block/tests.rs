@@ -429,6 +429,10 @@ quickcheck! {
                                                                                 data_par_burst : (usize, usize, usize)) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
 
+        let mut data_par_burst = data_par_burst;
+        data_par_burst.0 = if data_par_burst.0 == 0 { 1 } else { data_par_burst.0 };
+        data_par_burst.1 = if data_par_burst.1 == 0 { 1 } else { data_par_burst.1 };
+
         let meta_indices = calc_meta_block_all_write_indices(Some(data_par_burst));
 
         let data_index = calc_data_block_write_index(seq_num, None, Some(data_par_burst));
