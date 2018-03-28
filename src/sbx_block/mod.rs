@@ -249,6 +249,8 @@ pub fn calc_meta_block_all_write_pos_s(version        : Version,
 
     res.push(0);
 
+    res.sort();
+
     res
 }
 
@@ -257,6 +259,8 @@ pub fn calc_meta_block_all_write_indices(data_par_burst : Option<(usize, usize, 
     let mut res = calc_meta_block_dup_write_indices(data_par_burst);
 
     res.push(0);
+
+    res.sort();
 
     res
 }
