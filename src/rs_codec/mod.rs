@@ -15,9 +15,11 @@ macro_rules! assert_ready {
 }
 
 mod encoder;
+mod encoder_tests;
 pub use self::encoder::RSEncoder;
 
 mod repairer;
+mod repairer_tests;
 pub use self::repairer::RSRepairer;
 pub use self::repairer::RSRepairStats;
 
