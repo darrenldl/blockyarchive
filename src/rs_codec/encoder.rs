@@ -47,9 +47,9 @@ impl RSEncoder {
             smallvec![smallvec![0; block_size]; parity_shards];
 
         RSEncoder {
-            index : 0,
-            rs_codec   : ReedSolomon::new(data_shards,
-                                          parity_shards).unwrap(),
+            index    : 0,
+            rs_codec : ReedSolomon::new(data_shards,
+                                        parity_shards).unwrap(),
             version,
             par_buf,
         }
