@@ -3,7 +3,8 @@ use smallvec::SmallVec;
 use sbx_block;
 use sbx_specs::{Version,
                 SBX_LARGEST_BLOCK_SIZE,
-                ver_to_block_size};
+                ver_to_block_size,
+                ver_uses_rs};
 
 pub struct RSEncoder {
     index    : usize,
@@ -38,6 +39,8 @@ impl RSEncoder {
     pub fn new(version       : Version,
                data_shards   : usize,
                parity_shards : usize) -> RSEncoder {
+        assert!(ver_uses_rs(version));
+
         let block_size = ver_to_block_size(version);
 
         let par_buf : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
