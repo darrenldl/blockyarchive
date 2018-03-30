@@ -2,9 +2,7 @@
 use super::encoder::*;
 use sbx_block;
 use sbx_specs::{Version,
-                SBX_LARGEST_BLOCK_SIZE,
-                ver_to_block_size,
-                ver_uses_rs};
+                SBX_LARGEST_BLOCK_SIZE};
 use reed_solomon_erasure::ReedSolomon;
 
 use rand_utils::fill_random_bytes;
@@ -82,7 +80,7 @@ quickcheck! {
                                         parity : usize,
                                         reuse  : usize) -> bool {
         let data   = 1 + data % 10;
-        let mut parity = 1 + parity % 10;
+        let parity = 1 + parity % 10;
 
         let reuse = reuse % 10;
 
