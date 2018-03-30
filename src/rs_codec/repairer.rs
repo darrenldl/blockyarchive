@@ -83,17 +83,19 @@ impl<'a> fmt::Display for RSRepairStats<'a> {
     }
 }
 
-macro_rules! add_index {
+macro_rules! incre_index {
     (
-        $self:ident, $val:expr
+        $self:ident
     ) => {{
-        $self.index =
-            ($self.index + $val) % ($self.rs_codec.total_shard_count() + 1);
-    }};
+        $self.index += 1;
+    }}
+}
+
+macro_rules! reset_index {
     (
-        1 => $self:ident
+        $self:ident
     ) => {{
-        add_index!($self, 1);
+        $self.index = 0;
     }}
 }
 
@@ -133,11 +135,7 @@ impl RSRepairer {
     pub fn get_block_buffer(&mut self) -> &mut [u8] {
         assert_not_ready!(self);
 
-        let index = self.index;
-
-        self.buf_present[index] = true;
-
-        sbx_block::slice_buf_mut(self.version, &mut self.buf[index])
+        sbx_block::slice_buf_mut(self.version, &mut self.buf[self.index])
     }
 
     pub fn active(&self) -> bool {
