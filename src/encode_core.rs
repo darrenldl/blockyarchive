@@ -236,7 +236,8 @@ fn write_meta_blocks(param         : &Param,
                      hash          : Option<multihash::HashBytes>,
                      block         : &mut Block,
                      buffer        : &mut [u8],
-                     writer        : &mut FileWriter)
+                     writer        : &mut FileWriter,
+                     record_stats  : bool)
                      -> Result<(), Error> {
     // pack metadata into the block
     pack_metadata(block,
@@ -263,7 +264,9 @@ fn write_meta_blocks(param         : &Param,
 
         writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
 
-        stats.lock().unwrap().meta_blocks_written += 1;
+        if record_stats {
+            stats.lock().unwrap().meta_blocks_written += 1;
+        }
     }
 
     block.add1_seq_num().unwrap();
@@ -381,7 +384,8 @@ pub fn encode_file(param : &Param)
                           None,
                           &mut block,
                           &mut data,
-                          &mut writer)?;
+                          &mut writer,
+                          true)?;
     }
 
     loop {
@@ -475,7 +479,8 @@ pub fn encode_file(param : &Param)
                           Some(hash_bytes.clone()),
                           &mut block,
                           &mut data,
-                          &mut writer)?;
+                          &mut writer,
+                          false)?;
 
         // record hash in stats
         stats.lock().unwrap().hash_bytes = Some(hash_bytes.clone());
