@@ -10,6 +10,7 @@
     - rescue core and show core uses this function to calculate seek to positions and number of bytes to read
   - Fixed `make_path`, issue #57
     - All modes that outputs files use this function to calculate final output path
+- Fixed meta blocks written stats reporting in encode mode, issue #59
 
 ## 1.0.3
 - General output text polishing
