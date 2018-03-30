@@ -20,6 +20,7 @@ pub struct RSRepairer {
     buf            : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     buf_present    : SmallVec<[bool; 32]>,
     ref_block      : Block,
+    active         : bool,
 }
 
 pub struct RSRepairStats<'a> {
@@ -83,6 +84,22 @@ impl<'a> fmt::Display for RSRepairStats<'a> {
     }
 }
 
+macro_rules! mark_active {
+    (
+        $self:ident
+    ) => {{
+        $self.active = true;
+    }}
+}
+
+macro_rules! mark_inactive {
+    (
+        $self:ident
+    ) => {{
+        $self.active = false;
+    }}
+}
+
 macro_rules! incre_index {
     (
         $self:ident
@@ -129,6 +146,7 @@ impl RSRepairer {
             buf,
             buf_present,
             ref_block      : ref_block.clone(),
+            active         : false,
         }
     }
 
@@ -139,7 +157,7 @@ impl RSRepairer {
     }
 
     pub fn active(&self) -> bool {
-        self.unfilled_slot_count() < self.total_slot_count()
+        self.active
     }
 
     pub fn unfilled_slot_count(&self) -> usize {
@@ -155,7 +173,9 @@ impl RSRepairer {
 
         self.buf_present[self.index] = true;
 
-        add_index!(1 => self);
+        incre_index!(self);
+
+        mark_active!(self);
 
         if codec_ready!(self) {
             RSCodecState::Ready
@@ -169,7 +189,9 @@ impl RSRepairer {
 
         self.buf_present[self.index] = false;
 
-        add_index!(1 => self);
+        incre_index!(self);
+
+        mark_active!(self);
 
         if codec_ready!(self) {
             RSCodecState::Ready
@@ -197,8 +219,6 @@ impl RSRepairer {
          SmallVec<[(u64, &[u8]); 32]>)
     {
         assert_ready!(self);
-
-        add_index!(1 => self);
 
         let mut repaired_blocks =
             SmallVec::with_capacity(self.rs_codec.parity_shard_count());
@@ -252,6 +272,10 @@ impl RSRepairer {
                 }
             }
         }
+
+        mark_inactive!(self);
+
+        reset_index!(self);
 
         (RSRepairStats { version        : self.version,
                          data_par_burst : self.data_par_burst,
