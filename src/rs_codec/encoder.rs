@@ -30,6 +30,14 @@ macro_rules! mark_inactive {
     }}
 }
 
+macro_rules! incre_index {
+    (
+        $self:ident
+    ) => {{
+        $self.index += 1;
+    }}
+}
+
 macro_rules! reset_index {
     (
         $self:ident
@@ -100,7 +108,7 @@ impl RSEncoder {
                                        &mut parity).unwrap();
         }
 
-        self.index += 1;
+        incre_index!(self);
 
         if codec_ready!(self) {
             reset_index!(self);
