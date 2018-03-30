@@ -23,8 +23,6 @@ mod repairer_tests;
 pub use self::repairer::RSRepairer;
 pub use self::repairer::RSRepairStats;
 
-mod tests;
-
 #[must_use]
 pub enum RSCodecState {
     Ready,
