@@ -5,14 +5,74 @@ use sbx_specs::{Version,
                 SBX_LARGEST_BLOCK_SIZE,
                 ver_to_block_size,
                 ver_uses_rs};
+use reed_solomon_erasure::ReedSolomon;
+
+use rand_utils::fill_random_bytes;
+
+macro_rules! make_random_block_buffers {
+    ($per_shard:expr, $size:expr) => {{
+        let mut buffer = Vec::with_capacity(20);
+        for _ in 0..$size {
+            buffer.push(vec![0; $per_shard]);
+        }
+
+        for s in buffer.iter_mut() {
+            fill_random_bytes(s);
+        }
+
+        buffer
+    }}
+}
 
 #[test]
 fn test_encoder_encode_correctly_simple_cases() {
     {
-        let mut rs_codec = RSEncoder::new(Version::V17, 1, 1);
+        let version = Version::V17;
+        let r = ReedSolomon::new(10, 3).unwrap();
+        let mut encoder = RSEncoder::new(version, 10, 3);
 
-        assert!(!rs_codec.active());
-        assert_eq!(1, rs_codec.unfilled_slot_count());
-        assert_eq!(1, rs_codec.total_slot_count());
+        let mut buffer = make_random_block_buffers!(10_000, 13);
+        let mut buffer_copy = buffer.clone();
+
+        assert!(!encoder.active());
+        assert_eq!(10, encoder.unfilled_slot_count());
+        assert_eq!(10, encoder.total_slot_count());
+
+        {
+            let mut refs = Vec::new();
+            for b in buffer.iter_mut() {
+                refs.push(sbx_block::slice_data_buf_mut(version, b));
+            }
+
+            r.encode(&mut refs).unwrap();
+        }
+
+        for _ in 0..2 {
+            {
+                let mut refs = Vec::new();
+                for b in buffer_copy.iter_mut() {
+                    refs.push(b);
+                }
+
+                for i in 0..9 {
+                    assert_eq!(10 - i, encoder.unfilled_slot_count());
+                    assert_eq!(None, encoder.encode_no_block_sync(refs[i]));
+                    assert!(encoder.active());
+                }
+
+                assert_eq!(1, encoder.unfilled_slot_count());
+
+                let mut i = 0;
+                for b in encoder.encode_no_block_sync(refs[9]).unwrap().iter() {
+                    assert_eq!(sbx_block::slice_data_buf(version, b),
+                               sbx_block::slice_data_buf(version, &buffer[i + 10]));
+                    i += 1;
+                }
+            }
+
+            assert!(!encoder.active());
+            assert_eq!(10, encoder.unfilled_slot_count());
+            assert_eq!(10, encoder.total_slot_count());
+        }
     }
 }
