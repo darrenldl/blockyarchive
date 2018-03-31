@@ -3,7 +3,6 @@
 - Added text in help messages about rsbx's limitations on burst error resistance level
 - Massively improved code coverage
   - Added a lot of internal tests
-  - Running main test suite through kcov for code coverage now as well
 - Bug fixes in following internal functions
   - Note that the main binary may restrict parameters provided to these internal functions, so not all bugs are visible or reproducible from user perspective
   - Fixed `calc_required_len_and_seek_to_from_byte_range_inc`, issue #56
