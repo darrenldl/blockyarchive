@@ -125,11 +125,11 @@ macro_rules! codec_ready {
 }
 
 impl RSRepairer {
-    pub fn new(version       : Version,
-               ref_block     : &Block,
+    pub fn new(ref_block     : &Block,
                data_shards   : usize,
                parity_shards : usize,
                burst         : usize) -> RSRepairer {
+        let version    = ref_block.get_version();
         let block_size = ver_to_block_size(version);
 
         let buf : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
