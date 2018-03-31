@@ -24,6 +24,7 @@ pub use self::repairer::RSRepairer;
 pub use self::repairer::RSRepairStats;
 
 #[must_use]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RSCodecState {
     Ready,
     NotReady

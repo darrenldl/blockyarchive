@@ -15,7 +15,7 @@ use super::RSCodecState;
 pub struct RSRepairer {
     index          : usize,
     rs_codec       : ReedSolomon,
-    data_par_burst : Option<(usize, usize, usize)>,
+    data_par_burst : (usize, usize, usize),
     version        : Version,
     buf            : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     buf_present    : SmallVec<[bool; 32]>,
@@ -25,7 +25,7 @@ pub struct RSRepairer {
 
 pub struct RSRepairStats<'a> {
     pub version        : Version,
-    pub data_par_burst : Option<(usize, usize, usize)>,
+    pub data_par_burst : (usize, usize, usize),
     pub successful     : bool,
     pub start_seq_num  : u32,
     pub present        : &'a SmallVec<[bool; 32]>,
@@ -66,7 +66,7 @@ impl<'a> fmt::Display for RSRepairStats<'a> {
                     let index     =
                         sbx_block::calc_data_block_write_index(seq_num,
                                                                None,
-                                                               self.data_par_burst);
+                                                               Some(self.data_par_burst));
                     let block_pos = index * block_size;
 
                     write!(f, "{} at byte {} (0x{:X})",
@@ -141,7 +141,7 @@ impl RSRepairer {
             index          : 0,
             rs_codec       : ReedSolomon::new(data_shards,
                                            parity_shards).unwrap(),
-            data_par_burst : Some((data_shards, parity_shards, burst)),
+            data_par_burst : (data_shards, parity_shards, burst),
             version,
             buf,
             buf_present,
@@ -268,7 +268,7 @@ impl RSRepairer {
                     let pos = sbx_block::calc_data_block_write_pos(self.version,
                                                                    cur_seq_num,
                                                                    None,
-                                                                   self.data_par_burst);
+                                                                   Some(self.data_par_burst));
                     repaired_blocks.push((pos, sbx_block::slice_buf(self.version,
                                                                     &self.buf[i])));
                 }
