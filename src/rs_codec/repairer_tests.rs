@@ -236,7 +236,7 @@ quickcheck! {
         let versions = vec![Version::V17, Version::V18, Version::V19];
 
         // success case
-        for version in versions.into_iter () {
+        for &version in versions.iter () {
             let mut uid : [u8; 6] = [0; 6];
             fill_random_bytes(&mut uid);
             let ref_block = Block::new(version, &uid, BlockType::Data);
@@ -378,6 +378,134 @@ quickcheck! {
                          && block.get_version() == version) {
                         return false;
                     }
+                }
+            }
+        }
+
+        // failure case
+        for &version in versions.iter () {
+            let mut uid : [u8; 6] = [0; 6];
+            fill_random_bytes(&mut uid);
+            let ref_block = Block::new(version, &uid, BlockType::Data);
+            let mut repairer = RSRepairer::new(&ref_block, data, parity, burst);
+
+            if !(!repairer.active()
+                 && repairer.unfilled_slot_count() == data + parity
+                 && repairer.total_slot_count() == data + parity) {
+                return false;
+            }
+
+            let corrupt = parity + 1 + corrupt % (data);
+
+            {
+                let mut refs = Vec::new();
+                for b in buffer.iter_mut() {
+                    refs.push(sbx_block::slice_data_buf_mut(version, b));
+                }
+
+                r.encode(&mut refs).unwrap();
+            }
+
+            let mut corrupt_pos_s = Vec::with_capacity(corrupt);
+            for _ in 0..corrupt {
+                let mut pos = rand::random::<usize>() % (data + parity);
+
+                while let Some(_) = corrupt_pos_s.iter().find(|&&x| x == pos) {
+                    pos = rand::random::<usize>() % (data + parity);
+                }
+
+                corrupt_pos_s.push(pos);
+            }
+
+            corrupt_pos_s.sort();
+
+            for _ in 0..1 + reuse {
+                {
+                    let mut refs = Vec::new();
+                    for b in buffer.iter_mut() {
+                        refs.push(sbx_block::slice_buf(version, b));
+                    }
+
+                    let mut i = 0;
+                    for b in refs.iter() {
+                        if repairer.unfilled_slot_count() != data + parity - i {
+                            return false;
+                        }
+                        if repairer.total_slot_count() != data + parity {
+                            return false;
+                        }
+
+                        let corrupted =
+                            match corrupt_pos_s.iter().find(|&&x| x == i) {
+                                None    => false,
+                                Some(_) => true,
+                            };
+
+                        let codec_state =
+                            if corrupted {
+                                fill_random_bytes(repairer.get_block_buffer());
+                                repairer.mark_missing()
+                            } else {
+                                repairer.get_block_buffer().copy_from_slice(b);
+                                repairer.mark_present()
+                            };
+
+                        if data + parity - i - 1 != repairer.unfilled_slot_count() {
+                            return false;
+                        }
+                        if data + parity != repairer.total_slot_count() {
+                            return false;
+                        }
+
+                        if i == data + parity - 1 {
+                            if codec_state != RSCodecState::Ready {
+                                return false;
+                            }
+                        } else {
+                            if codec_state != RSCodecState::NotReady {
+                                return false;
+                            }
+                        }
+
+                        i += 1;
+                    }
+                }
+
+                let (stats, blocks) = repairer.repair_with_block_sync(seq_num);
+
+                let block_set_size = (data + parity) as u32;
+                let start_seq_num = (seq_num - 1) / block_set_size * block_set_size + 1;
+
+                if !(stats.version == version
+                     && stats.data_par_burst == (data, parity, burst)
+                     && !stats.successful)
+                {
+                    return false;
+                }
+
+                for i in 0..data + parity {
+                    let corrupted =
+                        match corrupt_pos_s.iter().find(|&&x| x == i) {
+                            None    => false,
+                            Some(_) => true,
+                        };
+
+                    if !((corrupted && !stats.present[i])
+                         || (!corrupted && stats.present[i]))
+                    {
+                        return false;
+                    }
+                }
+
+                if !(stats.present.len() == data + parity
+                     && stats.missing_count == corrupt_pos_s.len()
+                     && stats.present_count == data + parity - corrupt_pos_s.len()
+                     && stats.start_seq_num == start_seq_num) {
+                    return false;
+                }
+
+                if blocks.len() != 0 {
+                    return false;
                 }
             }
         }
