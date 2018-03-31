@@ -156,7 +156,7 @@ fn test_repairer_repair_properly_simple_cases() {
                 refs.push(sbx_block::slice_buf(version, b));
             }
 
-            // mark 0, 2, 3, 11 as missing
+            // mark 0, 2, 3, 12 as missing
             let mut i = 0;
             for b in refs.iter() {
                 assert_eq!(13 - i, repairer.unfilled_slot_count());
@@ -164,7 +164,7 @@ fn test_repairer_repair_properly_simple_cases() {
 
                 repairer.get_block_buffer().copy_from_slice(b);
                 let codec_state =
-                    if i == 0 || i == 2 || i == 3 || i == 11 {
+                    if i == 0 || i == 2 || i == 3 || i == 12 {
                         repairer.mark_missing()
                     } else {
                         repairer.mark_present()
@@ -200,8 +200,8 @@ fn test_repairer_repair_properly_simple_cases() {
         assert_eq!(true,  stats.present[8]);
         assert_eq!(true,  stats.present[9]);
         assert_eq!(true,  stats.present[10]);
-        assert_eq!(false, stats.present[11]);
-        assert_eq!(true,  stats.present[12]);
+        assert_eq!(true,  stats.present[11]);
+        assert_eq!(false, stats.present[12]);
 
         assert_eq!(13, stats.present.len());
         assert_eq!(4, stats.missing_count);
