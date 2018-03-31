@@ -220,6 +220,8 @@ impl RSRepairer {
     {
         assert_ready!(self);
 
+        assert!(seq_num >= SBX_FIRST_DATA_SEQ_NUM);
+
         let mut repaired_blocks =
             SmallVec::with_capacity(self.rs_codec.parity_shard_count());
 
