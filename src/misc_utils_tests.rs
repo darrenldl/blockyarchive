@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use misc_utils::*;
+use integer_utils::IntegerUtils;
 
 mod hex_tests {
     use super::*;
@@ -98,4 +99,72 @@ mod hex_tests {
         assert_eq!(hex_string_to_bytes("LL").unwrap_err(),
                    HexError::InvalidHexString);
     }
+}
+
+#[test]
+fn test_f64_max_simple_cases() {
+    assert_eq!(0.2, f64_max(0.1, 0.2));
+    assert_eq!(10.0, f64_max(10.0, 9.0));
+    assert_eq!(0.3, f64_max(0.3, 0.2));
+    assert_eq!(100.0, f64_max(9.0, 100.0));
+    assert_eq!(-1.0, f64_max(-1.0, -2.0));
+    assert_eq!(2.0, f64_max(2.0, -10.0));
+}
+
+quickcheck! {
+    fn qc_calc_required_len_and_seek_to_from_byte_range(from_byte         : Option<u64>,
+                                                        to_byte_inc       : Option<u64>,
+                                                        force_misalign    : bool,
+                                                        bytes_so_far      : u64,
+                                                        last_possible_pos : u64) -> bool {
+        let RequiredLenAndSeekTo { required_len, seek_to } =
+            calc_required_len_and_seek_to_from_byte_range_inc(from_byte,
+                                                              to_byte_inc,
+                                                              force_misalign,
+                                                              bytes_so_far,
+                                                              last_possible_pos);
+
+        let from_byte = match from_byte   {
+            None => 0,
+            Some(x) => {
+                if force_misalign { x }
+                else              { u64::round_down_to_multiple(x, 128) }
+            }
+        };
+
+        let to_byte = to_byte_inc.unwrap_or(last_possible_pos);
+
+        seek_to <= last_possible_pos
+            && ((from_byte + bytes_so_far <= last_possible_pos
+                 && seek_to <= from_byte + bytes_so_far)
+                || (from_byte + bytes_so_far > last_possible_pos))
+            && (force_misalign
+                || (!force_misalign && seek_to % 128 == 0))
+            && (from_byte + required_len == to_byte + 1
+                || from_byte + required_len == last_possible_pos + 1
+                || required_len == 1)
+    }
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn test_make_path_simple_cases() {
+    assert_eq!("abcd/efgh", make_path(&["abcd", "efgh"]));
+    assert_eq!("/usb/folder1/test.sbx", make_path(&["/usb/", "/folder1/", "/test.sbx/"]));
+    assert_eq!("/abcd/efgh", make_path(&["/abcd/", "efgh"]));
+    assert_eq!("abcd/efgh", make_path(&["abcd/", "/efgh"]));
+    assert_eq!("/abcd/efgh", make_path(&["/abcd", "efgh/"]));
+    assert_eq!("/efgh", make_path(&["/", "efgh/"]));
+    assert_eq!("/efgh", make_path(&["/", "efgh/", "/"]));
+    assert_eq!("test", make_path(&["test", "/"]));
+}
+
+#[test]
+fn test_buffer_is_blank_simple_cases() {
+    let buffer : [u8; 100] = [0; 100];
+    assert!(buffer_is_blank(&buffer));
+    assert!(buffer_is_blank(&buffer[0..10]));
+    assert!(buffer_is_blank(&buffer[1..2]));
+    assert!(buffer_is_blank(&buffer[15..20]));
+    assert!(buffer_is_blank(&buffer[21..37]));
 }

@@ -267,8 +267,7 @@ pub fn repair_file(param : &Param)
 
     let pred = block_pred_same_ver_uid!(ref_block);
 
-    let mut rs_codec = RSRepairer::new(version,
-                                       &ref_block,
+    let mut rs_codec = RSRepairer::new(&ref_block,
                                        data_par_burst.unwrap().0,
                                        data_par_burst.unwrap().1,
                                        data_par_burst.unwrap().2);

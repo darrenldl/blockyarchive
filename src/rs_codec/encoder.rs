@@ -3,26 +3,46 @@ use smallvec::SmallVec;
 use sbx_block;
 use sbx_specs::{Version,
                 SBX_LARGEST_BLOCK_SIZE,
-                ver_to_block_size};
+                ver_to_block_size,
+                ver_uses_rs};
 
 pub struct RSEncoder {
     index    : usize,
     rs_codec : ReedSolomon,
     version  : Version,
     par_buf  : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
+    active   : bool,
 }
 
-macro_rules! add_index {
+macro_rules! mark_active {
     (
-        $self:ident, $val:expr
+        $self:ident
     ) => {{
-        $self.index =
-            ($self.index + $val) % ($self.rs_codec.data_shard_count() + 1);
-    }};
+        $self.active = true;
+    }}
+}
+
+macro_rules! mark_inactive {
     (
-        1 => $self:ident
+        $self:ident
     ) => {{
-        add_index!($self, 1);
+        $self.active = false;
+    }}
+}
+
+macro_rules! incre_index {
+    (
+        $self:ident
+    ) => {{
+        $self.index += 1;
+    }}
+}
+
+macro_rules! reset_index {
+    (
+        $self:ident
+    ) => {{
+        $self.index = 0;
     }}
 }
 
@@ -38,22 +58,25 @@ impl RSEncoder {
     pub fn new(version       : Version,
                data_shards   : usize,
                parity_shards : usize) -> RSEncoder {
+        assert!(ver_uses_rs(version));
+
         let block_size = ver_to_block_size(version);
 
         let par_buf : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
             smallvec![smallvec![0; block_size]; parity_shards];
 
         RSEncoder {
-            index : 0,
-            rs_codec   : ReedSolomon::new(data_shards,
-                                          parity_shards).unwrap(),
+            index    : 0,
+            rs_codec : ReedSolomon::new(data_shards,
+                                        parity_shards).unwrap(),
             version,
             par_buf,
+            active : false,
         }
     }
 
     pub fn active(&self) -> bool {
-        self.unfilled_slot_count() < self.total_slot_count()
+        self.active
     }
 
     pub fn unfilled_slot_count(&self) -> usize {
@@ -67,11 +90,6 @@ impl RSEncoder {
     pub fn encode_no_block_sync(&mut self,
                                 data : &[u8])
                                 -> Option<&mut SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>> {
-        if codec_ready!(self) {
-            // reset index by wrapping around
-            add_index!(1 => self);
-        }
-
         let data = sbx_block::slice_data_buf(self.version, data);
 
         let version  = self.version;
@@ -90,11 +108,14 @@ impl RSEncoder {
                                        &mut parity).unwrap();
         }
 
-        add_index!(1 => self);
+        incre_index!(self);
 
         if codec_ready!(self) {
+            reset_index!(self);
+            mark_inactive!(self);
             Some(par_buf)
         } else {
+            mark_active!(self);
             None
         }
     }

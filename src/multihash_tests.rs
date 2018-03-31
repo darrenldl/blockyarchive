@@ -186,3 +186,131 @@ mod test_vectors {
                            Hex("5b21c5fd8868367612474fa2e70e9cfa2201ffeee8fafab5797ad58fefa17c9b5b107da4a3db6320baaf2c8617d5a51df914ae88da3867c2d41f0cc14fa67928"));
     }
 }
+
+#[test]
+fn test_hash_type_to_string() {
+    assert_eq!("SHA1",         hash_type_to_string(HashType::SHA1));
+    assert_eq!("SHA256",       hash_type_to_string(HashType::SHA2_256));
+    assert_eq!("SHA256",       hash_type_to_string(HashType::SHA256));
+    assert_eq!("SHA2-512-256", hash_type_to_string(HashType::SHA2_512_256));
+    assert_eq!("SHA512",       hash_type_to_string(HashType::SHA512));
+    assert_eq!("SHA512",       hash_type_to_string(HashType::SHA2_512_512));
+    assert_eq!("BLAKE2B-256",  hash_type_to_string(HashType::BLAKE2B_256));
+    assert_eq!("BLAKE2B-512",  hash_type_to_string(HashType::BLAKE2B_512));
+    assert_eq!("BLAKE2S-128",  hash_type_to_string(HashType::BLAKE2S_128));
+    assert_eq!("BLAKE2S-256",  hash_type_to_string(HashType::BLAKE2S_256));
+}
+
+#[test]
+fn test_string_to_hash_type() {
+    {
+        assert_eq!(HashType::SHA1, string_to_hash_type("SHA1").unwrap());
+        assert_eq!(HashType::SHA1, string_to_hash_type("sha1").unwrap());
+        assert_eq!(HashType::SHA1, string_to_hash_type("Sha1").unwrap());
+    }
+    {
+        assert_eq!(HashType::SHA256, string_to_hash_type("SHA2-256").unwrap());
+        assert_eq!(HashType::SHA256, string_to_hash_type("sha2-256").unwrap());
+        assert_eq!(HashType::SHA256, string_to_hash_type("Sha2-256").unwrap());
+        assert_eq!(HashType::SHA256, string_to_hash_type("SHA256").unwrap());
+        assert_eq!(HashType::SHA256, string_to_hash_type("sha256").unwrap());
+        assert_eq!(HashType::SHA256, string_to_hash_type("Sha256").unwrap());
+    }
+    {
+        assert_eq!(HashType::SHA2_512_256, string_to_hash_type("SHA2-512-256").unwrap());
+        assert_eq!(HashType::SHA2_512_256, string_to_hash_type("sha2-512-256").unwrap());
+        assert_eq!(HashType::SHA2_512_256, string_to_hash_type("Sha2-512-256").unwrap());
+    }
+    {
+        assert_eq!(HashType::SHA512, string_to_hash_type("SHA2-512-512").unwrap());
+        assert_eq!(HashType::SHA512, string_to_hash_type("sha2-512-512").unwrap());
+        assert_eq!(HashType::SHA512, string_to_hash_type("Sha2-512-512").unwrap());
+        assert_eq!(HashType::SHA512, string_to_hash_type("SHA512").unwrap());
+        assert_eq!(HashType::SHA512, string_to_hash_type("sha512").unwrap());
+        assert_eq!(HashType::SHA512, string_to_hash_type("Sha512").unwrap());
+    }
+    {
+        assert_eq!(HashType::BLAKE2B_256, string_to_hash_type("blake2b-256").unwrap());
+        assert_eq!(HashType::BLAKE2B_256, string_to_hash_type("BLAKE2B-256").unwrap());
+        assert_eq!(HashType::BLAKE2B_256, string_to_hash_type("Blake2B-256").unwrap());
+    }
+    {
+        assert_eq!(HashType::BLAKE2B_512, string_to_hash_type("blake2b-512").unwrap());
+        assert_eq!(HashType::BLAKE2B_512, string_to_hash_type("BLAKE2B-512").unwrap());
+        assert_eq!(HashType::BLAKE2B_512, string_to_hash_type("Blake2B-512").unwrap());
+    }
+    {
+        assert_eq!(HashType::BLAKE2S_128, string_to_hash_type("blake2s-128").unwrap());
+        assert_eq!(HashType::BLAKE2S_128, string_to_hash_type("BLAKE2S-128").unwrap());
+        assert_eq!(HashType::BLAKE2S_128, string_to_hash_type("Blake2S-128").unwrap());
+    }
+    {
+        assert_eq!(HashType::BLAKE2S_256, string_to_hash_type("blake2s-256").unwrap());
+        assert_eq!(HashType::BLAKE2S_256, string_to_hash_type("BLAKE2S-256").unwrap());
+        assert_eq!(HashType::BLAKE2S_256, string_to_hash_type("Blake2S-256").unwrap());
+    }
+    {
+        assert_eq!(Err(()), string_to_hash_type("abcd"));
+        assert_eq!(Err(()), string_to_hash_type("sha2"));
+        assert_eq!(Err(()), string_to_hash_type("blake2b"));
+        assert_eq!(Err(()), string_to_hash_type("Blake2b-5122"));
+        assert_eq!(Err(()), string_to_hash_type("blake2s-1228"));
+        assert_eq!(Err(()), string_to_hash_type("bake2b-512"));
+    }
+}
+
+#[test]
+fn test_specs() {
+    use self::specs::Param;
+
+    {
+        let param = Param::new(HashType::SHA1);
+        assert_eq!([0x11], param.hash_func_type);
+        assert_eq!(20,     param.digest_length);
+    }
+    {
+        let param = Param::new(HashType::SHA2_256);
+        assert_eq!([0x12], param.hash_func_type);
+        assert_eq!(32,     param.digest_length);
+    }
+    {
+        let param = Param::new(HashType::SHA256);
+        assert_eq!([0x12], param.hash_func_type);
+        assert_eq!(32,     param.digest_length);
+    }
+    {
+        let param = Param::new(HashType::SHA2_512_256);
+        assert_eq!([0x13], param.hash_func_type);
+        assert_eq!(32,     param.digest_length);
+    }
+    {
+        let param = Param::new(HashType::SHA2_512_512);
+        assert_eq!([0x13], param.hash_func_type);
+        assert_eq!(64,     param.digest_length);
+    }
+    {
+        let param = Param::new(HashType::SHA512);
+        assert_eq!([0x13], param.hash_func_type);
+        assert_eq!(64,     param.digest_length);
+    }
+    {
+        let param = Param::new(HashType::BLAKE2B_256);
+        assert_eq!([0xb2, 0x20], param.hash_func_type);
+        assert_eq!(32,     param.digest_length);
+    }
+    {
+        let param = Param::new(HashType::BLAKE2B_512);
+        assert_eq!([0xb2, 0x40], param.hash_func_type);
+        assert_eq!(64,     param.digest_length);
+    }
+    {
+        let param = Param::new(HashType::BLAKE2S_128);
+        assert_eq!([0xb2, 0x50], param.hash_func_type);
+        assert_eq!(16,     param.digest_length);
+    }
+    {
+        let param = Param::new(HashType::BLAKE2S_256);
+        assert_eq!([0xb2, 0x60], param.hash_func_type);
+        assert_eq!(32,     param.digest_length);
+    }
+}

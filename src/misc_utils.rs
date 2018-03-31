@@ -1,8 +1,5 @@
 #![allow(dead_code)]
 
-use std::cell::Cell;
-use std::sync::mpsc::{channel, sync_channel, Sender, SyncSender, Receiver};
-
 use sbx_specs::{SBX_SCAN_BLOCK_SIZE};
 use integer_utils::IntegerUtils;
 
@@ -88,22 +85,6 @@ pub fn slice_to_boxed<T> (slice : &[T]) -> Box<[T]>
     slice_to_vec(slice).into_boxed_slice()
 }
 
-pub fn make_channel_for_ctx<T>() -> (Sender<T>, Cell<Option<Receiver<T>>>) {
-    let (tx, rx) = channel();
-
-    let rx = Cell::new(Some(rx));
-
-    (tx, rx)
-}
-
-pub fn make_sync_channel_for_ctx<T>(size : usize) -> (SyncSender<T>, Cell<Option<Receiver<T>>>) {
-    let (tx, rx) = sync_channel(size);
-
-    let rx = Cell::new(Some(rx));
-
-    (tx, rx)
-}
-
 pub fn ignore<T1, T2>(_ : Result<T1, T2>) {}
 
 pub fn f64_max (v1 : f64, v2 : f64) -> f64 {
@@ -116,9 +97,9 @@ pub struct RequiredLenAndSeekTo {
     pub seek_to      : u64,
 }
 
-pub fn calc_required_len_and_seek_to_from_byte_range
+pub fn calc_required_len_and_seek_to_from_byte_range_inc
     (from_byte         : Option<u64>,
-     to_byte           : Option<u64>,
+     to_byte_inc       : Option<u64>,
      force_misalign    : bool,
      bytes_so_far      : u64,
      last_possible_pos : u64) -> RequiredLenAndSeekTo
@@ -134,15 +115,17 @@ pub fn calc_required_len_and_seek_to_from_byte_range
         Some(n) => align(u64::ensure_at_most(n,
                                              last_possible_pos))
     };
-    let to_byte = match to_byte {
+    let to_byte = match to_byte_inc {
         None    => last_possible_pos,
         Some(n) => u64::ensure_at_most(u64::ensure_at_least(n,
                                                             from_byte),
                                        last_possible_pos)
     };
     // bytes_so_far only affects seek_to
+    let seek_to = u64::ensure_at_most(align(from_byte + bytes_so_far),
+                                      last_possible_pos);
     RequiredLenAndSeekTo { required_len : to_byte - from_byte + 1,
-                           seek_to      : align(from_byte + bytes_so_far) }
+                           seek_to                                 }
 }
 
 pub fn make_path(path_parts : &[&str]) -> String {
@@ -183,9 +166,12 @@ pub fn make_path(path_parts : &[&str]) -> String {
         if i == 0 {
             path_buf.push(path_parts[i]);
         } else {
-            path_buf.push(
+            let res =
                 strip_slash_prefix(
-                    strip_slash_suffix(path_parts[i])));
+                    strip_slash_suffix(path_parts[i]));
+            if res.len() > 0 {
+                path_buf.push(res);
+            }
         }
     }
     path_buf.to_string_lossy().to_string()

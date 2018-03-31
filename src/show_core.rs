@@ -121,6 +121,8 @@ pub fn show_file(param : &Param)
 
         report_ref_block_info(ref_block_pos, &ref_block);
 
+        println!();
+
         if ver_uses_rs(ref_block.get_version()) {
             match block_utils::guess_burst_err_resistance_level(&param.in_file,
                                                                 ref_block_pos,
@@ -157,11 +159,11 @@ pub fn show_file(param : &Param)
 
     // calulate length to read and position to seek to
     let RequiredLenAndSeekTo { required_len, seek_to } =
-        misc_utils::calc_required_len_and_seek_to_from_byte_range(param.from_pos,
-                                                                  param.to_pos,
-                                                                  param.force_misalign,
-                                                                  stats.lock().unwrap().bytes_processed,
-                                                                  metadata.len());
+        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
+                                                                      param.to_pos,
+                                                                      param.force_misalign,
+                                                                      stats.lock().unwrap().bytes_processed,
+                                                                      metadata.len());
 
     // seek to calculated position
     reader.seek(SeekFrom::Start(seek_to))?;

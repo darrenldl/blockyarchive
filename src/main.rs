@@ -72,13 +72,17 @@ mod multihash_tests;
 mod misc_utils;
 mod misc_utils_tests;
 mod file_utils;
+mod file_utils_tests;
 mod rand_utils;
 mod time_utils;
+mod time_utils_tests;
 mod integer_utils;
+mod integer_utils_tests;
 mod block_utils;
 
 mod sbx_block;
 mod sbx_specs;
+mod sbx_specs_tests;
 
 mod log;
 

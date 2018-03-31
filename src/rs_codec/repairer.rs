@@ -15,16 +15,17 @@ use super::RSCodecState;
 pub struct RSRepairer {
     index          : usize,
     rs_codec       : ReedSolomon,
-    data_par_burst : Option<(usize, usize, usize)>,
+    data_par_burst : (usize, usize, usize),
     version        : Version,
     buf            : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]>,
     buf_present    : SmallVec<[bool; 32]>,
     ref_block      : Block,
+    active         : bool,
 }
 
 pub struct RSRepairStats<'a> {
     pub version        : Version,
-    pub data_par_burst : Option<(usize, usize, usize)>,
+    pub data_par_burst : (usize, usize, usize),
     pub successful     : bool,
     pub start_seq_num  : u32,
     pub present        : &'a SmallVec<[bool; 32]>,
@@ -65,7 +66,7 @@ impl<'a> fmt::Display for RSRepairStats<'a> {
                     let index     =
                         sbx_block::calc_data_block_write_index(seq_num,
                                                                None,
-                                                               self.data_par_burst);
+                                                               Some(self.data_par_burst));
                     let block_pos = index * block_size;
 
                     write!(f, "{} at byte {} (0x{:X})",
@@ -83,17 +84,35 @@ impl<'a> fmt::Display for RSRepairStats<'a> {
     }
 }
 
-macro_rules! add_index {
+macro_rules! mark_active {
     (
-        $self:ident, $val:expr
+        $self:ident
     ) => {{
-        $self.index =
-            ($self.index + $val) % ($self.rs_codec.total_shard_count() + 1);
-    }};
+        $self.active = true;
+    }}
+}
+
+macro_rules! mark_inactive {
     (
-        1 => $self:ident
+        $self:ident
     ) => {{
-        add_index!($self, 1);
+        $self.active = false;
+    }}
+}
+
+macro_rules! incre_index {
+    (
+        $self:ident
+    ) => {{
+        $self.index += 1;
+    }}
+}
+
+macro_rules! reset_index {
+    (
+        $self:ident
+    ) => {{
+        $self.index = 0;
     }}
 }
 
@@ -106,11 +125,11 @@ macro_rules! codec_ready {
 }
 
 impl RSRepairer {
-    pub fn new(version       : Version,
-               ref_block     : &Block,
+    pub fn new(ref_block     : &Block,
                data_shards   : usize,
                parity_shards : usize,
                burst         : usize) -> RSRepairer {
+        let version    = ref_block.get_version();
         let block_size = ver_to_block_size(version);
 
         let buf : SmallVec<[SmallVec<[u8; SBX_LARGEST_BLOCK_SIZE]>; 32]> =
@@ -122,26 +141,23 @@ impl RSRepairer {
             index          : 0,
             rs_codec       : ReedSolomon::new(data_shards,
                                            parity_shards).unwrap(),
-            data_par_burst : Some((data_shards, parity_shards, burst)),
+            data_par_burst : (data_shards, parity_shards, burst),
             version,
             buf,
             buf_present,
             ref_block      : ref_block.clone(),
+            active         : false,
         }
     }
 
     pub fn get_block_buffer(&mut self) -> &mut [u8] {
         assert_not_ready!(self);
 
-        let index = self.index;
-
-        self.buf_present[index] = true;
-
-        sbx_block::slice_buf_mut(self.version, &mut self.buf[index])
+        sbx_block::slice_buf_mut(self.version, &mut self.buf[self.index])
     }
 
     pub fn active(&self) -> bool {
-        self.unfilled_slot_count() < self.total_slot_count()
+        self.active
     }
 
     pub fn unfilled_slot_count(&self) -> usize {
@@ -157,7 +173,9 @@ impl RSRepairer {
 
         self.buf_present[self.index] = true;
 
-        add_index!(1 => self);
+        incre_index!(self);
+
+        mark_active!(self);
 
         if codec_ready!(self) {
             RSCodecState::Ready
@@ -171,7 +189,9 @@ impl RSRepairer {
 
         self.buf_present[self.index] = false;
 
-        add_index!(1 => self);
+        incre_index!(self);
+
+        mark_active!(self);
 
         if codec_ready!(self) {
             RSCodecState::Ready
@@ -200,7 +220,7 @@ impl RSRepairer {
     {
         assert_ready!(self);
 
-        add_index!(1 => self);
+        assert!(seq_num >= SBX_FIRST_DATA_SEQ_NUM);
 
         let mut repaired_blocks =
             SmallVec::with_capacity(self.rs_codec.parity_shard_count());
@@ -248,12 +268,16 @@ impl RSRepairer {
                     let pos = sbx_block::calc_data_block_write_pos(self.version,
                                                                    cur_seq_num,
                                                                    None,
-                                                                   self.data_par_burst);
+                                                                   Some(self.data_par_burst));
                     repaired_blocks.push((pos, sbx_block::slice_buf(self.version,
                                                                     &self.buf[i])));
                 }
             }
         }
+
+        mark_inactive!(self);
+
+        reset_index!(self);
 
         (RSRepairStats { version        : self.version,
                          data_par_burst : self.data_par_burst,

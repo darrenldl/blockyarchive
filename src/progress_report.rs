@@ -89,7 +89,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
                pr_verbosity_level : PRVerbosityLevel)
                -> ProgressReporter<T> {
         use self::ProgressElement::*;
-        let stats                = Arc::clone(stats);
+        let stats                   = Arc::clone(stats);
         let context                 =
             Arc::new(Mutex::new(Context::new(header,
                                              unit,
@@ -116,7 +116,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             // waiting to be kickstarted
             runner_start_barrier.wait();
 
-            // print at least once so the header is on top
+            // print at least once so the header is at top
             print_progress::<T>(&mut runner_context.lock().unwrap(),
                                 &mut runner_stats.lock().unwrap(),
                                 false);
@@ -124,11 +124,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             // let start() know progress text has been printed
             runner_start_barrier.wait();
 
-            loop {
-                if runner_shutdown_flag.load(Ordering::SeqCst) {
-                    break;
-                }
-
+            while !runner_shutdown_flag.load(Ordering::SeqCst) {
                 thread::sleep(Duration::from_millis(300));
 
                 if runner_active_flag.load(Ordering::SeqCst) {

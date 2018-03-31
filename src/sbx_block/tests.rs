@@ -2,6 +2,7 @@
 
 use super::*;
 use sbx_specs;
+use rand_utils;
 
 #[test]
 fn test_calc_rs_enabled_meta_write_indices() {
@@ -290,10 +291,52 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
 }
 
 quickcheck! {
-    fn qc_data_seq_num_to_index_to_seq_num(seq_num       : u32,
-                                           data_shards   : usize,
-                                           parity_shards : usize,
-                                           burst         : usize) -> bool {
+    fn qc_data_seq_num_to_index_to_seq_num_meta_disabled(seq_num : u32) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+
+        let index = calc_data_block_write_index(seq_num,
+                                                Some(false),
+                                                None);
+
+        let seq_num_from_index = calc_seq_num_at_index(index,
+                                                       Some(false),
+                                                       None);
+
+        seq_num_from_index == seq_num
+    }
+
+    fn qc_data_seq_num_to_index_to_seq_num_meta_enabled(seq_num : u32) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+
+        let index = calc_data_block_write_index(seq_num,
+                                                Some(true),
+                                                None);
+
+        let seq_num_from_index = calc_seq_num_at_index(index,
+                                                       Some(true),
+                                                       None);
+
+        seq_num_from_index == seq_num
+    }
+
+    fn qc_data_seq_num_to_index_to_seq_num_meta_default(seq_num : u32) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+
+        let index = calc_data_block_write_index(seq_num,
+                                                None,
+                                                None);
+
+        let seq_num_from_index = calc_seq_num_at_index(index,
+                                                       None,
+                                                       None);
+
+        seq_num_from_index == seq_num
+    }
+
+    fn qc_data_seq_num_to_index_to_seq_num_rs_enabled(seq_num       : u32,
+                                                      data_shards   : usize,
+                                                      parity_shards : usize,
+                                                      burst         : usize) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
         let data_shards   = 1 + data_shards % 256;
         let parity_shards = 1 + parity_shards % 256;
@@ -310,6 +353,196 @@ quickcheck! {
                                                        data_par_burst);
 
         seq_num_from_index == seq_num
+    }
+
+    fn qc_data_block_write_pos_consistent_rs_disabled(seq_num : u32,
+                                                      meta_enabled : Option<bool>) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+        calc_data_block_write_index(seq_num,
+                                    meta_enabled,
+                                    None) * ver_to_block_size(Version::V1) as u64
+            == calc_data_block_write_pos(Version::V1,
+                                         seq_num,
+                                         meta_enabled,
+                                         None)
+            && calc_data_block_write_index(seq_num,
+                                           meta_enabled,
+                                           None) * ver_to_block_size(Version::V2) as u64
+            == calc_data_block_write_pos(Version::V2,
+                                         seq_num,
+                                         meta_enabled,
+                                         None)
+            && calc_data_block_write_index(seq_num,
+                                           meta_enabled,
+                                           None) * ver_to_block_size(Version::V3) as u64
+            == calc_data_block_write_pos(Version::V3,
+                                         seq_num,
+                                         meta_enabled,
+                                         None)
+    }
+
+    fn qc_data_block_write_pos_consistent_rs_enabled(seq_num        : u32,
+                                                     meta_enabled   : Option<bool>,
+                                                     data_par_burst : (usize, usize, usize)) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+        let mut data_par_burst = data_par_burst;
+        data_par_burst.0 = if data_par_burst.0 == 0 { 1 } else { data_par_burst.0 };
+        data_par_burst.1 = if data_par_burst.1 == 0 { 1 } else { data_par_burst.1 };
+
+        let data_par_burst = Some(data_par_burst);
+            calc_data_block_write_index(seq_num,
+                                           meta_enabled,
+                                           data_par_burst) * ver_to_block_size(Version::V17) as u64
+            == calc_data_block_write_pos(Version::V17,
+                                         seq_num,
+                                         meta_enabled,
+                                         data_par_burst)
+            && calc_data_block_write_index(seq_num,
+                                           meta_enabled,
+                                           data_par_burst) * ver_to_block_size(Version::V18) as u64
+            == calc_data_block_write_pos(Version::V18,
+                                         seq_num,
+                                         meta_enabled,
+                                         data_par_burst)
+            && calc_data_block_write_index(seq_num,
+                                           meta_enabled,
+                                           data_par_burst) * ver_to_block_size(Version::V19) as u64
+            == calc_data_block_write_pos(Version::V19,
+                                         seq_num,
+                                         meta_enabled,
+                                         data_par_burst)
+    }
+
+    fn qc_meta_block_write_indices_data_block_write_indices_disjoint_rs_disabled(seq_num : u32) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+
+        let meta_indices = calc_meta_block_all_write_indices(None);
+
+        let data_index = calc_data_block_write_index(seq_num, None, None);
+
+        for &m in meta_indices.iter() {
+            if data_index == m {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    fn qc_meta_block_write_indices_data_block_write_indices_disjoint_rs_enabled(seq_num        : u32,
+                                                                                data_par_burst : (usize, usize, usize)) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+
+        let mut data_par_burst = data_par_burst;
+        data_par_burst.0 = if data_par_burst.0 == 0 { 1 } else { data_par_burst.0 };
+        data_par_burst.1 = if data_par_burst.1 == 0 { 1 } else { data_par_burst.1 };
+
+        let meta_indices = calc_meta_block_all_write_indices(Some(data_par_burst));
+
+        let data_index = calc_data_block_write_index(seq_num, None, Some(data_par_burst));
+
+        for &m in meta_indices.iter() {
+            if data_index == m {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    fn qc_meta_block_write_pos_s_consistent_rs_disabled() -> bool {
+        {
+            let version      = Version::V1;
+            let block_size   = ver_to_block_size(version) as u64;
+            let meta_indices = calc_meta_block_all_write_indices(None);
+            let meta_pos_s   = calc_meta_block_all_write_pos_s(version, None);
+
+            for &m in meta_indices.iter() {
+                let mut found = false;
+                for &p in meta_pos_s.iter() {
+                    if m * block_size == p { found = true; }
+                }
+                if !found { return false; }
+            }
+        }
+        {
+            let version      = Version::V2;
+            let block_size   = ver_to_block_size(version) as u64;
+            let meta_indices = calc_meta_block_all_write_indices(None);
+            let meta_pos_s   = calc_meta_block_all_write_pos_s(version, None);
+
+            for &m in meta_indices.iter() {
+                let mut found = false;
+                for &p in meta_pos_s.iter() {
+                    if m * block_size == p { found = true; }
+                }
+                if !found { return false; }
+            }
+        }
+        {
+            let version      = Version::V3;
+            let block_size   = ver_to_block_size(version) as u64;
+            let meta_indices = calc_meta_block_all_write_indices(None);
+            let meta_pos_s   = calc_meta_block_all_write_pos_s(version, None);
+
+            for &m in meta_indices.iter() {
+                let mut found = false;
+                for &p in meta_pos_s.iter() {
+                    if m * block_size == p { found = true; }
+                }
+                if !found { return false; }
+            }
+        }
+
+        true
+    }
+
+    fn qc_meta_block_write_pos_s_consistent_rs_enabled(data_par_burst : (usize, usize, usize)) -> bool {
+        let data_par_burst = Some(data_par_burst);
+        {
+            let version      = Version::V17;
+            let block_size   = ver_to_block_size(version) as u64;
+            let meta_indices = calc_meta_block_all_write_indices(data_par_burst);
+            let meta_pos_s   = calc_meta_block_all_write_pos_s(version, data_par_burst);
+
+            for &m in meta_indices.iter() {
+                let mut found = false;
+                for &p in meta_pos_s.iter() {
+                    if m * block_size == p { found = true; }
+                }
+                if !found { return false; }
+            }
+        }
+        {
+            let version      = Version::V18;
+            let block_size   = ver_to_block_size(version) as u64;
+            let meta_indices = calc_meta_block_all_write_indices(data_par_burst);
+            let meta_pos_s   = calc_meta_block_all_write_pos_s(version, data_par_burst);
+
+            for &m in meta_indices.iter() {
+                let mut found = false;
+                for &p in meta_pos_s.iter() {
+                    if m * block_size == p { found = true; }
+                }
+                if !found { return false; }
+            }
+        }
+        {
+            let version      = Version::V19;
+            let block_size   = ver_to_block_size(version) as u64;
+            let meta_indices = calc_meta_block_all_write_indices(data_par_burst);
+            let meta_pos_s   = calc_meta_block_all_write_pos_s(version, data_par_burst);
+
+            for &m in meta_indices.iter() {
+                let mut found = false;
+                for &p in meta_pos_s.iter() {
+                    if m * block_size == p { found = true; }
+                }
+                if !found { return false; }
+            }
+        }
+
+        true
     }
 }
 
@@ -396,5 +629,330 @@ fn test_sync_from_buffer_simple_cases() {
         assert_eq!(BlockType::Meta, block.block_type());
         assert!(!block.is_data());
         assert!(block.is_meta());
+    }
+}
+
+#[test]
+fn test_seq_num_is_parity_simple_cases() {
+    assert_eq!(false, seq_num_is_parity(0, 0, 0));
+    assert_eq!(false, seq_num_is_parity(0, 1, 1));
+    assert_eq!(false, seq_num_is_parity(0, 128, 128));
+
+    assert_eq!(false, seq_num_is_parity(1, 3, 2));
+    assert_eq!(false, seq_num_is_parity(2, 3, 2));
+    assert_eq!(false, seq_num_is_parity(3, 3, 2));
+    assert_eq!(true,  seq_num_is_parity(4, 3, 2));
+    assert_eq!(true,  seq_num_is_parity(5, 3, 2));
+
+    assert_eq!(false, seq_num_is_parity(6, 3, 2));
+    assert_eq!(false, seq_num_is_parity(7, 3, 2));
+    assert_eq!(false, seq_num_is_parity(8, 3, 2));
+    assert_eq!(true,  seq_num_is_parity(9, 3, 2));
+    assert_eq!(true,  seq_num_is_parity(10, 3, 2));
+
+    assert_eq!(false, seq_num_is_parity(11, 3, 2));
+    assert_eq!(false, seq_num_is_parity(12, 3, 2));
+    assert_eq!(false, seq_num_is_parity(13, 3, 2));
+    assert_eq!(true,  seq_num_is_parity(14, 3, 2));
+    assert_eq!(true,  seq_num_is_parity(15, 3, 2));
+}
+
+#[test]
+fn test_calc_data_chunk_write_index_simple_cases() {
+    assert_eq!(None, calc_data_chunk_write_index(0, None));
+    assert_eq!(None, calc_data_chunk_write_index(0, Some((1, 1))));
+
+    assert_eq!(Some(0), calc_data_chunk_write_index(1, Some((3, 2))));
+    assert_eq!(Some(1), calc_data_chunk_write_index(2, Some((3, 2))));
+    assert_eq!(Some(2), calc_data_chunk_write_index(3, Some((3, 2))));
+    assert_eq!(None,    calc_data_chunk_write_index(4, Some((3, 2))));
+    assert_eq!(None,    calc_data_chunk_write_index(5, Some((3, 2))));
+
+    assert_eq!(Some(3), calc_data_chunk_write_index(6, Some((3, 2))));
+    assert_eq!(Some(4), calc_data_chunk_write_index(7, Some((3, 2))));
+    assert_eq!(Some(5), calc_data_chunk_write_index(8, Some((3, 2))));
+    assert_eq!(None,    calc_data_chunk_write_index(9, Some((3, 2))));
+    assert_eq!(None,    calc_data_chunk_write_index(10, Some((3, 2))));
+
+    assert_eq!(Some(6), calc_data_chunk_write_index(11, Some((3, 2))));
+    assert_eq!(Some(7), calc_data_chunk_write_index(12, Some((3, 2))));
+    assert_eq!(Some(8), calc_data_chunk_write_index(13, Some((3, 2))));
+    assert_eq!(None,    calc_data_chunk_write_index(14, Some((3, 2))));
+    assert_eq!(None,    calc_data_chunk_write_index(15, Some((3, 2))));
+}
+
+quickcheck! {
+    fn qc_calc_data_chunk_write_index_rs_disabled(seq_num : u32) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+        seq_num as u64 - 1 == calc_data_chunk_write_index(seq_num, None).unwrap()
+    }
+
+    fn qc_calc_data_chunk_write_index_rs_enabled_ret_opt_correctly(seq_num  : u32,
+                                                                   data_par : (usize, usize))
+                                                                   -> bool {
+        let mut data_par = data_par;
+        data_par.0 = if data_par.0 == 0 { 1 } else { data_par.0 };
+        data_par.1 = if data_par.1 == 0 { 1 } else { data_par.1 };
+
+        let (data, parity) = data_par;
+
+        (seq_num == 0
+         && calc_data_chunk_write_index(seq_num, Some(data_par)) == None
+        )
+            || (seq_num_is_parity(seq_num, data, parity)
+                && calc_data_chunk_write_index(seq_num, Some(data_par)) == None
+            )
+            || (!seq_num_is_parity(seq_num, data, parity)
+                && calc_data_chunk_write_index(seq_num, Some(data_par)) != None)
+    }
+
+    fn qc_calc_data_chunk_write_index_rs_enabled_calc_correctly(data_par : (usize, usize)) -> bool {
+        let mut data_par = data_par;
+        data_par.0 = if data_par.0 == 0 { 1 } else { data_par.0 };
+        data_par.1 = if data_par.1 == 0 { 1 } else { data_par.1 };
+
+        let (data, parity) = data_par;
+
+        let mut data_chunk_index = 0;
+        for seq_num in 1..100_000 {
+            match calc_data_chunk_write_index(seq_num, Some(data_par)) {
+                None    => if !seq_num_is_parity(seq_num, data, parity) { return false; }
+                Some(x) => if x == data_chunk_index { data_chunk_index += 1; } else { return false; }
+            }
+        }
+
+        true
+    }
+}
+
+#[test]
+fn test_get_version_simple_cases() {
+    let uid : [u8; 6] = [0; 6];
+    assert_eq!(Version::V1, Block::new(Version::V1, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V1, Block::new(Version::V1, &uid, BlockType::Data).get_version());
+
+    assert_eq!(Version::V2, Block::new(Version::V2, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V2, Block::new(Version::V2, &uid, BlockType::Data).get_version());
+
+    assert_eq!(Version::V3, Block::new(Version::V3, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V3, Block::new(Version::V3, &uid, BlockType::Data).get_version());
+
+    assert_eq!(Version::V17, Block::new(Version::V17, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V17, Block::new(Version::V17, &uid, BlockType::Data).get_version());
+
+    assert_eq!(Version::V18, Block::new(Version::V18, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V18, Block::new(Version::V18, &uid, BlockType::Data).get_version());
+
+    assert_eq!(Version::V19, Block::new(Version::V19, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V19, Block::new(Version::V19, &uid, BlockType::Data).get_version());
+}
+
+#[test]
+fn test_set_version_simple_cases() {
+    let uid : [u8; 6] = [0; 6];
+    let mut block = Block::dummy();
+
+    block.set_version(Version::V1);
+    assert_eq!(Version::V1, Block::new(Version::V1, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V1, Block::new(Version::V1, &uid, BlockType::Data).get_version());
+
+    block.set_version(Version::V2);
+    assert_eq!(Version::V2, Block::new(Version::V2, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V2, Block::new(Version::V2, &uid, BlockType::Data).get_version());
+
+    block.set_version(Version::V3);
+    assert_eq!(Version::V3, Block::new(Version::V3, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V3, Block::new(Version::V3, &uid, BlockType::Data).get_version());
+
+    block.set_version(Version::V17);
+    assert_eq!(Version::V17, Block::new(Version::V17, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V17, Block::new(Version::V17, &uid, BlockType::Data).get_version());
+
+    block.set_version(Version::V18);
+    assert_eq!(Version::V18, Block::new(Version::V18, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V18, Block::new(Version::V18, &uid, BlockType::Data).get_version());
+
+    block.set_version(Version::V19);
+    assert_eq!(Version::V19, Block::new(Version::V19, &uid, BlockType::Meta).get_version());
+    assert_eq!(Version::V19, Block::new(Version::V19, &uid, BlockType::Data).get_version());
+}
+
+#[test]
+fn test_get_uid() {
+    let mut uid : [u8; 6] = [0; 6];
+    for _ in 0..1000 {
+        rand_utils::fill_random_bytes(&mut uid);
+
+        assert_eq!(uid, Block::new(Version::V1, &uid, BlockType::Data).get_uid());
+    }
+}
+
+#[test]
+fn test_set_uid() {
+    let mut uid : [u8; 6] = [0; 6];
+    let mut block = Block::dummy();
+    for _ in 0..1000 {
+        rand_utils::fill_random_bytes(&mut uid);
+
+        block.set_uid(uid);
+
+        assert_eq!(uid, block.get_uid());
+    }
+}
+
+quickcheck! {
+    fn qc_set_get_seq_num(seq_num : u32) -> bool {
+        let mut block = Block::dummy();
+
+        block.set_seq_num(seq_num);
+
+        seq_num == block.get_seq_num()
+    }
+
+    fn qc_add_seq_num(seq_num : u32,
+                      val : u32) -> bool {
+        let seq_num = seq_num / 2;
+        let val     = val / 2;
+        let mut block = Block::dummy();
+
+        block.set_seq_num(seq_num);
+
+        block.add_seq_num(val).unwrap();
+
+        seq_num + val == block.get_seq_num()
+    }
+}
+
+quickcheck! {
+    fn qc_calc_data_chunk_write_pos_consistent_rs_disabled(seq_num : u32) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+
+        calc_data_chunk_write_index(seq_num,
+                                    None).unwrap() * ver_to_data_size(Version::V1) as u64
+            == calc_data_chunk_write_pos(Version::V1,
+                                         seq_num,
+                                         None).unwrap()
+            && calc_data_chunk_write_index(seq_num,
+                                           None).unwrap() * ver_to_data_size(Version::V2) as u64
+            == calc_data_chunk_write_pos(Version::V2,
+                                         seq_num,
+                                         None).unwrap()
+            && calc_data_chunk_write_index(seq_num,
+                                           None).unwrap() * ver_to_data_size(Version::V3) as u64
+            == calc_data_chunk_write_pos(Version::V3,
+                                         seq_num,
+                                         None).unwrap()
+    }
+
+    fn qc_calc_data_chunk_write_pos_consistent_rs_enabled(seq_num  : u32,
+                                                          data_par : (usize, usize)) -> bool {
+        let seq_num = if seq_num == 0 { 1 } else { seq_num };
+        let (data, parity) = data_par;
+        let data_par = Some(data_par);
+
+        (seq_num_is_parity(seq_num, data, parity)
+         && calc_data_chunk_write_index(seq_num,
+                                        data_par) == None
+         && calc_data_chunk_write_pos(Version::V17,
+                                      seq_num,
+                                      data_par) == None
+         && calc_data_chunk_write_index(seq_num,
+                                        data_par) == None
+         && calc_data_chunk_write_pos(Version::V18,
+                                      seq_num,
+                                      data_par) == None
+         && calc_data_chunk_write_index(seq_num,
+                                        data_par) == None
+         && calc_data_chunk_write_pos(Version::V19,
+                                      seq_num,
+                                      data_par) == None
+        )
+            ||
+            (!seq_num_is_parity(seq_num, data, parity)
+             && calc_data_chunk_write_index(seq_num,
+                                            data_par).unwrap() * ver_to_data_size(Version::V17) as u64
+             == calc_data_chunk_write_pos(Version::V17,
+                                          seq_num,
+                                          data_par).unwrap()
+             && calc_data_chunk_write_index(seq_num,
+                                            data_par).unwrap() * ver_to_data_size(Version::V18) as u64
+             == calc_data_chunk_write_pos(Version::V18,
+                                          seq_num,
+                                          data_par).unwrap()
+             && calc_data_chunk_write_index(seq_num,
+                                            data_par).unwrap() * ver_to_data_size(Version::V19) as u64
+             == calc_data_chunk_write_pos(Version::V19,
+                                          seq_num,
+                                          data_par).unwrap()
+            )
+    }
+}
+
+quickcheck! {
+    fn qc_block_is_parity_matches_seq_num_is_parity(seq_num  : u32,
+                                                    data_par : (usize, usize))
+                                                    -> bool {
+        let mut data_par = data_par;
+        data_par.0 = if data_par.0 == 0 { 1 } else { data_par.0 };
+        data_par.1 = if data_par.1 == 0 { 1 } else { data_par.1 };
+
+        let (data, parity) = data_par;
+
+        ({
+            let version = Version::V1;
+            let mut block = Block::dummy();
+            block.set_version(version);
+            block.set_seq_num(seq_num);
+
+            block.is_parity(data, parity) == false
+        })
+        &&
+        ({
+            let version = Version::V2;
+            let mut block = Block::dummy();
+            block.set_version(version);
+            block.set_seq_num(seq_num);
+
+            block.is_parity(data, parity) == false
+        })
+        &&
+        ({
+            let version = Version::V3;
+            let mut block = Block::dummy();
+            block.set_version(version);
+            block.set_seq_num(seq_num);
+
+            block.is_parity(data, parity) == false
+        })
+        &&
+        ({
+            let version = Version::V17;
+            let mut block = Block::dummy();
+            block.set_version(version);
+            block.set_seq_num(seq_num);
+
+            block.is_parity(data, parity)
+                == seq_num_is_parity(seq_num, data, parity)
+        })
+        &&
+        ({
+            let version = Version::V18;
+            let mut block = Block::dummy();
+            block.set_version(version);
+            block.set_seq_num(seq_num);
+
+            block.is_parity(data, parity)
+                == seq_num_is_parity(seq_num, data, parity)
+        })
+        &&
+        ({
+            let version = Version::V19;
+            let mut block = Block::dummy();
+            block.set_version(version);
+            block.set_seq_num(seq_num);
+
+            block.is_parity(data, parity)
+                == seq_num_is_parity(seq_num, data, parity)
+        })
     }
 }
