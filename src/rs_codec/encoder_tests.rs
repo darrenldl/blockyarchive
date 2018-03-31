@@ -29,7 +29,7 @@ fn test_encoder_encode_correctly_simple_cases() {
         let r = ReedSolomon::new(10, 3).unwrap();
         let mut encoder = RSEncoder::new(version, 10, 3);
 
-        let mut buffer = make_random_block_buffers!(10_000, 13);
+        let mut buffer = make_random_block_buffers!(4096, 13);
         let mut buffer_copy = buffer.clone();
 
         assert!(!encoder.active());
