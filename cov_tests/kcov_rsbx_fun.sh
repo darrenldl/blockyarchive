@@ -9,6 +9,10 @@ fi
 mkdir -p "$HOME/target/cov/rsbx"
 
 function kcov_rsbx() {
-    kcov --exclude-pattern=/.cargo,/usr/lib --verify "$HOME/target/cov/rsbx" rsbx "$@"; bash <(curl -s https://codecov.io/bash)
-    kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "$HOME/target/cov/rsbx" rsbx "$@"
+    if [[ $TRAVIS == true ]]; then
+        kcov --exclude-pattern=/.cargo,/usr/lib --verify "$HOME/target/cov/rsbx" rsbx "$@"
+        kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "$HOME/target/cov/rsbx" rsbx "$@"
+    else
+        kcov --exclude-pattern=/.cargo,/usr/lib --verify "../target/cov/rsbx" rsbx "$@"
+    fi
 }

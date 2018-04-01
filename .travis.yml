@@ -36,7 +36,9 @@ after_success: |
   TARGET=$HOME/kcov &&
   export PATH=$TARGET/bin:$PATH &&
   for file in target/debug/rsbx*; do if [[ $file == *.d ]]; then continue; fi; kcov --exclude-pattern=/.cargo,/usr/lib --verify "$HOME/target/cov/rsbx" "$file"; done &&
-  bash <(curl -s https://codecov.io/bash) &&
+  wget https://codecov.io/bash codecov_uploader &&
+  chmod u+x codecov_uploader &&
+  codecov_uploader -s "$HOME/target/cov/rsbx" &&
   echo "Uploaded code coverage to Codecov" &&
   for file in target/debug/rsbx*; do if [[ $file == *.d ]]; then continue; fi; kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "$HOME/target/cov/rsbx" "$file"; done &&
   echo "Uploaded code coverage to Coveralls"
