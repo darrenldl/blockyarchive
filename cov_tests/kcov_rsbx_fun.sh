@@ -2,12 +2,10 @@
 
 TARGET=$HOME/kcov
 
-export PATH=$TARGET/bin:$PATH
+if [[ $TRAVIS == true ]]; then
+    export PATH=$TARGET/bin:$PATH
+fi
 
 function kcov_rsbx() {
-    if [[ $TRAVIS == true ]]; then
-
-    else
-        kcov --exclude-pattern=/.cargo,/usr/lib --verify "../target/cov/rsbx" rsbx "$@"
-    fi
+    kcov --exclude-pattern=/.cargo,/usr/lib --verify "../target/cov/rsbx" rsbx "$@"
 }
