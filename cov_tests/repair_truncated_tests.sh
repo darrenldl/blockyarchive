@@ -12,7 +12,7 @@ file_size=$[1024 * 1024 * 1]
 dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null
 
 for ver in ${VERSIONS[*]}; do
-    for (( i=0; i < 3; i++ )); do
+    for (( i=0; i < 1; i++ )); do
         if   [[ $ver == 17 ]]; then
             data_shards=$((1 + RANDOM % 128))
             parity_shards=$((1 + RANDOM % 128))
