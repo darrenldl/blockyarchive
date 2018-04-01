@@ -847,6 +847,10 @@ quickcheck! {
     fn qc_calc_data_chunk_write_pos_consistent_rs_enabled(seq_num  : u32,
                                                           data_par : (usize, usize)) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
+        let mut data_par = data_par;
+        data_par.0 = if data_par.0 == 0 { 1 } else { data_par.0 };
+        data_par.1 = if data_par.1 == 0 { 1 } else { data_par.1 };
+
         let (data, parity) = data_par;
         let data_par = Some(data_par);
 
