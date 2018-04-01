@@ -1,7 +1,7 @@
 environment:
   global:
     # This will be used as part of the zipfile name
-    PROJECT_NAME: reed-solomon-erasure
+    PROJECT_NAME: rsbx
   matrix:
     # Stable channel
     - TARGET: i686-pc-windows-gnu
@@ -52,6 +52,15 @@ test_script:
   - cargo test  --verbose --all
   - bash tests/dev_tests.sh
 
+cache:
+  - C:\Users\appveyor\.cargo\registry
+  - target
+
+before_deploy:
+  # TODO Update this to build the artifacts that matter to you
+  - cargo rustc --target %TARGET% --release --bin hello -- -C lto
+- ps: ci\before_deploy.ps1
+
 branches:
   only:
     - master
@@ -59,3 +68,19 @@ branches:
     # IMPORTANT Regex to match tags. Required, or appveyor may not trigger deploys when a new tag
     # is pushed. This regex matches semantic versions like v1.2.3-rc4+2016.02.22
     # - /^v\d+\.\d+\.\d+.*$/
+
+deploy:
+  artifact: /.*\.zip/
+  # - Create a `public_repo` GitHub token. Go to: https://github.com/settings/tokens/new
+  # - Encrypt it. Go to https://ci.appveyor.com/tools/encrypt
+  # - Paste the output down here
+  auth_token:
+    secure: U0+AGj/MNkK1fSXbryPHM4rKmuahVV/TgAWVcIhwLMZOawDF6p8gK3vxXOIaDelS
+  description: ''
+  on:
+    # In this example, there are some targets that are tested using the stable
+    # and nightly channels. This condition makes sure there is only one release
+    # for such targets and that's generated using the stable channel
+    RUST_VERSION: stable
+    appveyor_repo_tag: true
+  provider: GitHub
