@@ -9,7 +9,7 @@ branches:
     - dev
 
 script:
-  - rm -r target/cov
+  - rm -rf target/cov
   # - cargo build --verbose --all
   # - cargo test  --verbose --all
   - bash install_kcov.sh
