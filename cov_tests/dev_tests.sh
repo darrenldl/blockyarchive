@@ -19,6 +19,8 @@ if [[ $? != 0 ]]; then
     test_failed=$[$test_failed+1]
 fi
 
+exit 0
+
 # nometa tests
 echo "========================================"
 echo "Starting nometa tests"
