@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source kcov_rsbx_fun.sh
+
 exit_code=0
 
 VERSIONS=(1 2 3 17 18 19)
@@ -35,38 +37,38 @@ for ver in ${VERSIONS[*]}; do
 
         echo "Testing for version $ver, data = $data_shards, parity = $parity_shards, burst = $burst"
 
-        encode_info_file_size=$(./rsbx encode --info-only --sbx-version $ver dummy \
+        encode_info_file_size=$(kcov_rsbx encode --info-only --sbx-version $ver dummy \
                                        --rs-data $data_shards --rs-parity $parity_shards \
                                        --burst $burst \
                                     | grep "File size" \
                                     | awk '{print $4}')
 
-        encode_info_container_size=$(./rsbx encode --info-only --sbx-version $ver dummy \
+        encode_info_container_size=$(kcov_rsbx encode --info-only --sbx-version $ver dummy \
                                             --rs-data $data_shards --rs-parity $parity_shards \
                                             --burst $burst \
                                          | grep "SBX container size" \
                                          | awk '{print $5}')
 
-        calc_mode_file_size=$(./rsbx calc $actual_file_size --sbx-version $ver \
+        calc_mode_file_size=$(kcov_rsbx calc $actual_file_size --sbx-version $ver \
                                      --rs-data $data_shards --rs-parity $parity_shards \
                                      --burst $burst \
                                   | grep "File size" \
                                   | awk '{print $4}')
 
-        calc_mode_container_size=$(./rsbx calc $actual_file_size --sbx-version $ver \
+        calc_mode_container_size=$(kcov_rsbx calc $actual_file_size --sbx-version $ver \
                                           --rs-data $data_shards --rs-parity $parity_shards \
                                           --burst $burst \
                                        | grep "SBX container size" \
                                        | awk '{print $5}')
 
-        encode_stats_file_size=$(./rsbx encode --sbx-version $ver -f dummy \
+        encode_stats_file_size=$(kcov_rsbx encode --sbx-version $ver -f dummy \
                                         --hash sha1 \
                                         --rs-data $data_shards --rs-parity $parity_shards \
                                         --burst $burst \
                                      | grep "File size" \
                                      | awk '{print $4}')
 
-        encode_stats_container_size=$(./rsbx encode --sbx-version $ver -f dummy \
+        encode_stats_container_size=$(kcov_rsbx encode --sbx-version $ver -f dummy \
                                              --hash sha1 \
                                              --rs-data $data_shards --rs-parity $parity_shards \
                                              --burst $burst \

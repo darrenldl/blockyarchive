@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source kcov_rsbx_fun.sh
+
 exit_code=0
 
 VERSIONS=(17 18 19)
@@ -25,7 +27,7 @@ for ver in ${VERSIONS[*]}; do
         container_name=truncated_$data_shards\_$parity_shards\_$ver.sbx
 
         echo "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
-        ./rsbx encode --sbx-version $ver -f dummy $container_name \
+        kcov_rsbx encode --sbx-version $ver -f dummy $container_name \
                --hash sha1 \
                --rs-data $data_shards --rs-parity $parity_shards &>/dev/null
 
@@ -46,12 +48,12 @@ for ver in ${VERSIONS[*]}; do
         truncate -s $truncated_container_size $container_name
 
         echo "Repairing"
-        ./rsbx repair -y $container_name &>/dev/null
+        kcov_rsbx repair -y $container_name &>/dev/null
 
         output_name=dummy_$data_shards\_$parity_shards
 
         echo "Decoding"
-        ./rsbx decode -f $container_name $output_name &>/dev/null
+        kcov_rsbx decode -f $container_name $output_name &>/dev/null
 
         echo "Comparing decoded data to original"
         cmp dummy $output_name

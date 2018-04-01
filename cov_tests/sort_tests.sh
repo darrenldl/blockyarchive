@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source kcov_rsbx_fun.sh
+
 exit_code=0
 
 VERSIONS=(1 2 3 17 18 19)
@@ -36,18 +38,18 @@ for ver in ${VERSIONS[*]}; do
         container_name=sort_$data_shards\_$parity_shards\_$ver.sbx
 
         echo "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
-        ./rsbx encode --sbx-version $ver -f dummy $container_name \
+        kcov_rsbx encode --sbx-version $ver -f dummy $container_name \
                --hash sha1 \
                --rs-data $data_shards --rs-parity $parity_shards &>/dev/null
 
         echo "Sorting container"
-        ./rsbx sort --burst $burst $container_name sorted_$container_name \
+        kcov_rsbx sort --burst $burst $container_name sorted_$container_name \
             &>/dev/null
 
         output_name=dummy_$data_shards\_$parity_shards
 
         echo "Decoding"
-        ./rsbx decode -f sorted_$container_name $output_name &>/dev/null
+        kcov_rsbx decode -f sorted_$container_name $output_name &>/dev/null
 
         echo "Comparing decoded data to original"
         cmp dummy $output_name

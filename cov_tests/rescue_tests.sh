@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source kcov_rsbx_fun.sh
+
 exit_code=0
 
 VERSIONS=(1 2 3 17 18 19)
@@ -7,7 +9,7 @@ VERSIONS=(1 2 3 17 18 19)
 # Encode in all 6 versions
 for ver in ${VERSIONS[*]}; do
   echo "Encoding in version $ver"
-  ./rsbx encode --sbx-version $ver -f dummy rescue$ver.sbx \
+  kcov_rsbx encode --sbx-version $ver -f dummy rescue$ver.sbx \
          --rs-data 10 --rs-parity 2 &>/dev/null
 done
 
@@ -42,13 +44,13 @@ echo "Rescuing from dummy disk"
 rm -rf rescued_data &>/dev/null
 mkdir rescued_data &>/dev/null
 rm rescue_log &>/dev/null
-./rsbx rescue dummy_disk rescued_data rescue_log &>/dev/null
+kcov_rsbx rescue dummy_disk rescued_data rescue_log &>/dev/null
 
 # Try to decode the rescued data
 echo "Decoding all rescued data"
 FILES=rescued_data/*
 for f in $FILES; do
-  ./rsbx decode $f $f.decoded &>/dev/null
+  kcov_rsbx decode $f $f.decoded &>/dev/null
 done
 
 echo "Comparing decoded data to original"

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source kcov_rsbx_fun.sh
+
 exit_code=0
 
 HASHES=("sha1" "sha256" "sha512" "blake2b-512")
@@ -14,7 +16,7 @@ a[3]=$(b2sum     dummy | awk '{print $1}')
 i=0
 for h in ${HASHES[*]}; do
   echo "Encoding in hash $h"
-  output=$(./rsbx encode --hash $h -f dummy dummy$h.sbx | grep "${a[$i]}" )
+  output=$(kcov_rsbx encode --hash $h -f dummy dummy$h.sbx | grep "${a[$i]}" )
   if [[ $output == "" ]]; then
       echo "==> NOT okay"
       exit_code=1
@@ -27,7 +29,7 @@ done
 # Decode all of them
 for h in ${HASHES[*]}; do
   echo "Decoding hash $h container"
-  ./rsbx decode -f dummy$h.sbx dummy$h &>/dev/null
+  kcov_rsbx decode -f dummy$h.sbx dummy$h &>/dev/null
 done
 
 # Compare to original file
