@@ -9,11 +9,11 @@ branches:
     - dev
 
 script:
-  - cargo build --verbose --all
+  # - cargo build --verbose --all
   - cargo test  --verbose --all
   - bash install_kcov.sh
   - bash cov_tests/dev_tests.sh
-  - bash tests/dev_tests.sh
+  # - bash tests/dev_tests.sh
 
 env:
   global:
@@ -38,6 +38,7 @@ after_success: |
   for file in target/debug/rsbx-*; do if [[ $file == *.d ]]; then continue; fi; kcov --exclude-pattern=/.cargo,/usr/lib --verify "$HOME/target/cov/rsbx" "$file"; done &&
   wget https://codecov.io/bash -O codecov_uploader &&
   chmod u+x codecov_uploader &&
+  ls -l "$HOME/target/cov/rsbx" &&
   ./codecov_uploader -s "$HOME/target/cov/rsbx" &&
   echo "Uploaded code coverage to Codecov" &&
   for file in target/debug/rsbx-*; do if [[ $file == *.d ]]; then continue; fi; kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "$HOME/target/cov/rsbx" "$file"; done &&
