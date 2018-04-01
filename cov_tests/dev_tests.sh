@@ -2,7 +2,7 @@
 
 cd tests
 
-./copy_release.sh
+./copy.sh
 
 test_failed=0
 
