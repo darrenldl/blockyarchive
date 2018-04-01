@@ -11,8 +11,9 @@ branches:
 script:
   - cargo build --verbose --all
   - cargo test  --verbose --all
-  - bash tests/dev_tests.sh
+  - bash install_kcov.sh
   - bash cov_tests/dev_tests.sh
+  - bash tests/dev_tests.sh
 
 env:
   global:
@@ -32,18 +33,10 @@ addons:
 sudo: required
 
 after_success: |
-  wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
-  tar xzf master.tar.gz &&
-  cd kcov-master &&
-  mkdir build &&
-  cd build &&
-  cmake .. &&
-  make &&
-  make install DESTDIR=../../kcov-build &&
-  cd ../.. &&
-  rm -rf kcov-master &&
-  for file in target/debug/rsbx*; do if [[ $file == *.d ]]; then continue; fi; mkdir -p "target/cov/rsbx"; ./kcov-build/usr/local/bin/kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/rsbx" "$file"; done &&
+  TARGET=$HOME/kcov &&
+  export PATH=$TARGET/bin:$PATH &&
+  for file in target/debug/rsbx*; do if [[ $file == *.d ]]; then continue; fi; mkdir -p "target/cov/rsbx"; kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/rsbx" "$file"; done &&
   bash <(curl -s https://codecov.io/bash) &&
   echo "Uploaded code coverage to Codecov" &&
-  for file in target/debug/rsbx*; do if [[ $file == *.d ]]; then continue; fi; mkdir -p "target/cov/rsbx"; ./kcov-build/usr/local/bin/kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/rsbx" "$file"; done &&
+  for file in target/debug/rsbx*; do if [[ $file == *.d ]]; then continue; fi; mkdir -p "target/cov/rsbx"; kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/rsbx" "$file"; done &&
   echo "Uploaded code coverage to Coveralls"
