@@ -58,7 +58,7 @@ cache:
 
 before_deploy:
   - cargo rustc --target %TARGET% --release --bin rsbx -- -C lto
-- ps: ci\before_deploy.ps1
+  - ps: ci\before_deploy.ps1
 
 branches:
   only:
