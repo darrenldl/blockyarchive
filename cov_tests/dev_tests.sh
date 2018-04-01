@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd tests
+cd cov_tests
 
 ./copy.sh
 
