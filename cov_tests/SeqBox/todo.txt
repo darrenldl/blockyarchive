@@ -1,0 +1,7 @@
+- 27/02/2017 blake2 would be better than SHA256, but require Python >=3.6.
+             SHA256 should be good enough for the moment.
+
+- 12/03/2017 check if struct.pack&unpack is faster than to/from_bytes
+
+- 21/05/2017 prioritize metadata order; check if there's enough space
+             to write them

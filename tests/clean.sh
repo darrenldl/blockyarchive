@@ -1,6 +1,8 @@
 #!/bin/bash
 
-cd tests
+if [[ $PWD != */tests ]]; then
+  cd tests
+fi
 
 rm dummy* &>/dev/null
 
