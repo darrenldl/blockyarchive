@@ -12,7 +12,7 @@ script:
   # - cargo build --verbose --all
   # - cargo test  --verbose --all
   - bash install_kcov.sh
-  - bash cov_tests/dev_tests.sh
+  # - bash cov_tests/dev_tests.sh
   # - bash tests/dev_tests.sh
 
 env:
