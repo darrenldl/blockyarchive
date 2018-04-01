@@ -10,7 +10,7 @@ corrupt() {
     dd if=/dev/zero of=$2 bs=1 count=1 seek=$1 conv=notrunc &>/dev/null
 }
 
-file_size=$[1024 * 1024 * 1]
+file_size=$[1024 * 2]
 
 # generate test data
 dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null

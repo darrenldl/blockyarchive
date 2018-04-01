@@ -6,7 +6,7 @@ exit_code=0
 
 VERSIONS=(1 2 3 17 18 19)
 
-file_size=$[1024 * 1024 * 10]
+file_size=$[1024 * 2]
 
 # generate test data
 dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null
