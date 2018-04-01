@@ -39,7 +39,7 @@ after_success: |
   wget https://codecov.io/bash -O codecov_uploader &&
   chmod u+x codecov_uploader &&
   ls -l "target/cov/rsbx" &&
-  ls -l "target/cov/rsbx/rsbx" &&
+  ls -l "target/cov/rsbx/rsbx.*" &&
   ls -l "target/cov/rsbx/kcov-merged" &&
   ./codecov_uploader -s "target/cov/rsbx" &&
   ./codecov_uploader -d -s "target/cov/rsbx" &&
