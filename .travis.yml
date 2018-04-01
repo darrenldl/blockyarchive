@@ -35,8 +35,8 @@ sudo: required
 after_success: |
   TARGET=$HOME/kcov &&
   export PATH=$TARGET/bin:$PATH &&
-  for file in target/debug/rsbx*; do if [[ $file == *.d ]]; then continue; fi; mkdir -p "target/cov/rsbx"; kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/rsbx" "$file"; done &&
+  for file in target/debug/rsbx*; do if [[ $file == *.d ]]; then continue; fi; kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/rsbx" "$file"; done &&
   bash <(curl -s https://codecov.io/bash) &&
   echo "Uploaded code coverage to Codecov" &&
-  for file in target/debug/rsbx*; do if [[ $file == *.d ]]; then continue; fi; mkdir -p "target/cov/rsbx"; kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/rsbx" "$file"; done &&
+  for file in target/debug/rsbx*; do if [[ $file == *.d ]]; then continue; fi; kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/rsbx" "$file"; done &&
   echo "Uploaded code coverage to Coveralls"
