@@ -4,7 +4,7 @@ source kcov_rsbx_fun.sh
 
 exit_code=0
 
-VERSIONS=(17 18 19)
+VERSIONS=(17)
 
 corrupt() {
     dd if=/dev/zero of=$2 bs=1 count=1 seek=$1 conv=notrunc &>/dev/null

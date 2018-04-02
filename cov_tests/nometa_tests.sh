@@ -4,7 +4,7 @@ source kcov_rsbx_fun.sh
 
 exit_code=0
 
-VERSIONS=(1 2 3)
+VERSIONS=(1)
 
 # Encode in all 3 versions
 for ver in ${VERSIONS[*]}; do

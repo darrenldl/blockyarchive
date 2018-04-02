@@ -4,7 +4,7 @@ source kcov_rsbx_fun.sh
 
 exit_code=0
 
-VERSIONS=(17 18 19)
+VERSIONS=(17)
 
 file_size=$[1024 * 2]
 
