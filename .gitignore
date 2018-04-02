@@ -8,3 +8,5 @@
 /reed_solomon/target/*
 /reed-solomon-erasure/target/
 /crc-ccitt/target/
+/tests/rsbx
+/cov_tests/rsbx
