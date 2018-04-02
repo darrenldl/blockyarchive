@@ -14,8 +14,10 @@ for ver in ${VERSIONS[*]}; do
   echo "Encoding in version $ver"
   #kcov_rsbx encode --sbx-version $ver -f dummy dummy$ver.sbx \
   #          --rs-data 10 --rs-parity 2 #&>/dev/null
-  kcov --verify "../target/cov/rsbx" rsbx encode --sbx-version $ver -f dummy dummy$ver.sbx \
-                --rs-data 10 --rs-parity 2 #&>/dev/null
+  #kcov --verify "../target/cov/rsbx" rsbx encode --sbx-version $ver -f dummy dummy$ver.sbx \
+  #              --rs-data 10 --rs-parity 2 #&>/dev/null
+  rsbx encode --sbx-version $ver -f dummy dummy$ver.sbx \
+      --rs-data 10 --rs-parity 2 #&>/dev/null
 done
 
 # Decode all of them
