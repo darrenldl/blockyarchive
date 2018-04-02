@@ -37,6 +37,7 @@ after_success: |
   TARGET=$HOME/kcov &&
   export PATH=$TARGET/bin:$PATH &&
   #for file in target/debug/rsbx-*; do if [[ $file == *.d ]]; then continue; fi; kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/rsbx" "$file"; done &&
+  kcov --verify "target/cov/rsbx" target/debug/rsbx calc 0 &&
   wget https://codecov.io/bash -O codecov_uploader &&
   chmod u+x codecov_uploader &&
   ls -l "target/cov/rsbx" &&
