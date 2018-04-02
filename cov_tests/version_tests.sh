@@ -7,6 +7,8 @@ exit_code=0
 # VERSIONS=(1 2 3 17 18 19)
 VERSIONS=(1)
 
+mkdir -p "../target/cov/rsbx"
+
 # Encode in all 6 versions
 for ver in ${VERSIONS[*]}; do
   echo "Encoding in version $ver"
