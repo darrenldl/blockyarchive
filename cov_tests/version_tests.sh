@@ -7,6 +7,7 @@ exit_code=0
 TARGET=$HOME/kcov
 
 if [[ $TRAVIS == true ]]; then
+    echo "Running on travis"
     export PATH=$TARGET/bin:$PATH
 fi
 
