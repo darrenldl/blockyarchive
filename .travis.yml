@@ -8,6 +8,10 @@ branches:
   except:
     - dev
 
+install:
+  - sh ci/install.sh
+  - source ~/.cargo/env || true
+
 script:
   - rm -rf target/cov
   # - cargo build --verbose --all
