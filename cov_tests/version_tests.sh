@@ -4,6 +4,8 @@
 
 exit_code=0
 
+TARGET=$HOME/kcov
+
 if [[ $TRAVIS == true ]]; then
     export PATH=$TARGET/bin:$PATH
 fi
