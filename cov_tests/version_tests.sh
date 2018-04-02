@@ -16,6 +16,8 @@ VERSIONS=(1)
 
 mkdir -p "../target/cov/rsbx"
 
+echo $(which kcov)
+
 # Encode in all 6 versions
 for ver in ${VERSIONS[*]}; do
   echo "Encoding in version $ver"
