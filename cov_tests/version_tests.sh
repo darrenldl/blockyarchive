@@ -4,21 +4,13 @@ source kcov_rsbx_fun.sh
 
 exit_code=0
 
-TARGET=$HOME/kcov
-
-if [[ $TRAVIS == true ]]; then
-    echo "Running on travis"
-    export PATH=$TARGET/bin:$PATH
-fi
-
-# VERSIONS=(1 2 3 17 18 19)
-VERSIONS=(1)
+VERSIONS=(1 2 3 17 18 19)
 
 # Encode in all 6 versions
 for ver in ${VERSIONS[*]}; do
   echo "Encoding in version $ver"
   kcov_rsbx encode --sbx-version $ver -f dummy dummy$ver.sbx \
-            --rs-data 10 --rs-parity 2 #&>/dev/null
+            --rs-data 10 --rs-parity 2 &>/dev/null
 done
 
 # Decode all of them
