@@ -23,7 +23,7 @@ for ver in ${VERSIONS[*]}; do
   echo "Encoding in version $ver"
   #kcov_rsbx encode --sbx-version $ver -f dummy dummy$ver.sbx \
   #          --rs-data 10 --rs-parity 2 #&>/dev/null
-  kcov --include-path="../src" --verify "../target/cov/rsbx" rsbx encode --sbx-version $ver -f dummy dummy$ver.sbx \
+  kcov --include-path $PWD --verify "../target/cov/rsbx" rsbx encode --sbx-version $ver -f dummy dummy$ver.sbx \
                 --rs-data 10 --rs-parity 2 #&>/dev/null
   # ./rsbx encode --sbx-version $ver -f dummy dummy$ver.sbx \
   #     --rs-data 10 --rs-parity 2 #&>/dev/null
