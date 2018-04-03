@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ $TARGET != x86_64-unknown-linux-gnu ]]; then
+if ! [[ $TARGET == x86_64-unknown-linux-gnu && $DISABLE_COV == "" ]]; then
     exit 0
 fi
 
