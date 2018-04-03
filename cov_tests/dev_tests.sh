@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $TARGET != x86_64-unknown-linux-gnu ]]; then
-    return
+    exit 0
 fi
 
 cd cov_tests
