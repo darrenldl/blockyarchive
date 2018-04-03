@@ -4,7 +4,7 @@ source kcov_rsbx_fun.sh
 
 exit_code=0
 
-VERSIONS=(1 2 3 17 18 19)
+VERSIONS=(1 17 19)
 
 touch dummy
 
@@ -14,26 +14,26 @@ for ver in ${VERSIONS[*]}; do
         truncate -s $actual_file_size dummy
 
         if   [[ $ver ==  1 ]]; then
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 5))
+            parity_shards=$((1 + RANDOM % 5))
         elif [[ $ver ==  2 ]]; then
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 5))
+            parity_shards=$((1 + RANDOM % 5))
         elif [[ $ver ==  3 ]]; then
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 5))
+            parity_shards=$((1 + RANDOM % 5))
         elif [[ $ver == 17 ]]; then
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 5))
+            parity_shards=$((1 + RANDOM % 5))
         elif [[ $ver == 18 ]]; then
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 5))
+            parity_shards=$((1 + RANDOM % 5))
         else
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 5))
+            parity_shards=$((1 + RANDOM % 5))
         fi
 
-        burst=$((RANDOM % 15))
+        burst=$((RANDOM % 10))
 
         echo "Testing for version $ver, data = $data_shards, parity = $parity_shards, burst = $burst"
 

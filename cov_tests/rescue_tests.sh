@@ -27,15 +27,6 @@ cat rescue3.sbx  >> dummy_disk
 cat filler2      >> dummy_disk
 cat rescue1.sbx  >> dummy_disk
 cat filler3      >> dummy_disk
-cat rescue2.sbx  >> dummy_disk
-cat filler2      >> dummy_disk
-cat filler3      >> dummy_disk
-cat rescue17.sbx >> dummy_disk
-cat filler2      >> dummy_disk
-cat rescue19.sbx >> dummy_disk
-cat filler2      >> dummy_disk
-cat filler3      >> dummy_disk
-cat filler3      >> dummy_disk
 cat rescue18.sbx >> dummy_disk
 cat filler3      >> dummy_disk
 

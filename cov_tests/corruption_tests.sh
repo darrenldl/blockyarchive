@@ -18,14 +18,14 @@ dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null
 for ver in ${VERSIONS[*]}; do
     for (( i=0; i < 1; i++ )); do
         if   [[ $ver == 17 ]]; then
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 5))
+            parity_shards=$((1 + RANDOM % 5))
         elif [[ $ver == 18 ]]; then
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 5))
+            parity_shards=$((1 + RANDOM % 5))
         else
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 5))
+            parity_shards=$((1 + RANDOM % 5))
         fi
 
         container_name=corrupt_$data_shards\_$parity_shards\_$ver.sbx
