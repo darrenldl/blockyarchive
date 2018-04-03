@@ -30,7 +30,7 @@ As rsbx is to be used largely as a backup utility, security/robustness of the co
 
 ## Getting started
 #### Installation
-rsbx is available via `cargo`
+rsbx is available via [GitHub releases](https://github.com/darrenldl/rust-SeqBox/releases) or via `cargo`
 ```
 cargo install rsbx
 ```
