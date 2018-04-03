@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [[ $TARGET != x86_64-unknown-linux-gnu ]]; then
+    return
+fi
+
 cd tests
 
 ./copy_release.sh

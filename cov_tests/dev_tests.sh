@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [[ $TARGET != x86_64-unknown-linux-gnu ]]; then
+    return
+fi
+
 cd cov_tests
 
 ./copy.sh

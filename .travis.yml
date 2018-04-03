@@ -22,12 +22,6 @@ matrix:
     - env: TARGET=x86_64-unknown-linux-gnu
     - env: TARGET=x86_64-unknown-linux-musl
 
-    # OSX
-    - env: TARGET=i686-apple-darwin
-      os: osx
-    - env: TARGET=x86_64-apple-darwin
-      os: osx
-
     # *BSD
     - env: TARGET=i686-unknown-freebsd DISABLE_TESTS=1
     - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
@@ -41,9 +35,6 @@ matrix:
       rust: beta
     - env: TARGET=x86_64-unknown-linux-gnu
       rust: nightly
-    - env: TARGET=x86_64-apple-darwin
-      os: osx
-      rust: nightly
 
 before_install:
   - set -e
@@ -54,12 +45,11 @@ install:
   - source ~/.cargo/env || true
 
 script:
+  - bash ci/script.sh
   - rm -rf target/cov
-  # - cargo build --verbose --all
-  - cargo test  --verbose --all
   - bash install_kcov.sh
-  # - bash cov_tests/dev_tests.sh
-  # - bash tests/dev_tests.sh
+  - bash cov_tests/dev_tests.sh
+  - bash tests/dev_tests.sh
 
 addons:
   apt:
