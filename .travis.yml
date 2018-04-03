@@ -1,6 +1,9 @@
 language: rust
-services: docker
 sudo: required
+rust:
+  - stable
+  - beta
+  - nightly
 
 branches:
   except:
@@ -11,45 +14,13 @@ env:
   - RUSTFLAGS="-C link-dead-code"
   - CRATE_NAME=rsbx
 
-matrix:
-  include:
-    # Linux
-    - env: TARGET=aarch64-unknown-linux-gnu
-    - env: TARGET=arm-unknown-linux-gnueabi
-    - env: TARGET=armv7-unknown-linux-gnueabihf
-    - env: TARGET=i686-unknown-linux-gnu
-    - env: TARGET=i686-unknown-linux-musl
-    - env: TARGET=x86_64-unknown-linux-gnu
-    - env: TARGET=x86_64-unknown-linux-musl
-
-    # *BSD
-    - env: TARGET=i686-unknown-freebsd DISABLE_TESTS=1
-    - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
-    - env: TARGET=x86_64-unknown-netbsd DISABLE_TESTS=1
-
-    # Windows
-    - env: TARGET=x86_64-pc-windows-gnu
-
-    # Testing other channels
-    - env: TARGET=x86_64-unknown-linux-gnu
-      rust: beta
-    - env: TARGET=x86_64-unknown-linux-gnu
-      rust: nightly
-
-before_install:
-  - set -e
-  - rustup self update
-
-install:
-  - sh ci/install.sh
-  - source ~/.cargo/env || true
-
 script:
-  - bash ci/script.sh
   - rm -rf target/cov
+  - cargo build --verbose --all
+  - cargo test  --verbose --all
   - bash install_kcov.sh
-  - bash cov_tests/dev_tests.sh
-  - bash tests/dev_tests.sh
+  # - bash cov_tests/dev_tests.sh
+  # - bash tests/dev_tests.sh
 
 addons:
   apt:

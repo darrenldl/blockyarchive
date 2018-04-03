@@ -1,9 +1,5 @@
 #!/bin/bash
 
-if [[ $TARGET != x86_64-unknown-linux-gnu ]]; then
-    return
-fi
-
 set -e
 shopt -s nullglob
 
