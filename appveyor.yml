@@ -40,7 +40,7 @@ test_script:
       cargo test --target %TARGET% &&
       cargo test --target %TARGET% --release &&
       cargo run --target %TARGET% &&
-      cargo run --target %TARGET% --release
+      cargo run --target %TARGET% --release &&
       bash tests/dev_tests.sh
     )
 
