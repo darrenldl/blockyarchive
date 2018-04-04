@@ -1,3 +1,7 @@
+## 1.0.5
+- No code changes
+- Added binary releases via GitHub releases
+
 ## 1.0.4
 - Help messages polish
 - Added text in help messages about rsbx's limitations on burst error resistance level
