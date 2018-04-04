@@ -4,6 +4,8 @@ environment:
 
     CRATE_NAME: rsbx
 
+    APPVEYOR_CACHE_ENTRY_ZIP_ARGS: -t7z -m0=lzma -mx=9
+
   matrix:
     # MinGW
     - TARGET: i686-pc-windows-gnu
@@ -65,9 +67,9 @@ deploy:
   provider: GitHub
 
 cache:
-  - C:\Users\appveyor\.cargo\registry
-  - target\debug\deps
-  - target\release\deps
+  #- C:\Users\appveyor\.cargo\registry
+  #- target\debug\deps
+  #- target\release\deps
 
 branches:
   only:
