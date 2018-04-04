@@ -65,9 +65,9 @@ deploy:
   provider: GitHub
 
 cache:
-  # - C:\Users\appveyor\.cargo\registry
-  # - target\debug\deps
-  # - target\release\deps
+  - C:\Users\appveyor\.cargo\registry
+  - target\debug\deps
+  - target\release\deps
 
 branches:
   only:
