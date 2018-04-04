@@ -4,7 +4,9 @@ version = "1.0.5"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 build   = "build.rs"
 exclude = [
+    "ci/*",
     "tests/*",
+    "cov_tests/*",
     "crc-ccitt/*",
     "libcrc_crcccitt/*",
     "appveyor.yml",
