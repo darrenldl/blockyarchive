@@ -1,3 +1,6 @@
+## 1.0.6
+- Improved calc mode dialog about interpretation of error correction parameters
+
 ## 1.0.5
 - No code changes
 - Added binary releases via GitHub releases
