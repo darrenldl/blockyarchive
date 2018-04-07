@@ -1,6 +1,6 @@
 [package]
 name    = "rsbx"
-version = "1.0.6"
+version = "1.0.7"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 build   = "build.rs"
 exclude = [
