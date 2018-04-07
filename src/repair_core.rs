@@ -87,9 +87,9 @@ impl fmt::Display for Stats {
         writeln!(f, "SBX version                              : {}", ver_to_usize(self.version))?;
         writeln!(f, "Block size used in checking              : {}", block_size)?;
         writeln!(f, "Number of blocks processed               : {}", self.units_so_far())?;
-        writeln!(f, "Number of blocks processed (metadata)    : {}", self.meta_blocks_decoded)?;
-        writeln!(f, "Number of blocks processed (data)        : {}", self.data_or_par_blocks_decoded)?;
-        writeln!(f, "Number of blocks failed to process       : {}", self.blocks_decode_failed)?;
+        writeln!(f, "Number of blocks passed check (metadata) : {}", self.meta_blocks_decoded)?;
+        writeln!(f, "Number of blocks passed check (data)     : {}", self.data_or_par_blocks_decoded)?;
+        writeln!(f, "Number of blocks failed check            : {}", self.blocks_decode_failed)?;
         writeln!(f, "Number of blocks repaired (metadata)     : {}", self.meta_blocks_repaired)?;
         writeln!(f, "Number of blocks repaired (data)         : {}", self.data_or_par_blocks_repaired)?;
         writeln!(f, "Number of blocks failed to repair (data) : {}", self.data_or_par_blocks_repair_failed)?;
