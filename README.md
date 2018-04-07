@@ -39,7 +39,7 @@ cargo install rsbx
 The [wiki](https://github.com/darrenldl/rust-SeqBox/wiki) contains comprehensive guides and resources.
 
 ## Helpers
-Repo [rsbx-helpers](https://github.com/darrenldl/rsbx-helpers) contains helpers to extend the functionality of rsbx.
+Repo [rsbx-helpers](https://github.com/darrenldl/rsbx-helpers) contains helpers for extending the functionality of rsbx.
 
 ## Changelog
 [Changelog](CHANGELOG.md)
