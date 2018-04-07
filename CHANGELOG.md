@@ -1,3 +1,6 @@
+## 1.0.7
+- Polished repair stats text
+
 ## 1.0.6
 - Improved calc mode dialog about interpretation of error correction parameters
 
