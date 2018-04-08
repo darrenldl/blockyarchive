@@ -1,5 +1,4 @@
 use std::sync::{Arc, Mutex};
-use std::fs;
 use std::fmt;
 use file_utils;
 use misc_utils;
@@ -40,10 +39,10 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(file_metadata : &fs::Metadata) -> Stats {
+    pub fn new(file_size : u64) -> Stats {
         Stats {
             bytes_processed   : 0,
-            total_bytes       : file_metadata.len(),
+            total_bytes       : file_size,
             meta_block_count  : 0,
             start_time        : 0.,
             end_time          : 0.,
@@ -140,9 +139,9 @@ pub fn show_file(param : &Param)
         println!();
     }
 
-    let metadata = file_utils::get_file_metadata(&param.in_file)?;
+    let file_size = file_utils::get_file_size(&param.in_file)?;
 
-    let stats = Arc::new(Mutex::new(Stats::new(&metadata)));
+    let stats = Arc::new(Mutex::new(Stats::new(file_size)));
 
     let reporter = ProgressReporter::new(&stats,
                                          "Metadata block scanning progress",
@@ -163,7 +162,7 @@ pub fn show_file(param : &Param)
                                                                       param.to_pos,
                                                                       param.force_misalign,
                                                                       stats.lock().unwrap().bytes_processed,
-                                                                      metadata.len());
+                                                                      file_size);
 
     // seek to calculated position
     reader.seek(SeekFrom::Start(seek_to))?;
