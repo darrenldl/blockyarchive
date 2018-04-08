@@ -1,7 +1,6 @@
 use std::sync::atomic::AtomicBool;
 
 use std::sync::{Arc, Mutex};
-use std::fs;
 
 use file_reader::{FileReader,
                   FileReaderParam};
@@ -46,10 +45,10 @@ struct ScanStats {
 }
 
 impl ScanStats {
-    pub fn new(file_metadata : &fs::Metadata) -> ScanStats {
+    pub fn new(file_size : u64) -> ScanStats {
         ScanStats {
             bytes_processed : 0,
-            total_bytes     : file_metadata.len(),
+            total_bytes     : file_size,
             start_time      : 0.,
             end_time        : 0.,
         }
@@ -119,9 +118,9 @@ pub fn get_ref_block(in_file            : &str,
                      pr_verbosity_level : PRVerbosityLevel,
                      stop_flag          : &Arc<AtomicBool>)
                      -> Result<Option<(u64, Block)>, Error> {
-    let metadata = file_utils::get_file_metadata(in_file)?;
+    let file_size = file_utils::get_file_size(in_file)?;
 
-    let stats = Arc::new(Mutex::new(ScanStats::new(&metadata)));
+    let stats = Arc::new(Mutex::new(ScanStats::new(file_size)));
 
     let reporter = ProgressReporter::new(&stats,
                                          "Reference block scanning progress",
