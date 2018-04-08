@@ -246,8 +246,8 @@ pub fn repair_file(param : &Param)
                     "    show false repair/verify failures when gaps in container are encountered.";
                     "";
                 );
-                let metadata = file_utils::get_file_metadata(&param.in_file)?;
-                metadata.len() / block_size as u64
+                let file_size = file_utils::get_file_size(&param.in_file)?;
+                file_size / block_size as u64
             },
         }
     };
