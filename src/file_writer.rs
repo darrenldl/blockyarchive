@@ -164,4 +164,14 @@ impl FileWriter {
             Err(e)   => Err(to_err(FileError::new(e.kind(), &self.path)))
         }
     }
+
+    pub fn get_file_size(&mut self) -> Result<u64, Error> {
+        let cur_pos = self.cur_pos()?;
+
+        let last_pos = self.seek(SeekFrom::End(0))?;
+
+        self.seek(SeekFrom::Start(cur_pos))?;
+
+        Ok(last_pos)
+    }
 }

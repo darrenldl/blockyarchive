@@ -141,6 +141,13 @@ impl FileReader {
         }
     }
 
+    pub fn metadata(&self) -> Result<Metadata, Error> {
+        match file_op!(self get_metadata) {
+            Ok(data) => Ok(data),
+            Err(e)   => Err(to_err(FileError::new(e.kind(), &self.path)))
+        }
+    }
+
     pub fn get_file_size(&mut self) -> Result<u64, Error> {
         let cur_pos = self.cur_pos()?;
 
@@ -149,12 +156,5 @@ impl FileReader {
         self.seek(SeekFrom::Start(cur_pos))?;
 
         Ok(last_pos)
-    }
-
-    pub fn metadata(&self) -> Result<Metadata, Error> {
-        match file_op!(self get_metadata) {
-            Ok(data) => Ok(data),
-            Err(e)   => Err(to_err(FileError::new(e.kind(), &self.path)))
-        }
     }
 }
