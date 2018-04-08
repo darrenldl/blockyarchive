@@ -1,5 +1,4 @@
 use std::sync::{Arc, Mutex};
-use std::fs;
 use std::fmt;
 use std::io::SeekFrom;
 
@@ -84,13 +83,13 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(file_metadata : &fs::Metadata)
+    pub fn new(file_size : u64)
                -> Result<Stats, Error> {
         let stats = Stats {
             meta_or_par_blocks_processed : 0,
             data_or_par_blocks_processed : 0,
             bytes_processed              : 0,
-            total_bytes                  : file_metadata.len(),
+            total_bytes                  : file_size,
             start_time                   : 0.,
             end_time                     : 0.,
         };
@@ -196,8 +195,8 @@ pub fn rescue_from_file(param : &Param)
                         -> Result<Stats, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler();
 
-    let metadata = file_utils::get_file_metadata(&param.in_file)?;
-    let stats = Arc::new(Mutex::new(Stats::new(&metadata)?));
+    let file_size = file_utils::get_file_size(&param.in_file)?;
+    let stats = Arc::new(Mutex::new(Stats::new(file_size)?));
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,
@@ -228,7 +227,7 @@ pub fn rescue_from_file(param : &Param)
                                                                       param.to_pos,
                                                                       param.force_misalign,
                                                                       stats.lock().unwrap().bytes_processed,
-                                                                      metadata.len());
+                                                                      file_size);
 
     // seek to calculated position
     reader.seek(SeekFrom::Start(seek_to))?;
