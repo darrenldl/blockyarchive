@@ -360,7 +360,7 @@ pub fn decode(param           : &Param,
             "";)
     }
 
-    stats.lock().unwrap().out_file_size = writer.metadata()?.len();
+    stats.lock().unwrap().out_file_size = writer.get_file_size()?;
 
     let res = stats.lock().unwrap().clone();
 
