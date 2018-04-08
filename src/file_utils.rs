@@ -12,8 +12,6 @@ use file_reader::{FileReader,
 
 use std::path::Path;
 
-use std::io::SeekFrom;
-
 use sbx_block;
 
 pub fn get_file_metadata(file : &str) -> Result<fs::Metadata, Error> {
@@ -28,9 +26,7 @@ pub fn get_file_size(file : &str) -> Result<u64, Error> {
                                      FileReaderParam { write    : false,
                                                        buffered : false  })?;
 
-    let last_pos = reader.seek(SeekFrom::End(0))?;
-
-    Ok(last_pos)
+    Ok(reader.get_file_size()?)
 }
 
 pub fn check_if_file_exists(file : &str) -> bool {
@@ -62,12 +58,12 @@ pub fn calc_meta_block_count_exc_burst_gaps(version        : Version,
     }
 }
 
-pub mod from_container_metadata {
+pub mod from_container_size {
     use super::*;
-    pub fn calc_total_block_count(version  : Version,
-                                  metadata : &fs::Metadata) -> u64 {
+    pub fn calc_total_block_count(version : Version,
+                                  size    : u64) -> u64 {
         let block_size = ver_to_block_size(version) as u64;
-        ((metadata.len() + (block_size - 1)) / block_size)
+        ((size + (block_size - 1)) / block_size)
     }
 }
 

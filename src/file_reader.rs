@@ -141,6 +141,16 @@ impl FileReader {
         }
     }
 
+    pub fn get_file_size(&mut self) -> Result<u64, Error> {
+        let cur_pos = self.cur_pos()?;
+
+        let last_pos = self.seek(SeekFrom::End(0))?;
+
+        self.seek(SeekFrom::Start(cur_pos))?;
+
+        Ok(last_pos)
+    }
+
     pub fn metadata(&self) -> Result<Metadata, Error> {
         match file_op!(self get_metadata) {
             Ok(data) => Ok(data),
