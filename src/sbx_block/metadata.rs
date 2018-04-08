@@ -176,17 +176,17 @@ pub fn make_too_much_meta_err_string(version : Version,
 }
 
 pub fn make_distribution_string(version : Version,
-                                meta    : &[Metadata]) -> String {
+                                metas   : &[Metadata]) -> String {
     let mut string = String::with_capacity(1000);
     string.push_str("|  ID | Length | Total length |\n");
 
     let mut overall_total = 0;
     let max_size = ver_to_data_size(version);
 
-    for i in 0..meta.len() {
-        let id_str     = id_to_str(meta_to_id(&meta[i]));
-        let total_size = single_meta_size(&meta[i]);
-        let info_size  = single_info_size(&meta[i]);
+    for i in 0..metas.len() {
+        let id_str     = id_to_str(meta_to_id(&metas[i]));
+        let total_size = single_meta_size(&metas[i]);
+        let info_size  = single_info_size(&metas[i]);
 
         overall_total += total_size;
 
