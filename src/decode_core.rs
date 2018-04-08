@@ -192,7 +192,8 @@ impl HashStats {
 
 impl Stats {
     pub fn new(ref_block     : &Block,
-               file_metadata : &fs::Metadata) -> Stats {
+               file_metadata : &fs::Metadata,
+               in_file_size  : u64) -> Stats {
         use file_utils::from_container_metadata::calc_total_block_count;
         let total_blocks =
             calc_total_block_count(ref_block.get_version(),
@@ -204,7 +205,7 @@ impl Stats {
             meta_blocks_decoded     : 0,
             data_blocks_decoded     : 0,
             data_par_blocks_decoded : 0,
-            in_file_size            : file_metadata.len(),
+            in_file_size,
             out_file_size           : 0,
             total_blocks,
             start_time              : 0.,
@@ -247,6 +248,8 @@ pub fn decode(param           : &Param,
               -> Result<Stats, Error> {
     let metadata = file_utils::get_file_metadata(&param.in_file)?;
 
+    let in_file_size = file_utils::get_file_size(&param.in_file)?;
+
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
@@ -259,7 +262,7 @@ pub fn decode(param           : &Param,
                                                        append   : false,
                                                        buffered : true   })?;
 
-    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
+    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata, in_file_size)));
 
     let reporter = ProgressReporter::new(&stats,
                                          "Data decoding progress",
