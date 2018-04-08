@@ -1,3 +1,7 @@
+## 1.0.8
+- Updated file size retrieval procedure to handle block devices properly
+  - Previously modes would not interact with block devices correctly since metadata of block devices gives file size of 0
+
 ## 1.0.7
 - Polished repair stats text
 
