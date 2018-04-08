@@ -1,5 +1,4 @@
 use std::sync::{Arc, Mutex};
-use std::fs;
 use std::fmt;
 use file_utils;
 use misc_utils;
@@ -180,10 +179,10 @@ impl Param {
 }
 
 impl HashStats {
-    pub fn new(file_metadata : &fs::Metadata) -> HashStats {
+    pub fn new(file_size : u64) -> HashStats {
         HashStats {
             bytes_processed : 0,
-            total_bytes     : file_metadata.len(),
+            total_bytes     : file_size,
             start_time      : 0.,
             end_time        : 0.,
         }
@@ -191,12 +190,12 @@ impl HashStats {
 }
 
 impl Stats {
-    pub fn new(ref_block     : &Block,
-               file_metadata : &fs::Metadata) -> Stats {
-        use file_utils::from_container_metadata::calc_total_block_count;
+    pub fn new(ref_block    : &Block,
+               in_file_size : u64) -> Stats {
+        use file_utils::from_container_size::calc_total_block_count;
         let total_blocks =
             calc_total_block_count(ref_block.get_version(),
-                                   file_metadata);
+                                   in_file_size);
         Stats {
             uid                     : ref_block.get_uid(),
             version                 : ref_block.get_version(),
@@ -204,7 +203,7 @@ impl Stats {
             meta_blocks_decoded     : 0,
             data_blocks_decoded     : 0,
             data_par_blocks_decoded : 0,
-            in_file_size            : file_metadata.len(),
+            in_file_size,
             out_file_size           : 0,
             total_blocks,
             start_time              : 0.,
@@ -245,7 +244,7 @@ pub fn decode(param           : &Param,
               ref_block       : &Block,
               ctrlc_stop_flag : &Arc<AtomicBool>)
               -> Result<Stats, Error> {
-    let metadata = file_utils::get_file_metadata(&param.in_file)?;
+    let in_file_size = file_utils::get_file_size(&param.in_file)?;
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,
@@ -259,7 +258,7 @@ pub fn decode(param           : &Param,
                                                        append   : false,
                                                        buffered : true   })?;
 
-    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
+    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, in_file_size)));
 
     let reporter = ProgressReporter::new(&stats,
                                          "Data decoding progress",
@@ -361,7 +360,7 @@ pub fn decode(param           : &Param,
             "";)
     }
 
-    stats.lock().unwrap().out_file_size = writer.metadata()?.len();
+    stats.lock().unwrap().out_file_size = writer.get_file_size()?;
 
     let res = stats.lock().unwrap().clone();
 
@@ -392,9 +391,9 @@ fn hash(param           : &Param,
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
 
-    let metadata = reader.metadata()?;
+    let file_size = reader.get_file_size()?;
 
-    let stats = Arc::new(Mutex::new(HashStats::new(&metadata)));
+    let stats = Arc::new(Mutex::new(HashStats::new(file_size)));
 
     let reporter = ProgressReporter::new(&stats,
                                          "Output file hashing progress",

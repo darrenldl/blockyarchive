@@ -22,9 +22,11 @@ pub fn get_file_metadata(file : &str) -> Result<fs::Metadata, Error> {
 }
 
 pub fn get_file_size(file : &str) -> Result<u64, Error> {
-    let metadata = get_file_metadata(file)?;
+    let mut reader = FileReader::new(file,
+                                     FileReaderParam { write    : false,
+                                                       buffered : false  })?;
 
-    Ok(metadata.len())
+    Ok(reader.get_file_size()?)
 }
 
 pub fn check_if_file_exists(file : &str) -> bool {
@@ -56,26 +58,24 @@ pub fn calc_meta_block_count_exc_burst_gaps(version        : Version,
     }
 }
 
-pub mod from_raw_file_metadata {
+pub mod from_container_size {
     use super::*;
-    pub fn calc_data_chunk_count(version  : Version,
-                                 metadata : &fs::Metadata) -> u64 {
-        let data_size = ver_to_data_size(version) as u64;
-        ((metadata.len() + (data_size - 1)) / data_size)
-    }
-}
-
-pub mod from_container_metadata {
-    use super::*;
-    pub fn calc_total_block_count(version  : Version,
-                                  metadata : &fs::Metadata) -> u64 {
+    pub fn calc_total_block_count(version : Version,
+                                  size    : u64) -> u64 {
         let block_size = ver_to_block_size(version) as u64;
-        ((metadata.len() + (block_size - 1)) / block_size)
+        ((size + (block_size - 1)) / block_size)
     }
 }
 
 pub mod from_orig_file_size {
     use super::*;
+
+    pub fn calc_data_chunk_count(version : Version,
+                                 size    : u64)
+                                 -> u64 {
+        let data_size = ver_to_data_size(version) as u64;
+        ((size + (data_size - 1)) / data_size)
+    }
 
     pub fn calc_data_only_and_parity_block_count_exc_burst_gaps(version        : Version,
                                                                 data_par_burst : Option<(usize, usize, usize)>,

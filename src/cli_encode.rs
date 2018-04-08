@@ -127,7 +127,11 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                                      in_file)
         };
 
-        let in_file_size = in_file_meta.len();
+        let in_file_size = match file_utils::get_file_size(in_file) {
+            Ok(x)  => x,
+            Err(_) => exit_with_msg!(usr => "Failed to get file size of \"{}\"",
+                                     in_file)
+        };
 
         let in_file_mod_time = match in_file_meta.modified() {
             Ok(t)  => match t.duration_since(UNIX_EPOCH) {

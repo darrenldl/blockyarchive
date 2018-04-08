@@ -1,5 +1,4 @@
 use std::sync::{Arc, Mutex};
-use std::fs;
 use std::fmt;
 use file_utils;
 use std::io::SeekFrom;
@@ -68,12 +67,12 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(ref_block     : &Block,
-               file_metadata : &fs::Metadata) -> Stats {
-        use file_utils::from_container_metadata::calc_total_block_count;
+    pub fn new(ref_block : &Block,
+               file_size : u64) -> Stats {
+        use file_utils::from_container_size::calc_total_block_count;
         let total_blocks =
             calc_total_block_count(ref_block.get_version(),
-                                   file_metadata);
+                                   file_size);
         Stats {
             version                 : ref_block.get_version(),
             blocks_decode_failed    : 0,
@@ -125,8 +124,8 @@ pub fn sort_file(param : &Param)
     let (ref_block_pos, ref_block) = get_ref_block!(param,
                                                     ctrlc_stop_flag);
 
-    let metadata = file_utils::get_file_metadata(&param.in_file)?;
-    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, &metadata)));
+    let file_size = file_utils::get_file_size(&param.in_file)?;
+    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, file_size)));
 
     let version   = ref_block.get_version();
     let rs_enabled = ver_uses_rs(version);

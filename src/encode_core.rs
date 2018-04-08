@@ -157,10 +157,10 @@ impl Param {
 }
 
 impl Stats {
-    pub fn new(param : &Param, file_metadata : &fs::Metadata) -> Stats {
-        use file_utils::from_raw_file_metadata::calc_data_chunk_count;
+    pub fn new(param : &Param, file_size : u64) -> Stats {
+        use file_utils::from_orig_file_size::calc_data_chunk_count;
         let total_data_blocks =
-            calc_data_chunk_count(param.version, file_metadata) as u32;
+            calc_data_chunk_count(param.version, file_size) as u32;
         Stats {
             uid                     : param.uid,
             version                 : param.version,
@@ -192,6 +192,7 @@ fn pack_metadata(block         : &mut Block,
                  param         : &Param,
                  stats         : &Stats,
                  file_metadata : &fs::Metadata,
+                 file_size     : u64,
                  hash          : Option<multihash::HashBytes>) {
     block.set_seq_num(0);
 
@@ -204,8 +205,7 @@ fn pack_metadata(block         : &mut Block,
         let file_name = file_utils::get_file_name_part_of_path(&param.out_file);
         meta.push(Metadata::SNM(file_name)); }
     { // add file size
-        meta.push(Metadata::FSZ(file_metadata
-                                .len())); }
+        meta.push(Metadata::FSZ(file_size)); }
     { // add file last modifcation time
         match file_metadata.modified() {
             Ok(t)  => match t.duration_since(UNIX_EPOCH) {
@@ -233,6 +233,7 @@ fn pack_metadata(block         : &mut Block,
 fn write_meta_blocks(param         : &Param,
                      stats         : &Arc<Mutex<Stats>>,
                      file_metadata : &fs::Metadata,
+                     file_size     : u64,
                      hash          : Option<multihash::HashBytes>,
                      block         : &mut Block,
                      buffer        : &mut [u8],
@@ -244,6 +245,7 @@ fn write_meta_blocks(param         : &Param,
                   param,
                   &stats.lock().unwrap(),
                   file_metadata,
+                  file_size,
                   hash);
 
     match block.sync_to_buffer(None, buffer) {
@@ -329,7 +331,7 @@ pub fn encode_file(param : &Param)
                                                        buffered : true   })?;
 
     { // check if in file size exceeds maximum
-        let in_file_size     = reader.metadata()?.len();
+        let in_file_size     = reader.get_file_size()?;
         let max_in_file_size = ver_to_max_data_file_size(param.version);
 
         if in_file_size > max_in_file_size {
@@ -340,10 +342,12 @@ pub fn encode_file(param : &Param)
         }
     }
 
-    let metadata = file_utils::get_file_metadata(&param.in_file)?;
+    let metadata = reader.metadata()?;
+
+    let file_size = reader.get_file_size()?;
 
     // setup stats
-    let stats = Arc::new(Mutex::new(Stats::new(param, &metadata)));
+    let stats = Arc::new(Mutex::new(Stats::new(param, file_size)));
 
     // setup reporter
     let reporter = ProgressReporter::new(&stats,
@@ -381,6 +385,7 @@ pub fn encode_file(param : &Param)
         write_meta_blocks(param,
                           &stats,
                           &metadata,
+                          file_size,
                           None,
                           &mut block,
                           &mut data,
@@ -476,6 +481,7 @@ pub fn encode_file(param : &Param)
         write_meta_blocks(param,
                           &stats,
                           &metadata,
+                          file_size,
                           Some(hash_bytes.clone()),
                           &mut block,
                           &mut data,
@@ -488,8 +494,8 @@ pub fn encode_file(param : &Param)
 
     reporter.stop();
 
-    stats.lock().unwrap().in_file_size  = reader.metadata()?.len();
-    stats.lock().unwrap().out_file_size = writer.metadata()?.len();
+    stats.lock().unwrap().in_file_size  = reader.get_file_size()?;
+    stats.lock().unwrap().out_file_size = writer.get_file_size()?;
 
     let stats = stats.lock().unwrap().clone();
 
