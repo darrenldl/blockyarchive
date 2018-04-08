@@ -14,8 +14,6 @@ extern crate chrono;
 
 extern crate pond;
 
-extern crate futures;
-
 extern crate smallvec;
 extern crate ctrlc;
 
