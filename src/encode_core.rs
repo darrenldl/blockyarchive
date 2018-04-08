@@ -331,7 +331,7 @@ pub fn encode_file(param : &Param)
                                                        buffered : true   })?;
 
     { // check if in file size exceeds maximum
-        let in_file_size     = reader.metadata()?.len();
+        let in_file_size     = reader.get_file_size()?;
         let max_in_file_size = ver_to_max_data_file_size(param.version);
 
         if in_file_size > max_in_file_size {
@@ -342,9 +342,9 @@ pub fn encode_file(param : &Param)
         }
     }
 
-    let metadata = file_utils::get_file_metadata(&param.in_file)?;
+    let metadata = reader.metadata()?;
 
-    let file_size = file_utils::get_file_size(&param.in_file)?;
+    let file_size = reader.get_file_size()?;
 
     // setup stats
     let stats = Arc::new(Mutex::new(Stats::new(param, file_size)));
@@ -494,8 +494,8 @@ pub fn encode_file(param : &Param)
 
     reporter.stop();
 
-    stats.lock().unwrap().in_file_size  = reader.metadata()?.len();
-    stats.lock().unwrap().out_file_size = writer.metadata()?.len();
+    stats.lock().unwrap().in_file_size  = reader.get_file_size()?;
+    stats.lock().unwrap().out_file_size = writer.get_file_size()?;
 
     let stats = stats.lock().unwrap().clone();
 
