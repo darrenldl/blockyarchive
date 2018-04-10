@@ -44,7 +44,7 @@ Repo [rsbx-helpers](https://github.com/darrenldl/rsbx-helpers) contains helpers 
 ## Changelog
 [Changelog](CHANGELOG.md)
 
-## Specification
+## Specifications
 [SBX format](SBX_FORMAT.md)
 
 [rsbx specs](RSBX_SPECS.md)
