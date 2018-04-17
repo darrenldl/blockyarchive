@@ -194,6 +194,7 @@ pub fn to_camelcase(string : &str) -> String {
 
     res.push_str(&split[0].to_lowercase());
     for s in &split[1..] {
+        let s = strip_front_end_chars(s, " ()");
         let mut s = s.chars();
         match s.next() {
             None => {},
@@ -207,11 +208,11 @@ pub fn to_camelcase(string : &str) -> String {
     res
 }
 
-pub fn strip_front_end_spaces(string : &str) -> &str {
+pub fn strip_front_end_chars<'a, 'b>(string : &'a str, chars : &'b str) -> &'a str {
     let mut start   = None;
     let mut end_inc = 0;
     for (i, c) in string.chars().enumerate() {
-        if c != ' ' {
+        if let None = chars.find(c) {
             if let None = start {
                 start = Some(i);
             }
@@ -219,7 +220,11 @@ pub fn strip_front_end_spaces(string : &str) -> &str {
         }
     }
 
-    &string[start.unwrap_or(0)..end_inc]
+    if end_inc < string.len() {
+        &string[start.unwrap_or(0)..end_inc+1]
+    } else {
+        &string[start.unwrap_or(0)..string.len()]
+    }
 }
 
 pub fn split_key_val_pair(string : &str) -> (&str, &str) {
@@ -231,8 +236,8 @@ pub fn split_key_val_pair(string : &str) -> (&str, &str) {
         }
     }
 
-    (strip_front_end_spaces(&string[0..spot]),
-     strip_front_end_spaces(&string[spot+1..]))
+    (strip_front_end_chars(&string[0..spot],  " ()"),
+     strip_front_end_chars(&string[spot+1..], " ()"))
 }
 
 pub fn escape_quotes(string : &str) -> String {
