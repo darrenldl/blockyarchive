@@ -33,6 +33,8 @@ This means this option has no effect for version 17, 18, 19."))
 pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
     let json_enabled = get_json_enabled!(matches);
 
+    print_maybe_json_open_bracket!(json_enabled);
+
     let version = get_version!(matches, json_enabled);
 
     let meta_enabled = Some(get_meta_enabled!(matches));

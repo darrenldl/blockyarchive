@@ -371,80 +371,88 @@ macro_rules! print_maybe_json_close_bracket {
     }}
 }
 
+macro_rules! print_if_not_json {
+    (
+        $json_enabled:expr, $($val:expr),*
+    ) => {{
+        println!($($val),*);
+    }}
+}
+
 macro_rules! print_maybe_json {
     (
-        $json_enabled:expr, $format_str:expr, $($val:expr),* => skip_quotes, no_comma
+        $json_enabled:expr, $($val:expr),* => skip_quotes, no_comma
     ) => {{
-        print_maybe_json!($json_enabled, $format_str, $($val),* => true, true)
+        print_maybe_json!($json_enabled, $($val),* => true, true)
     }};
     (
-        $json_enabled:expr, $format_str:expr, $($val:expr),* => skip_quotes
+        $json_enabled:expr, $($val:expr),* => skip_quotes
     ) => {{
-        print_maybe_json!($json_enabled, $format_str, $($val),* => true, false)
+        print_maybe_json!($json_enabled, $($val),* => true, false)
     }};
     (
-        $json_enabled:expr, $format_str:expr, $($val:expr),* => no_comma
+        $json_enabled:expr, $($val:expr),* => no_comma
     ) => {{
-        print_maybe_json!($json_enabled, $format_str, $($val),* => false, true)
+        print_maybe_json!($json_enabled, $($val),* => false, true)
     }};
     (
-        $json_enabled:expr, $format_str:expr, $($val:expr),*
+        $json_enabled:expr, $($val:expr),*
     ) => {{
-        print_maybe_json!($json_enabled, $format_str, $($val),* => false, false)
+        print_maybe_json!($json_enabled, $($val),* => false, false)
     }};
     (
-        $json_enabled:expr, $format_str:expr, $($val:expr),* => $skip_quotes:expr, $no_comma:expr
+        $json_enabled:expr, $($val:expr),* => $skip_quotes:expr, $no_comma:expr
     ) => {{
         use misc_utils::{to_camelcase,
                          split_key_val_pair};
 
         if $json_enabled {
-            let msg = format!($format_str, $($val),*);
+            let msg = format!($($val),*);
 
             let (l, r) = split_key_val_pair(&msg);
 
             print_json_field!(to_camelcase(l), r, $skip_quotes, $no_comma);
         } else {
-            println!($format_str, $($val),*);
+            println!($($val),*);
         }
     }}
 }
 
 macro_rules! write_maybe_json {
     (
-        $f:expr, $json_enabled:expr, $format_str:expr, $($val:expr),* => skip_quotes, no_comma
+        $f:expr, $json_enabled:expr, $($val:expr),* => skip_quotes, no_comma
     ) => {{
-        write_maybe_json!($f, $json_enabled, $format_str, $($val),* => true, true)
+        write_maybe_json!($f, $json_enabled, $($val),* => true, true)
     }};
     (
-        $f:expr, $json_enabled:expr, $format_str:expr, $($val:expr),* => skip_quotes
+        $f:expr, $json_enabled:expr, $($val:expr),* => skip_quotes
     ) => {{
-        write_maybe_json!($f, $json_enabled, $format_str, $($val),* => true, false)
+        write_maybe_json!($f, $json_enabled, $($val),* => true, false)
     }};
     (
-        $f:expr, $json_enabled:expr, $format_str:expr, $($val:expr),* => no_comma
+        $f:expr, $json_enabled:expr, $($val:expr),* => no_comma
     ) => {{
-        write_maybe_json!($f, $json_enabled, $format_str, $($val),* => false, true)
+        write_maybe_json!($f, $json_enabled, $($val),* => false, true)
     }};
     (
-        $f:expr, $json_enabled:expr, $format_str:expr, $($val:expr),*
+        $f:expr, $json_enabled:expr, $($val:expr),*
     ) => {{
-        write_maybe_json!($f, $json_enabled, $format_str, $($val),* => false, false)
+        write_maybe_json!($f, $json_enabled, $($val),* => false, false)
     }};
     (
-        $f:expr, $json_enabled:expr, $format_str:expr, $($val:expr),* => $skip_quotes:expr, $no_comma:expr
+        $f:expr, $json_enabled:expr, $($val:expr),* => $skip_quotes:expr, $no_comma:expr
     ) => {{
         use misc_utils::{to_camelcase,
                          split_key_val_pair};
 
         if $json_enabled {
-            let msg = format!($format_str, $($val),*);
+            let msg = format!($($val),*);
 
             let (l, r) = split_key_val_pair(&msg);
 
             write_json_field!($f, to_camelcase(l), r, $skip_quotes, $no_comma)
         } else {
-            writeln!($f, $format_str, $($val),*)
+            writeln!($f, $($val),*)
         }
     }}
 }
