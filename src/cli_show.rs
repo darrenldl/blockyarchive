@@ -29,12 +29,12 @@ is applied after all auto-adjustments."))
 pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
     let json_enabled = get_json_enabled!(matches);
 
-    let in_file = get_in_file!(matches);
+    let in_file = get_in_file!(matches, json_enabled);
 
-    let pr_verbosity_level = get_pr_verbosity_level!(matches);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_enabled);
 
-    let from_pos = get_from_pos!(matches);
-    let to_pos   = get_to_pos!(matches);
+    let from_pos = get_from_pos!(matches, json_enabled);
+    let to_pos   = get_to_pos!(matches, json_enabled);
 
     let param = Param::new(matches.is_present("show_all"),
                            matches.is_present("guess_burst"),
@@ -44,7 +44,7 @@ pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
                            in_file,
                            pr_verbosity_level);
     match show_core::show_file(&param) {
-        Ok(s)  => exit_with_msg!(ok => "{}", s),
-        Err(e) => exit_with_msg!(op => "{}", e)
+        Ok(s)  => exit_with_msg!(ok json_enabled => "{}", s),
+        Err(e) => exit_with_msg!(op json_enabled => "{}", e)
     }
 }

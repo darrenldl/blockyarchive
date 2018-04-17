@@ -51,11 +51,15 @@ The rounding procedure is applied after all auto-adjustments."))
 
 pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
     use sbx_block::BlockType;
+
+    let json_enabled = get_json_enabled!(matches);
+
     let mut temp_uid = [0; SBX_FILE_UID_LEN];
     let uid : Option<&[u8; SBX_FILE_UID_LEN]> = {
         match matches.value_of("uid") {
             None    => None ,
-            Some(x) => { parse_uid!(temp_uid, x); Some(&temp_uid) }
+            Some(x) => { parse_uid!(temp_uid, x, json_enabled);
+                         Some(&temp_uid) }
         }
     };
 
@@ -66,25 +70,27 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
                 "any"  => None,
                 "meta" => Some(BlockType::Meta),
                 "data" => Some(BlockType::Data),
-                _      => exit_with_msg!(usr => "Invalid block type")
+                _      => exit_with_msg!(usr json_enabled => "Invalid block type")
             }
         }
     };
 
-    let from_pos = get_from_pos!(matches);
-    let to_pos   = get_to_pos!(matches);
+    let from_pos = get_from_pos!(matches, json_enabled);
+    let to_pos   = get_to_pos!(matches, json_enabled);
 
-    let pr_verbosity_level = get_pr_verbosity_level!(matches);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_enabled);
 
     let in_file  = matches.value_of("in_file").unwrap();
-    exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
+    exit_if_file!(not_exists in_file
+                  => json_enabled
+                  => "File \"{}\" does not exist", in_file);
     let out_dir = matches.value_of("out_dir").unwrap();
 
     if !file_utils::check_if_file_exists(out_dir) {
-        exit_with_msg!(usr => "Directory \"{}\" does not exist", out_dir);
+        exit_with_msg!(usr json_enabled => "Directory \"{}\" does not exist", out_dir);
     }
     if !file_utils::check_if_file_is_dir(out_dir) {
-        exit_with_msg!(usr => "\"{}\" is not a directory", out_dir);
+        exit_with_msg!(usr json_enabled => "\"{}\" is not a directory", out_dir);
     }
 
     let log_file = matches.value_of("log_file");
@@ -99,7 +105,7 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
                            uid,
                            pr_verbosity_level);
     match rescue_core::rescue_from_file(&param) {
-        Ok(s)  => exit_with_msg!(ok => "{}", s),
-        Err(e) => exit_with_msg!(op => "{}", e)
+        Ok(s)  => exit_with_msg!(ok json_enabled => "{}", s),
+        Err(e) => exit_with_msg!(op json_enabled => "{}", e)
     }
 }

@@ -64,13 +64,13 @@ macro_rules! get_pr_verbosity_level {
 
 macro_rules! get_from_pos {
     (
-        $matches:expr
+        $matches:expr, $json_enabled:expr
     ) => {{
         match $matches.value_of("from_pos") {
             None    => None,
             Some(x) => match u64::from_str(x) {
                 Ok(x)  => Some(x),
-                Err(_) => exit_with_msg!(usr => "Invalid from position")
+                Err(_) => exit_with_msg!(usr $json_enabled => "Invalid from position")
             }
         }
     }}
@@ -78,13 +78,13 @@ macro_rules! get_from_pos {
 
 macro_rules! get_to_pos {
     (
-        $matches:expr
+        $matches:expr, $json_enabled:expr
     ) => {{
         match $matches.value_of("to_pos") {
             None    => None,
             Some(x) => match u64::from_str(x) {
                 Ok(x)  => Some(x),
-                Err(_) => exit_with_msg!(usr => "Invalid to position")
+                Err(_) => exit_with_msg!(usr $json_enabled => "Invalid to position")
             }
         }
     }}
@@ -247,14 +247,14 @@ macro_rules! get_burst_opt {
 
 macro_rules! parse_uid {
     (
-        $buf:expr, $uid:expr
+        $buf:expr, $uid:expr, $json_enabled:expr
     ) => {{
         use misc_utils::HexError;
         use misc_utils;
         match misc_utils::hex_string_to_bytes($uid) {
             Ok(x) => {
                 if x.len() != SBX_FILE_UID_LEN {
-                    exit_with_msg!(usr => "UID must be {} bytes({} hex characters) in length",
+                    exit_with_msg!(usr $json_enabled => "UID must be {} bytes({} hex characters) in length",
                                    SBX_FILE_UID_LEN,
                                    SBX_FILE_UID_LEN * 2);
                 }
@@ -262,10 +262,10 @@ macro_rules! parse_uid {
                 $buf.copy_from_slice(&x);
             },
             Err(HexError::InvalidHexString) => {
-                exit_with_msg!(usr => "UID provided is not a valid hex string");
+                exit_with_msg!(usr $json_enabled => "UID provided is not a valid hex string");
             },
             Err(HexError::InvalidLen) => {
-                exit_with_msg!(usr => "UID provided does not have the correct number of hex digits, provided : {}, need : {}",
+                exit_with_msg!(usr $json_enabled => "UID provided does not have the correct number of hex digits, provided : {}, need : {}",
                                $uid.len(),
                                SBX_FILE_UID_LEN * 2);
             }
