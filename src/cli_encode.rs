@@ -174,14 +174,14 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
             print_maybe_json!(json_enabled, "SBX container size           : {}", out_file_size              => skip_quotes);
             print_maybe_json!(json_enabled, "File modification time       : {}", in_file_mod_time_str);
         } else {
-            println!("File name                : {}", in_file);
-            println!("SBX container name       : {}", out);
-            println!("SBX container version    : {}", ver_to_usize(version));
-            println!("SBX container block size : {}", ver_to_block_size(version));
-            println!("SBX container data  size : {}", ver_to_data_size(version));
-            println!("File size                : {}", in_file_size);
-            println!("SBX container size       : {}", out_file_size);
-            println!("File modification time   : {}", in_file_mod_time_str);
+            print_maybe_json!(json_enabled, "File name                : {}", in_file);
+            print_maybe_json!(json_enabled, "SBX container name       : {}", out);
+            print_maybe_json!(json_enabled, "SBX container version    : {}", ver_to_usize(version));
+            print_maybe_json!(json_enabled, "SBX container block size : {}", ver_to_block_size(version) => skip_quotes);
+            print_maybe_json!(json_enabled, "SBX container data  size : {}", ver_to_data_size(version)  => skip_quotes);
+            print_maybe_json!(json_enabled, "File size                : {}", in_file_size               => skip_quotes);
+            print_maybe_json!(json_enabled, "SBX container size       : {}", out_file_size              => skip_quotes);
+            print_maybe_json!(json_enabled, "File modification time   : {}", in_file_mod_time_str);
         }
 
         exit_with_msg!(ok json_enabled => "")

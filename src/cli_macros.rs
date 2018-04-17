@@ -319,6 +319,8 @@ macro_rules! write_json_field {
     (
         $f:expr, $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
     ) => {{
+        use misc_utils::escape_quotes;
+
         if !$no_comma {
             write!($f, ",")?;
         }
