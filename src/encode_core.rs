@@ -52,6 +52,7 @@ pub struct Stats {
     total_data_blocks           : u32,
     start_time                  : f64,
     end_time                    : f64,
+    json_enabled                : bool,
 }
 
 impl fmt::Display for Stats {
@@ -75,47 +76,49 @@ impl fmt::Display for Stats {
         let time_elapsed            = (self.end_time - self.start_time) as i64;
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
+        let json_enabled = self.json_enabled;
+
         if rs_enabled {
-            writeln!(f, "File UID                                   : {}",
-                     misc_utils::bytes_to_upper_hex_string(&self.uid))?;
-            writeln!(f, "SBX version                                : {} (0x{:X})",
-                     ver_to_usize(self.version),
-                     ver_to_usize(self.version))?;
-            writeln!(f, "Block size used in encoding                : {}", block_size)?;
-            writeln!(f, "Data  size used in encoding                : {}", data_size)?;
-            writeln!(f, "Number of blocks written                   : {}", blocks_written)?;
-            writeln!(f, "Number of blocks written (metadata)        : {}", meta_blocks_written)?;
-            writeln!(f, "Number of blocks written (data only)       : {}", data_blocks_written)?;
-            writeln!(f, "Number of blocks written (data parity)     : {}", data_par_blocks_written)?;
-            writeln!(f, "Amount of data encoded (bytes)             : {}", data_bytes_encoded)?;
-            writeln!(f, "File size                                  : {}", in_file_size)?;
-            writeln!(f, "SBX container size                         : {}", out_file_size)?;
-            writeln!(f, "Hash                                       : {}", match self.hash_bytes {
+            write_maybe_json!(f, json_enabled, "File UID                                   : {}",
+                              misc_utils::bytes_to_upper_hex_string(&self.uid) => no_comma)?;
+            write_maybe_json!(f, json_enabled, "SBX version                                : {} (0x{:X})",
+                              ver_to_usize(self.version),
+                              ver_to_usize(self.version))?;
+            write_maybe_json!(f, json_enabled, "Block size used in encoding                : {}", block_size              => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "Data  size used in encoding                : {}", data_size               => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "Number of blocks written                   : {}", blocks_written          => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "Number of blocks written (metadata)        : {}", meta_blocks_written     => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "Number of blocks written (data only)       : {}", data_blocks_written     => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "Number of blocks written (data parity)     : {}", data_par_blocks_written => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "Amount of data encoded (bytes)             : {}", data_bytes_encoded      => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "File size                                  : {}", in_file_size            => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "SBX container size                         : {}", out_file_size           => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "Hash                                       : {}", match self.hash_bytes {
                 None        => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
                                        multihash::hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            writeln!(f, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)
+            write_maybe_json!(f, json_enabled, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)
         } else {
-            writeln!(f, "File UID                            : {}",
-                     misc_utils::bytes_to_upper_hex_string(&self.uid))?;
-            writeln!(f, "SBX version                         : {}", ver_to_usize(self.version))?;
-            writeln!(f, "Block size used in encoding         : {}", block_size)?;
-            writeln!(f, "Data  size used in encoding         : {}", data_size)?;
-            writeln!(f, "Number of blocks written            : {}", blocks_written)?;
-            writeln!(f, "Number of blocks written (metadata) : {}", meta_blocks_written)?;
-            writeln!(f, "Number of blocks written (data)     : {}", data_blocks_written)?;
-            writeln!(f, "Amount of data encoded (bytes)      : {}", data_bytes_encoded)?;
-            writeln!(f, "File size                           : {}", in_file_size)?;
-            writeln!(f, "SBX container size                  : {}", out_file_size)?;
-            writeln!(f, "Hash                                : {}", match self.hash_bytes {
+            write_maybe_json!(f, json_enabled, "File UID                            : {}",
+                              misc_utils::bytes_to_upper_hex_string(&self.uid) => no_comma)?;
+            write_maybe_json!(f, json_enabled, "SBX version                         : {}", ver_to_usize(self.version))?;
+            write_maybe_json!(f, json_enabled, "Block size used in encoding         : {}", block_size          => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "Data  size used in encoding         : {}", data_size           => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "Number of blocks written            : {}", blocks_written      => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "Number of blocks written (metadata) : {}", meta_blocks_written => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "Number of blocks written (data)     : {}", data_blocks_written => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "Amount of data encoded (bytes)      : {}", data_bytes_encoded  => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "File size                           : {}", in_file_size        => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "SBX container size                  : {}", out_file_size       => skip_quotes)?;
+            write_maybe_json!(f, json_enabled, "Hash                                : {}", match self.hash_bytes {
                 None    => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
                                        multihash::hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            writeln!(f, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)
+            write_maybe_json!(f, json_enabled, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)
         }
     }
 }
@@ -127,6 +130,7 @@ pub struct Param {
     data_par_burst     : Option<(usize, usize, usize)>,
     rs_enabled         : bool,
     meta_enabled       : bool,
+    json_enabled       : bool,
     hash_type          : multihash::HashType,
     in_file            : String,
     out_file           : String,
@@ -138,6 +142,7 @@ impl Param {
                uid                : &[u8; SBX_FILE_UID_LEN],
                data_par_burst     : Option<(usize, usize, usize)>,
                meta_enabled       : bool,
+               json_enabled       : bool,
                hash_type          : multihash::HashType,
                in_file            : &str,
                out_file           : &str,
@@ -148,6 +153,7 @@ impl Param {
             data_par_burst,
             rs_enabled     : ver_uses_rs(version),
             meta_enabled   : ver_forces_meta_enabled(version) || meta_enabled,
+            json_enabled,
             hash_type,
             in_file        : String::from(in_file),
             out_file       : String::from(out_file),
@@ -174,6 +180,7 @@ impl Stats {
             out_file_size           : 0,
             start_time              : 0.,
             end_time                : 0.,
+            json_enabled            : param.json_enabled,
         }
     }
 }

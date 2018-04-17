@@ -86,6 +86,9 @@ mod log;
 
 mod rs_codec;
 
+#[macro_use]
+mod cli_macros;
+
 mod encode_core;
 mod decode_core;
 mod rescue_core;
@@ -98,9 +101,6 @@ mod progress_report;
 
 mod file_reader;
 mod file_writer;
-
-#[macro_use]
-mod cli_macros;
 
 mod cli_utils;
 

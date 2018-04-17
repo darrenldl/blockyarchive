@@ -195,6 +195,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                                &uid,
                                data_par_burst,
                                meta_enabled,
+                               json_enabled,
                                hash_type,
                                in_file,
                                &out,

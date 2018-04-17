@@ -308,6 +308,22 @@ macro_rules! get_json_enabled {
     }}
 }
 
+macro_rules! write_json_field {
+    (
+        $f:expr, $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
+    ) => {{
+        if !$no_comma {
+            write!($f, ",")?;
+        }
+
+        if $skip_quotes {
+            writeln!($f, "\"{}\": {}", $key, $val)
+        } else {
+            writeln!($f, "\"{}\": \"{}\"", $key, $val)
+        }
+    }};
+}
+
 macro_rules! print_json_field {
     (
         $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
@@ -379,6 +395,45 @@ macro_rules! print_maybe_json {
             print_json_field!(to_camelcase(l), r, $skip_quotes, $no_comma);
         } else {
             println!($format_str, $val);
+        }
+    }}
+}
+
+macro_rules! write_maybe_json {
+    (
+        $f:expr, $json_enabled:expr, $format_str:expr, $($val:expr),* => skip_quotes, no_comma
+    ) => {{
+        write_maybe_json!($f, $json_enabled, $format_str, $($val),* => true, true)
+    }};
+    (
+        $f:expr, $json_enabled:expr, $format_str:expr, $($val:expr),* => skip_quotes
+    ) => {{
+        write_maybe_json!($f, $json_enabled, $format_str, $($val),* => true, false)
+    }};
+    (
+        $f:expr, $json_enabled:expr, $format_str:expr, $($val:expr),* => no_comma
+    ) => {{
+        write_maybe_json!($f, $json_enabled, $format_str, $($val),* => false, true)
+    }};
+    (
+        $f:expr, $json_enabled:expr, $format_str:expr, $($val:expr),*
+    ) => {{
+        write_maybe_json!($f, $json_enabled, $format_str, $($val),* => false, false)
+    }};
+    (
+        $f:expr, $json_enabled:expr, $format_str:expr, $($val:expr),* => $skip_quotes:expr, $no_comma:expr
+    ) => {{
+        use misc_utils::{to_camelcase,
+                         split_key_val_pair};
+
+        if $json_enabled {
+            let msg = format!($format_str, $($val),*);
+
+            let (l, r) = split_key_val_pair(&msg);
+
+            write_json_field!($f, to_camelcase(l), r, $skip_quotes, $no_comma)
+        } else {
+            writeln!($f, $format_str, $($val),*)
         }
     }}
 }
