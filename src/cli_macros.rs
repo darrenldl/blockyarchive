@@ -375,7 +375,9 @@ macro_rules! print_if_not_json {
     (
         $json_enabled:expr, $($val:expr),*
     ) => {{
-        println!($($val),*);
+        if !$json_enabled {
+            println!($($val),*);
+        }
     }}
 }
 
