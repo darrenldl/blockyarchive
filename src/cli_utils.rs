@@ -149,7 +149,11 @@ pub fn setup_ctrlc_handler(json_enabled : bool) -> Arc<AtomicBool> {
 
     ctrlc::set_handler(move || {
         handler_stop_flag.store(true, Ordering::SeqCst);
-        println!("Interrupted");
+        if json_enabled {
+            print_maybe_json!(json_enabled, "ctrlc interrupted : true" => skip_quotes);
+        } else {
+            println!("Interrupted");
+        }
     }).expect("Failed to set Ctrl-C handler");
 
     if !json_enabled {
