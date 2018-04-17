@@ -123,6 +123,8 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let json_enabled = get_json_enabled!(matches);
 
+    print_maybe_json_open_bracket!(json_enabled);
+
     if matches.is_present("info_only") {
         let in_file_meta  = match file_utils::get_file_metadata(in_file) {
             Ok(x)  => x,

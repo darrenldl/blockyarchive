@@ -20,17 +20,19 @@ Specify this if you want rsbx to report blank blocks as well."))
 }
 
 pub fn check<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let pr_verbosity_level = get_pr_verbosity_level!(matches);
+    let json_enabled = get_json_enabled!(matches);
 
-    let in_file  = get_in_file!(matches);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_enabled);
+
+    let in_file  = get_in_file!(matches, json_enabled);
     let param = Param::new(get_ref_block_choice!(matches),
                            matches.is_present("report_blank"),
                            in_file,
                            matches.is_present("verbose"),
                            pr_verbosity_level);
     match check_core::check_file(&param) {
-        Ok(Some(s)) => exit_with_msg!(ok => "{}", s),
-        Ok(None)    => exit_with_msg!(ok => ""),
-        Err(e)      => exit_with_msg!(op => "{}", e),
+        Ok(Some(s)) => exit_with_msg!(ok json_enabled => "{}", s),
+        Ok(None)    => exit_with_msg!(ok json_enabled => ""),
+        Err(e)      => exit_with_msg!(op json_enabled => "{}", e),
     }
 }

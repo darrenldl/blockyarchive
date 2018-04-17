@@ -27,6 +27,8 @@ is applied after all auto-adjustments."))
 }
 
 pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
+    let json_enabled = get_json_enabled!(matches);
+
     let in_file = get_in_file!(matches);
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches);

@@ -27,28 +27,31 @@ This means this option has no effect for version 17, 18, 19."))
         .arg(rs_data_arg())
         .arg(rs_parity_arg())
         .arg(burst_arg())
+        .arg(json_arg())
 }
 
 pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let version = get_version!(matches);
+    let json_enabled = get_json_enabled!(matches);
+
+    let version = get_version!(matches, json_enabled);
 
     let meta_enabled = Some(get_meta_enabled!(matches));
 
     let in_file_size =
         match u64::from_str(matches.value_of("in_file_size").unwrap()) {
             Ok(x)  => x,
-            Err(_) => exit_with_msg!(usr => "Invalid file size")
+            Err(_) => exit_with_msg!(usr json_enabled => "Invalid file size")
         };
 
     let data_par_burst =
         if ver_uses_rs(version) {
             // deal with RS related options
-            let data_shards   = get_data_shards!(matches, version);
-            let parity_shards = get_parity_shards!(matches, version);
+            let data_shards   = get_data_shards!(matches, version, json_enabled);
+            let parity_shards = get_parity_shards!(matches, version, json_enabled);
 
-            check_data_parity_shards!(data_shards, parity_shards);
+            check_data_parity_shards!(data_shards, parity_shards, json_enabled);
 
-            let burst = get_burst_or_zero!(matches);
+            let burst = get_burst_or_zero!(matches, json_enabled);
 
             Some((data_shards, parity_shards, burst))
         } else {
@@ -180,5 +183,5 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
     println!(    "    File size                    : {}", in_file_size);
     println!(    "    SBX container size           : {}", out_file_size);
 
-    exit_with_msg!(ok => "")
+    exit_with_msg!(ok json_enabled => "")
 }

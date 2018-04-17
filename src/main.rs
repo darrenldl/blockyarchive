@@ -153,7 +153,7 @@ fn real_main () -> i32 {
         cli_calc::calc(matches)
     }
     else {
-        exit_with_msg!(ok => "Invoke with -h or --help for help message\n");
+        exit_with_msg!(ok false => "Invoke with -h or --help for help message\n");
     }
 }
 

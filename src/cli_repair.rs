@@ -28,11 +28,13 @@ fails to guess correctly."))
 }
 
 pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let in_file = get_in_file!(matches);
+    let json_enabled = get_json_enabled!(matches);
 
-    let pr_verbosity_level = get_pr_verbosity_level!(matches);
+    let in_file = get_in_file!(matches, json_enabled);
 
-    let burst = get_burst_opt!(matches);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_enabled);
+
+    let burst = get_burst_opt!(matches, json_enabled);
 
     if matches.is_present("dry_run") {
         print_block!(
@@ -66,8 +68,8 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
                            pr_verbosity_level,
                            burst);
     match repair_core::repair_file(&param) {
-        Ok(Some(s)) => exit_with_msg!(ok => "{}", s),
-        Ok(None)    => exit_with_msg!(ok => ""),
-        Err(e)      => exit_with_msg!(op => "{}", e),
+        Ok(Some(s)) => exit_with_msg!(ok json_enabled => "{}", s),
+        Ok(None)    => exit_with_msg!(ok json_enabled => ""),
+        Err(e)      => exit_with_msg!(op json_enabled => "{}", e),
     }
 }
