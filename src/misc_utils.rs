@@ -207,6 +207,21 @@ pub fn to_camelcase(string : &str) -> String {
     res
 }
 
+pub fn strip_front_end_spaces(string : &str) -> &str {
+    let mut start   = None;
+    let mut end_inc = 0;
+    for (i, c) in string.chars().enumerate() {
+        if c != ' ' {
+            if let None = start {
+                start = Some(i);
+            }
+            end_inc = i;
+        }
+    }
+
+    &string[start.unwrap_or(0)..end_inc]
+}
+
 pub fn split_key_val_pair(string : &str) -> (&str, &str) {
     let mut spot = 0;
     for (i, c) in string.chars().enumerate() {
@@ -216,8 +231,8 @@ pub fn split_key_val_pair(string : &str) -> (&str, &str) {
         }
     }
 
-    (&string[0..spot-1],
-     &string[spot+1+1..])
+    (strip_front_end_spaces(&string[0..spot]),
+     strip_front_end_spaces(&string[spot+1..]))
 }
 
 pub fn escape_quotes(string : &str) -> String {
