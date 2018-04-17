@@ -99,20 +99,20 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
     print_if_not_json!(json_enabled,    "SBX block distribution");
     print_if_not_json!(json_enabled,    "========================================");
     if ver_uses_rs(version) {
-        print_maybe_json!(json_enabled,   "    Metadata    block count      : {}", meta_block_count);
-        print_maybe_json!(json_enabled,   "    Data only   block count      : {}", data_only_block_count);
-        print_maybe_json!(json_enabled,   "    Data parity block count      : {}", parity_block_count);
-        print_maybe_json!(json_enabled,   "    Total       block count      : {}", total_block_count);
+        print_maybe_json!(json_enabled, "    Metadata    block count      : {}", meta_block_count      => skip_quotes);
+        print_maybe_json!(json_enabled, "    Data only   block count      : {}", data_only_block_count => skip_quotes);
+        print_maybe_json!(json_enabled, "    Data parity block count      : {}", parity_block_count    => skip_quotes);
+        print_maybe_json!(json_enabled, "    Total       block count      : {}", total_block_count     => skip_quotes);
     } else {
-        print_maybe_json!(json_enabled,   "    Metadata block count         : {}", meta_block_count);
-        print_maybe_json!(json_enabled,   "    Data     block count         : {}", data_only_block_count);
-        print_maybe_json!(json_enabled,   "    Total    block count         : {}", total_block_count);
+        print_maybe_json!(json_enabled, "    Metadata block count         : {}", meta_block_count      => skip_quotes);
+        print_maybe_json!(json_enabled, "    Data     block count         : {}", data_only_block_count => skip_quotes);
+        print_maybe_json!(json_enabled, "    Total    block count         : {}", total_block_count     => skip_quotes);
     }
 
     print_if_not_json!(json_enabled, "");
 
-    print_if_not_json!(json_enabled,       "Error correction info");
-    print_if_not_json!(json_enabled,       "========================================");
+    print_if_not_json!(json_enabled,      "Error correction info");
+    print_if_not_json!(json_enabled,      "========================================");
     if ver_uses_rs(version) {
         print_maybe_json!(json_enabled,   "    RS data   shard count        : {}", data_par_burst.unwrap().0  => skip_quotes);
         print_maybe_json!(json_enabled,   "    RS parity shard count        : {}", data_par_burst.unwrap().1  => skip_quotes);
@@ -183,10 +183,10 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
         println!();
     }
 
-    print_if_not_json!(json_enabled,    "File and container size");
-    print_if_not_json!(json_enabled,    "========================================");
-    print_maybe_json!(json_enabled,    "    File size                    : {}", in_file_size);
-    print_maybe_json!(json_enabled,    "    SBX container size           : {}", out_file_size);
+    print_if_not_json!(json_enabled, "File and container size");
+    print_if_not_json!(json_enabled, "========================================");
+    print_maybe_json!(json_enabled,  "    File size                    : {}", in_file_size  => skip_quotes);
+    print_maybe_json!(json_enabled,  "    SBX container size           : {}", out_file_size => skip_quotes);
 
     exit_with_msg!(ok json_enabled => "")
 }
