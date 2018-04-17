@@ -162,7 +162,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                                                                  in_file_size);
 
         if ver_uses_rs(version) {
-            print_maybe_json!(json_enabled, "File name                    : {}", in_file => no_comma);
+            print_maybe_json!(json_enabled, "File name                    : {}", in_file                    => no_comma);
             print_maybe_json!(json_enabled, "SBX container name           : {}", out);
             print_maybe_json!(json_enabled, "SBX container version        : {}", ver_to_usize(version));
             print_maybe_json!(json_enabled, "SBX container block size     : {}", ver_to_block_size(version) => skip_quotes);
@@ -174,7 +174,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
             print_maybe_json!(json_enabled, "SBX container size           : {}", out_file_size              => skip_quotes);
             print_maybe_json!(json_enabled, "File modification time       : {}", in_file_mod_time_str);
         } else {
-            print_maybe_json!(json_enabled, "File name                : {}", in_file);
+            print_maybe_json!(json_enabled, "File name                : {}", in_file                    => no_comma);
             print_maybe_json!(json_enabled, "SBX container name       : {}", out);
             print_maybe_json!(json_enabled, "SBX container version    : {}", ver_to_usize(version));
             print_maybe_json!(json_enabled, "SBX container block size : {}", ver_to_block_size(version) => skip_quotes);
