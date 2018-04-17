@@ -80,7 +80,7 @@ impl fmt::Display for Stats {
 
         if rs_enabled {
             write_maybe_json!(f, json_enabled, "File UID                                   : {}",
-                              misc_utils::bytes_to_upper_hex_string(&self.uid) => no_comma)?;
+                              misc_utils::bytes_to_upper_hex_string(&self.uid)                                            => no_comma)?;
             write_maybe_json!(f, json_enabled, "SBX version                                : {} (0x{:X})",
                               ver_to_usize(self.version),
                               ver_to_usize(self.version))?;
@@ -102,7 +102,7 @@ impl fmt::Display for Stats {
             write_maybe_json!(f, json_enabled, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)
         } else {
             write_maybe_json!(f, json_enabled, "File UID                            : {}",
-                              misc_utils::bytes_to_upper_hex_string(&self.uid) => no_comma)?;
+                              misc_utils::bytes_to_upper_hex_string(&self.uid)                                 => no_comma)?;
             write_maybe_json!(f, json_enabled, "SBX version                         : {}", ver_to_usize(self.version))?;
             write_maybe_json!(f, json_enabled, "Block size used in encoding         : {}", block_size          => skip_quotes)?;
             write_maybe_json!(f, json_enabled, "Data  size used in encoding         : {}", data_size           => skip_quotes)?;
