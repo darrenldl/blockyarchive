@@ -82,55 +82,58 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
                                                                                               data_par_burst,
                                                                                               in_file_size);
 
-    println!(    "SBX container general info");
-    println!(    "========================================");
+    print_if_not_json!(json_enabled,    "SBX container general info");
+    print_if_not_json!(json_enabled,    "========================================");
     if ver_uses_rs(version) {
-        println!("    SBX container version        : {} (0x{:X})",
-                 ver_to_usize(version),
-                 ver_to_usize(version));
+        print_maybe_json!(json_enabled, "    SBX container version        : {} (0x{:X})",
+                          ver_to_usize(version),
+                          ver_to_usize(version)                                                        => no_comma);
     } else {
-        println!("    SBX container version        : {}", ver_to_usize(version));
+        print_maybe_json!(json_enabled, "    SBX container version        : {}", ver_to_usize(version) => no_comma);
     }
-    println!(    "    SBX container block size     : {}", ver_to_block_size(version));
-    println!(    "    SBX container data  size     : {}", ver_to_data_size(version));
+    print_maybe_json!(json_enabled,     "    SBX container block size     : {}", ver_to_block_size(version) => skip_quotes);
+    print_maybe_json!(json_enabled,     "    SBX container data  size     : {}", ver_to_data_size(version)  => skip_quotes);
 
-    println!();
+    print_if_not_json!(json_enabled, "");
 
-    println!(    "SBX block distribution");
-    println!(    "========================================");
+    print_if_not_json!(json_enabled,    "SBX block distribution");
+    print_if_not_json!(json_enabled,    "========================================");
     if ver_uses_rs(version) {
-        println!("    Metadata    block count      : {}", meta_block_count);
-        println!("    Data only   block count      : {}", data_only_block_count);
-        println!("    Data parity block count      : {}", parity_block_count);
-        println!("    Total       block count      : {}", total_block_count);
+        print_maybe_json!(json_enabled,   "    Metadata    block count      : {}", meta_block_count);
+        print_maybe_json!(json_enabled,   "    Data only   block count      : {}", data_only_block_count);
+        print_maybe_json!(json_enabled,   "    Data parity block count      : {}", parity_block_count);
+        print_maybe_json!(json_enabled,   "    Total       block count      : {}", total_block_count);
     } else {
-        println!("    Metadata block count         : {}", meta_block_count);
-        println!("    Data     block count         : {}", data_only_block_count);
-        println!("    Total    block count         : {}", total_block_count);
-    }
-
-    println!();
-
-    println!(    "Error correction info");
-    println!(    "========================================");
-    if ver_uses_rs(version) {
-        println!("    RS data   shard count        : {}", data_par_burst.unwrap().0);
-        println!("    RS parity shard count        : {}", data_par_burst.unwrap().1);
-        println!("    Burst error resistance level : {}", data_par_burst.unwrap().2);
-    } else {
-        println!("    RS data   shard count        : {}", "version does not use RS");
-        println!("    RS parity shard count        : {}", "version does not use RS");
-        println!("    Burst error resistance level : {}", "version does not support burst error resistance");
+        print_maybe_json!(json_enabled,   "    Metadata block count         : {}", meta_block_count);
+        print_maybe_json!(json_enabled,   "    Data     block count         : {}", data_only_block_count);
+        print_maybe_json!(json_enabled,   "    Total    block count         : {}", total_block_count);
     }
 
-    println!();
+    print_if_not_json!(json_enabled, "");
 
+    print_if_not_json!(json_enabled,       "Error correction info");
+    print_if_not_json!(json_enabled,       "========================================");
     if ver_uses_rs(version) {
+        print_maybe_json!(json_enabled,   "    RS data   shard count        : {}", data_par_burst.unwrap().0  => skip_quotes);
+        print_maybe_json!(json_enabled,   "    RS parity shard count        : {}", data_par_burst.unwrap().1  => skip_quotes);
+        print_maybe_json!(json_enabled,   "    Burst error resistance level : {}", data_par_burst.unwrap().2  => skip_quotes);
+    } else {
+        print_maybe_json!(json_enabled,   "    RS data   shard count        : {}",
+                          null_if_json_else!(json_enabled, "version does not use RS")                         => skip_quotes);
+        print_maybe_json!(json_enabled,   "    RS parity shard count        : {}",
+                          null_if_json_else!(json_enabled, "version does not use RS")                         => skip_quotes);
+        print_maybe_json!(json_enabled,   "    Burst error resistance level : {}",
+                          null_if_json_else!(json_enabled, "version does not support burst error resistance") => skip_quotes);
+    }
+
+    print_if_not_json!(json_enabled, "");
+
+    if ver_uses_rs(version) && !json_enabled {
         let (data, par, burst) = data_par_burst.unwrap();
 
         let block_size = ver_to_block_size(version);
 
-        println!("Error correction parameters interpretation");
+        print!("Error correction parameters interpretation");
         println!("========================================");
         if burst == 0 {
             print_block!(
@@ -180,10 +183,10 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
         println!();
     }
 
-    println!(    "File and container size");
-    println!(    "========================================");
-    println!(    "    File size                    : {}", in_file_size);
-    println!(    "    SBX container size           : {}", out_file_size);
+    print_if_not_json!(json_enabled,    "File and container size");
+    print_if_not_json!(json_enabled,    "========================================");
+    print_maybe_json!(json_enabled,    "    File size                    : {}", in_file_size);
+    print_maybe_json!(json_enabled,    "    SBX container size           : {}", out_file_size);
 
     exit_with_msg!(ok json_enabled => "")
 }

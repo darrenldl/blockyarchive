@@ -458,3 +458,15 @@ macro_rules! write_maybe_json {
         }
     }}
 }
+
+macro_rules! null_if_json_else {
+    (
+        $json_enabled:expr, $val:expr
+    ) => {{
+        if $json_enabled {
+            "null"
+        } else {
+            $val
+        }
+    }}
+}
