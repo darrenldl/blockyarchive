@@ -26,9 +26,11 @@ it is used directly."))
 }
 
 pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let pr_verbosity_level = get_pr_verbosity_level!(matches);
+    let json_enabled = get_json_enabled!(matches);
 
-    let in_file = get_in_file!(matches);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_enabled);
+
+    let in_file = get_in_file!(matches, json_enabled);
     let out     = matches.value_of("out");
 
     let param = Param::new(get_ref_block_choice!(matches),
@@ -38,8 +40,8 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
                            matches.is_present("verbose"),
                            pr_verbosity_level);
     match decode_core::decode_file(&param) {
-        Ok(Some(s)) => exit_with_msg!(ok => "{}", s),
-        Ok(None)    => exit_with_msg!(ok => ""),
-        Err(e)      => exit_with_msg!(op => "{}", e),
+        Ok(Some(s)) => exit_with_msg!(ok json_enabled => "{}", s),
+        Ok(None)    => exit_with_msg!(ok json_enabled => ""),
+        Err(e)      => exit_with_msg!(op json_enabled => "{}", e),
     }
 }

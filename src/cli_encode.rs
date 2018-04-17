@@ -69,33 +69,35 @@ automatic guessing."))
 }
 
 pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
+    let json_enabled = get_json_enabled!(matches);
+
     // compute uid
     let mut uid : [u8; SBX_FILE_UID_LEN] = [0; SBX_FILE_UID_LEN];
     {
         match matches.value_of("uid") {
             None    => { rand_utils::fill_random_bytes(&mut uid); },
-            Some(x) => { parse_uid!(uid, x); }
+            Some(x) => { parse_uid!(uid, x, json_enabled); }
         }
     }
 
-    let version   = get_version!(matches);
+    let version   = get_version!(matches, json_enabled);
 
     let data_par_burst =
         if ver_uses_rs(version) {
             // deal with RS related options
-            let data_shards   = get_data_shards!(matches, version);
-            let parity_shards = get_parity_shards!(matches, version);
+            let data_shards   = get_data_shards!(matches, version, json_enabled);
+            let parity_shards = get_parity_shards!(matches, version, json_enabled);
 
-            check_data_parity_shards!(data_shards, parity_shards);
+            check_data_parity_shards!(data_shards, parity_shards, json_enabled);
 
-            let burst = get_burst_or_zero!(matches);
+            let burst = get_burst_or_zero!(matches, json_enabled);
 
             Some((data_shards, parity_shards, burst))
         } else {
             None
         };
 
-    let in_file = get_in_file!(matches);
+    let in_file = get_in_file!(matches, json_enabled);
     let out = match matches.value_of("out") {
         None    => format!("{}.sbx", in_file),
         Some(x) => {
@@ -113,28 +115,26 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
         None    => multihash::HashType::SHA256,
         Some(x) => match multihash::string_to_hash_type(x) {
             Ok(x)  => x,
-            Err(_) => exit_with_msg!(usr => "Invalid hash type")
+            Err(_) => exit_with_msg!(usr json_enabled => "Invalid hash type")
         }
     };
 
-    let pr_verbosity_level = get_pr_verbosity_level!(matches);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_enabled);
 
     let meta_enabled = get_meta_enabled!(matches);
-
-    let json_enabled = get_json_enabled!(matches);
 
     print_maybe_json_open_bracket!(json_enabled);
 
     if matches.is_present("info_only") {
         let in_file_meta  = match file_utils::get_file_metadata(in_file) {
             Ok(x)  => x,
-            Err(_) => exit_with_msg!(usr => "Failed to get metadata of \"{}\"",
+            Err(_) => exit_with_msg!(usr json_enabled => "Failed to get metadata of \"{}\"",
                                      in_file)
         };
 
         let in_file_size = match file_utils::get_file_size(in_file) {
             Ok(x)  => x,
-            Err(_) => exit_with_msg!(usr => "Failed to get file size of \"{}\"",
+            Err(_) => exit_with_msg!(usr json_enabled => "Failed to get file size of \"{}\"",
                                      in_file)
         };
 
@@ -184,10 +184,11 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
             println!("File modification time   : {}", in_file_mod_time_str);
         }
 
-        exit_with_msg!(ok => "")
+        exit_with_msg!(ok json_enabled => "")
     } else {
         exit_if_file!(exists &out
                       => matches.is_present("force")
+                      => json_enabled
                       => "File \"{}\" already exists", out);
 
         let param = Param::new(version,
@@ -199,8 +200,8 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                                &out,
                                pr_verbosity_level);
         match encode_core::encode_file(&param) {
-            Ok(s)  => exit_with_msg!(ok => "{}", s),
-            Err(e) => exit_with_msg!(op => "{}", e)
+            Ok(s)  => exit_with_msg!(ok json_enabled => "{}", s),
+            Err(e) => exit_with_msg!(op json_enabled => "{}", e)
         }
     }
 }
