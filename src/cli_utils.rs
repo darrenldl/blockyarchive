@@ -140,7 +140,8 @@ This operation does not respect the misalignment and range requirements.")
 pub fn json_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("json")
         .long("json")
-        .help("Output information in JSON format")
+        .help("Output information in JSON format. Note that rsbx does not
+guarantee the JSON data to be well form if rsbx is interrupted.")
 }
 
 pub fn setup_ctrlc_handler(json_enabled : bool) -> Arc<AtomicBool> {
