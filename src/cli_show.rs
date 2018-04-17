@@ -24,10 +24,13 @@ then it will be treated as (file size - 1). The rounding procedure
 is applied after all auto-adjustments."))
         .arg(to_byte_arg())
         .arg(guess_burst_arg())
+        .arg(json_arg())
 }
 
 pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
     let json_enabled = get_json_enabled!(matches);
+
+    print_maybe_json_open_bracket!(json_enabled);
 
     let in_file = get_in_file!(matches, json_enabled);
 

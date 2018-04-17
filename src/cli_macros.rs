@@ -381,6 +381,26 @@ macro_rules! print_if_not_json {
     }}
 }
 
+macro_rules! print_if_json {
+    (
+        $json_enabled:expr, $($val:expr),*
+    ) => {{
+        if $json_enabled {
+            println!($($val),*);
+        }
+    }}
+}
+
+macro_rules! print_field_if_json {
+    (
+        $json_enabled:expr, $($t:tt)*
+    ) => {{
+        if $json_enabled {
+            print_maybe_json!($json_enabled, $($t)*);
+        }
+    }}
+}
+
 macro_rules! print_maybe_json {
     (
         $json_enabled:expr, $($val:expr),* => skip_quotes, no_comma

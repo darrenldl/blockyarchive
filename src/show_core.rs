@@ -111,9 +111,11 @@ pub fn show_file(param : &Param)
                  -> Result<Stats, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
+    let json_enabled = param.json_enabled;
+
     if param.guess_burst {
-        println!("Guessing burst error resistance level");
-        println!();
+        print_if_not_json!(json_enabled, "Guessing burst error resistance level");
+        print_if_not_json!(json_enabled, "");
 
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&param.in_file,
@@ -126,23 +128,23 @@ pub fn show_file(param : &Param)
 
         report_ref_block_info(ref_block_pos, &ref_block);
 
-        println!();
+        print_if_not_json!(json_enabled, "");
 
         if ver_uses_rs(ref_block.get_version()) {
             match block_utils::guess_burst_err_resistance_level(&param.in_file,
                                                                 ref_block_pos,
                                                                 &ref_block) {
-                Err(e)      => println!("Error encountered when guessing : {}", e),
-                Ok(None)    => println!("Failed to guess level"),
-                Ok(Some(x)) => println!("Best guess for burst error resistance level : {}", x),
+                Err(e)      => { return Err(Error::with_message(&format!("Error encountered when guessing : {}", e))) },
+                Ok(None)    => print_if_not_json!(json_enabled, "Failed to guess level"),
+                Ok(Some(x)) => print_maybe_json!(json_enabled, "Best guess for burst error resistance level : {}", x => skip_quotes),
             }
         } else {
-            println!("Reference block version does not use Reed-Solomon erasure code");
+            print_if_not_json!(json_enabled, "Reference block version does not use Reed-Solomon erasure code");
         }
 
-        println!();
-        println!("========================================");
-        println!();
+        print_if_not_json!(json_enabled, "");
+        print_if_not_json!(json_enabled, "========================================");
+        print_if_not_json!(json_enabled, "");
     }
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
@@ -181,6 +183,8 @@ pub fn show_file(param : &Param)
     let mut block_pos       : u64;
     let mut bytes_processed : u64 = 0;
 
+    print_if_json!(json_enabled, "blocks : [");
+
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
@@ -200,6 +204,12 @@ pub fn show_file(param : &Param)
 
         if !lazy_read_res.usable { continue; }
 
+        if meta_block_count == 0 {
+            print_if_json!(json_enabled, "{{");
+        } else {
+            print_if_json!(json_enabled, ",{{");
+        }
+
         if block.is_meta() {
             reporter.pause();
 
@@ -207,37 +217,43 @@ pub fn show_file(param : &Param)
                 if meta_block_count > 0 {
                     println!();
                 }
-                println!("Metadata block number : {}", meta_block_count);
-                println!("========================================");
+                print_maybe_json!(json_enabled,  "Metadata block number : {}", meta_block_count => skip_quotes, no_comma);
+                print_if_not_json!(json_enabled, "========================================");
+            } else {
+                print_field_if_json!(json_enabled,     "Metadata block number : {}", meta_block_count => skip_quotes, no_comma);
             }
 
-            println!("Found at byte          : {} (0x{:X})",
-                     block_pos + seek_to,
-                     block_pos + seek_to);
-            println!();
-            println!("File UID               : {}",
-                     misc_utils::bytes_to_upper_hex_string(&block.get_uid()));
-            println!("File name              : {}",
-                     block.get_FNM().unwrap().unwrap_or("N/A".to_string()));
-            println!("SBX container name     : {}",
-                     block.get_SNM().unwrap().unwrap_or("N/A".to_string()));
-            println!("SBX container version  : {}",
-                     if ver_uses_rs(block.get_version()) {
-                         format!("{} (0x{:X})",
-                                 ver_to_usize(block.get_version()),
-                                 ver_to_usize(block.get_version()))
-                     } else {
-                         ver_to_usize(block.get_version()).to_string()
-                     });
-            println!("RS data shard count    : {}",
-                     if ver_uses_rs(block.get_version()) {
-                         match block.get_RSD().unwrap() {
-                             None    => "N/A".to_string(),
-                             Some(x) => x.to_string(),
-                         }
-                     } else {
-                         "version does not use RS".to_string()
-                     });
+            print_if_not_json!(json_enabled, "Found at byte          : {} (0x{:X})",
+                               block_pos + seek_to,
+                               block_pos + seek_to);
+            print_maybe_json!(json_enabled,  "Found at byte          : {}",
+                              block_pos + seek_to => skip_quotes);
+
+            print_if_not_json!(json_enabled, "");
+
+            print_maybe_json!(json_enabled,  "File UID               : {}",
+                              misc_utils::bytes_to_upper_hex_string(&block.get_uid()));
+            print_maybe_json!(json_enabled,  "File name              : {}",
+                              block.get_FNM().unwrap().unwrap_or("N/A".to_string()));
+            print_maybe_json!(json_enabled,  "SBX container name     : {}",
+                              block.get_SNM().unwrap().unwrap_or("N/A".to_string()));
+            print_maybe_json!(json_enabled, "SBX container version  : {}",
+                              if ver_uses_rs(block.get_version()) && !json_enabled {
+                                  format!("{} (0x{:X})",
+                                          ver_to_usize(block.get_version()),
+                                          ver_to_usize(block.get_version()))
+                              } else {
+                                  ver_to_usize(block.get_version()).to_string()
+                              });
+            print_maybe_json!(json_enabled, "RS data shard count    : {}",
+                              if ver_uses_rs(block.get_version()) {
+                                  match block.get_RSD().unwrap() {
+                                      None    => null_if_json_else!(json_enabled, "N/A").to_string(),
+                                      Some(x) => x.to_string(),
+                                  }
+                              } else {
+                                  "version does not use RS".to_string()
+                              }                                                    => skip_quotes);
             println!("RS parity shard count  : {}",
                      if ver_uses_rs(block.get_version()) {
                          match block.get_RSP().unwrap() {
