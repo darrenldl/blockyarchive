@@ -324,9 +324,9 @@ macro_rules! write_json_field {
         }
 
         if $skip_quotes {
-            writeln!($f, "\"{}\": {}", $key, $val)
+            writeln!($f, "\"{}\": {}", $key, escape_quotes(&$val))
         } else {
-            writeln!($f, "\"{}\": \"{}\"", $key, $val)
+            writeln!($f, "\"{}\": \"{}\"", $key, escape_quotes(&$val))
         }
     }};
 }
@@ -371,39 +371,39 @@ macro_rules! print_maybe_json_close_bracket {
 
 macro_rules! print_maybe_json {
     (
-        $json_enabled:expr, $format_str:expr, $val:expr, skip_quotes, no_comma
+        $json_enabled:expr, $format_str:expr, $($val:expr),* => skip_quotes, no_comma
     ) => {{
-        print_maybe_json!($json_enabled, $format_str, $val, true, true)
+        print_maybe_json!($json_enabled, $format_str, $($val),* => true, true)
     }};
     (
-        $json_enabled:expr, $format_str:expr, $val:expr, skip_quotes
+        $json_enabled:expr, $format_str:expr, $($val:expr),* => skip_quotes
     ) => {{
-        print_maybe_json!($json_enabled, $format_str, $val, true, false)
+        print_maybe_json!($json_enabled, $format_str, $($val),* => true, false)
     }};
     (
-        $json_enabled:expr, $format_str:expr, $val:expr, no_comma
+        $json_enabled:expr, $format_str:expr, $($val:expr),* => no_comma
     ) => {{
-        print_maybe_json!($json_enabled, $format_str, $val, false, true)
+        print_maybe_json!($json_enabled, $format_str, $($val),* => false, true)
     }};
     (
-        $json_enabled:expr, $format_str:expr, $val:expr
+        $json_enabled:expr, $format_str:expr, $($val:expr),*
     ) => {{
-        print_maybe_json!($json_enabled, $format_str, $val, false, false)
+        print_maybe_json!($json_enabled, $format_str, $($val),* => false, false)
     }};
     (
-        $json_enabled:expr, $format_str:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
+        $json_enabled:expr, $format_str:expr, $($val:expr),* => $skip_quotes:expr, $no_comma:expr
     ) => {{
         use misc_utils::{to_camelcase,
                          split_key_val_pair};
 
         if $json_enabled {
-            let msg = format!($format_str, $val);
+            let msg = format!($format_str, $($val),*);
 
             let (l, r) = split_key_val_pair(&msg);
 
             print_json_field!(to_camelcase(l), r, $skip_quotes, $no_comma);
         } else {
-            println!($format_str, $val);
+            println!($format_str, $($val),*);
         }
     }}
 }

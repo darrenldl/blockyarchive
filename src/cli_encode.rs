@@ -162,16 +162,16 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                                                                  in_file_size);
 
         if ver_uses_rs(version) {
-            print_maybe_json!(json_enabled, "File name                    : {}", in_file, no_comma);
+            print_maybe_json!(json_enabled, "File name                    : {}", in_file => no_comma);
             print_maybe_json!(json_enabled, "SBX container name           : {}", out);
             print_maybe_json!(json_enabled, "SBX container version        : {}", ver_to_usize(version));
-            print_maybe_json!(json_enabled, "SBX container block size     : {}", ver_to_block_size(version), skip_quotes);
-            print_maybe_json!(json_enabled, "SBX container data  size     : {}", ver_to_data_size(version),  skip_quotes);
-            print_maybe_json!(json_enabled, "RS data   shard count        : {}", data_par_burst.unwrap().0,  skip_quotes);
-            print_maybe_json!(json_enabled, "RS parity shard count        : {}", data_par_burst.unwrap().1,  skip_quotes);
-            print_maybe_json!(json_enabled, "Burst error resistance level : {}", data_par_burst.unwrap().2,  skip_quotes);
-            print_maybe_json!(json_enabled, "File size                    : {}", in_file_size,               skip_quotes);
-            print_maybe_json!(json_enabled, "SBX container size           : {}", out_file_size,              skip_quotes);
+            print_maybe_json!(json_enabled, "SBX container block size     : {}", ver_to_block_size(version) => skip_quotes);
+            print_maybe_json!(json_enabled, "SBX container data  size     : {}", ver_to_data_size(version)  => skip_quotes);
+            print_maybe_json!(json_enabled, "RS data   shard count        : {}", data_par_burst.unwrap().0  => skip_quotes);
+            print_maybe_json!(json_enabled, "RS parity shard count        : {}", data_par_burst.unwrap().1  => skip_quotes);
+            print_maybe_json!(json_enabled, "Burst error resistance level : {}", data_par_burst.unwrap().2  => skip_quotes);
+            print_maybe_json!(json_enabled, "File size                    : {}", in_file_size               => skip_quotes);
+            print_maybe_json!(json_enabled, "SBX container size           : {}", out_file_size              => skip_quotes);
             print_maybe_json!(json_enabled, "File modification time       : {}", in_file_mod_time_str);
         } else {
             println!("File name                : {}", in_file);
