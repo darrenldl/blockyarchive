@@ -56,7 +56,7 @@ Uid must be exactly 6 bytes(12 hex digits) in length."))
         .arg(rs_data_arg())
         .arg(rs_parity_arg())
         .arg(burst_arg()
-        .help("Burst error resistance level. Note that rsbx only guesses up to
+            .help("Burst error resistance level. Note that rsbx only guesses up to
 1000 in repair, show, and sort mode. If you use level above 1000,
 then rsbx will make an incorrect guess, and you will need to
 specify it explicitly in repair and sort mode. Show mode does
@@ -65,6 +65,7 @@ automatic guessing."))
         .arg(Arg::with_name("info_only")
              .long("info-only")
              .help("Only display information about encoding then exit"))
+        .arg(json_arg())
 }
 
 pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
@@ -120,6 +121,8 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let meta_enabled = get_meta_enabled!(matches);
 
+    let json_enabled = get_json_enabled!(matches);
+
     if matches.is_present("info_only") {
         let in_file_meta  = match file_utils::get_file_metadata(in_file) {
             Ok(x)  => x,
@@ -157,17 +160,20 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                                                                  in_file_size);
 
         if ver_uses_rs(version) {
-            println!("File name                    : {}", in_file);
-            println!("SBX container name           : {}", out);
-            println!("SBX container version        : {}", ver_to_usize(version));
-            println!("SBX container block size     : {}", ver_to_block_size(version));
-            println!("SBX container data  size     : {}", ver_to_data_size(version));
-            println!("RS data   shard count        : {}", data_par_burst.unwrap().0);
-            println!("RS parity shard count        : {}", data_par_burst.unwrap().1);
-            println!("Burst error resistance level : {}", data_par_burst.unwrap().2);
-            println!("File size                    : {}", in_file_size);
-            println!("SBX container size           : {}", out_file_size);
-            println!("File modification time       : {}", in_file_mod_time_str);
+            if json_enabled {
+            } else {
+                println!("File name                    : {}", in_file);
+                println!("SBX container name           : {}", out);
+                println!("SBX container version        : {}", ver_to_usize(version));
+                println!("SBX container block size     : {}", ver_to_block_size(version));
+                println!("SBX container data  size     : {}", ver_to_data_size(version));
+                println!("RS data   shard count        : {}", data_par_burst.unwrap().0);
+                println!("RS parity shard count        : {}", data_par_burst.unwrap().1);
+                println!("Burst error resistance level : {}", data_par_burst.unwrap().2);
+                println!("File size                    : {}", in_file_size);
+                println!("SBX container size           : {}", out_file_size);
+                println!("File modification time       : {}", in_file_mod_time_str);
+            }
         } else {
             println!("File name                : {}", in_file);
             println!("SBX container name       : {}", out);

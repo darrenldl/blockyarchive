@@ -137,6 +137,12 @@ before scanning for metadata blocks.
 This operation does not respect the misalignment and range requirements.")
 }
 
+pub fn json_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("json")
+        .long("json")
+        .help("Output information in JSON format.")
+}
+
 pub fn setup_ctrlc_handler() -> Arc<AtomicBool> {
     let stop_flag         = Arc::new(AtomicBool::new(false));
     let handler_stop_flag = Arc::clone(&stop_flag);

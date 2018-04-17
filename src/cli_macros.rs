@@ -286,3 +286,11 @@ macro_rules! get_meta_enabled {
         !$matches.is_present("no_meta")
     }}
 }
+
+macro_rules! get_json_enabled {
+    (
+        $matches:expr
+    ) => {{
+        $matches.is_present("json")
+    }}
+}
