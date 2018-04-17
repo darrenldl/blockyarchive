@@ -161,6 +161,17 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
         if ver_uses_rs(version) {
             if json_enabled {
+                print_json_field!("fileName",                  in_file);
+                print_json_field!("sbxContainerName",          out);
+                print_json_field!("sbxContainerVersion",       ver_to_usize(version));
+                print_json_field!("sbxContainerBlockSize",     ver_to_block_size(version));
+                print_json_field!("sbxContainerDataSize",      ver_to_data_size(version));
+                print_json_field!("rsDataShardCount",          data_par_burst.unwrap().0);
+                print_json_field!("rsParityShardCount",        data_par_burst.unwrap().1);
+                print_json_field!("burstErrorResistanceLevel", data_par_burst.unwrap().2);
+                print_json_field!("fileSize",                  in_file_size);
+                print_json_field!("sbxContainerSize",          out_file_size);
+                print_json_field!("fileModificationTime",      in_file_mod_time_str)
             } else {
                 println!("File name                    : {}", in_file);
                 println!("SBX container name           : {}", out);

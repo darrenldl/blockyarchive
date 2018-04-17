@@ -294,3 +294,11 @@ macro_rules! get_json_enabled {
         $matches.is_present("json")
     }}
 }
+
+macro_rules! print_json_field {
+    (
+        $key:expr, $value:expr
+    ) => {{
+        println!("\"{}\": {}", $key, $value)
+    }}
+}
