@@ -35,6 +35,7 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let param = Param::new(get_ref_block_choice!(matches),
                            matches.is_present("force"),
+                           json_enabled,
                            in_file,
                            out,
                            matches.is_present("verbose"),

@@ -29,6 +29,7 @@ use cli_utils::report_ref_block_info;
 pub struct Param {
     ref_block_choice   : RefBlockChoice,
     report_blank       : bool,
+    json_enabled       : bool,
     in_file            : String,
     verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
@@ -37,12 +38,14 @@ pub struct Param {
 impl Param {
     pub fn new(ref_block_choice   : RefBlockChoice,
                report_blank       : bool,
+               json_enabled       : bool,
                in_file            : &str,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel) -> Param {
         Param {
             ref_block_choice,
             report_blank,
+            json_enabled,
             in_file  : String::from(in_file),
             verbose,
             pr_verbosity_level,
@@ -59,11 +62,13 @@ pub struct Stats {
     total_blocks                   : u64,
     start_time                     : f64,
     end_time                       : f64,
+    json_enabled                   : bool,
 }
 
 impl Stats {
-    pub fn new(ref_block : &Block,
-               file_size : u64) -> Stats {
+    pub fn new(ref_block    : &Block,
+               file_size    : u64,
+               json_enabled : bool) -> Stats {
         use file_utils::from_container_size::calc_total_block_count;
         let total_blocks =
             calc_total_block_count(ref_block.get_version(),
@@ -76,6 +81,7 @@ impl Stats {
             total_blocks,
             start_time              : 0.,
             end_time                : 0.,
+            json_enabled,
         }
     }
 }
@@ -114,12 +120,14 @@ impl fmt::Display for Stats {
 
 pub fn check_file(param : &Param)
                   -> Result<Option<Stats>, Error> {
-    let ctrlc_stop_flag = setup_ctrlc_handler();
+    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
     let (_, ref_block) = get_ref_block!(param, ctrlc_stop_flag);
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
-    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, file_size)));
+    let stats = Arc::new(Mutex::new(Stats::new(&ref_block,
+                                               file_size,
+                                               param.json_enabled)));
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 

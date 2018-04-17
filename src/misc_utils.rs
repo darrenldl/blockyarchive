@@ -216,6 +216,17 @@ pub fn split_key_val_pair(string : &str) -> (&str, &str) {
         }
     }
 
-    (&string[0..spot],
+    (&string[0..spot-1],
      &string[spot+1+1..])
+}
+
+pub fn escape_quotes(string : &str) -> String {
+    let mut res = String::with_capacity(100);
+    for c in string.chars() {
+        if c == '"' {
+            res.push('\\');
+        }
+        res.push(c);
+    }
+    res
 }

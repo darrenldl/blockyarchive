@@ -53,6 +53,7 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_enabled);
 
     let param = Param::new(get_ref_block_choice!(matches),
+                           json_enabled,
                            in_file,
                            &out_file,
                            matches.is_present("verbose"),

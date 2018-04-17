@@ -143,7 +143,7 @@ pub fn json_arg<'a, 'b>() -> Arg<'a, 'b> {
         .help("Output information in JSON format.")
 }
 
-pub fn setup_ctrlc_handler() -> Arc<AtomicBool> {
+pub fn setup_ctrlc_handler(json_enabled : bool) -> Arc<AtomicBool> {
     let stop_flag         = Arc::new(AtomicBool::new(false));
     let handler_stop_flag = Arc::clone(&stop_flag);
 
@@ -152,7 +152,9 @@ pub fn setup_ctrlc_handler() -> Arc<AtomicBool> {
         println!("Interrupted");
     }).expect("Failed to set Ctrl-C handler");
 
-    println!("Press Ctrl-C to interrupt");
+    if !json_enabled {
+        println!("Press Ctrl-C to interrupt");
+    }
 
     stop_flag
 }

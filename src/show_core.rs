@@ -36,16 +36,19 @@ pub struct Stats {
     meta_block_count    : u64,
     start_time          : f64,
     end_time            : f64,
+    json_enabled        : bool,
 }
 
 impl Stats {
-    pub fn new(file_size : u64) -> Stats {
+    pub fn new(file_size    : u64,
+               json_enabled : bool) -> Stats {
         Stats {
             bytes_processed   : 0,
             total_bytes       : file_size,
             meta_block_count  : 0,
             start_time        : 0.,
             end_time          : 0.,
+            json_enabled,
         }
     }
 }
@@ -75,6 +78,7 @@ pub struct Param {
     show_all            : bool,
     guess_burst         : bool,
     force_misalign      : bool,
+    json_enabled        : bool,
     from_pos            : Option<u64>,
     to_pos              : Option<u64>,
     in_file             : String,
@@ -85,6 +89,7 @@ impl Param {
     pub fn new(show_all            : bool,
                guess_burst         : bool,
                force_misalign      : bool,
+               json_enabled        : bool,
                from_pos            : Option<u64>,
                to_pos              : Option<u64>,
                in_file             : &str,
@@ -93,6 +98,7 @@ impl Param {
             show_all,
             guess_burst,
             force_misalign,
+            json_enabled,
             from_pos,
             to_pos,
             in_file : String::from(in_file),
@@ -103,7 +109,7 @@ impl Param {
 
 pub fn show_file(param : &Param)
                  -> Result<Stats, Error> {
-    let ctrlc_stop_flag = setup_ctrlc_handler();
+    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
     if param.guess_burst {
         println!("Guessing burst error resistance level");
@@ -141,7 +147,8 @@ pub fn show_file(param : &Param)
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
 
-    let stats = Arc::new(Mutex::new(Stats::new(file_size)));
+    let stats = Arc::new(Mutex::new(Stats::new(file_size,
+                                               param.json_enabled)));
 
     let reporter = ProgressReporter::new(&stats,
                                          "Metadata block scanning progress",

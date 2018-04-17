@@ -37,6 +37,7 @@ pub struct Param {
     from_pos           : Option<u64>,
     to_pos             : Option<u64>,
     force_misalign     : bool,
+    json_enabled       : bool,
     only_pick_block    : Option<BlockType>,
     only_pick_uid      : Option<[u8; SBX_FILE_UID_LEN]>,
     pr_verbosity_level : PRVerbosityLevel,
@@ -49,6 +50,7 @@ impl Param {
                from_pos           : Option<u64>,
                to_pos             : Option<u64>,
                force_misalign     : bool,
+               json_enabled       : bool,
                only_pick_block    : Option<BlockType>,
                only_pick_uid      : Option<&[u8; SBX_FILE_UID_LEN]>,
                pr_verbosity_level : PRVerbosityLevel) -> Param {
@@ -62,6 +64,7 @@ impl Param {
             from_pos,
             to_pos,
             force_misalign,
+            json_enabled,
             only_pick_block,
             only_pick_uid : match only_pick_uid {
                 None    => None,
@@ -80,10 +83,12 @@ pub struct Stats {
     total_bytes                      : u64,
     start_time                       : f64,
     end_time                         : f64,
+    json_enabled                     : bool,
 }
 
 impl Stats {
-    pub fn new(file_size : u64)
+    pub fn new(file_size    : u64,
+               json_enabled : bool)
                -> Result<Stats, Error> {
         let stats = Stats {
             meta_or_par_blocks_processed : 0,
@@ -92,6 +97,7 @@ impl Stats {
             total_bytes                  : file_size,
             start_time                   : 0.,
             end_time                     : 0.,
+            json_enabled,
         };
         Ok(stats)
     }
@@ -193,10 +199,11 @@ impl fmt::Display for Stats {
 
 pub fn rescue_from_file(param : &Param)
                         -> Result<Stats, Error> {
-    let ctrlc_stop_flag = setup_ctrlc_handler();
+    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
-    let stats = Arc::new(Mutex::new(Stats::new(file_size)?));
+    let stats = Arc::new(Mutex::new(Stats::new(file_size,
+                                               param.json_enabled)?));
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,

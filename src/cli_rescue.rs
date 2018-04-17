@@ -101,6 +101,7 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
                            from_pos,
                            to_pos,
                            matches.is_present("force_misalign"),
+                           json_enabled,
                            block_type,
                            uid,
                            pr_verbosity_level);

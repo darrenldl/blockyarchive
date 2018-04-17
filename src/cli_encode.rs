@@ -71,6 +71,8 @@ automatic guessing."))
 pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
     let json_enabled = get_json_enabled!(matches);
 
+    print_maybe_json_open_bracket!(json_enabled);
+
     // compute uid
     let mut uid : [u8; SBX_FILE_UID_LEN] = [0; SBX_FILE_UID_LEN];
     {
@@ -122,8 +124,6 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_enabled);
 
     let meta_enabled = get_meta_enabled!(matches);
-
-    print_maybe_json_open_bracket!(json_enabled);
 
     if matches.is_present("info_only") {
         let in_file_meta  = match file_utils::get_file_metadata(in_file) {

@@ -64,6 +64,7 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let param = Param::new(in_file,
                            matches.is_present("dry_run"),
+                           json_enabled,
                            matches.is_present("verbose"),
                            pr_verbosity_level,
                            burst);

@@ -39,6 +39,7 @@ pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
     let param = Param::new(matches.is_present("show_all"),
                            matches.is_present("guess_burst"),
                            matches.is_present("force_misalign"),
+                           json_enabled,
                            from_pos,
                            to_pos,
                            in_file,

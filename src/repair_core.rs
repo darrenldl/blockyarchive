@@ -117,6 +117,7 @@ impl fmt::Display for Stats {
 pub struct Param {
     in_file            : String,
     dry_run            : bool,
+    json_enabled       : bool,
     verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
     burst              : Option<usize>,
@@ -125,12 +126,14 @@ pub struct Param {
 impl Param {
     pub fn new(in_file            : &str,
                dry_run            : bool,
+               json_enabled       : bool,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel,
                burst              : Option<usize>) -> Param {
         Param {
             in_file : String::from(in_file),
             dry_run,
+            json_enabled,
             verbose,
             pr_verbosity_level,
             burst,
@@ -207,7 +210,7 @@ fn repair_blocks_and_update_stats_using_repair_stats(param       : &Param,
 
 pub fn repair_file(param : &Param)
                    -> Result<Option<Stats>, Error> {
-    let ctrlc_stop_flag = setup_ctrlc_handler();
+    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
     let (ref_block_pos, mut ref_block) = get_ref_block!(param,
                                                         RefBlockChoice::MustBe(BlockType::Meta),

@@ -30,6 +30,7 @@ use block_utils::RefBlockChoice;
 
 pub struct Param {
     ref_block_choice   : RefBlockChoice,
+    json_enabled       : bool,
     in_file            : String,
     out_file           : String,
     verbose            : bool,
@@ -39,6 +40,7 @@ pub struct Param {
 
 impl Param {
     pub fn new(ref_block_choice   : RefBlockChoice,
+               json_enabled       : bool,
                in_file            : &str,
                out_file           : &str,
                verbose            : bool,
@@ -46,6 +48,7 @@ impl Param {
                burst              : Option<usize>) -> Param {
         Param {
             ref_block_choice,
+            json_enabled,
             in_file  : String::from(in_file),
             out_file : String::from(out_file),
             verbose,
@@ -119,7 +122,7 @@ impl fmt::Display for Stats {
 
 pub fn sort_file(param : &Param)
                  -> Result<Option<Stats>, Error> {
-    let ctrlc_stop_flag = setup_ctrlc_handler();
+    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
     let (ref_block_pos, ref_block) = get_ref_block!(param,
                                                     ctrlc_stop_flag);

@@ -27,6 +27,7 @@ pub fn check<'a>(matches : &ArgMatches<'a>) -> i32 {
     let in_file  = get_in_file!(matches, json_enabled);
     let param = Param::new(get_ref_block_choice!(matches),
                            matches.is_present("report_blank"),
+                           json_enabled,
                            in_file,
                            matches.is_present("verbose"),
                            pr_verbosity_level);

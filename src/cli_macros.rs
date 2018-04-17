@@ -3,6 +3,9 @@ macro_rules! exit_with_msg {
         ok $json_enabled:expr => $($x:expr),*
     ) => {{
         print!($($x),*);
+        if $json_enabled {
+            print_json_field!("error", "null", true, false);
+        }
         print_maybe_json_close_bracket!($json_enabled);
         return 0;
     }};
@@ -12,7 +15,7 @@ macro_rules! exit_with_msg {
         if $json_enabled {
             print_json_field!("error", format!($($x),*), false, true);
         } else {
-            print!($($x),*);
+            println!($($x),*);
         }
         print_maybe_json_close_bracket!($json_enabled);
         return 1;
@@ -23,7 +26,7 @@ macro_rules! exit_with_msg {
         if $json_enabled {
             print_json_field!("error", format!($($x),*), false, true);
         } else {
-            print!($($x),*);
+            println!($($x),*);
         }
         print_maybe_json_close_bracket!($json_enabled);
         return 2;
@@ -56,11 +59,15 @@ macro_rules! get_pr_verbosity_level {
         $matches:expr, $json_enabled:expr
     ) => {{
         use progress_report;
-        match $matches.value_of("pr_verbosity_level") {
-            None    => progress_report::PRVerbosityLevel::L2,
-            Some(x) => match progress_report::string_to_verbosity_level(x) {
-                Ok(x)  => x,
-                Err(_) => exit_with_msg!(usr $json_enabled => "Invalid progress report verbosity level")
+        if get_json_enabled!($matches) {
+            progress_report::PRVerbosityLevel::L0
+        } else {
+            match $matches.value_of("pr_verbosity_level") {
+                None    => progress_report::PRVerbosityLevel::L2,
+                Some(x) => match progress_report::string_to_verbosity_level(x) {
+                    Ok(x)  => x,
+                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid progress report verbosity level")
+                }
             }
         }
     }}
@@ -328,14 +335,16 @@ macro_rules! print_json_field {
     (
         $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
     ) => {{
+        use misc_utils::escape_quotes;
+
         if !$no_comma {
             print!(",");
         }
 
         if $skip_quotes {
-            println!("\"{}\": {}", $key, $val);
+            println!("\"{}\": {}", $key, escape_quotes(&$val));
         } else {
-            println!("\"{}\": \"{}\"", $key, $val);
+            println!("\"{}\": \"{}\"", $key, escape_quotes(&$val));
         }
     }};
 }

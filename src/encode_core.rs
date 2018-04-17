@@ -326,7 +326,7 @@ fn block_sync_and_write(block  : &mut Block,
 
 pub fn encode_file(param : &Param)
                    -> Result<Stats, Error> {
-    let ctrlc_stop_flag = setup_ctrlc_handler();
+    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
     // setup file reader and writer
     let mut reader = FileReader::new(&param.in_file,

@@ -52,6 +52,7 @@ pub struct Stats {
     end_time                    : f64,
     pub recorded_hash           : Option<multihash::HashBytes>,
     pub computed_hash           : Option<multihash::HashBytes>,
+    json_enabled                : bool,
 }
 
 struct HashStats {
@@ -151,6 +152,7 @@ impl fmt::Display for Stats {
 pub struct Param {
     ref_block_choice   : RefBlockChoice,
     force_write        : bool,
+    json_enabled       : bool,
     in_file            : String,
     out_file           : Option<String>,
     verbose            : bool,
@@ -160,6 +162,7 @@ pub struct Param {
 impl Param {
     pub fn new(ref_block_choice   : RefBlockChoice,
                force_write        : bool,
+               json_enabled       : bool,
                in_file            : &str,
                out_file           : Option<&str>,
                verbose            : bool,
@@ -167,6 +170,7 @@ impl Param {
         Param {
             ref_block_choice,
             force_write,
+            json_enabled,
             in_file  : String::from(in_file),
             out_file : match out_file {
                 None    => None,
@@ -191,7 +195,8 @@ impl HashStats {
 
 impl Stats {
     pub fn new(ref_block    : &Block,
-               in_file_size : u64) -> Stats {
+               in_file_size : u64,
+               json_enabled : bool) -> Stats {
         use file_utils::from_container_size::calc_total_block_count;
         let total_blocks =
             calc_total_block_count(ref_block.get_version(),
@@ -210,6 +215,7 @@ impl Stats {
             end_time                : 0.,
             recorded_hash           : None,
             computed_hash           : None,
+            json_enabled,
         }
     }
 }
@@ -258,7 +264,9 @@ pub fn decode(param           : &Param,
                                                        append   : false,
                                                        buffered : true   })?;
 
-    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, in_file_size)));
+    let stats = Arc::new(Mutex::new(Stats::new(&ref_block,
+                                               in_file_size,
+                                               param.json_enabled)));
 
     let reporter = ProgressReporter::new(&stats,
                                          "Data decoding progress",
@@ -425,7 +433,7 @@ fn hash(param           : &Param,
 
 pub fn decode_file(param : &Param)
                    -> Result<Option<Stats>, Error> {
-    let ctrlc_stop_flag = setup_ctrlc_handler();
+    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
     let (ref_block_pos, ref_block) = get_ref_block!(param,
                                                     ctrlc_stop_flag);
@@ -475,6 +483,7 @@ pub fn decode_file(param : &Param)
     // regenerate param
     let param = Param::new(param.ref_block_choice,
                            param.force_write,
+                           param.json_enabled,
                            &param.in_file,
                            Some(&out_file_path),
                            param.verbose,
