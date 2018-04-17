@@ -85,8 +85,7 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
     print_if_not_json!(json_enabled,    "SBX container general info");
     print_if_not_json!(json_enabled,    "========================================");
     if ver_uses_rs(version) {
-        print_maybe_json!(json_enabled, "    SBX container version        : {} (0x{:X})",
-                          ver_to_usize(version),
+        print_maybe_json!(json_enabled, "    SBX container version        : {}",
                           ver_to_usize(version)                                                        => no_comma);
     } else {
         print_maybe_json!(json_enabled, "    SBX container version        : {}", ver_to_usize(version) => no_comma);
