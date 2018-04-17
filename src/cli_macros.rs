@@ -2,25 +2,29 @@ macro_rules! exit_with_msg {
     (
         ok $json_enabled:expr => $($x:expr),*
     ) => {{
-        if $json_enabled {
-            print_json_field!("error", format!($($x),*), false);
-        } else {
-            print!($($x),*);
-        }
+        print!($($x),*);
         print_maybe_json_close_bracket!($json_enabled);
         return 0;
     }};
     (
         usr $json_enabled:expr => $($x:expr),*
     ) => {{
-        println!($($x),*);
+        if $json_enabled {
+            print_json_field!("error", format!($($x),*), false, true);
+        } else {
+            print!($($x),*);
+        }
         print_maybe_json_close_bracket!($json_enabled);
         return 1;
     }};
     (
         op $json_enabled:expr => $($x:expr),*
     ) => {{
-        print!($($x),*);
+        if $json_enabled {
+            print_json_field!("error", format!($($x),*), false, true);
+        } else {
+            print!($($x),*);
+        }
         print_maybe_json_close_bracket!($json_enabled);
         return 2;
     }}
@@ -306,8 +310,12 @@ macro_rules! get_json_enabled {
 
 macro_rules! print_json_field {
     (
-        $key:expr, $val:expr, $skip_quotes:expr
+        $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
     ) => {{
+        if !$no_comma {
+            print!(",");
+        }
+
         if $skip_quotes {
             println!("\"{}\": {}", $key, $val);
         } else {
@@ -338,17 +346,27 @@ macro_rules! print_maybe_json_close_bracket {
 
 macro_rules! print_maybe_json {
     (
+        $json_enabled:expr, $format_str:expr, $val:expr, skip_quotes, no_comma
+    ) => {{
+        print_maybe_json!($json_enabled, $format_str, $val, true, true)
+    }};
+    (
         $json_enabled:expr, $format_str:expr, $val:expr, skip_quotes
     ) => {{
-        print_maybe_json!($json_enabled, $format_str, $val, true)
+        print_maybe_json!($json_enabled, $format_str, $val, true, false)
+    }};
+    (
+        $json_enabled:expr, $format_str:expr, $val:expr, no_comma
+    ) => {{
+        print_maybe_json!($json_enabled, $format_str, $val, false, true)
     }};
     (
         $json_enabled:expr, $format_str:expr, $val:expr
     ) => {{
-        print_maybe_json!($json_enabled, $format_str, $val, false)
+        print_maybe_json!($json_enabled, $format_str, $val, false, false)
     }};
     (
-        $json_enabled:expr, $format_str:expr, $val:expr, $skip_quotes:expr
+        $json_enabled:expr, $format_str:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
     ) => {{
         use misc_utils::{to_camelcase,
                          split_key_val_pair};
@@ -358,7 +376,7 @@ macro_rules! print_maybe_json {
 
             let (l, r) = split_key_val_pair(&msg);
 
-            print_json_field!(to_camelcase(l), r, $skip_quotes);
+            print_json_field!(to_camelcase(l), r, $skip_quotes, $no_comma);
         } else {
             println!($format_str, $val);
         }
