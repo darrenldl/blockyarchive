@@ -168,3 +168,10 @@ fn test_buffer_is_blank_simple_cases() {
     assert!(buffer_is_blank(&buffer[15..20]));
     assert!(buffer_is_blank(&buffer[21..37]));
 }
+
+#[test]
+fn test_camelcase() {
+    assert_eq!("testABCD", to_camelcase("test a b c D"));
+    assert_eq!("fileSize", to_camelcase("File size"));
+    assert_eq!("low", to_camelcase("low"));
+}

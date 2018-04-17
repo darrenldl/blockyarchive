@@ -5,6 +5,8 @@ use integer_utils::IntegerUtils;
 
 use std::path::PathBuf;
 
+use smallvec::SmallVec;
+
 #[derive(Debug, PartialEq)]
 pub enum HexError {
     InvalidHexString,
@@ -183,4 +185,24 @@ pub fn buffer_is_blank(buf : &[u8]) -> bool {
     }
 
     true
+}
+
+pub fn to_camelcase(string : &str) -> String {
+    let mut res = String::with_capacity(100);
+
+    let split : SmallVec<[&str; 16]> = string.split(' ').collect();
+
+    res.push_str(&split[0].to_lowercase());
+    for s in &split[1..] {
+        let mut s = s.chars();
+        match s.next() {
+            None => {},
+            Some(c) => {
+                let x : String = c.to_uppercase().chain(s).collect();
+                res.push_str(&x);
+            }
+        };
+    };
+
+    res
 }
