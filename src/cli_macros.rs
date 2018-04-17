@@ -297,8 +297,41 @@ macro_rules! get_json_enabled {
 
 macro_rules! print_json_field {
     (
-        $key:expr, $value:expr
+        $key:expr, $val:expr, $skip_quotes:expr
     ) => {{
-        println!("\"{}\": {}", $key, $value)
+        if $skip_quotes {
+            println!("\"{}\": {}", $key, $val);
+        } else {
+            println!("\"{}\": \"{}\"", $key, $val);
+        }
+    }};
+}
+
+macro_rules! print_maybe_json {
+    (
+        $json_enabled:expr, $format_str:expr, $val:expr, skip_quotes
+    ) => {{
+        print_maybe_json!($json_enabled, $format_str, $val, true)
+    }};
+    (
+        $json_enabled:expr, $format_str:expr, $val:expr
+    ) => {{
+        print_maybe_json!($json_enabled, $format_str, $val, false)
+    }};
+    (
+        $json_enabled:expr, $format_str:expr, $val:expr, $skip_quotes:expr
+    ) => {{
+        use misc_utils::{to_camelcase,
+                         split_key_val_pair};
+
+        if $json_enabled {
+            let msg = format!($format_str, $val);
+
+            let (l, r) = split_key_val_pair(&msg);
+
+            print_json_field!(to_camelcase(l), r, $skip_quotes);
+        } else {
+            println!($format_str, $val);
+        }
     }}
 }

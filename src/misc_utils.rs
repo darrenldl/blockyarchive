@@ -206,3 +206,16 @@ pub fn to_camelcase(string : &str) -> String {
 
     res
 }
+
+pub fn split_key_val_pair(string : &str) -> (&str, &str) {
+    let mut spot = 0;
+    for (i, c) in string.chars().enumerate() {
+        if c == ':' {
+            spot = i;
+            break;
+        }
+    }
+
+    (&string[0..spot],
+     &string[spot+1+1..])
+}

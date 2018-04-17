@@ -160,31 +160,17 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                                                                  in_file_size);
 
         if ver_uses_rs(version) {
-            if json_enabled {
-                print_json_field!("fileName",                  in_file);
-                print_json_field!("sbxContainerName",          out);
-                print_json_field!("sbxContainerVersion",       ver_to_usize(version));
-                print_json_field!("sbxContainerBlockSize",     ver_to_block_size(version));
-                print_json_field!("sbxContainerDataSize",      ver_to_data_size(version));
-                print_json_field!("rsDataShardCount",          data_par_burst.unwrap().0);
-                print_json_field!("rsParityShardCount",        data_par_burst.unwrap().1);
-                print_json_field!("burstErrorResistanceLevel", data_par_burst.unwrap().2);
-                print_json_field!("fileSize",                  in_file_size);
-                print_json_field!("sbxContainerSize",          out_file_size);
-                print_json_field!("fileModificationTime",      in_file_mod_time_str)
-            } else {
-                println!("File name                    : {}", in_file);
-                println!("SBX container name           : {}", out);
-                println!("SBX container version        : {}", ver_to_usize(version));
-                println!("SBX container block size     : {}", ver_to_block_size(version));
-                println!("SBX container data  size     : {}", ver_to_data_size(version));
-                println!("RS data   shard count        : {}", data_par_burst.unwrap().0);
-                println!("RS parity shard count        : {}", data_par_burst.unwrap().1);
-                println!("Burst error resistance level : {}", data_par_burst.unwrap().2);
-                println!("File size                    : {}", in_file_size);
-                println!("SBX container size           : {}", out_file_size);
-                println!("File modification time       : {}", in_file_mod_time_str);
-            }
+            print_maybe_json!(json_enabled, "File name                    : {}", in_file);
+            print_maybe_json!(json_enabled, "SBX container name           : {}", out);
+            print_maybe_json!(json_enabled, "SBX container version        : {}", ver_to_usize(version));
+            print_maybe_json!(json_enabled, "SBX container block size     : {}", ver_to_block_size(version), skip_quotes);
+            print_maybe_json!(json_enabled, "SBX container data  size     : {}", ver_to_data_size(version),  skip_quotes);
+            print_maybe_json!(json_enabled, "RS data   shard count        : {}", data_par_burst.unwrap().0,  skip_quotes);
+            print_maybe_json!(json_enabled, "RS parity shard count        : {}", data_par_burst.unwrap().1,  skip_quotes);
+            print_maybe_json!(json_enabled, "Burst error resistance level : {}", data_par_burst.unwrap().2,  skip_quotes);
+            print_maybe_json!(json_enabled, "File size                    : {}", in_file_size,               skip_quotes);
+            print_maybe_json!(json_enabled, "SBX container size           : {}", out_file_size,              skip_quotes);
+            print_maybe_json!(json_enabled, "File modification time       : {}", in_file_mod_time_str);
         } else {
             println!("File name                : {}", in_file);
             println!("SBX container name       : {}", out);
