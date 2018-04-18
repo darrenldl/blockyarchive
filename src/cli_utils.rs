@@ -118,13 +118,22 @@ pub fn rs_parity_arg<'a, 'b>() -> Arg<'a, 'b> {
         .help("Reed-Solomon parity shard count")
 }
 
-pub fn report_ref_block_info(ref_block_pos : u64,
+pub fn report_ref_block_info(json_enabled  : bool,
+                             no_comma      : Option<bool>,
+                             ref_block_pos : u64,
                              ref_block     : &sbx_block::Block) {
-    println!("Using {} block as reference block, located at byte {} (0x{:X})",
-             if ref_block.is_meta() { "metadata" }
-             else                   { "data"     },
-             ref_block_pos,
-             ref_block_pos);
+    if json_enabled {
+        print_json_field!("reference block type",
+                          if ref_block.is_meta() { "metadata" }
+                          else                   { "data"     }, false, no_comma.unwrap_or(true));
+        print_maybe_json!(json_enabled, "reference block location : {}", ref_block_pos);
+    } else {
+        println!("Using {} block as reference block, located at byte {} (0x{:X})",
+                 if ref_block.is_meta() { "metadata" }
+                 else                   { "data"     },
+                 ref_block_pos,
+                 ref_block_pos);
+    }
 }
 
 pub fn guess_burst_arg<'a, 'b>() -> Arg<'a, 'b> {
