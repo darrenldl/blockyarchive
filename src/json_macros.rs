@@ -65,14 +65,48 @@ macro_rules! print_if_not_json {
     }}
 }
 
-macro_rules! print_if_json {
+macro_rules! print_bracket {
     (
-        $json_context:expr, $($val:expr),*
+        $json_context:expr => open curly
     ) => {{
         if $json_context.json_enabled {
             if !$json_context.first_item {
                 print!(",");
             }
+            print!("{{")
+        }
+    }};
+    (
+        $json_context:expr => close curly
+    ) => {{
+        if $json_context.json_enabled {
+            print!("}}")
+        }
+    }};
+    (
+        $json_context:expr => open square
+    ) => {{
+        if $json_context.json_enabled {
+            if !$json_context.first_item {
+                print!(",");
+            }
+            print!("[")
+        }
+    }};
+    (
+        $json_context:expr => close square
+    ) => {{
+        if $json_context.json_enabled {
+            print!("]")
+        }
+    }};
+}
+
+macro_rules! print_if_json {
+    (
+        $json_context:expr, $($val:expr),*
+    ) => {{
+        if $json_context.json_enabled {
             println!($($val),*);
         }
     }}

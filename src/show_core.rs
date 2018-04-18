@@ -302,7 +302,7 @@ pub fn show_file(param : &Param)
         }
     }
 
-    print_if_json!(json_context, "]");
+    print_bracket!(json_context => close square);
 
     reporter.stop();
 
