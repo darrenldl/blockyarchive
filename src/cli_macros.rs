@@ -3,7 +3,7 @@ macro_rules! exit_with_msg {
         ok $json_printer:expr => $($x:expr),*
     ) => {{
         print!($($x),*);
-        $json_printer.print_maybe_json(true, "error : null");
+        print_field_if_json!($json_printer, "error : null");
         $json_printer.print_close_bracket();
         return 0;
     }};
@@ -310,16 +310,6 @@ macro_rules! get_json_enabled {
         $matches:expr
     ) => {{
         $matches.is_present("json")
-    }}
-}
-
-macro_rules! get_json_context {
-    (
-        $matches:expr
-    ) => {{
-        use json_utils::JSONContext;
-
-        JSONContext::new($matches.is_present("json"))
     }}
 }
 
