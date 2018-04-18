@@ -337,16 +337,17 @@ macro_rules! print_json_field {
     (
         $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
     ) => {{
-        use misc_utils::escape_quotes;
+        use misc_utils::{escape_quotes,
+                         to_camelcase};
 
         if !$no_comma {
             print!(",");
         }
 
         if $skip_quotes {
-            println!("\"{}\": {}", $key, escape_quotes(&$val));
+            println!("\"{}\": {}", to_camelcase($key), escape_quotes(&$val));
         } else {
-            println!("\"{}\": \"{}\"", $key, escape_quotes(&$val));
+            println!("\"{}\": \"{}\"", to_camelcase($key), escape_quotes(&$val));
         }
     }};
 }
@@ -425,15 +426,14 @@ macro_rules! print_maybe_json {
     (
         $json_enabled:expr, $($val:expr),* => $skip_quotes:expr, $no_comma:expr
     ) => {{
-        use misc_utils::{to_camelcase,
-                         split_key_val_pair};
+        use misc_utils::{split_key_val_pair};
 
         if $json_enabled {
             let msg = format!($($val),*);
 
             let (l, r) = split_key_val_pair(&msg);
 
-            print_json_field!(to_camelcase(l), r, $skip_quotes, $no_comma);
+            print_json_field!(l, r, $skip_quotes, $no_comma);
         } else {
             println!($($val),*);
         }
