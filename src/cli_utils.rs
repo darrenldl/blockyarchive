@@ -120,7 +120,7 @@ pub fn rs_parity_arg<'a, 'b>() -> Arg<'a, 'b> {
         .help("Reed-Solomon parity shard count")
 }
 
-pub fn report_ref_block_info(json_printer  : &mut JSONPrinter,
+pub fn report_ref_block_info(json_printer  : &JSONPrinter,
                              ref_block_pos : u64,
                              ref_block     : &sbx_block::Block) {
     if json_printer.json_enabled() {

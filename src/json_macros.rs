@@ -104,9 +104,9 @@ macro_rules! print_if_not_json {
 
 macro_rules! print_if_json {
     (
-        $json_context:expr, $($val:expr),*
+        $json_printer:expr, $($val:expr),*
     ) => {{
-        if $json_context.json_enabled {
+        if $json_printer.json_enabled() {
             println!($($val),*);
         }
     }}
@@ -116,7 +116,7 @@ macro_rules! print_field_if_json {
     (
         $json_context:expr, $($t:tt)*
     ) => {{
-        if $json_context.json_enabled {
+        if $json_context.json_enabled() {
             print_maybe_json!($json_context, $($t)*);
         }
     }}

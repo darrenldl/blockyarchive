@@ -3,6 +3,8 @@ use json_utils::split_key_val_pair;
 
 use std::sync::Mutex;
 
+use misc_utils::to_camelcase;
+
 use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -39,6 +41,17 @@ fn print_comma_if_not_first(context : &mut JSONContext) {
     context.first_item = false;
 }
 
+fn write_comma_if_not_first(f       : &mut fmt::Formatter,
+                            context : &mut JSONContext)
+                            -> fmt::Result {
+    if !context.first_item {
+        write!(f, ",")?;
+    }
+    context.first_item = false;
+
+    Ok(())
+}
+
 fn bracket_type_to_str_open(bracket_type : BracketType) -> &'static str {
     match bracket_type {
         BracketType::Curly  => "{",
@@ -69,12 +82,19 @@ impl JSONPrinter {
         self.contexts.lock().unwrap().last().unwrap().first_item
     }
 
-    pub fn print_open_bracket(&self, bracket_type : BracketType) {
+    pub fn print_open_bracket(&self,
+                              name         : Option<&str>,
+                              bracket_type : BracketType) {
         if !self.json_enabled { return; }
 
         match self.contexts.lock().unwrap().last_mut() {
             None    => {},
             Some(x) => print_comma_if_not_first(x)
+        }
+
+        match name {
+            None    => {},
+            Some(n) => print!("\"{}\": ", to_camelcase(n))
         }
 
         println!("{}", bracket_type_to_str_open(bracket_type));
@@ -85,20 +105,26 @@ impl JSONPrinter {
 
     pub fn write_open_bracket(&self,
                               f            : &mut fmt::Formatter,
+                              name         : Option<&str>,
                               bracket_type : BracketType) -> fmt::Result {
         if !self.json_enabled { return Ok(()); }
 
         match self.contexts.lock().unwrap().last_mut() {
             None    => {},
-            Some(x) => print_comma_if_not_first(x)
+            Some(x) => write_comma_if_not_first(f, x)?
         }
 
-        let res = writeln!(f, "{}", bracket_type_to_str_open(bracket_type));
+        match name {
+            None    => {},
+            Some(n) => write!(f, "\"{}\": ", to_camelcase(n))?
+        }
+
+        writeln!(f, "{}", bracket_type_to_str_open(bracket_type))?;
 
         self.contexts.lock().unwrap().push(JSONContext { first_item   : true,
                                                          bracket_type });
 
-        res
+        Ok(())
     }
 
     pub fn print_close_bracket(&self) {
@@ -145,11 +171,11 @@ impl JSONPrinter {
 
             let (l, r) : (&str, &str) = split_key_val_pair(&msg);
 
-            let res = write_json_field!(f, l, r, skip_quotes, context.first_item);
+            write_json_field!(f, l, r, skip_quotes, context.first_item)?;
 
             context.first_item = false;
 
-            res
+            Ok(())
         } else {
             writeln!(f, "{}", msg)
         }

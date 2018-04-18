@@ -98,7 +98,7 @@ mod encode_core;
 //mod decode_core;
 //mod rescue_core;
 //mod repair_core;
-//mod show_core;
+mod show_core;
 //mod sort_core;
 //mod check_core;
 
@@ -112,7 +112,7 @@ mod cli_utils;
 mod cli_encode;
 //mod cli_decode;
 //mod cli_rescue;
-//mod cli_show;
+mod cli_show;
 //mod cli_repair;
 //mod cli_check;
 //mod cli_sort;
@@ -126,7 +126,7 @@ fn real_main () -> i32 {
         .subcommand(cli_encode::sub_command())
         //.subcommand(cli_decode::sub_command())
         //.subcommand(cli_rescue::sub_command())
-        //.subcommand(cli_show::sub_command())
+        .subcommand(cli_show::sub_command())
         //.subcommand(cli_repair::sub_command())
         //.subcommand(cli_check::sub_command())
         //.subcommand(cli_sort::sub_command())
@@ -143,7 +143,7 @@ fn real_main () -> i32 {
         0 //cli_rescue::rescue(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("show") {
-        0 //cli_show::show(matches)
+        cli_show::show(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("repair") {
         0 //cli_repair::repair(matches)
@@ -158,7 +158,8 @@ fn real_main () -> i32 {
         cli_calc::calc(matches)
     }
     else {
-        0 //exit_with_msg!(ok json_utils::JSONContext::new(false) => "Invoke with -h or --help for help message\n");
+        exit_with_msg!(ok json_printer::JSONPrinter::new(false)
+                       => "Invoke with -h or --help for help message\n");
     }
 }
 

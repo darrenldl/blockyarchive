@@ -73,7 +73,7 @@ automatic guessing."))
 pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
     let json_printer = get_json_printer!(matches);
 
-    json_printer.print_open_bracket(BracketType::Curly);
+    json_printer.print_open_bracket(None, BracketType::Curly);
 
     // compute uid
     let mut uid : [u8; SBX_FILE_UID_LEN] = [0; SBX_FILE_UID_LEN];

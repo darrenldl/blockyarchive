@@ -35,7 +35,7 @@ This means this option has no effect for version 17, 18, 19."))
 pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
     let json_printer = get_json_printer!(matches);
 
-    json_printer.print_open_bracket(BracketType::Curly);
+    json_printer.print_open_bracket(None, BracketType::Curly);
 
     let version = get_version!(matches, json_printer);
 
