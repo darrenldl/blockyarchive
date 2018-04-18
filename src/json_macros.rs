@@ -27,7 +27,9 @@ macro_rules! print_json_field {
             print!(",");
         }
 
-        if $skip_quotes {
+        if $skip_quotes
+            || $val == "null"
+        {
             println!("\"{}\": {}", to_camelcase($key), escape_quotes(&$val));
         } else {
             println!("\"{}\": \"{}\"", to_camelcase($key), escape_quotes(&$val));
@@ -61,6 +63,18 @@ macro_rules! print_if_not_json {
     ) => {{
         if !$json_printer.json_enabled() {
             println!($($val),*);
+        }
+    }}
+}
+
+macro_rules! write_if_not_json {
+    (
+        $f:expr, $json_printer:expr, $($val:expr),*
+    ) => {{
+        if !$json_printer.json_enabled() {
+            writeln!($f, $($val),*)
+        } else {
+            Ok(())
         }
     }}
 }
@@ -108,6 +122,18 @@ macro_rules! print_if_json {
     ) => {{
         if $json_printer.json_enabled() {
             println!($($val),*);
+        }
+    }}
+}
+
+macro_rules! write_if_json {
+    (
+        $f:expr, $json_printer:expr, $($val:expr),*
+    ) => {{
+        if $json_printer.json_enabled() {
+            writeln!($f, $($val),*)
+        } else {
+            Ok(())
         }
     }}
 }

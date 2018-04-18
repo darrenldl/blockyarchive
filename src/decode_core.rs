@@ -4,7 +4,7 @@ use file_utils;
 use misc_utils;
 use std::io::SeekFrom;
 
-use json_utils::JSONContext;
+use json_printer::JSONPrinter;
 
 use std::sync::atomic::AtomicBool;
 
@@ -39,7 +39,7 @@ use block_utils::RefBlockChoice;
 
 const HASH_FILE_BLOCK_SIZE : usize = 4096;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Stats {
     uid                         : [u8; SBX_FILE_UID_LEN],
     version                     : Version,
@@ -54,7 +54,7 @@ pub struct Stats {
     end_time                    : f64,
     pub recorded_hash           : Option<multihash::HashBytes>,
     pub computed_hash           : Option<multihash::HashBytes>,
-    json_enabled                : bool,
+    json_printer                : Arc<JSONPrinter>,
 }
 
 struct HashStats {
@@ -73,55 +73,57 @@ impl fmt::Display for Stats {
         let time_elapsed            = (self.end_time - self.start_time) as i64;
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
+        let json_printer = &self.json_printer;
+
         if rs_enabled {
-            writeln!(f, "File UID                               : {}",
-                     misc_utils::bytes_to_upper_hex_string(&self.uid))?;
-            writeln!(f, "SBX version                            : {} (0x{:X})",
-                     ver_to_usize(self.version),
-                     ver_to_usize(self.version))?;
-            writeln!(f, "Block size used in decoding            : {}", block_size)?;
-            writeln!(f, "Number of blocks processed             : {}", self.units_so_far())?;
-            writeln!(f, "Number of blocks decoded (metadata)    : {}", self.meta_blocks_decoded)?;
-            writeln!(f, "Number of blocks decoded (data only)   : {}", self.data_blocks_decoded)?;
-            writeln!(f, "Number of blocks decoded (data parity) : {}", self.data_par_blocks_decoded)?;
-            writeln!(f, "Number of blocks failed to decode      : {}", self.blocks_decode_failed)?;
-            writeln!(f, "File size                              : {}", self.out_file_size)?;
-            writeln!(f, "SBX container size                     : {}", self.in_file_size)?;
-            writeln!(f, "Time elapsed                           : {:02}:{:02}:{:02}", hour, minute, second)?;
-            writeln!(f, "Recorded hash                          : {}", match *recorded_hash {
-                None        => "N/A".to_string(),
+            write_maybe_json!(f, json_printer, "File UID                               : {}",
+                              misc_utils::bytes_to_upper_hex_string(&self.uid))?;
+            write_maybe_json!(f, json_printer, "SBX version                            : {} (0x{:X})",
+                              ver_to_usize(self.version),
+                              ver_to_usize(self.version))?;
+            write_maybe_json!(f, json_printer, "Block size used in decoding            : {}", block_size)?;
+            write_maybe_json!(f, json_printer, "Number of blocks processed             : {}", self.units_so_far())?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata)    : {}", self.meta_blocks_decoded)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (data only)   : {}", self.data_blocks_decoded)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (data parity) : {}", self.data_par_blocks_decoded)?;
+            write_maybe_json!(f, json_printer, "Number of blocks failed to decode      : {}", self.blocks_decode_failed)?;
+            write_maybe_json!(f, json_printer, "File size                              : {}", self.out_file_size)?;
+            write_maybe_json!(f, json_printer, "SBX container size                     : {}", self.in_file_size)?;
+            write_maybe_json!(f, json_printer, "Time elapsed                           : {:02}:{:02}:{:02}", hour, minute, second)?;
+            write_maybe_json!(f, json_printer, "Recorded hash                          : {}", match *recorded_hash {
+                None        => null_if_json_else!(json_printer, "N/A").to_string(),
                 Some(ref h) => format!("{} - {}",
                                        hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            writeln!(f, "Hash of output file                    : {}", match (recorded_hash, computed_hash) {
-                (&None,    &None)        => "N/A".to_string(),
-                (&Some(_), &None)        => "N/A - recorded hash type is not supported by rsbx".to_string(),
+            write_maybe_json!(f, json_printer, "Hash of output file                    : {}", match (recorded_hash, computed_hash) {
+                (&None,    &None)        => null_if_json_else!(json_printer, "N/A").to_string(),
+                (&Some(_), &None)        => null_if_json_else!(json_printer, "N/A - recorded hash type is not supported by rsbx").to_string(),
                 (_,        &Some(ref h)) => format!("{} - {}",
                                                     hash_type_to_string(h.0),
                                                     misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
         } else {
-            writeln!(f, "File UID                            : {}",
-                     misc_utils::bytes_to_upper_hex_string(&self.uid))?;
-            writeln!(f, "SBX version                         : {}", ver_to_usize(self.version))?;
-            writeln!(f, "Block size used in decoding         : {}", block_size)?;
-            writeln!(f, "Number of blocks processed          : {}", self.units_so_far())?;
-            writeln!(f, "Number of blocks decoded (metadata) : {}", self.meta_blocks_decoded)?;
-            writeln!(f, "Number of blocks decoded (data)     : {}", self.data_blocks_decoded)?;
-            writeln!(f, "Number of blocks failed to decode   : {}", self.blocks_decode_failed)?;
-            writeln!(f, "File size                           : {}", self.out_file_size)?;
-            writeln!(f, "SBX container size                  : {}", self.in_file_size)?;
-            writeln!(f, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)?;
-            writeln!(f, "Recorded hash                       : {}", match *recorded_hash {
-                None        => "N/A".to_string(),
+            write_maybe_json!(f, json_printer, "File UID                            : {}",
+                              misc_utils::bytes_to_upper_hex_string(&self.uid))?;
+            write_maybe_json!(f, json_printer, "SBX version                         : {}", ver_to_usize(self.version))?;
+            write_maybe_json!(f, json_printer, "Block size used in decoding         : {}", block_size)?;
+            write_maybe_json!(f, json_printer, "Number of blocks processed          : {}", self.units_so_far())?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata) : {}", self.meta_blocks_decoded)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (data)     : {}", self.data_blocks_decoded)?;
+            write_maybe_json!(f, json_printer, "Number of blocks failed to decode   : {}", self.blocks_decode_failed)?;
+            write_maybe_json!(f, json_printer, "File size                           : {}", self.out_file_size)?;
+            write_maybe_json!(f, json_printer, "SBX container size                  : {}", self.in_file_size)?;
+            write_maybe_json!(f, json_printer, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)?;
+            write_maybe_json!(f, json_printer, "Recorded hash                       : {}", match *recorded_hash {
+                None        => null_if_json_else!(json_printer, "N/A").to_string(),
                 Some(ref h) => format!("{} - {}",
                                        hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            writeln!(f, "Hash of output file                 : {}", match (recorded_hash, computed_hash) {
-                (&None,    &None)        => "N/A".to_string(),
-                (&Some(_), &None)        => "N/A - recorded hash type is not supported by rsbx".to_string(),
+            write_maybe_json!(f, json_printer, "Hash of output file                 : {}", match (recorded_hash, computed_hash) {
+                (&None,    &None)        => null_if_json_else!(json_printer, "N/A").to_string(),
+                (&Some(_), &None)        => null_if_json_else!(json_printer, "N/A - recorded hash type is not supported by rsbx").to_string(),
                 (_,        &Some(ref h)) => format!("{} - {}",
                                                     hash_type_to_string(h.0),
                                                     misc_utils::bytes_to_lower_hex_string(&h.1))
@@ -130,19 +132,19 @@ impl fmt::Display for Stats {
         match (recorded_hash, computed_hash) {
             (&Some(ref recorded_hash), &Some(ref computed_hash)) => {
                 if recorded_hash.1 == computed_hash.1 {
-                    writeln!(f, "The output file hash matches the recorded hash")?;
+                    write_if_not_json!(f, json_printer, "The output file hash matches the recorded hash")?;
                 } else {
-                    writeln!(f, "The output file does NOT match the recorded hash")?;
+                    write_if_not_json!(f, json_printer, "The output file does NOT match the recorded hash")?;
                 }
             },
             (&Some(_),                 &None)                    => {
-                writeln!(f, "No hash is available for output file")?;
+                write_if_not_json!(f, json_printer, "No hash is available for output file")?;
             },
             (&None,                    &Some(_))                 => {
-                writeln!(f, "No recorded hash is available")?;
+                write_if_not_json!(f, json_printer, "No recorded hash is available")?;
             },
             (&None,                    &None)                    => {
-                writeln!(f, "Neither recorded hash nor output file hash is available")?;
+                write_if_not_json!(f, json_printer, "Neither recorded hash nor output file hash is available")?;
             }
         }
 
@@ -150,11 +152,11 @@ impl fmt::Display for Stats {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Param {
     ref_block_choice   : RefBlockChoice,
     force_write        : bool,
-    json_enabled       : bool,
+    json_printer       : Arc<JSONPrinter>,
     in_file            : String,
     out_file           : Option<String>,
     verbose            : bool,
@@ -164,7 +166,7 @@ pub struct Param {
 impl Param {
     pub fn new(ref_block_choice   : RefBlockChoice,
                force_write        : bool,
-               json_enabled       : bool,
+               json_printer       : &Arc<JSONPrinter>,
                in_file            : &str,
                out_file           : Option<&str>,
                verbose            : bool,
@@ -172,7 +174,7 @@ impl Param {
         Param {
             ref_block_choice,
             force_write,
-            json_enabled,
+            json_printer : Arc::clone(json_printer),
             in_file  : String::from(in_file),
             out_file : match out_file {
                 None    => None,
@@ -198,7 +200,7 @@ impl HashStats {
 impl Stats {
     pub fn new(ref_block    : &Block,
                in_file_size : u64,
-               json_enabled : bool) -> Stats {
+               json_printer : &Arc<JSONPrinter>) -> Stats {
         use file_utils::from_container_size::calc_total_block_count;
         let total_blocks =
             calc_total_block_count(ref_block.get_version(),
@@ -217,7 +219,7 @@ impl Stats {
             end_time                : 0.,
             recorded_hash           : None,
             computed_hash           : None,
-            json_enabled,
+            json_printer            : Arc::clone(json_printer),
         }
     }
 }
@@ -268,7 +270,7 @@ pub fn decode(param           : &Param,
 
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block,
                                                in_file_size,
-                                               param.json_enabled)));
+                                               &param.json_printer)));
 
     let reporter = ProgressReporter::new(&stats,
                                          "Data decoding progress",
@@ -435,12 +437,12 @@ fn hash(param           : &Param,
 
 pub fn decode_file(param : &Param)
                    -> Result<Option<Stats>, Error> {
-    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
+    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
-    let mut json_context = JSONContext::new(param.json_enabled);
+    let json_printer = &param.json_printer;
 
     let (ref_block_pos, ref_block) = get_ref_block!(param,
-                                                    &mut json_context,
+                                                    json_printer,
                                                     ctrlc_stop_flag);
 
     // get FNM of ref_block
@@ -488,7 +490,7 @@ pub fn decode_file(param : &Param)
     // regenerate param
     let param = Param::new(param.ref_block_choice,
                            param.force_write,
-                           param.json_enabled,
+                           &param.json_printer,
                            &param.in_file,
                            Some(&out_file_path),
                            param.verbose,
