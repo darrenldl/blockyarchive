@@ -96,7 +96,7 @@ mod cli_macros;
 
 mod encode_core;
 mod decode_core;
-//mod rescue_core;
+mod rescue_core;
 //mod repair_core;
 mod show_core;
 //mod sort_core;
@@ -111,7 +111,7 @@ mod cli_utils;
 
 mod cli_encode;
 mod cli_decode;
-//mod cli_rescue;
+mod cli_rescue;
 mod cli_show;
 //mod cli_repair;
 //mod cli_check;
@@ -125,7 +125,7 @@ fn real_main () -> i32 {
         .about("Rust implementation of SeqBox")
         .subcommand(cli_encode::sub_command())
         .subcommand(cli_decode::sub_command())
-        //.subcommand(cli_rescue::sub_command())
+        .subcommand(cli_rescue::sub_command())
         .subcommand(cli_show::sub_command())
         //.subcommand(cli_repair::sub_command())
         //.subcommand(cli_check::sub_command())
@@ -140,7 +140,7 @@ fn real_main () -> i32 {
         cli_decode::decode(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("rescue") {
-        0 //cli_rescue::rescue(matches)
+        cli_rescue::rescue(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("show") {
         cli_show::show(matches)

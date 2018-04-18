@@ -30,6 +30,8 @@ use block_utils;
 
 use integer_utils::IntegerUtils;
 
+use json_printer::JSONPrinter;
+
 pub struct Param {
     in_file            : String,
     out_dir            : String,
@@ -37,7 +39,7 @@ pub struct Param {
     from_pos           : Option<u64>,
     to_pos             : Option<u64>,
     force_misalign     : bool,
-    json_enabled       : bool,
+    json_printer       : Arc<JSONPrinter>,
     only_pick_block    : Option<BlockType>,
     only_pick_uid      : Option<[u8; SBX_FILE_UID_LEN]>,
     pr_verbosity_level : PRVerbosityLevel,
@@ -50,7 +52,7 @@ impl Param {
                from_pos           : Option<u64>,
                to_pos             : Option<u64>,
                force_misalign     : bool,
-               json_enabled       : bool,
+               json_printer       : &Arc<JSONPrinter>,
                only_pick_block    : Option<BlockType>,
                only_pick_uid      : Option<&[u8; SBX_FILE_UID_LEN]>,
                pr_verbosity_level : PRVerbosityLevel) -> Param {
@@ -64,7 +66,7 @@ impl Param {
             from_pos,
             to_pos,
             force_misalign,
-            json_enabled,
+            json_printer : Arc::clone(json_printer),
             only_pick_block,
             only_pick_uid : match only_pick_uid {
                 None    => None,
@@ -83,12 +85,12 @@ pub struct Stats {
     total_bytes                      : u64,
     start_time                       : f64,
     end_time                         : f64,
-    json_enabled                     : bool,
+    json_printer                     : Arc<JSONPrinter>,
 }
 
 impl Stats {
     pub fn new(file_size    : u64,
-               json_enabled : bool)
+               json_printer : &Arc<JSONPrinter>)
                -> Result<Stats, Error> {
         let stats = Stats {
             meta_or_par_blocks_processed : 0,
@@ -97,7 +99,7 @@ impl Stats {
             total_bytes                  : file_size,
             start_time                   : 0.,
             end_time                     : 0.,
-            json_enabled,
+            json_printer                 : Arc::clone(json_printer),
         };
         Ok(stats)
     }
@@ -188,22 +190,24 @@ impl Log for Stats {
 
 impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "Number of bytes processed             : {}", self.bytes_processed)?;
-        writeln!(f, "Number of blocks processed            : {}",
-                 self.meta_or_par_blocks_processed
-                 + self.data_or_par_blocks_processed)?;
-        writeln!(f, "Number of blocks processed (metadata) : {}", self.meta_or_par_blocks_processed)?;
-        writeln!(f, "Number of blocks processed (data)     : {}", self.data_or_par_blocks_processed)
+        let json_printer = &self.json_printer;
+
+        write_maybe_json!(f, json_printer, "Number of bytes processed             : {}", self.bytes_processed)?;
+        write_maybe_json!(f, json_printer, "Number of blocks processed            : {}",
+                          self.meta_or_par_blocks_processed
+                          + self.data_or_par_blocks_processed)?;
+        write_maybe_json!(f, json_printer, "Number of blocks processed (metadata) : {}", self.meta_or_par_blocks_processed)?;
+        write_maybe_json!(f, json_printer, "Number of blocks processed (data)     : {}", self.data_or_par_blocks_processed)
     }
 }
 
 pub fn rescue_from_file(param : &Param)
                         -> Result<Stats, Error> {
-    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
+    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(file_size,
-                                               param.json_enabled)?));
+                                               &param.json_printer)?));
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,

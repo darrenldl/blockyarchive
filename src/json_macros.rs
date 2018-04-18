@@ -140,10 +140,10 @@ macro_rules! write_if_json {
 
 macro_rules! print_field_if_json {
     (
-        $json_context:expr, $($t:tt)*
+        $json_printer:expr, $($t:tt)*
     ) => {{
-        if $json_context.json_enabled() {
-            print_maybe_json!($json_context, $($t)*);
+        if $json_printer.json_enabled() {
+            print_maybe_json!($json_printer, $($t)*);
         }
     }}
 }
