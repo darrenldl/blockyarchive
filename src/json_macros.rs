@@ -57,9 +57,9 @@ macro_rules! print_maybe_json_close_bracket {
 
 macro_rules! print_if_not_json {
     (
-        $json_context:expr, $($val:expr),*
+        $json_printer:expr, $($val:expr),*
     ) => {{
-        if !$json_context.json_enabled {
+        if !$json_printer.json_enabled() {
             println!($($val),*);
         }
     }}
@@ -124,31 +124,21 @@ macro_rules! print_field_if_json {
 
 macro_rules! print_maybe_json {
     (
-        $json_context:expr, $($val:expr),* => skip_quotes
+        $json_printer:expr, $($val:expr),* => skip_quotes
     ) => {{
-        print_maybe_json!($json_context, $($val),* => true)
+        print_maybe_json!($json_printer, $($val),* => true)
     }};
     (
-        $json_context:expr, $($val:expr),*
+        $json_printer:expr, $($val:expr),*
     ) => {{
-        print_maybe_json!($json_context, $($val),* => false)
+        print_maybe_json!($json_printer, $($val),* => false)
     }};
     (
-        $json_context:expr, $($val:expr),* => $skip_quotes:expr
+        $json_printer:expr, $($val:expr),* => $skip_quotes:expr
     ) => {{
-        use json_utils::split_key_val_pair;
+        let msg = format!($($val),*);
 
-        if $json_context.json_enabled {
-            let msg = format!($($val),*);
-
-            let (l, r ) : (&str, &str) = split_key_val_pair(&msg);
-
-            print_json_field!(l, r, $skip_quotes, $json_context.first_item);
-        } else {
-            println!($($val),*);
-        }
-
-        $json_context.first_item = false;
+        $json_printer.print_maybe_json($skip_quotes, &msg);
     }}
 }
 

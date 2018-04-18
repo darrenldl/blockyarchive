@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use ctrlc;
 
-use json_utils::JSONContext;
+use json_printer::JSONPrinter;
 
 pub fn in_file_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("in_file")
@@ -120,14 +120,14 @@ pub fn rs_parity_arg<'a, 'b>() -> Arg<'a, 'b> {
         .help("Reed-Solomon parity shard count")
 }
 
-pub fn report_ref_block_info(json_context  : &mut JSONContext,
+pub fn report_ref_block_info(json_printer  : &mut JSONPrinter,
                              ref_block_pos : u64,
                              ref_block     : &sbx_block::Block) {
-    if json_context.json_enabled {
-        print_maybe_json!(json_context, "reference block type : {}",
+    if json_printer.json_enabled() {
+        print_maybe_json!(json_printer, "reference block type : {}",
                           if ref_block.is_meta() { "metadata" }
                           else                   { "data"     });
-        print_maybe_json!(json_context, "reference block location : {}", ref_block_pos);
+        print_maybe_json!(json_printer, "reference block location : {}", ref_block_pos);
     } else {
         println!("Using {} block as reference block, located at byte {} (0x{:X})",
                  if ref_block.is_meta() { "metadata" }

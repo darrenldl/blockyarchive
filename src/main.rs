@@ -70,6 +70,7 @@ mod json_macros;
 
 mod multihash;
 mod multihash_tests;
+mod json_printer;
 mod json_utils;
 mod misc_utils;
 mod misc_utils_tests;
@@ -93,13 +94,13 @@ mod rs_codec;
 #[macro_use]
 mod cli_macros;
 
-mod encode_core;
-mod decode_core;
-mod rescue_core;
-mod repair_core;
-mod show_core;
-mod sort_core;
-mod check_core;
+//mod encode_core;
+//mod decode_core;
+//mod rescue_core;
+//mod repair_core;
+//mod show_core;
+//mod sort_core;
+//mod check_core;
 
 mod progress_report;
 
@@ -108,13 +109,13 @@ mod file_writer;
 
 mod cli_utils;
 
-mod cli_encode;
-mod cli_decode;
-mod cli_rescue;
-mod cli_show;
-mod cli_repair;
-mod cli_check;
-mod cli_sort;
+//mod cli_encode;
+//mod cli_decode;
+//mod cli_rescue;
+//mod cli_show;
+//mod cli_repair;
+//mod cli_check;
+//mod cli_sort;
 mod cli_calc;
 
 fn real_main () -> i32 {
@@ -122,42 +123,42 @@ fn real_main () -> i32 {
         .version(env!("CARGO_PKG_VERSION"))
         .author("Darren Ldl <darrenldldev@gmail.com>")
         .about("Rust implementation of SeqBox")
-        .subcommand(cli_encode::sub_command())
-        .subcommand(cli_decode::sub_command())
-        .subcommand(cli_rescue::sub_command())
-        .subcommand(cli_show::sub_command())
-        .subcommand(cli_repair::sub_command())
-        .subcommand(cli_check::sub_command())
-        .subcommand(cli_sort::sub_command())
+        //.subcommand(cli_encode::sub_command())
+        //.subcommand(cli_decode::sub_command())
+        //.subcommand(cli_rescue::sub_command())
+        //.subcommand(cli_show::sub_command())
+        //.subcommand(cli_repair::sub_command())
+        //.subcommand(cli_check::sub_command())
+        //.subcommand(cli_sort::sub_command())
         .subcommand(cli_calc::sub_command())
         .get_matches();
 
     if      let Some(matches) = matches.subcommand_matches("encode") {
-        cli_encode::encode(matches)
+        0 //cli_encode::encode(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("decode") {
-        cli_decode::decode(matches)
+        0 //cli_decode::decode(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("rescue") {
-        cli_rescue::rescue(matches)
+        0 //cli_rescue::rescue(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("show") {
-        cli_show::show(matches)
+        0 //cli_show::show(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("repair") {
-        cli_repair::repair(matches)
+        0 //cli_repair::repair(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("check") {
-        cli_check::check(matches)
+        0 //cli_check::check(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("sort") {
-        cli_sort::sort(matches)
+        0 //cli_sort::sort(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("calc") {
         cli_calc::calc(matches)
     }
     else {
-        exit_with_msg!(ok json_utils::JSONContext::new(false) => "Invoke with -h or --help for help message\n");
+        0 //exit_with_msg!(ok json_utils::JSONContext::new(false) => "Invoke with -h or --help for help message\n");
     }
 }
 

@@ -1,32 +1,32 @@
 macro_rules! exit_with_msg {
     (
-        ok $json_context:expr => $($x:expr),*
+        ok $json_printer:expr => $($x:expr),*
     ) => {{
         print!($($x),*);
-        print_field_if_json!($json_context, "error : null" => skip_quotes);
-        print_maybe_json_close_bracket!($json_context);
+        $json_printer.print_maybe_json(true, "error : null");
+        $json_printer.print_close_bracket();
         return 0;
     }};
     (
-        usr $json_context:expr => $($x:expr),*
+        usr $json_printer:expr => $($x:expr),*
     ) => {{
-        if $json_context.json_enabled {
-            print_json_field!("error", format!($($x),*), false, true);
+        if $json_printer.json_enabled() {
+            print_json_field!("error", format!($($x),*), false, $json_printer.first_item());
         } else {
             println!($($x),*);
         }
-        print_maybe_json_close_bracket!($json_context);
+        $json_printer.print_close_bracket();
         return 1;
     }};
     (
-        op $json_context:expr => $($x:expr),*
+        op $json_printer:expr => $($x:expr),*
     ) => {{
-        if $json_context.json_enabled {
-            print_json_field!("error", format!($($x),*), false, true);
+        if $json_printer.json_enabled() {
+            print_json_field!("error", format!($($x),*), false, $json_printer.first_item());
         } else {
             println!($($x),*);
         }
-        print_maybe_json_close_bracket!($json_context);
+        $json_printer.print_close_bracket();
         return 2;
     }}
 }
