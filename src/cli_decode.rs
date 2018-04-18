@@ -29,7 +29,7 @@ it is used directly."))
 }
 
 pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let mut json_printer = get_json_printer!(matches);
+    let json_printer = get_json_printer!(matches);
 
     json_printer.print_open_bracket(None, BracketType::Curly);
 

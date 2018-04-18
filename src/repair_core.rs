@@ -3,7 +3,8 @@ use std::fmt;
 use file_utils;
 use std::io::SeekFrom;
 
-use json_printer::JSONPrinter;
+use json_printer::{JSONPrinter,
+                   BracketType};
 
 use progress_report::*;
 use cli_utils::setup_ctrlc_handler;
@@ -283,13 +284,15 @@ pub fn repair_file(param : &Param)
 
     let pred = block_pred_same_ver_uid!(ref_block);
 
-    let mut rs_codec = RSRepairer::new(&ref_block,
+    let mut rs_codec = RSRepairer::new(&param.json_printer,
+                                       &ref_block,
                                        data_par_burst.unwrap().0,
                                        data_par_burst.unwrap().1,
                                        data_par_burst.unwrap().2);
 
     reporter.start();
 
+    json_printer.print_open_bracket(Some("metadata repairs"), BracketType::Square);
     // replace metadata blocks with reference block if broken
     {
         let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
@@ -309,8 +312,17 @@ pub fn repair_file(param : &Param)
                     stats.lock().unwrap().meta_blocks_decoded += 1;
                 },
                 Err(_) => {
-                    print_if_verbose!(param, reporter =>
-                                      "Replaced invalid metadata block at {} (0x{:X}) with reference block", p, p;);
+                    if json_printer.json_enabled() {
+                        json_printer.print_open_bracket(None, BracketType::Curly);
+                        if param.verbose {
+                            print_maybe_json!(param.json_printer, "seq num : 0");
+                            print_maybe_json!(param.json_printer, "pos : {}", p);
+                        }
+                        json_printer.print_close_bracket();
+                    } else {
+                        print_if_verbose!(param, reporter =>
+                                          "Replaced invalid metadata block at {} (0x{:X}) with reference block", p, p;);
+                    }
 
                     stats.lock().unwrap().blocks_decode_failed += 1;
 
@@ -326,11 +338,15 @@ pub fn repair_file(param : &Param)
             }
         }
     }
+    json_printer.print_close_bracket();
 
     if stats.lock().unwrap().meta_blocks_repaired > 0 {
-        print_if_verbose!(param, reporter => "";);
+        if !json_printer.json_enabled() {
+            print_if_verbose!(param, reporter => "";);
+        }
     }
 
+    json_printer.print_open_bracket(Some("data repairs"), BracketType::Square);
     // repair data blocks
     let mut seq_num = 1;
     while seq_num <= SBX_LAST_SEQ_NUM {
@@ -370,9 +386,12 @@ pub fn repair_file(param : &Param)
 
         seq_num += 1;
     }
+    json_printer.print_close_bracket();
 
     if stats.lock().unwrap().blocks_decode_failed > 0 {
-        print_if_verbose!(param, reporter => "";);
+        if !json_printer.json_enabled() {
+            print_if_verbose!(param, reporter => "";);
+        }
     }
 
     reporter.stop();

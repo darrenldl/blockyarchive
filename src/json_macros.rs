@@ -8,7 +8,11 @@ macro_rules! write_json_field {
             write!($f, ",")?;
         }
 
-        if $skip_quotes {
+        if $skip_quotes
+            || $val == "null"
+            || $val == "true"
+            || $val == "false"
+        {
             writeln!($f, "\"{}\": {}", to_camelcase($key), escape_quotes(&$val))
         } else {
             writeln!($f, "\"{}\": \"{}\"", to_camelcase($key), escape_quotes(&$val))
@@ -29,6 +33,8 @@ macro_rules! print_json_field {
 
         if $skip_quotes
             || $val == "null"
+            || $val == "true"
+            || $val == "false"
         {
             println!("\"{}\": {}", to_camelcase($key), escape_quotes(&$val));
         } else {

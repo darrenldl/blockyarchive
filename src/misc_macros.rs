@@ -140,10 +140,16 @@ macro_rules! get_burst_or_guess {
                                    0
                                });
 
-        print_if_verbose!($param =>
-                          "Using burst error resistance level {} for the container", burst;
-                          "";
-        );
+        if $param.json_printer.json_enabled() {
+            if $param.verbose {
+                print_maybe_json!($param.json_printer, "burst error resistance level : {}", burst);
+            }
+        } else {
+            print_if_verbose!($param =>
+                              "Using burst error resistance level {} for the container", burst;
+                              "";
+            );
+        }
 
         burst
     }}

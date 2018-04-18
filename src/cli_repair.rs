@@ -44,7 +44,9 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let burst = get_burst_opt!(matches, json_printer);
 
-    if matches.is_present("dry_run") {
+    if matches.is_present("dry_run")
+        && !json_printer.json_enabled()
+    {
         print_block!(
             "Note : This is a dry run only, the container is not modified.";
             "";
