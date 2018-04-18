@@ -9,9 +9,9 @@ macro_rules! write_json_field {
         }
 
         if $skip_quotes {
-            writeln!($f, "\"{}\": {}", $key, escape_quotes(&$val))
+            writeln!($f, "\"{}\": {}", to_camelcase($key), escape_quotes(&$val))
         } else {
-            writeln!($f, "\"{}\": \"{}\"", $key, escape_quotes(&$val))
+            writeln!($f, "\"{}\": \"{}\"", to_camelcase($key), escape_quotes(&$val))
         }
     }};
 }
