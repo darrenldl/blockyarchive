@@ -213,6 +213,7 @@ pub fn repair_file(param : &Param)
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
     let (ref_block_pos, mut ref_block) = get_ref_block!(param,
+                                                        None,
                                                         RefBlockChoice::MustBe(BlockType::Meta),
                                                         ctrlc_stop_flag);
 

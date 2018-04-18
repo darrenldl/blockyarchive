@@ -436,6 +436,7 @@ pub fn decode_file(param : &Param)
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
     let (ref_block_pos, ref_block) = get_ref_block!(param,
+                                                    None,
                                                     ctrlc_stop_flag);
 
     // get FNM of ref_block

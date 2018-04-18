@@ -122,7 +122,7 @@ pub fn check_file(param : &Param)
                   -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
-    let (_, ref_block) = get_ref_block!(param, ctrlc_stop_flag);
+    let (_, ref_block) = get_ref_block!(param, None, ctrlc_stop_flag);
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block,

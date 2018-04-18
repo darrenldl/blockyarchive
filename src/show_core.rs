@@ -126,7 +126,7 @@ pub fn show_file(param : &Param)
                 Some(x) => x,
             };
 
-        report_ref_block_info(ref_block_pos, &ref_block);
+        report_ref_block_info(json_enabled, None, ref_block_pos, &ref_block);
 
         print_if_not_json!(json_enabled, "");
 
@@ -183,7 +183,11 @@ pub fn show_file(param : &Param)
     let mut block_pos       : u64;
     let mut bytes_processed : u64 = 0;
 
-    print_if_json!(json_enabled, "blocks : [");
+    if param.guess_burst {
+        print_if_json!(json_enabled, ",\"blocks\" : [");
+    } else {
+        print_if_json!(json_enabled, "\"blocks\" : [");
+    }
 
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
@@ -204,23 +208,23 @@ pub fn show_file(param : &Param)
 
         if !lazy_read_res.usable { continue; }
 
-        if meta_block_count == 0 {
-            print_if_json!(json_enabled, "{{");
-        } else {
-            print_if_json!(json_enabled, ",{{");
-        }
-
         if block.is_meta() {
             reporter.pause();
 
+            if meta_block_count == 0 {
+                print_if_json!(json_enabled, "{{");
+            } else {
+                print_if_json!(json_enabled, ",{{");
+            }
+
             if param.show_all {
                 if meta_block_count > 0 {
-                    println!();
+                    print_if_not_json!(json_enabled, "");
                 }
-                print_maybe_json!(json_enabled,  "Metadata block number : {}", meta_block_count => skip_quotes, no_comma);
-                print_if_not_json!(json_enabled, "========================================");
+                print_maybe_json!(json_enabled,    "Metadata block number : {}", meta_block_count => skip_quotes, no_comma);
+                print_if_not_json!(json_enabled,   "========================================");
             } else {
-                print_field_if_json!(json_enabled,     "Metadata block number : {}", meta_block_count => skip_quotes, no_comma);
+                print_field_if_json!(json_enabled, "Metadata block number : {}", meta_block_count => skip_quotes, no_comma);
             }
 
             print_if_not_json!(json_enabled, "Found at byte          : {} (0x{:X})",
@@ -299,6 +303,8 @@ pub fn show_file(param : &Param)
             if !param.show_all { break; }
         }
     }
+
+    print_if_json!(json_enabled, "]");
 
     reporter.stop();
 
