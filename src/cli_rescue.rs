@@ -52,7 +52,7 @@ The rounding procedure is applied after all auto-adjustments."))
 pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
     use sbx_block::BlockType;
 
-    let json_context = get_json_context!(matches);
+    let mut json_context = get_json_context!(matches);
 
     let mut temp_uid = [0; SBX_FILE_UID_LEN];
     let uid : Option<&[u8; SBX_FILE_UID_LEN]> = {

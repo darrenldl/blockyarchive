@@ -440,7 +440,7 @@ pub fn decode_file(param : &Param)
     let mut json_context = JSONContext::new(param.json_enabled);
 
     let (ref_block_pos, ref_block) = get_ref_block!(param,
-                                                    json_context,
+                                                    &mut json_context,
                                                     ctrlc_stop_flag);
 
     // get FNM of ref_block

@@ -78,11 +78,11 @@ impl fmt::Display for Stats {
         let time_elapsed            = (self.end_time - self.start_time) as i64;
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
-        let json_context = JSONContext::new(self.json_enabled);
+        let mut json_context = JSONContext::new(self.json_enabled);
 
         if rs_enabled {
             write_maybe_json!(f, json_context, "File UID                                   : {}",
-                              misc_utils::bytes_to_upper_hex_string(&self.uid)                                            => no_comma)?;
+                              misc_utils::bytes_to_upper_hex_string(&self.uid))?;
             write_maybe_json!(f, json_context, "SBX version                                : {} (0x{:X})",
                               ver_to_usize(self.version),
                               ver_to_usize(self.version))?;
@@ -104,7 +104,7 @@ impl fmt::Display for Stats {
             write_maybe_json!(f, json_context, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)
         } else {
             write_maybe_json!(f, json_context, "File UID                            : {}",
-                              misc_utils::bytes_to_upper_hex_string(&self.uid)                                 => no_comma)?;
+                              misc_utils::bytes_to_upper_hex_string(&self.uid))?;
             write_maybe_json!(f, json_context, "SBX version                         : {}", ver_to_usize(self.version))?;
             write_maybe_json!(f, json_context, "Block size used in encoding         : {}", block_size          => skip_quotes)?;
             write_maybe_json!(f, json_context, "Data  size used in encoding         : {}", data_size           => skip_quotes)?;

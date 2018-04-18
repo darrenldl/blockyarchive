@@ -5,6 +5,8 @@ use std::io::SeekFrom;
 
 use progress_report::*;
 
+use json_utils::JSONContext;
+
 use file_reader::{FileReader,
                   FileReaderParam};
 use file_writer::{FileWriter,
@@ -124,10 +126,10 @@ pub fn sort_file(param : &Param)
                  -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
-    let json_context = JSONContext::new(self.json_enabled);
+    let mut json_context = JSONContext::new(param.json_enabled);
 
     let (ref_block_pos, ref_block) = get_ref_block!(param,
-                                                    json_context,
+                                                    &mut json_context,
                                                     ctrlc_stop_flag);
 
     let file_size = file_utils::get_file_size(&param.in_file)?;

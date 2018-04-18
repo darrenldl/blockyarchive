@@ -120,10 +120,10 @@ pub fn rs_parity_arg<'a, 'b>() -> Arg<'a, 'b> {
         .help("Reed-Solomon parity shard count")
 }
 
-pub fn report_ref_block_info(json_context  : JSONContext,
+pub fn report_ref_block_info(json_context  : &mut JSONContext,
                              ref_block_pos : u64,
                              ref_block     : &sbx_block::Block) {
-    if json_enabled {
+    if json_context.json_enabled {
         print_maybe_json!(json_context, "reference block type : {}",
                           if ref_block.is_meta() { "metadata" }
                           else                   { "data"     });

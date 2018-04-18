@@ -70,6 +70,9 @@ macro_rules! print_if_json {
         $json_context:expr, $($val:expr),*
     ) => {{
         if $json_context.json_enabled {
+            if !$json_context.first_item {
+                print!(",");
+            }
             println!($($val),*);
         }
     }}
@@ -99,7 +102,7 @@ macro_rules! print_maybe_json {
     (
         $json_context:expr, $($val:expr),* => $skip_quotes:expr
     ) => {{
-        use misc_utils::{split_key_val_pair};
+        use json_utils::split_key_val_pair;
 
         if $json_context.json_enabled {
             let msg = format!($($val),*);
@@ -129,8 +132,8 @@ macro_rules! write_maybe_json {
     (
         $f:expr, $json_context:expr, $($val:expr),* => $skip_quotes:expr
     ) => {{
-        use misc_utils::{to_camelcase,
-                         split_key_val_pair};
+        use misc_utils::to_camelcase;
+        use json_utils::split_key_val_pair;
 
         let res = if $json_context.json_enabled {
             let msg = format!($($val),*);

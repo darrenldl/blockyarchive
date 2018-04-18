@@ -26,7 +26,7 @@ it is used directly."))
 }
 
 pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let json_context = get_json_context!(matches);
+    let mut json_context = get_json_context!(matches);
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_context);
 

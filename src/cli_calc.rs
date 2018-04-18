@@ -8,8 +8,6 @@ use std::str::FromStr;
 
 use file_utils;
 
-use json_utils::JSONContext;
-
 use clap::*;
 use cli_utils::*;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
@@ -33,7 +31,7 @@ This means this option has no effect for version 17, 18, 19."))
 }
 
 pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let json_context = get_json_context!(matches);
+    let mut json_context = get_json_context!(matches);
 
     print_maybe_json_open_bracket!(json_context);
 
@@ -88,9 +86,9 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
     print_if_not_json!(json_context,    "========================================");
     if ver_uses_rs(version) {
         print_maybe_json!(json_context, "    SBX container version        : {}",
-                          ver_to_usize(version)                                                        => no_comma);
+                          ver_to_usize(version));
     } else {
-        print_maybe_json!(json_context, "    SBX container version        : {}", ver_to_usize(version) => no_comma);
+        print_maybe_json!(json_context, "    SBX container version        : {}", ver_to_usize(version));
     }
     print_maybe_json!(json_context,     "    SBX container block size     : {}", ver_to_block_size(version) => skip_quotes);
     print_maybe_json!(json_context,     "    SBX container data  size     : {}", ver_to_data_size(version)  => skip_quotes);

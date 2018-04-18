@@ -28,7 +28,7 @@ is applied after all auto-adjustments."))
 }
 
 pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let json_context = get_json_context!(matches);
+    let mut json_context = get_json_context!(matches);
 
     print_maybe_json_open_bracket!(json_context);
 

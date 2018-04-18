@@ -113,11 +113,11 @@ pub fn show_file(param : &Param)
                  -> Result<Stats, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
-    let json_context = JSONContext::new(json_enabled);
+    let mut json_context = JSONContext::new(param.json_enabled);
 
     if param.guess_burst {
-        print_if_not_json!(json_enabled, "Guessing burst error resistance level");
-        print_if_not_json!(json_enabled, "");
+        print_if_not_json!(json_context, "Guessing burst error resistance level");
+        print_if_not_json!(json_context, "");
 
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&param.in_file,
@@ -128,25 +128,25 @@ pub fn show_file(param : &Param)
                 Some(x) => x,
             };
 
-        report_ref_block_info(json_enabled, ref_block_pos, &ref_block);
+        report_ref_block_info(&mut json_context, ref_block_pos, &ref_block);
 
-        print_if_not_json!(json_enabled, "");
+        print_if_not_json!(json_context, "");
 
         if ver_uses_rs(ref_block.get_version()) {
             match block_utils::guess_burst_err_resistance_level(&param.in_file,
                                                                 ref_block_pos,
                                                                 &ref_block) {
                 Err(e)      => { return Err(Error::with_message(&format!("Error encountered when guessing : {}", e))) },
-                Ok(None)    => print_if_not_json!(json_enabled, "Failed to guess level"),
-                Ok(Some(x)) => print_maybe_json!(json_enabled, "Best guess for burst error resistance level : {}", x => skip_quotes),
+                Ok(None)    => print_if_not_json!(json_context, "Failed to guess level"),
+                Ok(Some(x)) => print_maybe_json!(json_context, "Best guess for burst error resistance level : {}", x => skip_quotes),
             }
         } else {
-            print_if_not_json!(json_enabled, "Reference block version does not use Reed-Solomon erasure code");
+            print_if_not_json!(json_context, "Reference block version does not use Reed-Solomon erasure code");
         }
 
-        print_if_not_json!(json_enabled, "");
-        print_if_not_json!(json_enabled, "========================================");
-        print_if_not_json!(json_enabled, "");
+        print_if_not_json!(json_context, "");
+        print_if_not_json!(json_context, "========================================");
+        print_if_not_json!(json_context, "");
     }
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
@@ -185,11 +185,7 @@ pub fn show_file(param : &Param)
     let mut block_pos       : u64;
     let mut bytes_processed : u64 = 0;
 
-    if param.guess_burst {
-        print_if_json!(json_context, ",\"blocks\" : [");
-    } else {
-        print_if_json!(json_context, "\"blocks\" : [");
-    }
+    print_if_json!(json_context, "\"blocks\" : [");
 
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);

@@ -30,7 +30,7 @@ original container and uses the result."))
 }
 
 pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let json_context = get_json_context!(matches);
+    let mut json_context = get_json_context!(matches);
 
     let in_file = get_in_file!(matches, json_context);
     let out_file = {

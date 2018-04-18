@@ -3,6 +3,8 @@ use std::fmt;
 use file_utils;
 use std::io::SeekFrom;
 
+use json_utils::JSONContext;
+
 use progress_report::*;
 use cli_utils::setup_ctrlc_handler;
 
@@ -212,10 +214,10 @@ pub fn repair_file(param : &Param)
                    -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
-    let json_context = JSONContext::new(self.json_enabled);
+    let mut json_context = JSONContext::new(param.json_enabled);
 
     let (ref_block_pos, mut ref_block) = get_ref_block!(param,
-                                                        json_context,
+                                                        &mut json_context,
                                                         RefBlockChoice::MustBe(BlockType::Meta),
                                                         ctrlc_stop_flag);
 
@@ -243,15 +245,17 @@ pub fn repair_file(param : &Param)
                                                       data_par_burst,
                                                       x),
             None    => {
-                print_block!(
-                    "";
-                    "Warning :";
-                    "";
-                    "    No recorded file size found, using container file size to estimate total";
-                    "    number of blocks. This may overestimate total number of blocks, and may";
-                    "    show false repair/verify failures when gaps in container are encountered.";
-                    "";
-                );
+                if !json_context.json_enabled {
+                    print_block!(
+                        "";
+                        "Warning :";
+                        "";
+                        "    No recorded file size found, using container file size to estimate total";
+                        "    number of blocks. This may overestimate total number of blocks, and may";
+                        "    show false repair/verify failures when gaps in container are encountered.";
+                        "";
+                    );
+                }
                 let file_size = file_utils::get_file_size(&param.in_file)?;
                 file_size / block_size as u64
             },
