@@ -1,6 +1,8 @@
 use decode_core::Param;
 use decode_core;
 
+use json_printer::BracketType;
+
 use clap::*;
 use cli_utils::*;
 
@@ -23,10 +25,13 @@ it is used directly."))
         .arg(pr_verbosity_level_arg())
         .arg(verbose_arg()
              .help("Show reference block info"))
+        .arg(json_arg())
 }
 
 pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
     let mut json_printer = get_json_printer!(matches);
+
+    json_printer.print_open_bracket(None, BracketType::Curly);
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
