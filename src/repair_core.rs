@@ -3,7 +3,7 @@ use std::fmt;
 use file_utils;
 use std::io::SeekFrom;
 
-use json_utils::JSONContext;
+use json_printer::JSONPrinter;
 
 use progress_report::*;
 use cli_utils::setup_ctrlc_handler;
@@ -34,7 +34,7 @@ use rs_codec::RSCodecState;
 use block_utils::RefBlockChoice;
 use sbx_block::BlockType;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Stats {
     version                              : Version,
     pub meta_blocks_decoded              : u64,
@@ -46,11 +46,14 @@ pub struct Stats {
     total_blocks                         : u64,
     start_time                           : f64,
     end_time                             : f64,
+    json_printer                         : Arc<JSONPrinter>,
 }
 
 impl Stats {
     pub fn new(ref_block    : &Block,
-               total_blocks : u64) -> Stats {
+               total_blocks : u64,
+               json_printer : &Arc<JSONPrinter>)
+               -> Stats {
         Stats {
             version                          : ref_block.get_version(),
             blocks_decode_failed             : 0,
@@ -62,6 +65,7 @@ impl Stats {
             total_blocks,
             start_time                       : 0.,
             end_time                         : 0.,
+            json_printer                     : Arc::clone(json_printer),
         }
     }
 }
@@ -86,27 +90,29 @@ impl fmt::Display for Stats {
         let time_elapsed           = (self.end_time - self.start_time) as i64;
         let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
 
-        writeln!(f, "SBX version                              : {}", ver_to_usize(self.version))?;
-        writeln!(f, "Block size used in checking              : {}", block_size)?;
-        writeln!(f, "Number of blocks processed               : {}", self.units_so_far())?;
-        writeln!(f, "Number of blocks passed check (metadata) : {}", self.meta_blocks_decoded)?;
-        writeln!(f, "Number of blocks passed check (data)     : {}", self.data_or_par_blocks_decoded)?;
-        writeln!(f, "Number of blocks failed check            : {}", self.blocks_decode_failed)?;
-        writeln!(f, "Number of blocks repaired (metadata)     : {}", self.meta_blocks_repaired)?;
-        writeln!(f, "Number of blocks repaired (data)         : {}", self.data_or_par_blocks_repaired)?;
-        writeln!(f, "Number of blocks failed to repair (data) : {}", self.data_or_par_blocks_repair_failed)?;
-        writeln!(f, "Time elapsed                             : {:02}:{:02}:{:02}", hour, minute, second)?;
+        let json_printer = &self.json_printer;
+
+        write_maybe_json!(f, json_printer, "SBX version                              : {}", ver_to_usize(self.version))?;
+        write_maybe_json!(f, json_printer, "Block size used in checking              : {}", block_size)?;
+        write_maybe_json!(f, json_printer, "Number of blocks processed               : {}", self.units_so_far())?;
+        write_maybe_json!(f, json_printer, "Number of blocks passed check (metadata) : {}", self.meta_blocks_decoded)?;
+        write_maybe_json!(f, json_printer, "Number of blocks passed check (data)     : {}", self.data_or_par_blocks_decoded)?;
+        write_maybe_json!(f, json_printer, "Number of blocks failed check            : {}", self.blocks_decode_failed)?;
+        write_maybe_json!(f, json_printer, "Number of blocks repaired (metadata)     : {}", self.meta_blocks_repaired)?;
+        write_maybe_json!(f, json_printer, "Number of blocks repaired (data)         : {}", self.data_or_par_blocks_repaired)?;
+        write_maybe_json!(f, json_printer, "Number of blocks failed to repair (data) : {}", self.data_or_par_blocks_repair_failed)?;
+        write_maybe_json!(f, json_printer, "Time elapsed                             : {:02}:{:02}:{:02}", hour, minute, second)?;
 
         if self.blocks_decode_failed == 0 {
-            writeln!(f, "No repairs required")?;
+            write_if_not_json!(f, json_printer, "No repairs required")?;
         } else {
             if self.data_or_par_blocks_repair_failed == 0 {
-                writeln!(f, "All corrupted/missing blocks were repaired successfully")?;
+                write_if_not_json!(f, json_printer, "All corrupted/missing blocks were repaired successfully")?;
             } else {
                 if self.blocks_decode_failed == self.data_or_par_blocks_repair_failed {
-                    writeln!(f, "All repairs failed")?;
+                    write_if_not_json!(f, json_printer, "All repairs failed")?;
                 } else {
-                    writeln!(f, "Some repairs failed")?;
+                    write_if_not_json!(f, json_printer, "Some repairs failed")?;
                 }
             }
         }
@@ -115,11 +121,11 @@ impl fmt::Display for Stats {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Param {
     in_file            : String,
     dry_run            : bool,
-    json_enabled       : bool,
+    json_printer       : Arc<JSONPrinter>,
     verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
     burst              : Option<usize>,
@@ -128,14 +134,14 @@ pub struct Param {
 impl Param {
     pub fn new(in_file            : &str,
                dry_run            : bool,
-               json_enabled       : bool,
+               json_printer       : &Arc<JSONPrinter>,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel,
                burst              : Option<usize>) -> Param {
         Param {
-            in_file : String::from(in_file),
+            in_file            : String::from(in_file),
             dry_run,
-            json_enabled,
+            json_printer       : Arc::clone(json_printer),
             verbose,
             pr_verbosity_level,
             burst,
@@ -212,12 +218,12 @@ fn repair_blocks_and_update_stats_using_repair_stats(param       : &Param,
 
 pub fn repair_file(param : &Param)
                    -> Result<Option<Stats>, Error> {
-    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
+    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
-    let mut json_context = JSONContext::new(param.json_enabled);
+    let json_printer = &param.json_printer;
 
     let (ref_block_pos, mut ref_block) = get_ref_block!(param,
-                                                        &mut json_context,
+                                                        json_printer,
                                                         RefBlockChoice::MustBe(BlockType::Meta),
                                                         ctrlc_stop_flag);
 
@@ -245,7 +251,7 @@ pub fn repair_file(param : &Param)
                                                       data_par_burst,
                                                       x),
             None    => {
-                if !json_context.json_enabled {
+                if !json_printer.json_enabled() {
                     print_block!(
                         "";
                         "Warning :";
@@ -262,7 +268,7 @@ pub fn repair_file(param : &Param)
         }
     };
 
-    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, total_block_count)));
+    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, total_block_count, json_printer)));
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : !param.dry_run,
