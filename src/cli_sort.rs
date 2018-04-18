@@ -30,9 +30,9 @@ original container and uses the result."))
 }
 
 pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let json_enabled = get_json_enabled!(matches);
+    let json_context = get_json_context!(matches);
 
-    let in_file = get_in_file!(matches, json_enabled);
+    let in_file = get_in_file!(matches, json_context);
     let out_file = {
         let out_file = matches.value_of("out_file").unwrap();
 
@@ -43,25 +43,25 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
         }
     };
 
-    let burst = get_burst_opt!(matches, json_enabled);
+    let burst = get_burst_opt!(matches, json_context);
 
     exit_if_file!(exists &out_file
                   => matches.is_present("force")
-                  => json_enabled
+                  => json_context
                   => "File \"{}\" already exists", out_file);
 
-    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_enabled);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_context);
 
     let param = Param::new(get_ref_block_choice!(matches),
-                           json_enabled,
+                           json_context.json_enabled,
                            in_file,
                            &out_file,
                            matches.is_present("verbose"),
                            pr_verbosity_level,
                            burst);
     match sort_core::sort_file(&param) {
-        Ok(Some(s)) => exit_with_msg!(ok json_enabled => "{}", s),
-        Ok(None)    => exit_with_msg!(ok json_enabled => ""),
-        Err(e)      => exit_with_msg!(op json_enabled => "{}", e),
+        Ok(Some(s)) => exit_with_msg!(ok json_context => "{}", s),
+        Ok(None)    => exit_with_msg!(ok json_context => ""),
+        Err(e)      => exit_with_msg!(op json_context => "{}", e),
     }
 }

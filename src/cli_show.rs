@@ -28,27 +28,27 @@ is applied after all auto-adjustments."))
 }
 
 pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let json_enabled = get_json_enabled!(matches);
+    let json_context = get_json_context!(matches);
 
-    print_maybe_json_open_bracket!(json_enabled);
+    print_maybe_json_open_bracket!(json_context);
 
-    let in_file = get_in_file!(matches, json_enabled);
+    let in_file = get_in_file!(matches, json_context);
 
-    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_enabled);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_context);
 
-    let from_pos = get_from_pos!(matches, json_enabled);
-    let to_pos   = get_to_pos!(matches, json_enabled);
+    let from_pos = get_from_pos!(matches, json_context);
+    let to_pos   = get_to_pos!(matches, json_context);
 
     let param = Param::new(matches.is_present("show_all"),
                            matches.is_present("guess_burst"),
                            matches.is_present("force_misalign"),
-                           json_enabled,
+                           json_context.json_enabled,
                            from_pos,
                            to_pos,
                            in_file,
                            pr_verbosity_level);
     match show_core::show_file(&param) {
-        Ok(s)  => exit_with_msg!(ok json_enabled => "{}", s),
-        Err(e) => exit_with_msg!(op json_enabled => "{}", e)
+        Ok(s)  => exit_with_msg!(ok json_context => "{}", s),
+        Err(e) => exit_with_msg!(op json_context => "{}", e)
     }
 }

@@ -1,55 +1,53 @@
 macro_rules! exit_with_msg {
     (
-        ok $json_enabled:expr => $($x:expr),*
+        ok $json_context:expr => $($x:expr),*
     ) => {{
         print!($($x),*);
-        if $json_enabled {
-            print_json_field!("error", "null", true, false);
-        }
-        print_maybe_json_close_bracket!($json_enabled);
+        print_field_if_json!($json_context, "error : null" => skip_quotes);
+        print_maybe_json_close_bracket!($json_context);
         return 0;
     }};
     (
-        usr $json_enabled:expr => $($x:expr),*
+        usr $json_context:expr => $($x:expr),*
     ) => {{
-        if $json_enabled {
+        if $json_context.json_enabled {
             print_json_field!("error", format!($($x),*), false, true);
         } else {
             println!($($x),*);
         }
-        print_maybe_json_close_bracket!($json_enabled);
+        print_maybe_json_close_bracket!($json_context);
         return 1;
     }};
     (
-        op $json_enabled:expr => $($x:expr),*
+        op $json_context:expr => $($x:expr),*
     ) => {{
-        if $json_enabled {
+        if $json_context.json_enabled {
             print_json_field!("error", format!($($x),*), false, true);
         } else {
             println!($($x),*);
         }
-        print_maybe_json_close_bracket!($json_enabled);
+        print_maybe_json_close_bracket!($json_context);
         return 2;
     }}
 }
 
 macro_rules! exit_if_file {
     (
-        exists $file:expr => $force_write:expr => $json_enabled:expr => $($x:expr),*
+        exists $file:expr => $force_write:expr => $json_context:expr => $($x:expr),*
     ) => {{
         use file_utils;
         if file_utils::check_if_file_exists($file)
             && !$force_write
         {
-            exit_with_msg!(usr $json_enabled => $($x),*);
+            exit_with_msg!(usr $json_context => $($x),*);
         }
     }};
     (
-        not_exists $file:expr => $json_enabled:expr => $($x:expr),*
+        not_exists $file:expr => $json_context:expr => $($x:expr),*
     ) => {{
         use file_utils;
         if !file_utils::check_if_file_exists($file) {
-            exit_with_msg!(usr $json_enabled => $($x),*);
+            exit_with_msg!(usr $json_context => $($x),*);
         }
     }}
 }
@@ -315,3 +313,12 @@ macro_rules! get_json_enabled {
     }}
 }
 
+macro_rules! get_json_context {
+    (
+        $matches:expr
+    ) => {{
+        use json_utils::JSONContext;
+
+        JSONContext::new($matches.is_present("json"))
+    }}
+}

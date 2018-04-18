@@ -4,6 +4,8 @@ use file_utils;
 use misc_utils;
 use std::io::SeekFrom;
 
+use json_utils::JSONContext;
+
 use std::sync::atomic::AtomicBool;
 
 use progress_report::*;
@@ -435,8 +437,10 @@ pub fn decode_file(param : &Param)
                    -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
+    let mut json_context = JSONContext::new(param.json_enabled);
+
     let (ref_block_pos, ref_block) = get_ref_block!(param,
-                                                    None,
+                                                    json_context,
                                                     ctrlc_stop_flag);
 
     // get FNM of ref_block

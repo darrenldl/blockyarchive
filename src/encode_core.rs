@@ -6,6 +6,8 @@ use time_utils;
 use misc_utils;
 use std::io::SeekFrom;
 
+use json_utils::JSONContext;
+
 use progress_report::*;
 
 use std::time::UNIX_EPOCH;
@@ -76,49 +78,49 @@ impl fmt::Display for Stats {
         let time_elapsed            = (self.end_time - self.start_time) as i64;
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
-        let json_enabled = self.json_enabled;
+        let json_context = JSONContext::new(self.json_enabled);
 
         if rs_enabled {
-            write_maybe_json!(f, json_enabled, "File UID                                   : {}",
+            write_maybe_json!(f, json_context, "File UID                                   : {}",
                               misc_utils::bytes_to_upper_hex_string(&self.uid)                                            => no_comma)?;
-            write_maybe_json!(f, json_enabled, "SBX version                                : {} (0x{:X})",
+            write_maybe_json!(f, json_context, "SBX version                                : {} (0x{:X})",
                               ver_to_usize(self.version),
                               ver_to_usize(self.version))?;
-            write_maybe_json!(f, json_enabled, "Block size used in encoding                : {}", block_size              => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "Data  size used in encoding                : {}", data_size               => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "Number of blocks written                   : {}", blocks_written          => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "Number of blocks written (metadata)        : {}", meta_blocks_written     => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "Number of blocks written (data only)       : {}", data_blocks_written     => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "Number of blocks written (data parity)     : {}", data_par_blocks_written => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "Amount of data encoded (bytes)             : {}", data_bytes_encoded      => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "File size                                  : {}", in_file_size            => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "SBX container size                         : {}", out_file_size           => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "Hash                                       : {}", match self.hash_bytes {
+            write_maybe_json!(f, json_context, "Block size used in encoding                : {}", block_size              => skip_quotes)?;
+            write_maybe_json!(f, json_context, "Data  size used in encoding                : {}", data_size               => skip_quotes)?;
+            write_maybe_json!(f, json_context, "Number of blocks written                   : {}", blocks_written          => skip_quotes)?;
+            write_maybe_json!(f, json_context, "Number of blocks written (metadata)        : {}", meta_blocks_written     => skip_quotes)?;
+            write_maybe_json!(f, json_context, "Number of blocks written (data only)       : {}", data_blocks_written     => skip_quotes)?;
+            write_maybe_json!(f, json_context, "Number of blocks written (data parity)     : {}", data_par_blocks_written => skip_quotes)?;
+            write_maybe_json!(f, json_context, "Amount of data encoded (bytes)             : {}", data_bytes_encoded      => skip_quotes)?;
+            write_maybe_json!(f, json_context, "File size                                  : {}", in_file_size            => skip_quotes)?;
+            write_maybe_json!(f, json_context, "SBX container size                         : {}", out_file_size           => skip_quotes)?;
+            write_maybe_json!(f, json_context, "Hash                                       : {}", match self.hash_bytes {
                 None        => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
                                        multihash::hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            write_maybe_json!(f, json_enabled, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)
+            write_maybe_json!(f, json_context, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)
         } else {
-            write_maybe_json!(f, json_enabled, "File UID                            : {}",
+            write_maybe_json!(f, json_context, "File UID                            : {}",
                               misc_utils::bytes_to_upper_hex_string(&self.uid)                                 => no_comma)?;
-            write_maybe_json!(f, json_enabled, "SBX version                         : {}", ver_to_usize(self.version))?;
-            write_maybe_json!(f, json_enabled, "Block size used in encoding         : {}", block_size          => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "Data  size used in encoding         : {}", data_size           => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "Number of blocks written            : {}", blocks_written      => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "Number of blocks written (metadata) : {}", meta_blocks_written => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "Number of blocks written (data)     : {}", data_blocks_written => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "Amount of data encoded (bytes)      : {}", data_bytes_encoded  => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "File size                           : {}", in_file_size        => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "SBX container size                  : {}", out_file_size       => skip_quotes)?;
-            write_maybe_json!(f, json_enabled, "Hash                                : {}", match self.hash_bytes {
+            write_maybe_json!(f, json_context, "SBX version                         : {}", ver_to_usize(self.version))?;
+            write_maybe_json!(f, json_context, "Block size used in encoding         : {}", block_size          => skip_quotes)?;
+            write_maybe_json!(f, json_context, "Data  size used in encoding         : {}", data_size           => skip_quotes)?;
+            write_maybe_json!(f, json_context, "Number of blocks written            : {}", blocks_written      => skip_quotes)?;
+            write_maybe_json!(f, json_context, "Number of blocks written (metadata) : {}", meta_blocks_written => skip_quotes)?;
+            write_maybe_json!(f, json_context, "Number of blocks written (data)     : {}", data_blocks_written => skip_quotes)?;
+            write_maybe_json!(f, json_context, "Amount of data encoded (bytes)      : {}", data_bytes_encoded  => skip_quotes)?;
+            write_maybe_json!(f, json_context, "File size                           : {}", in_file_size        => skip_quotes)?;
+            write_maybe_json!(f, json_context, "SBX container size                  : {}", out_file_size       => skip_quotes)?;
+            write_maybe_json!(f, json_context, "Hash                                : {}", match self.hash_bytes {
                 None    => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
                                        multihash::hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            write_maybe_json!(f, json_enabled, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)
+            write_maybe_json!(f, json_context, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)
         }
     }
 }

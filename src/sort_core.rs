@@ -124,8 +124,10 @@ pub fn sort_file(param : &Param)
                  -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_enabled);
 
+    let json_context = JSONContext::new(self.json_enabled);
+
     let (ref_block_pos, ref_block) = get_ref_block!(param,
-                                                    None,
+                                                    json_context,
                                                     ctrlc_stop_flag);
 
     let file_size = file_utils::get_file_size(&param.in_file)?;

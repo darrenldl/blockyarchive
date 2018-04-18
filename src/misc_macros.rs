@@ -11,7 +11,7 @@ macro_rules! unwrap_or {
 
 macro_rules! get_ref_block {
     (
-        $param:expr, $no_comma:expr, $ref_block_choice:expr, $stop_flag:expr
+        $param:expr, $json_context:expr, $ref_block_choice:expr, $stop_flag:expr
     ) => {{
         use std::sync::atomic::Ordering;
 
@@ -32,16 +32,16 @@ macro_rules! get_ref_block {
 
         if $param.verbose {
             println!();
-            report_ref_block_info($param.json_enabled, $no_comma, ref_block_pos, &ref_block);
+            report_ref_block_info($json_context, ref_block_pos, &ref_block);
             println!();
         }
 
         (ref_block_pos, ref_block)
     }};
     (
-        $param:expr, $no_comma:expr, $stop_flag:expr
+        $param:expr, $json_context:expr, $stop_flag:expr
     ) => {{
-        get_ref_block!($param, $no_comma, $param.ref_block_choice, $stop_flag)
+        get_ref_block!($param, $json_context, $param.ref_block_choice, $stop_flag)
     }}
 }
 

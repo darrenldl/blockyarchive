@@ -104,7 +104,7 @@ macro_rules! print_maybe_json {
         if $json_context.json_enabled {
             let msg = format!($($val),*);
 
-            let (l, r) = split_key_val_pair(&msg);
+            let (l, r ) : (&str, &str) = split_key_val_pair(&msg);
 
             print_json_field!(l, r, $skip_quotes, $json_context.first_item);
         } else {
@@ -132,17 +132,19 @@ macro_rules! write_maybe_json {
         use misc_utils::{to_camelcase,
                          split_key_val_pair};
 
-        if $json_context.json_enabled {
+        let res = if $json_context.json_enabled {
             let msg = format!($($val),*);
 
-            let (l, r) = split_key_val_pair(&msg);
+            let (l, r) : (&str, &str) = split_key_val_pair(&msg);
 
             write_json_field!($f, to_camelcase(l), r, $skip_quotes, $json_context.first_item)
         } else {
             writeln!($f, $($val),*)
-        }
+        };
 
         $json_context.first_item = false;
+
+        res
     }}
 }
 

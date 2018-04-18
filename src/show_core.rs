@@ -128,7 +128,7 @@ pub fn show_file(param : &Param)
                 Some(x) => x,
             };
 
-        report_ref_block_info(json_enabled, None, ref_block_pos, &ref_block);
+        report_ref_block_info(json_enabled, ref_block_pos, &ref_block);
 
         print_if_not_json!(json_enabled, "");
 
@@ -244,7 +244,7 @@ pub fn show_file(param : &Param)
             print_maybe_json!(json_context,  "SBX container name     : {}",
                               block.get_SNM().unwrap().unwrap_or("N/A".to_string()));
             print_maybe_json!(json_context, "SBX container version  : {}",
-                              if ver_uses_rs(block.get_version()) && !json_context {
+                              if ver_uses_rs(block.get_version()) && !json_context.json_enabled {
                                   format!("{} (0x{:X})",
                                           ver_to_usize(block.get_version()),
                                           ver_to_usize(block.get_version()))

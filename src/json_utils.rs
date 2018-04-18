@@ -1,11 +1,11 @@
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct JSONContext {
-    json_enabled : bool,
-    first_item   : bool,
+    pub json_enabled : bool,
+    pub first_item   : bool,
 }
 
 impl JSONContext {
-    pub fn new(json_enabled : bool) {
+    pub fn new(json_enabled : bool) -> JSONContext {
         JSONContext {
             json_enabled,
             first_item : true,
