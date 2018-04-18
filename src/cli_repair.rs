@@ -5,6 +5,8 @@ use std::str::FromStr;
 use clap::*;
 use cli_utils::*;
 
+use json_printer::BracketType;
+
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("repair")
         .about("Repair SBX container")
@@ -32,7 +34,9 @@ This also implies --skip-warning and disables progress report text."))
 }
 
 pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let mut json_printer = get_json_printer!(matches);
+    let json_printer = get_json_printer!(matches);
+
+    json_printer.print_open_bracket(None, BracketType::Curly);
 
     let in_file = get_in_file!(matches, json_printer);
 
