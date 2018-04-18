@@ -313,12 +313,14 @@ pub fn repair_file(param : &Param)
                 },
                 Err(_) => {
                     if json_printer.json_enabled() {
-                        json_printer.print_open_bracket(None, BracketType::Curly);
                         if param.verbose {
+                            json_printer.print_open_bracket(None, BracketType::Curly);
+
                             print_maybe_json!(param.json_printer, "seq num : 0");
                             print_maybe_json!(param.json_printer, "pos : {}", p);
+
+                            json_printer.print_close_bracket();
                         }
-                        json_printer.print_close_bracket();
                     } else {
                         print_if_verbose!(param, reporter =>
                                           "Replaced invalid metadata block at {} (0x{:X}) with reference block", p, p;);
