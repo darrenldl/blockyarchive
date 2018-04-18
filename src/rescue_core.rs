@@ -192,12 +192,15 @@ impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         let json_printer = &self.json_printer;
 
-        write_maybe_json!(f, json_printer, "Number of bytes processed             : {}", self.bytes_processed)?;
+        write_maybe_json!(f, json_printer, "Number of bytes processed             : {}",
+                          self.bytes_processed                                          => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks processed            : {}",
                           self.meta_or_par_blocks_processed
-                          + self.data_or_par_blocks_processed)?;
-        write_maybe_json!(f, json_printer, "Number of blocks processed (metadata) : {}", self.meta_or_par_blocks_processed)?;
-        write_maybe_json!(f, json_printer, "Number of blocks processed (data)     : {}", self.data_or_par_blocks_processed)
+                          + self.data_or_par_blocks_processed                           => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks processed (metadata) : {}",
+                          self.meta_or_par_blocks_processed                             => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks processed (data)     : {}",
+                          self.data_or_par_blocks_processed                             => skip_quotes)
     }
 }
 
