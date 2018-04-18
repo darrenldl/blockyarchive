@@ -1,6 +1,8 @@
 use smallvec::SmallVec;
 use json_utils::split_key_val_pair;
 
+use std::sync::Mutex;
+
 use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -9,14 +11,25 @@ pub enum BracketType {
     Square,
 }
 
+#[derive(Clone, Debug)]
 struct JSONContext {
     first_item   : bool,
     bracket_type : BracketType,
 }
 
+#[derive(Debug)]
 pub struct JSONPrinter {
     json_enabled : bool,
-    contexts     : SmallVec<[JSONContext; 8]>
+    contexts     : Mutex<SmallVec<[JSONContext; 8]>>
+}
+
+impl Clone for JSONPrinter {
+    fn clone(&self) -> Self {
+        JSONPrinter {
+            json_enabled : self.json_enabled,
+            contexts     : Mutex::new(self.contexts.lock().unwrap().clone())
+        }
+    }
 }
 
 fn print_comma_if_not_first(context : &mut JSONContext) {
@@ -44,7 +57,7 @@ impl JSONPrinter {
     pub fn new(json_enabled : bool) -> JSONPrinter {
         JSONPrinter {
             json_enabled,
-            contexts     : SmallVec::new(),
+            contexts     : Mutex::new(SmallVec::new()),
         }
     }
 
@@ -53,63 +66,64 @@ impl JSONPrinter {
     }
 
     pub fn first_item(&self) -> bool {
-        self.contexts.last().unwrap().first_item
+        self.contexts.lock().unwrap().last().unwrap().first_item
     }
 
-    pub fn print_open_bracket(&mut self, bracket_type : BracketType) {
+    pub fn print_open_bracket(&self, bracket_type : BracketType) {
         if !self.json_enabled { return; }
 
-        match self.contexts.last_mut() {
+        match self.contexts.lock().unwrap().last_mut() {
             None    => {},
             Some(x) => print_comma_if_not_first(x)
         }
 
         println!("{}", bracket_type_to_str_open(bracket_type));
 
-        self.contexts.push(JSONContext { first_item   : true,
-                                         bracket_type });
+        self.contexts.lock().unwrap().push(JSONContext { first_item   : true,
+                                                         bracket_type });
     }
 
-    pub fn write_open_bracket(&mut self,
+    pub fn write_open_bracket(&self,
                               f            : &mut fmt::Formatter,
                               bracket_type : BracketType) -> fmt::Result {
         if !self.json_enabled { return Ok(()); }
 
-        match self.contexts.last_mut() {
+        match self.contexts.lock().unwrap().last_mut() {
             None    => {},
             Some(x) => print_comma_if_not_first(x)
         }
 
         let res = writeln!(f, "{}", bracket_type_to_str_open(bracket_type));
 
-        self.contexts.push(JSONContext { first_item   : true,
-                                         bracket_type });
+        self.contexts.lock().unwrap().push(JSONContext { first_item   : true,
+                                                         bracket_type });
 
         res
     }
 
-    pub fn print_close_bracket(&mut self) {
+    pub fn print_close_bracket(&self) {
         if !self.json_enabled { return; }
 
-        let context = self.contexts.pop().unwrap();
+        let context = self.contexts.lock().unwrap().pop().unwrap();
 
         println!("{}", bracket_type_to_str_close(context.bracket_type));
     }
 
-    pub fn write_close_bracket(&mut self,
+    pub fn write_close_bracket(&self,
                                f : &mut fmt::Formatter) -> fmt::Result {
         if !self.json_enabled { return Ok(()); }
 
-        let context = self.contexts.pop().unwrap();
+        let context = self.contexts.lock().unwrap().pop().unwrap();
 
         writeln!(f, "{}", bracket_type_to_str_close(context.bracket_type))
     }
 
-    pub fn print_maybe_json(&mut self,
+    pub fn print_maybe_json(&self,
                             skip_quotes : bool,
                             msg         : &str) {
         if self.json_enabled {
-            let mut context = self.contexts.last_mut().unwrap();
+            let mut contexts = self.contexts.lock().unwrap();
+            let context  = contexts.last_mut().unwrap();
 
             let (l, r) : (&str, &str) = split_key_val_pair(&msg);
 
@@ -121,12 +135,13 @@ impl JSONPrinter {
         }
     }
 
-    pub fn write_maybe_json(&mut self,
+    pub fn write_maybe_json(&self,
                             f           : &mut fmt::Formatter,
                             skip_quotes : bool,
                             msg         : &str) -> fmt::Result {
         if self.json_enabled {
-            let mut context = self.contexts.last_mut().unwrap();
+            let mut contexts = self.contexts.lock().unwrap();
+            let context  = contexts.last_mut().unwrap();
 
             let (l, r) : (&str, &str) = split_key_val_pair(&msg);
 

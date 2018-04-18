@@ -35,7 +35,7 @@ macro_rules! print_json_field {
     }};
 }
 
-macro_rules! print_maybe_json_open_bracket {
+/*macro_rules! print_maybe_json_open_bracket {
     (
         $json_context:expr
     ) => {{
@@ -43,9 +43,9 @@ macro_rules! print_maybe_json_open_bracket {
             println!("{{");
         }
     }}
-}
+}*/
 
-macro_rules! print_maybe_json_close_bracket {
+/*macro_rules! print_maybe_json_close_bracket {
     (
         $json_context:expr
     ) => {{
@@ -53,7 +53,7 @@ macro_rules! print_maybe_json_close_bracket {
             println!("}}");
         }
     }}
-}
+}*/
 
 macro_rules! print_if_not_json {
     (
@@ -65,7 +65,7 @@ macro_rules! print_if_not_json {
     }}
 }
 
-macro_rules! print_bracket {
+/*macro_rules! print_bracket {
     (
         $json_context:expr => open curly
     ) => {{
@@ -100,7 +100,7 @@ macro_rules! print_bracket {
             print!("]")
         }
     }};
-}
+}*/
 
 macro_rules! print_if_json {
     (
@@ -144,34 +144,21 @@ macro_rules! print_maybe_json {
 
 macro_rules! write_maybe_json {
     (
-        $f:expr, $json_context:expr, $($val:expr),* => skip_quotes
+        $f:expr, $json_printer:expr, $($val:expr),* => skip_quotes
     ) => {{
-        write_maybe_json!($f, $json_context, $($val),* => true)
+        write_maybe_json!($f, $json_printer, $($val),* => true)
     }};
     (
-        $f:expr, $json_context:expr, $($val:expr),*
+        $f:expr, $json_printer:expr, $($val:expr),*
     ) => {{
-        write_maybe_json!($f, $json_context, $($val),* => false)
+        write_maybe_json!($f, $json_printer, $($val),* => false)
     }};
     (
-        $f:expr, $json_context:expr, $($val:expr),* => $skip_quotes:expr
+        $f:expr, $json_printer:expr, $($val:expr),* => $skip_quotes:expr
     ) => {{
-        use misc_utils::to_camelcase;
-        use json_utils::split_key_val_pair;
+        let msg = format!($($val),*);
 
-        let res = if $json_context.json_enabled {
-            let msg = format!($($val),*);
-
-            let (l, r) : (&str, &str) = split_key_val_pair(&msg);
-
-            write_json_field!($f, to_camelcase(l), r, $skip_quotes, $json_context.first_item)
-        } else {
-            writeln!($f, $($val),*)
-        };
-
-        $json_context.first_item = false;
-
-        res
+        $json_printer.write_maybe_json($f, $skip_quotes, &msg)
     }}
 }
 

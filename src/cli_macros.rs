@@ -33,21 +33,21 @@ macro_rules! exit_with_msg {
 
 macro_rules! exit_if_file {
     (
-        exists $file:expr => $force_write:expr => $json_context:expr => $($x:expr),*
+        exists $file:expr => $force_write:expr => $json_printer:expr => $($x:expr),*
     ) => {{
         use file_utils;
         if file_utils::check_if_file_exists($file)
             && !$force_write
         {
-            exit_with_msg!(usr $json_context => $($x),*);
+            exit_with_msg!(usr $json_printer => $($x),*);
         }
     }};
     (
-        not_exists $file:expr => $json_context:expr => $($x:expr),*
+        not_exists $file:expr => $json_printer:expr => $($x:expr),*
     ) => {{
         use file_utils;
         if !file_utils::check_if_file_exists($file) {
-            exit_with_msg!(usr $json_context => $($x),*);
+            exit_with_msg!(usr $json_printer => $($x),*);
         }
     }}
 }
@@ -256,14 +256,14 @@ macro_rules! get_burst_opt {
 
 macro_rules! parse_uid {
     (
-        $buf:expr, $uid:expr, $json_enabled:expr
+        $buf:expr, $uid:expr, $json_printer:expr
     ) => {{
         use misc_utils::HexError;
         use misc_utils;
         match misc_utils::hex_string_to_bytes($uid) {
             Ok(x) => {
                 if x.len() != SBX_FILE_UID_LEN {
-                    exit_with_msg!(usr $json_enabled => "UID must be {} bytes({} hex characters) in length",
+                    exit_with_msg!(usr $json_printer => "UID must be {} bytes({} hex characters) in length",
                                    SBX_FILE_UID_LEN,
                                    SBX_FILE_UID_LEN * 2);
                 }
@@ -271,10 +271,10 @@ macro_rules! parse_uid {
                 $buf.copy_from_slice(&x);
             },
             Err(HexError::InvalidHexString) => {
-                exit_with_msg!(usr $json_enabled => "UID provided is not a valid hex string");
+                exit_with_msg!(usr $json_printer => "UID provided is not a valid hex string");
             },
             Err(HexError::InvalidLen) => {
-                exit_with_msg!(usr $json_enabled => "UID provided does not have the correct number of hex digits, provided : {}, need : {}",
+                exit_with_msg!(usr $json_printer => "UID provided does not have the correct number of hex digits, provided : {}, need : {}",
                                $uid.len(),
                                SBX_FILE_UID_LEN * 2);
             }
@@ -320,5 +320,16 @@ macro_rules! get_json_context {
         use json_utils::JSONContext;
 
         JSONContext::new($matches.is_present("json"))
+    }}
+}
+
+macro_rules! get_json_printer {
+    (
+        $matches:expr
+    ) => {{
+        use json_printer::JSONPrinter;
+        use std::sync::Arc;
+
+        Arc::new(JSONPrinter::new($matches.is_present("json")))
     }}
 }

@@ -8,8 +8,7 @@ use std::str::FromStr;
 
 use file_utils;
 
-use json_printer::{JSONPrinter,
-                   BracketType};
+use json_printer::BracketType;
 
 use clap::*;
 use cli_utils::*;
@@ -34,7 +33,7 @@ This means this option has no effect for version 17, 18, 19."))
 }
 
 pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let mut json_printer = get_json_printer!(matches);
+    let json_printer = get_json_printer!(matches);
 
     json_printer.print_open_bracket(BracketType::Curly);
 

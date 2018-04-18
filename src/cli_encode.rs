@@ -9,6 +9,8 @@ use sbx_specs::{SBX_FILE_UID_LEN,
                 ver_uses_rs};
 use std::str::FromStr;
 
+use json_printer::BracketType;
+
 use multihash;
 
 use file_utils;
@@ -69,37 +71,37 @@ automatic guessing."))
 }
 
 pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let mut json_context = get_json_context!(matches);
+    let json_printer = get_json_printer!(matches);
 
-    print_maybe_json_open_bracket!(json_context);
+    json_printer.print_open_bracket(BracketType::Curly);
 
     // compute uid
     let mut uid : [u8; SBX_FILE_UID_LEN] = [0; SBX_FILE_UID_LEN];
     {
         match matches.value_of("uid") {
             None    => { rand_utils::fill_random_bytes(&mut uid); },
-            Some(x) => { parse_uid!(uid, x, json_context); }
+            Some(x) => { parse_uid!(uid, x, json_printer); }
         }
     }
 
-    let version   = get_version!(matches, json_context);
+    let version   = get_version!(matches, json_printer);
 
     let data_par_burst =
         if ver_uses_rs(version) {
             // deal with RS related options
-            let data_shards   = get_data_shards!(matches, version, json_context);
-            let parity_shards = get_parity_shards!(matches, version, json_context);
+            let data_shards   = get_data_shards!(matches, version, json_printer);
+            let parity_shards = get_parity_shards!(matches, version, json_printer);
 
-            check_data_parity_shards!(data_shards, parity_shards, json_context);
+            check_data_parity_shards!(data_shards, parity_shards, json_printer);
 
-            let burst = get_burst_or_zero!(matches, json_context);
+            let burst = get_burst_or_zero!(matches, json_printer);
 
             Some((data_shards, parity_shards, burst))
         } else {
             None
         };
 
-    let in_file = get_in_file!(matches, json_context);
+    let in_file = get_in_file!(matches, json_printer);
     let out = match matches.value_of("out") {
         None    => format!("{}.sbx", in_file),
         Some(x) => {
@@ -117,24 +119,24 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
         None    => multihash::HashType::SHA256,
         Some(x) => match multihash::string_to_hash_type(x) {
             Ok(x)  => x,
-            Err(_) => exit_with_msg!(usr json_context => "Invalid hash type")
+            Err(_) => exit_with_msg!(usr json_printer => "Invalid hash type")
         }
     };
 
-    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_context);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
     let meta_enabled = get_meta_enabled!(matches);
 
     if matches.is_present("info_only") {
         let in_file_meta  = match file_utils::get_file_metadata(in_file) {
             Ok(x)  => x,
-            Err(_) => exit_with_msg!(usr json_context => "Failed to get metadata of \"{}\"",
+            Err(_) => exit_with_msg!(usr json_printer => "Failed to get metadata of \"{}\"",
                                      in_file)
         };
 
         let in_file_size = match file_utils::get_file_size(in_file) {
             Ok(x)  => x,
-            Err(_) => exit_with_msg!(usr json_context => "Failed to get file size of \"{}\"",
+            Err(_) => exit_with_msg!(usr json_printer => "Failed to get file size of \"{}\"",
                                      in_file)
         };
 
@@ -162,47 +164,47 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                                                                  in_file_size);
 
         if ver_uses_rs(version) {
-            print_maybe_json!(json_context, "File name                    : {}", in_file);
-            print_maybe_json!(json_context, "SBX container name           : {}", out);
-            print_maybe_json!(json_context, "SBX container version        : {}", ver_to_usize(version));
-            print_maybe_json!(json_context, "SBX container block size     : {}", ver_to_block_size(version) => skip_quotes);
-            print_maybe_json!(json_context, "SBX container data  size     : {}", ver_to_data_size(version)  => skip_quotes);
-            print_maybe_json!(json_context, "RS data   shard count        : {}", data_par_burst.unwrap().0  => skip_quotes);
-            print_maybe_json!(json_context, "RS parity shard count        : {}", data_par_burst.unwrap().1  => skip_quotes);
-            print_maybe_json!(json_context, "Burst error resistance level : {}", data_par_burst.unwrap().2  => skip_quotes);
-            print_maybe_json!(json_context, "File size                    : {}", in_file_size               => skip_quotes);
-            print_maybe_json!(json_context, "SBX container size           : {}", out_file_size              => skip_quotes);
-            print_maybe_json!(json_context, "File modification time       : {}", in_file_mod_time_str);
+            print_maybe_json!(json_printer, "File name                    : {}", in_file);
+            print_maybe_json!(json_printer, "SBX container name           : {}", out);
+            print_maybe_json!(json_printer, "SBX container version        : {}", ver_to_usize(version));
+            print_maybe_json!(json_printer, "SBX container block size     : {}", ver_to_block_size(version) => skip_quotes);
+            print_maybe_json!(json_printer, "SBX container data  size     : {}", ver_to_data_size(version)  => skip_quotes);
+            print_maybe_json!(json_printer, "RS data   shard count        : {}", data_par_burst.unwrap().0  => skip_quotes);
+            print_maybe_json!(json_printer, "RS parity shard count        : {}", data_par_burst.unwrap().1  => skip_quotes);
+            print_maybe_json!(json_printer, "Burst error resistance level : {}", data_par_burst.unwrap().2  => skip_quotes);
+            print_maybe_json!(json_printer, "File size                    : {}", in_file_size               => skip_quotes);
+            print_maybe_json!(json_printer, "SBX container size           : {}", out_file_size              => skip_quotes);
+            print_maybe_json!(json_printer, "File modification time       : {}", in_file_mod_time_str);
         } else {
-            print_maybe_json!(json_context, "File name                : {}", in_file);
-            print_maybe_json!(json_context, "SBX container name       : {}", out);
-            print_maybe_json!(json_context, "SBX container version    : {}", ver_to_usize(version));
-            print_maybe_json!(json_context, "SBX container block size : {}", ver_to_block_size(version) => skip_quotes);
-            print_maybe_json!(json_context, "SBX container data  size : {}", ver_to_data_size(version)  => skip_quotes);
-            print_maybe_json!(json_context, "File size                : {}", in_file_size               => skip_quotes);
-            print_maybe_json!(json_context, "SBX container size       : {}", out_file_size              => skip_quotes);
-            print_maybe_json!(json_context, "File modification time   : {}", in_file_mod_time_str);
+            print_maybe_json!(json_printer, "File name                : {}", in_file);
+            print_maybe_json!(json_printer, "SBX container name       : {}", out);
+            print_maybe_json!(json_printer, "SBX container version    : {}", ver_to_usize(version));
+            print_maybe_json!(json_printer, "SBX container block size : {}", ver_to_block_size(version) => skip_quotes);
+            print_maybe_json!(json_printer, "SBX container data  size : {}", ver_to_data_size(version)  => skip_quotes);
+            print_maybe_json!(json_printer, "File size                : {}", in_file_size               => skip_quotes);
+            print_maybe_json!(json_printer, "SBX container size       : {}", out_file_size              => skip_quotes);
+            print_maybe_json!(json_printer, "File modification time   : {}", in_file_mod_time_str);
         }
 
-        exit_with_msg!(ok json_context => "")
+        exit_with_msg!(ok json_printer => "")
     } else {
         exit_if_file!(exists &out
                       => matches.is_present("force")
-                      => json_context
+                      => json_printer
                       => "File \"{}\" already exists", out);
 
         let param = Param::new(version,
                                &uid,
                                data_par_burst,
                                meta_enabled,
-                               json_context.json_enabled,
+                               &json_printer,
                                hash_type,
                                in_file,
                                &out,
                                pr_verbosity_level);
         match encode_core::encode_file(&param) {
-            Ok(s)  => exit_with_msg!(ok json_context => "{}", s),
-            Err(e) => exit_with_msg!(op json_context => "{}", e)
+            Ok(s)  => exit_with_msg!(ok json_printer => "{}", s),
+            Err(e) => exit_with_msg!(op json_printer => "{}", e)
         }
     }
 }

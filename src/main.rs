@@ -94,7 +94,7 @@ mod rs_codec;
 #[macro_use]
 mod cli_macros;
 
-//mod encode_core;
+mod encode_core;
 //mod decode_core;
 //mod rescue_core;
 //mod repair_core;
@@ -109,7 +109,7 @@ mod file_writer;
 
 mod cli_utils;
 
-//mod cli_encode;
+mod cli_encode;
 //mod cli_decode;
 //mod cli_rescue;
 //mod cli_show;
@@ -123,7 +123,7 @@ fn real_main () -> i32 {
         .version(env!("CARGO_PKG_VERSION"))
         .author("Darren Ldl <darrenldldev@gmail.com>")
         .about("Rust implementation of SeqBox")
-        //.subcommand(cli_encode::sub_command())
+        .subcommand(cli_encode::sub_command())
         //.subcommand(cli_decode::sub_command())
         //.subcommand(cli_rescue::sub_command())
         //.subcommand(cli_show::sub_command())
@@ -134,7 +134,7 @@ fn real_main () -> i32 {
         .get_matches();
 
     if      let Some(matches) = matches.subcommand_matches("encode") {
-        0 //cli_encode::encode(matches)
+        cli_encode::encode(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("decode") {
         0 //cli_decode::decode(matches)
