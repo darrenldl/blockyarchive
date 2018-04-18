@@ -151,7 +151,7 @@ pub fn json_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("json")
         .long("json")
         .help("Output information in JSON format. Note that rsbx does not
-guarantee the JSON data to be well form if rsbx is interrupted.
+guarantee the JSON data to be well-formed if rsbx is interrupted.
 This also disables progress report texts.")
 }
 
