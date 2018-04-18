@@ -177,9 +177,9 @@ macro_rules! write_maybe_json {
 
 macro_rules! null_if_json_else {
     (
-        $json_context:expr, $val:expr
+        $json_printer:expr, $val:expr
     ) => {{
-        if $json_context.json_enabled {
+        if $json_printer.json_enabled() {
             "null"
         } else {
             $val

@@ -36,8 +36,6 @@ This means this option has no effect for version 17, 18, 19."))
 pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
     let mut json_printer = JSONPrinter::new(get_json_enabled!(matches));
 
-    let mut json_context = get_json_context!(matches);
-
     json_printer.print_open_bracket(BracketType::Curly);
 
     let version = get_version!(matches, json_printer);
@@ -123,16 +121,16 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
         print_maybe_json!(json_printer,   "    Burst error resistance level : {}", data_par_burst.unwrap().2  => skip_quotes);
     } else {
         print_maybe_json!(json_printer,   "    RS data   shard count        : {}",
-                          null_if_json_else!(json_context, "version does not use RS")                         => skip_quotes);
+                          null_if_json_else!(json_printer, "version does not use RS")                         => skip_quotes);
         print_maybe_json!(json_printer,   "    RS parity shard count        : {}",
-                          null_if_json_else!(json_context, "version does not use RS")                         => skip_quotes);
+                          null_if_json_else!(json_printer, "version does not use RS")                         => skip_quotes);
         print_maybe_json!(json_printer,   "    Burst error resistance level : {}",
-                          null_if_json_else!(json_context, "version does not support burst error resistance") => skip_quotes);
+                          null_if_json_else!(json_printer, "version does not support burst error resistance") => skip_quotes);
     }
 
     print_if_not_json!(json_printer, "");
 
-    if ver_uses_rs(version) && !json_context.json_enabled {
+    if ver_uses_rs(version) && !json_printer.json_enabled() {
         let (data, par, burst) = data_par_burst.unwrap();
 
         let block_size = ver_to_block_size(version);
