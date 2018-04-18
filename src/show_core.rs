@@ -254,37 +254,37 @@ pub fn show_file(param : &Param)
                               } else {
                                   "version does not use RS".to_string()
                               }                                                    => skip_quotes);
-            println!("RS parity shard count  : {}",
-                     if ver_uses_rs(block.get_version()) {
-                         match block.get_RSP().unwrap() {
-                             None    => "N/A".to_string(),
-                             Some(x) => x.to_string(),
-                         }
-                     } else {
-                         "version does not use RS".to_string()
-                     });
-            println!("File size              : {}", match block.get_FSZ().unwrap() {
-                None    => "N/A".to_string(),
+            print_maybe_json!(json_enabled, "RS parity shard count  : {}",
+                              if ver_uses_rs(block.get_version()) {
+                                  match block.get_RSP().unwrap() {
+                                      None    => null_if_json_else!(json_enabled, "N/A").to_string(),
+                                      Some(x) => x.to_string(),
+                                  }
+                              } else {
+                                  "version does not use RS".to_string()
+                              }                                                    => skip_quotes);
+            print_maybe_json!(json_enabled, "File size              : {}", match block.get_FSZ().unwrap() {
+                None    => null_if_json_else!(json_enabled, "N/A").to_string(),
                 Some(x) => x.to_string()
-            });
-            println!("File modification time : {}", match block.get_FDT().unwrap() {
-                None    => "N/A".to_string(),
+            }                                                                      => skip_quotes);
+            print_maybe_json!(json_enabled, "File modification time : {}", match block.get_FDT().unwrap() {
+                None    => null_if_json_else!(json_enabled, "N/A").to_string(),
                 Some(x) => match (time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::UTC),
                                   time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::Local)) {
                     (Some(u), Some(l)) => format!("{} (UTC)  {} (Local)", u, l),
                     _                  => "Invalid recorded date time".to_string(),
                 }
             });
-            println!("SBX encoding time      : {}", match block.get_SDT().unwrap() {
-                None    => "N/A".to_string(),
+            print_maybe_json!(json_enabled, "SBX encoding time      : {}", match block.get_SDT().unwrap() {
+                None    => null_if_json_else!(json_enabled, "N/A").to_string(),
                 Some(x) => match (time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::UTC),
                                   time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::Local)) {
                     (Some(u), Some(l)) => format!("{} (UTC)  {} (Local)", u, l),
                     _                  => "Invalid recorded date time".to_string(),
                 }
             });
-            println!("Hash                   : {}", match block.get_HSH().unwrap() {
-                None    => "N/A".to_string(),
+            print_maybe_json!(json_enabled, "Hash                   : {}", match block.get_HSH().unwrap() {
+                None    => null_if_json_else!(json_enabled, "N/A").to_string(),
                 Some(h) => format!("{} - {}",
                                    hash_type_to_string(h.0),
                                    misc_utils::bytes_to_lower_hex_string(&h.1))
@@ -293,6 +293,8 @@ pub fn show_file(param : &Param)
             meta_block_count += 1;
 
             reporter.resume();
+
+            print_if_json!(json_enabled, "}}");
 
             if !param.show_all { break; }
         }

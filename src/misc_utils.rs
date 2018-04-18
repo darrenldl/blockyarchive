@@ -236,8 +236,8 @@ pub fn split_key_val_pair(string : &str) -> (&str, &str) {
         }
     }
 
-    (strip_front_end_chars(&string[0..spot],  " ()"),
-     strip_front_end_chars(&string[spot+1..], " ()"))
+    (strip_front_end_chars(&string[0..spot],  " "),
+     strip_front_end_chars(&string[spot+1..], " "))
 }
 
 pub fn escape_quotes(string : &str) -> String {
