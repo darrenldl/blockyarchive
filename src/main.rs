@@ -65,8 +65,12 @@ mod misc_macros;
 #[macro_use]
 mod block_preds;
 
+#[macro_use]
+mod json_macros;
+
 mod multihash;
 mod multihash_tests;
+mod json_utils;
 mod misc_utils;
 mod misc_utils_tests;
 mod file_utils;
