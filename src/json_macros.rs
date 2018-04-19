@@ -1,3 +1,5 @@
+#![allow(unused_macros)]
+
 macro_rules! write_json_field {
     (
         $f:expr, $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
@@ -84,43 +86,6 @@ macro_rules! write_if_not_json {
         }
     }}
 }
-
-/*macro_rules! print_bracket {
-    (
-        $json_context:expr => open curly
-    ) => {{
-        if $json_context.json_enabled {
-            if !$json_context.first_item {
-                print!(",");
-            }
-            print!("{{")
-        }
-    }};
-    (
-        $json_context:expr => close curly
-    ) => {{
-        if $json_context.json_enabled {
-            print!("}}")
-        }
-    }};
-    (
-        $json_context:expr => open square
-    ) => {{
-        if $json_context.json_enabled {
-            if !$json_context.first_item {
-                print!(",");
-            }
-            print!("[")
-        }
-    }};
-    (
-        $json_context:expr => close square
-    ) => {{
-        if $json_context.json_enabled {
-            print!("]")
-        }
-    }};
-}*/
 
 macro_rules! print_if_json {
     (
