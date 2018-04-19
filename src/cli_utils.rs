@@ -4,7 +4,10 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use ctrlc;
 
-use json_printer::JSONPrinter;
+use sbx_specs::ver_to_usize;
+
+use json_printer::{JSONPrinter,
+                   BracketType};
 
 pub fn in_file_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("in_file")
@@ -124,14 +127,20 @@ pub fn report_ref_block_info(json_printer  : &JSONPrinter,
                              ref_block_pos : u64,
                              ref_block     : &sbx_block::Block) {
     if json_printer.json_enabled() {
-        print_maybe_json!(json_printer, "reference block type : {}",
+        json_printer.print_open_bracket(Some("ref block info"), BracketType::Curly);
+
+        print_maybe_json!(json_printer, "type : {}",
                           if ref_block.is_meta() { "metadata" }
                           else                   { "data"     });
-        print_maybe_json!(json_printer, "reference block location : {}", ref_block_pos);
+        print_maybe_json!(json_printer, "ver : {}", ver_to_usize(ref_block.get_version()));
+        print_maybe_json!(json_printer, "pos : {}", ref_block_pos);
+
+        json_printer.print_close_bracket();
     } else {
-        println!("Using {} block as reference block, located at byte {} (0x{:X})",
+        println!("Using {} block as reference block, SBX version {}, located at byte {} (0x{:X})",
                  if ref_block.is_meta() { "metadata" }
                  else                   { "data"     },
+                 ver_to_usize(ref_block.get_version()),
                  ref_block_pos,
                  ref_block_pos);
     }

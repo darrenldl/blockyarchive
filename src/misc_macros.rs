@@ -31,9 +31,9 @@ macro_rules! get_ref_block {
             };
 
         if $param.verbose {
-            println!();
+            print_if_not_json!($json_printer, "");
             report_ref_block_info($json_printer, ref_block_pos, &ref_block);
-            println!();
+            print_if_not_json!($json_printer, "");
         }
 
         (ref_block_pos, ref_block)
