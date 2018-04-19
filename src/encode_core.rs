@@ -6,7 +6,8 @@ use time_utils;
 use misc_utils;
 use std::io::SeekFrom;
 
-use json_printer::JSONPrinter;
+use json_printer::{JSONPrinter,
+                   BracketType};
 
 use progress_report::*;
 
@@ -80,6 +81,8 @@ impl fmt::Display for Stats {
 
         let json_printer = &self.json_printer;
 
+        json_printer.write_open_bracket(f, Some("stats"), BracketType::Curly)?;
+
         if rs_enabled {
             write_maybe_json!(f, json_printer, "File UID                                   : {}",
                               misc_utils::bytes_to_upper_hex_string(&self.uid))?;
@@ -101,7 +104,7 @@ impl fmt::Display for Stats {
                                        multihash::hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            write_maybe_json!(f, json_printer, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)
+            write_maybe_json!(f, json_printer, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)?;
         } else {
             write_maybe_json!(f, json_printer, "File UID                            : {}",
                               misc_utils::bytes_to_upper_hex_string(&self.uid))?;
@@ -120,8 +123,12 @@ impl fmt::Display for Stats {
                                        multihash::hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            write_maybe_json!(f, json_printer, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)
+            write_maybe_json!(f, json_printer, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)?;
         }
+
+        json_printer.write_close_bracket(f)?;
+
+        Ok(())
     }
 }
 
