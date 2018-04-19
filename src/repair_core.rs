@@ -234,7 +234,7 @@ pub fn repair_file(param : &Param)
 
     let version = ref_block.get_version();
 
-    return_if_not_ver_uses_rs!(version);
+    return_if_not_ver_uses_rs!(version, json_printer);
 
     let block_size = ver_to_block_size(version);
 
