@@ -4,7 +4,8 @@ use file_utils;
 use misc_utils;
 use std::io::SeekFrom;
 
-use json_printer::JSONPrinter;
+use json_printer::{JSONPrinter,
+                   BracketType};
 
 use std::sync::atomic::AtomicBool;
 
@@ -74,6 +75,8 @@ impl fmt::Display for Stats {
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
         let json_printer = &self.json_printer;
+
+        json_printer.write_open_bracket(f, Some("stats"), BracketType::Curly)?;
 
         if rs_enabled {
             write_maybe_json!(f, json_printer, "File UID                               : {}",
@@ -145,6 +148,8 @@ impl fmt::Display for Stats {
                 write_if_not_json!(f, json_printer, "Neither recorded hash nor output file hash is available")?;
             }
         }
+
+        json_printer.write_close_bracket(f)?;
 
         Ok(())
     }
