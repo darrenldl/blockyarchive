@@ -93,6 +93,8 @@ impl fmt::Display for Stats {
 
         let json_printer = &self.json_printer;
 
+        json_printer.write_open_bracket(f, Some("stats"), BracketType::Curly)?;
+
         write_maybe_json!(f, json_printer, "SBX version                              : {}", ver_to_usize(self.version))?;
         write_maybe_json!(f, json_printer, "Block size used in checking              : {}", block_size                            => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks processed               : {}", self.units_so_far()                   => skip_quotes)?;
@@ -117,6 +119,8 @@ impl fmt::Display for Stats {
                 }
             }
         }
+
+        json_printer.write_close_bracket(f)?;
 
         Ok(())
     }
