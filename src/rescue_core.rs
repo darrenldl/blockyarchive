@@ -30,7 +30,8 @@ use block_utils;
 
 use integer_utils::IntegerUtils;
 
-use json_printer::JSONPrinter;
+use json_printer::{JSONPrinter,
+                   BracketType};
 
 pub struct Param {
     in_file            : String,
@@ -192,6 +193,8 @@ impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         let json_printer = &self.json_printer;
 
+        json_printer.write_open_bracket(f, Some("stats"), BracketType::Curly)?;
+
         write_maybe_json!(f, json_printer, "Number of bytes processed             : {}",
                           self.bytes_processed                                          => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks processed            : {}",
@@ -200,7 +203,11 @@ impl fmt::Display for Stats {
         write_maybe_json!(f, json_printer, "Number of blocks processed (metadata) : {}",
                           self.meta_or_par_blocks_processed                             => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks processed (data)     : {}",
-                          self.data_or_par_blocks_processed                             => skip_quotes)
+                          self.data_or_par_blocks_processed                             => skip_quotes)?;
+
+        json_printer.write_close_bracket(f)?;
+
+        Ok(())
     }
 }
 
