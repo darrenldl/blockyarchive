@@ -263,8 +263,8 @@ macro_rules! parse_uid {
         match misc_utils::hex_string_to_bytes($uid) {
             Ok(x) => {
                 if x.len() != SBX_FILE_UID_LEN {
-                    exit_with_msg!(usr $json_printer => "UID must be {} bytes({} hex characters) in length",
-                                   SBX_FILE_UID_LEN,
+                    exit_with_msg!(usr $json_printer => "UID provided does not have the correct number of hex digits, provided : {}, need : {}",
+                                   $uid.len(),
                                    SBX_FILE_UID_LEN * 2);
                 }
 
