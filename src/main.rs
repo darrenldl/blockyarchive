@@ -99,7 +99,7 @@ mod decode_core;
 mod rescue_core;
 mod repair_core;
 mod show_core;
-//mod sort_core;
+mod sort_core;
 mod check_core;
 
 mod progress_report;
@@ -115,7 +115,7 @@ mod cli_rescue;
 mod cli_show;
 mod cli_repair;
 mod cli_check;
-//mod cli_sort;
+mod cli_sort;
 mod cli_calc;
 
 fn real_main () -> i32 {
@@ -129,7 +129,7 @@ fn real_main () -> i32 {
         .subcommand(cli_show::sub_command())
         .subcommand(cli_repair::sub_command())
         .subcommand(cli_check::sub_command())
-        //.subcommand(cli_sort::sub_command())
+        .subcommand(cli_sort::sub_command())
         .subcommand(cli_calc::sub_command())
         .get_matches();
 
@@ -152,7 +152,7 @@ fn real_main () -> i32 {
         cli_check::check(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("sort") {
-        0 //cli_sort::sort(matches)
+        cli_sort::sort(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("calc") {
         cli_calc::calc(matches)
