@@ -256,7 +256,7 @@ pub fn show_file(param : &Param)
                                       Some(x) => x.to_string(),
                                   }
                               } else {
-                                  "version does not use RS".to_string()
+                                  null_if_json_else!(json_printer, "version does not use RS").to_string()
                               }                                                    => skip_quotes);
             print_maybe_json!(json_printer, "RS parity shard count  : {}",
                               if ver_uses_rs(block.get_version()) {
@@ -265,7 +265,7 @@ pub fn show_file(param : &Param)
                                       Some(x) => x.to_string(),
                                   }
                               } else {
-                                  "version does not use RS".to_string()
+                                  null_if_json_else!(json_printer, "version does not use RS").to_string()
                               }                                                    => skip_quotes);
             print_maybe_json!(json_printer, "File size              : {}", match block.get_FSZ().unwrap() {
                 None    => null_if_json_else!(json_printer, "N/A").to_string(),
