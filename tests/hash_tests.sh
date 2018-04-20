@@ -14,20 +14,37 @@ a[3]=$(b2sum     dummy | awk '{print $1}')
 i=0
 for h in ${HASHES[*]}; do
   echo "Encoding in hash $h"
-  output=$(./rsbx encode --hash $h -f dummy dummy$h.sbx | grep "${a[$i]}" )
-  if [[ $output == "" ]]; then
+  output=$(./rsbx encode --json --hash $h -f dummy dummy$h.sbx 2>/dev/null )
+  hash=$(echo $output | jq -r ".stats.hash" | awk '{ print $3 }')
+  if [[ $hash == ${a[$i]} ]]; then
+      echo "==> Okay"
+  else
       echo "==> NOT okay"
       exit_code=1
-  else
-      echo "==> Okay"
   fi
   i=$[$i + 1]
 done
 
 # Decode all of them
+i=0
 for h in ${HASHES[*]}; do
   echo "Decoding hash $h container"
-  ./rsbx decode -f dummy$h.sbx dummy$h &>/dev/null
+  output=$(./rsbx decode --json -f dummy$h.sbx dummy$h 2>/dev/null)
+  recorded_hash=$(echo $output | jq -r ".stats.recordedHash" | awk '{ print $3 }')
+  output_file_hash=$(echo $output | jq -r ".stats.hashOfOutputFile" | awk '{ print $3 }')
+  if [[ $recorded_hash == ${a[$i]} ]]; then
+      echo "==> Okay"
+  else
+      echo "==> NOT okay"
+      exit_code=1
+  fi
+  if [[ $output_file_hash == ${a[$i]} ]]; then
+      echo "==> Okay"
+  else
+      echo "==> NOT okay"
+      exit_code=1
+  fi
+  i=$[$i + 1]
 done
 
 # Compare to original file
