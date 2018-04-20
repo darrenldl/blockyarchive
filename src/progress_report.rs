@@ -365,7 +365,7 @@ fn make_message(context      : &Context,
         (units_so_far - context.last_reported_units) as f64
         / time_since_last_report;
     let cur_rate =
-        if 0.0 <= cur_rate && cur_rate <= 0.001 {
+        if cur_rate <= 0.001 {
             0.00000001
         } else {
             cur_rate
