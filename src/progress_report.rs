@@ -366,7 +366,7 @@ fn make_message(context      : &Context,
         / time_since_last_report;
     let cur_rate =
         if cur_rate <= 0.001 {
-            0.00000001
+            0.000000001
         } else {
             cur_rate
         };
