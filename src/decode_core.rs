@@ -259,6 +259,8 @@ pub fn decode(param           : &Param,
               -> Result<Stats, Error> {
     let in_file_size = file_utils::get_file_size(&param.in_file)?;
 
+    let json_printer = &param.json_printer;
+
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
@@ -366,13 +368,15 @@ pub fn decode(param           : &Param,
             }
         }
     } else {
-        print_block!(
-            "";
-            "Warning :";
-            "";
-            "    Reference block is not a metadata block, output file";
-            "    may contain data padding.";
-            "";)
+        if !json_printer.json_enabled() {
+            print_block!(
+                "";
+                "Warning :";
+                "";
+                "    Reference block is not a metadata block, output file";
+                "    may contain data padding.";
+                "";)
+        }
     }
 
     stats.lock().unwrap().out_file_size = writer.get_file_size()?;
