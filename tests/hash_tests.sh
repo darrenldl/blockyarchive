@@ -8,7 +8,9 @@ HASHES=("sha1" "sha256" "sha512" "blake2b-512")
 a[0]=$(sha1sum   dummy | awk '{print $1}')
 a[1]=$(sha256sum dummy | awk '{print $1}')
 a[2]=$(sha512sum dummy | awk '{print $1}')
-a[3]=$(b2sum     dummy | awk '{print $1}')
+if [[ $(command -v b2sum) != "" ]]; then
+    a[3]=$(b2sum     dummy | awk '{print $1}')
+fi
 
 # Encode in all 4 hashes
 i=0
