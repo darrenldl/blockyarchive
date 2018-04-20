@@ -8,14 +8,14 @@ VERSIONS=(1 2 3)
 for ver in ${VERSIONS[*]}; do
   echo "Encoding in version $ver"
   output=$(./rsbx encode --json --sbx-version $ver -f --no-meta dummy dummy$ver.sbx 2>/dev/null)
-  if [[ $(echo $output | jq ".stats.sbxVersion") != "\"$ver\"" ]]; then exit_code=1; fi
+  if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then exit_code=1; fi
 done
 
 # Decode all of them
 for ver in ${VERSIONS[*]}; do
   echo "Decoding version $ver container"
   output=$(./rsbx decode --json -f dummy$ver.sbx dummy$ver 2>/dev/null)
-  if [[ $(echo $output | jq ".stats.sbxVersion") != "\"$ver\"" ]]; then exit_code=1; fi
+  if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then exit_code=1; fi
 done
 
 # Compare to original file
