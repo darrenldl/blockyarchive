@@ -13,6 +13,16 @@ rsbx returns
     - calculating, checking, showing do not generate any files
   - This is mainly for in case the partial data is useful to the user
 
+## Output
+In non-JSON mode
+- Progress report texts are outputted to stderr
+- All other texts are outputted to stdout, including error messages
+In JSON mode
+- Progress report JSON data is outputted to stderr
+  - Each line holds a single JSON object
+- All other JSON data is outputted to stdout
+  - The entire output forms a single JSON object
+
 ## Block handling in general
 #### Basic block validity
 Block is valid if
