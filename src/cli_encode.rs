@@ -128,6 +128,8 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
     let meta_enabled = get_meta_enabled!(matches);
 
     if matches.is_present("info_only") {
+        json_printer.print_open_bracket(Some("stats"), BracketType::Curly);
+
         let in_file_meta  = match file_utils::get_file_metadata(in_file) {
             Ok(x)  => x,
             Err(_) => exit_with_msg!(usr json_printer => "Failed to get metadata of \"{}\"",
@@ -185,6 +187,8 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
             print_maybe_json!(json_printer, "SBX container size       : {}", out_file_size              => skip_quotes);
             print_maybe_json!(json_printer, "File modification time   : {}", in_file_mod_time_str);
         }
+
+        json_printer.print_close_bracket();
 
         exit_with_msg!(ok json_printer => "")
     } else {
