@@ -84,6 +84,8 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
                                                                                               data_par_burst,
                                                                                               in_file_size);
 
+    json_printer.print_open_bracket(Some("stats"), BracketType::Curly);
+
     print_if_not_json!(json_printer,    "SBX container general info");
     print_if_not_json!(json_printer,    "========================================");
     if ver_uses_rs(version) {
@@ -188,6 +190,8 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
     print_if_not_json!(json_printer, "========================================");
     print_maybe_json!(json_printer,  "    File size                    : {}", in_file_size  => skip_quotes);
     print_maybe_json!(json_printer,  "    SBX container size           : {}", out_file_size => skip_quotes);
+
+    json_printer.print_close_bracket();
 
     exit_with_msg!(ok json_printer => "")
 }
