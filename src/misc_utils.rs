@@ -94,6 +94,11 @@ pub fn f64_max (v1 : f64, v2 : f64) -> f64 {
     else       { v1 }
 }
 
+pub fn f64_min (v1 : f64, v2 : f64) -> f64 {
+    if v1 < v2 { v1 }
+    else       { v2 }
+}
+
 pub struct RequiredLenAndSeekTo {
     pub required_len : u64,
     pub seek_to      : u64,

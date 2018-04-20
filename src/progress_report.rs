@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use time_utils;
 use misc_utils::f64_max;
+use misc_utils::f64_min;
 use std::io::Write;
 use std::io::stdout;
 use std::sync::Arc;
@@ -362,8 +363,9 @@ fn make_message(context      : &Context,
     let avg_rate               =
         units_so_far as f64 / time_used;
     let cur_rate               =
-        (units_so_far - context.last_reported_units) as f64
-        / time_since_last_report;
+        f64_min((units_so_far - context.last_reported_units) as f64
+                / time_since_last_report,
+                0.000001);
     let time_left              = units_remaining as f64 / cur_rate;
     let mut res                = String::with_capacity(150);
     if context.verbosity_settings.json_enabled {
