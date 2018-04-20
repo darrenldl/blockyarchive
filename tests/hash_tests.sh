@@ -16,6 +16,10 @@ for h in ${HASHES[*]}; do
   echo "Encoding in hash $h"
   output=$(./rsbx encode --json --hash $h -f dummy dummy$h.sbx 2>/dev/null )
   hash=$(echo $output | jq -r ".stats.hash" | awk '{ print $3 }')
+  if [[ $(echo $output | jq -r ".error") != "null" ]]; then
+      echo "Invalid JSON"
+      exit_code=1
+  fi
   if [[ $hash == ${a[$i]} ]]; then
       echo "==> Okay"
   else
