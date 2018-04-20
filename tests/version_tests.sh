@@ -15,7 +15,8 @@ done
 # Decode all of them
 for ver in ${VERSIONS[*]}; do
   echo "Decoding version $ver container"
-  ./rsbx decode -f dummy$ver.sbx dummy$ver &>/dev/null
+  output=$(./rsbx decode --json -f dummy$ver.sbx dummy$ver 2>/dev/null)
+  if [[ $(echo $output | jq ".stats.sbxVersion") != "\"$ver\"" ]]; then exit_code=1; fi
 done
 
 # Compare to original file
