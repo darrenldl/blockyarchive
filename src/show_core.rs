@@ -211,11 +211,7 @@ pub fn show_file(param : &Param)
         if block.is_meta() {
             reporter.pause();
 
-            if meta_block_count == 0 {
-                print_if_json!(json_printer, "{{");
-            } else {
-                print_if_json!(json_printer, ",{{");
-            }
+            json_printer.print_open_bracket(None, BracketType::Curly);
 
             if param.show_all {
                 if meta_block_count > 0 {
@@ -298,7 +294,7 @@ pub fn show_file(param : &Param)
 
             reporter.resume();
 
-            print_if_json!(json_printer, "}}");
+            json_printer.print_close_bracket();
 
             if !param.show_all { break; }
         }
