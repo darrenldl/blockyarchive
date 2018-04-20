@@ -252,7 +252,10 @@ pub fn print_progress<T>(context        : &mut Context,
                              units_so_far,
                              total_units,
                              &[]);
-            eprintln!("{}", message);
+            eprint!("{{");
+            eprint!("\"{}\": \"{}\"", to_camelcase("header"), context.header);
+            eprint!(",{}", message);
+            eprintln!("}}");
         } else {
             // print header once if not already
             if !context.header_printed {
@@ -373,14 +376,13 @@ fn make_message(context      : &Context,
     let time_left              = units_remaining as f64 / cur_rate;
     let mut res                = String::with_capacity(150);
     if context.verbosity_settings.json_enabled {
-        res.push_str("{");
-        res.push_str(&format!(" \"{}\": {} ", to_camelcase("units so far"), units_so_far));
-        res.push_str(&format!(",\"{}\": {} ", to_camelcase("total units"),  total_units));
-        res.push_str(&format!(",\"{}\": {} ", to_camelcase("cur per sec"),  cur_rate));
-        res.push_str(&format!(",\"{}\": {} ", to_camelcase("avg per sec"),  cur_rate));
-        res.push_str(&format!(",\"{}\": {} ", to_camelcase("time used"),    time_used));
-        res.push_str(&format!(",\"{}\": {} ", to_camelcase("time left"),    time_left));
-        res.push_str("}");
+        res.push_str(&format!(" \"{}\": \"{}\"", to_camelcase("unit"), &context.unit));
+        res.push_str(&format!(",\"{}\": {} ",    to_camelcase("units so far"), units_so_far));
+        res.push_str(&format!(",\"{}\": {} ",    to_camelcase("total units"),  total_units));
+        res.push_str(&format!(",\"{}\": {} ",    to_camelcase("cur per sec"),  cur_rate));
+        res.push_str(&format!(",\"{}\": {} ",    to_camelcase("avg per sec"),  cur_rate));
+        res.push_str(&format!(",\"{}\": {} ",    to_camelcase("time used"),    time_used));
+        res.push_str(&format!(",\"{}\": {} ",    to_camelcase("time left"),    time_left));
     } else {
         for e in elements.iter() {
             res.push_str(&make_string_for_element(percent,
