@@ -2,7 +2,10 @@
 
 exit_code=0
 
-HASHES=("sha1" "sha256" "sha512" "blake2b-512")
+HASHES=("sha1" "sha256" "sha512")
+if [[ $(command -v b2sum) != "" ]]; then
+    HASHES[3]="blake2b-512"
+fi
 
 # Record the hashes
 a[0]=$(sha1sum   dummy | awk '{print $1}')
