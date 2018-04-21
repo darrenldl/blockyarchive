@@ -7,8 +7,9 @@ VERSIONS=(1 2 3 17 18 19)
 # Encode in all 6 versions
 for ver in ${VERSIONS[*]}; do
   echo "Encoding in version $ver"
-  ./rsbx encode --sbx-version $ver -f dummy rescue$ver.sbx \
-         --rs-data 10 --rs-parity 2 &>/dev/null
+  output=$(./rsbx encode --json --sbx-version $ver -f dummy rescue$ver.sbx \
+                  --rs-data 10 --rs-parity 2 2>/dev/null)
+  if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then exit_code=1; fi
 done
 
 # Generate random filler data
@@ -42,13 +43,21 @@ echo "Rescuing from dummy disk"
 rm -rf rescued_data &>/dev/null
 mkdir rescued_data &>/dev/null
 rm rescue_log &>/dev/null
-./rsbx rescue dummy_disk rescued_data rescue_log &>/dev/null
+output=$(./rsbx rescue --json dummy_disk rescued_data rescue_log 2>/dev/null)
+if [[ $(echo $output | jq -r ".error") != "null" ]]; then
+    echo "Invalid JSON"
+    exit_code=1
+fi
 
 # Try to decode the rescued data
 echo "Decoding all rescued data"
 FILES=rescued_data/*
 for f in $FILES; do
-  ./rsbx decode $f $f.decoded &>/dev/null
+  output=$(./rsbx decode --json $f $f.decoded 2>/dev/null)
+  if [[ $(echo $output | jq -r ".error") != "null" ]]; then
+      echo "Invalid JSON"
+      exit_code=1
+  fi
 done
 
 echo "Comparing decoded data to original"

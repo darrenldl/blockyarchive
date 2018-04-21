@@ -1,55 +1,71 @@
 macro_rules! exit_with_msg {
     (
-        ok => $($x:expr),*
+        ok $json_printer:expr => $($x:expr),*
     ) => {{
         print!($($x),*);
+        print_field_if_json!($json_printer, "error : null");
+        $json_printer.print_close_bracket();
         return 0;
     }};
     (
-        usr => $($x:expr),*
+        usr $json_printer:expr => $($x:expr),*
     ) => {{
-        println!($($x),*);
+        if $json_printer.json_enabled() {
+            print_json_field!("error", format!($($x),*), false, $json_printer.first_item());
+        } else {
+            println!($($x),*);
+        }
+        $json_printer.print_close_bracket();
         return 1;
     }};
     (
-        op => $($x:expr),*
+        op $json_printer:expr => $($x:expr),*
     ) => {{
-        print!($($x),*);
+        if $json_printer.json_enabled() {
+            print_json_field!("error", format!($($x),*), false, $json_printer.first_item());
+        } else {
+            println!($($x),*);
+        }
+        $json_printer.print_close_bracket();
         return 2;
     }}
 }
 
 macro_rules! exit_if_file {
     (
-        exists $file:expr => $force_write:expr => $($x:expr),*
+        exists $file:expr => $force_write:expr => $json_printer:expr => $($x:expr),*
     ) => {{
         use file_utils;
         if file_utils::check_if_file_exists($file)
             && !$force_write
         {
-            exit_with_msg!(usr => $($x),*);
+            exit_with_msg!(usr $json_printer => $($x),*);
         }
     }};
     (
-        not_exists $file:expr => $($x:expr),*
+        not_exists $file:expr => $json_printer:expr => $($x:expr),*
     ) => {{
         use file_utils;
         if !file_utils::check_if_file_exists($file) {
-            exit_with_msg!(usr => $($x),*);
+            exit_with_msg!(usr $json_printer => $($x),*);
         }
     }}
 }
 
 macro_rules! get_pr_verbosity_level {
     (
-        $matches:expr
+        $matches:expr, $json_enabled:expr
     ) => {{
         use progress_report;
-        match $matches.value_of("pr_verbosity_level") {
-            None    => progress_report::PRVerbosityLevel::L2,
-            Some(x) => match progress_report::string_to_verbosity_level(x) {
-                Ok(x)  => x,
-                Err(_) => exit_with_msg!(usr => "Invalid progress report verbosity level")
+        if get_json_enabled!($matches) {
+            progress_report::PRVerbosityLevel::LJSON
+        } else {
+            match $matches.value_of("pr_verbosity_level") {
+                None    => progress_report::PRVerbosityLevel::L2,
+                Some(x) => match progress_report::string_to_verbosity_level(x) {
+                    Ok(x)  => x,
+                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid progress report verbosity level")
+                }
             }
         }
     }}
@@ -57,13 +73,13 @@ macro_rules! get_pr_verbosity_level {
 
 macro_rules! get_from_pos {
     (
-        $matches:expr
+        $matches:expr, $json_enabled:expr
     ) => {{
         match $matches.value_of("from_pos") {
             None    => None,
             Some(x) => match u64::from_str(x) {
                 Ok(x)  => Some(x),
-                Err(_) => exit_with_msg!(usr => "Invalid from position")
+                Err(_) => exit_with_msg!(usr $json_enabled => "Invalid from position")
             }
         }
     }}
@@ -71,13 +87,13 @@ macro_rules! get_from_pos {
 
 macro_rules! get_to_pos {
     (
-        $matches:expr
+        $matches:expr, $json_enabled:expr
     ) => {{
         match $matches.value_of("to_pos") {
             None    => None,
             Some(x) => match u64::from_str(x) {
                 Ok(x)  => Some(x),
-                Err(_) => exit_with_msg!(usr => "Invalid to position")
+                Err(_) => exit_with_msg!(usr $json_enabled => "Invalid to position")
             }
         }
     }}
@@ -85,17 +101,19 @@ macro_rules! get_to_pos {
 
 macro_rules! get_in_file {
     (
-        $matches:expr
+        $matches:expr, $json_enabled:expr
     ) => {{
         let in_file  = $matches.value_of("in_file").unwrap();
-        exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
+        exit_if_file!(not_exists in_file
+                      => $json_enabled
+                      => "File \"{}\" does not exist", in_file);
         in_file
     }}
 }
 
 macro_rules! get_version {
     (
-        $matches:expr
+        $matches:expr, $json_enabled:expr
     ) => {{
         use sbx_specs::string_to_ver;
         match $matches.value_of("sbx_version") {
@@ -103,7 +121,7 @@ macro_rules! get_version {
             Some(x) => match string_to_ver(&x) {
                 Ok(v)   => v,
                 Err(()) => {
-                    exit_with_msg!(usr => "Invalid SBX version");
+                    exit_with_msg!(usr $json_enabled => "Invalid SBX version");
                 }
             }
         }
@@ -112,7 +130,7 @@ macro_rules! get_version {
 
 macro_rules! get_data_shards {
     (
-        $matches:expr, $version:expr
+        $matches:expr, $version:expr, $json_enabled:expr
     ) => {{
         use sbx_specs::ver_to_usize;
 
@@ -120,13 +138,13 @@ macro_rules! get_data_shards {
 
         match $matches.value_of("rs_data") {
             None    => {
-                exit_with_msg!(usr => "Reed-Solomon erasure code data shard count must be specified for version {}", ver_usize);
+                exit_with_msg!(usr $json_enabled => "Reed-Solomon erasure code data shard count must be specified for version {}", ver_usize);
             },
             Some(x) => {
                 match usize::from_str(&x) {
                     Ok(x)  => x,
                     Err(_) => {
-                        exit_with_msg!(usr => "Failed to parse Reed-Solomon erasure code data shard count");
+                        exit_with_msg!(usr $json_enabled => "Failed to parse Reed-Solomon erasure code data shard count");
                     }
                 }
             }
@@ -136,7 +154,7 @@ macro_rules! get_data_shards {
 
 macro_rules! get_parity_shards {
     (
-        $matches:expr, $version:expr
+        $matches:expr, $version:expr, $json_enabled:expr
     ) => {{
         use sbx_specs::ver_to_usize;
 
@@ -144,13 +162,13 @@ macro_rules! get_parity_shards {
 
         match $matches.value_of("rs_parity") {
             None    => {
-                exit_with_msg!(usr => "Reed-Solomon erasure code parity shard count must be specified for version {}", ver_usize);
+                exit_with_msg!(usr $json_enabled => "Reed-Solomon erasure code parity shard count must be specified for version {}", ver_usize);
             },
             Some(x) => {
                 match usize::from_str(&x) {
                     Ok(x)  => x,
                     Err(_) => {
-                        exit_with_msg!(usr => "Failed to parse Reed-Solomon erasure code parity shard count");
+                        exit_with_msg!(usr $json_enabled => "Failed to parse Reed-Solomon erasure code parity shard count");
                     }
                 }
             }
@@ -160,7 +178,7 @@ macro_rules! get_parity_shards {
 
 macro_rules! check_data_parity_shards {
     (
-        $data_shards:expr, $parity_shards:expr
+        $data_shards:expr, $parity_shards:expr, $json_enabled:expr
     ) => {{
         use reed_solomon_erasure::ReedSolomon;
         use reed_solomon_erasure::Error;
@@ -168,13 +186,13 @@ macro_rules! check_data_parity_shards {
         match ReedSolomon::new($data_shards, $parity_shards) {
             Ok(_)                          => {},
             Err(Error::TooFewDataShards)   => {
-                exit_with_msg!(usr => "Too few data shards for Reed-Solomon erasure code");
+                exit_with_msg!(usr $json_enabled => "Too few data shards for Reed-Solomon erasure code");
             },
             Err(Error::TooFewParityShards) => {
-                exit_with_msg!(usr => "Too few parity shards for Reed-Solomon erasure code");
+                exit_with_msg!(usr $json_enabled => "Too few parity shards for Reed-Solomon erasure code");
             },
             Err(Error::TooManyShards)      => {
-                exit_with_msg!(usr => "Too many shards for Reed-Solomon erasure code");
+                exit_with_msg!(usr $json_enabled => "Too many shards for Reed-Solomon erasure code");
             },
             Err(_)                         => { panic!(); }
         }
@@ -183,7 +201,7 @@ macro_rules! check_data_parity_shards {
 
 macro_rules! get_burst_or_zero {
     (
-        $matches:expr
+        $matches:expr, $json_enabled:expr
     ) => {{
         match $matches.value_of("burst") {
             None    => 0,
@@ -191,7 +209,7 @@ macro_rules! get_burst_or_zero {
                 match usize::from_str(&x) {
                     Ok(x)  => x,
                     Err(_) => {
-                        exit_with_msg!(usr => "Failed to parse burst error resistance level");
+                        exit_with_msg!(usr $json_enabled => "Failed to parse burst error resistance level");
                     }
                 }
             }
@@ -220,7 +238,7 @@ macro_rules! ask_if_wish_to_continue {
 
 macro_rules! get_burst_opt {
     (
-        $matches:expr
+        $matches:expr, $json_enabled:expr
     ) => {{
         match $matches.value_of("burst") {
             None    => None,
@@ -228,7 +246,7 @@ macro_rules! get_burst_opt {
                 match usize::from_str(&x) {
                     Ok(x)  => Some(x),
                     Err(_) => {
-                        exit_with_msg!(usr => "Failed to parse burst error resistance level");
+                        exit_with_msg!(usr $json_enabled => "Failed to parse burst error resistance level");
                     }
                 }
             }
@@ -238,25 +256,25 @@ macro_rules! get_burst_opt {
 
 macro_rules! parse_uid {
     (
-        $buf:expr, $uid:expr
+        $buf:expr, $uid:expr, $json_printer:expr
     ) => {{
         use misc_utils::HexError;
         use misc_utils;
         match misc_utils::hex_string_to_bytes($uid) {
             Ok(x) => {
                 if x.len() != SBX_FILE_UID_LEN {
-                    exit_with_msg!(usr => "UID must be {} bytes({} hex characters) in length",
-                                   SBX_FILE_UID_LEN,
+                    exit_with_msg!(usr $json_printer => "UID provided does not have the correct number of hex digits, provided : {}, need : {}",
+                                   $uid.len(),
                                    SBX_FILE_UID_LEN * 2);
                 }
 
                 $buf.copy_from_slice(&x);
             },
             Err(HexError::InvalidHexString) => {
-                exit_with_msg!(usr => "UID provided is not a valid hex string");
+                exit_with_msg!(usr $json_printer => "UID provided is not a valid hex string");
             },
             Err(HexError::InvalidLen) => {
-                exit_with_msg!(usr => "UID provided does not have the correct number of hex digits, provided : {}, need : {}",
+                exit_with_msg!(usr $json_printer => "UID provided does not have the correct number of hex digits, provided : {}, need : {}",
                                $uid.len(),
                                SBX_FILE_UID_LEN * 2);
             }
@@ -284,5 +302,24 @@ macro_rules! get_meta_enabled {
         $matches:expr
     ) => {{
         !$matches.is_present("no_meta")
+    }}
+}
+
+macro_rules! get_json_enabled {
+    (
+        $matches:expr
+    ) => {{
+        $matches.is_present("json")
+    }}
+}
+
+macro_rules! get_json_printer {
+    (
+        $matches:expr
+    ) => {{
+        use json_printer::JSONPrinter;
+        use std::sync::Arc;
+
+        Arc::new(JSONPrinter::new($matches.is_present("json")))
     }}
 }

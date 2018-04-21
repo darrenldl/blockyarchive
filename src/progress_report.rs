@@ -10,12 +10,14 @@ use std::sync::atomic::Ordering;
 use std::sync::Barrier;
 use std::thread;
 use std::time::Duration;
+use misc_utils::to_camelcase;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum PRVerbosityLevel {
     L0,
     L1,
     L2,
+    LJSON,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -35,7 +37,8 @@ pub enum ProgressElement {
 #[derive(Copy, Clone, Debug, PartialEq)]
 struct VerbositySettings {
     verbose_while_active : bool,
-    verbose_when_done    : bool
+    verbose_when_done    : bool,
+    json_enabled         : bool,
 }
 
 pub struct Context {
@@ -166,8 +169,8 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
 
     pub fn pause(&self) {
         // overwrite progress text
-        print!("\r{1:0$}", self.context.lock().unwrap().max_print_length, "");
-        print!("\r");
+        eprint!("\r{1:0$}", self.context.lock().unwrap().max_print_length, "");
+        eprint!("\r");
         self.active_flag.store(false, Ordering::SeqCst);
     }
 
@@ -241,37 +244,53 @@ pub fn print_progress<T>(context        : &mut Context,
         || (verbose_when_done && progress_complete))
         && !(context.finish_printed && progress_complete)
     {
-        // print header once if not already
-        if !context.header_printed {
-            println!("{}", context.header);
-            context.header_printed = true;
+        if context.verbosity_settings.json_enabled {
+            let message =
+                make_message(context,
+                             stats.get_start_time(),
+                             stats.get_end_time(),
+                             units_so_far,
+                             total_units,
+                             &[]);
+            eprint!("{{");
+            eprint!("\"{}\": \"{}\"", to_camelcase("header"), context.header);
+            eprint!(",{}", message);
+            eprintln!("}}");
+        } else {
+            // print header once if not already
+            if !context.header_printed {
+                eprintln!("{}", context.header);
+                context.header_printed = true;
+            }
+
+            let message =
+                if progress_complete {
+                    make_message(context,
+                                 stats.get_start_time(),
+                                 stats.get_end_time(),
+                                 units_so_far,
+                                 total_units,
+                                 &context.finish_print_elements)
+                } else {
+                    make_message(context,
+                                 stats.get_start_time(),
+                                 stats.get_end_time(),
+                                 units_so_far,
+                                 total_units,
+                                 &context.active_print_elements)
+                };
+
+            context.max_print_length = max(context.max_print_length,
+                                           message.len());
+
+            eprint!("\r{1:0$}", context.max_print_length, message);
+            stdout().flush().unwrap();
         }
 
-        let message =
-            if progress_complete {
-                make_message(context,
-                             stats.get_start_time(),
-                             stats.get_end_time(),
-                             units_so_far,
-                             total_units,
-                             &context.finish_print_elements)
-            } else {
-                make_message(context,
-                             stats.get_start_time(),
-                             stats.get_end_time(),
-                             units_so_far,
-                             total_units,
-                             &context.active_print_elements)
-            };
-
-        context.max_print_length = max(context.max_print_length,
-                                       message.len());
-
-        print!("\r{1:0$}", context.max_print_length, message);
-        stdout().flush().unwrap();
-
         if progress_complete && !context.finish_printed {
-            println!();
+            if !context.verbosity_settings.json_enabled {
+                eprintln!();
+            }
             context.finish_printed = true;
         }
 
@@ -348,29 +367,51 @@ fn make_message(context      : &Context,
     let cur_rate               =
         (units_so_far - context.last_reported_units) as f64
         / time_since_last_report;
+    let cur_rate =
+        if cur_rate <= 0.001 {
+            0.000000001
+        } else {
+            cur_rate
+        };
     let time_left              = units_remaining as f64 / cur_rate;
-    let mut res                = String::with_capacity(100);
-    for e in elements.iter() {
-        res.push_str(&make_string_for_element(percent,
-                                              cur_rate,
-                                              avg_rate,
-                                              context.unit.clone(),
-                                              time_used,
-                                              time_left,
-                                              e));
-        res.push_str("  ");
+    let mut res                = String::with_capacity(150);
+    if context.verbosity_settings.json_enabled {
+        res.push_str(&format!(" \"{}\": \"{}\"", to_camelcase("unit"), &context.unit));
+        res.push_str(&format!(",\"{}\": {} ",    to_camelcase("units so far"), units_so_far));
+        res.push_str(&format!(",\"{}\": {} ",    to_camelcase("total units"),  total_units));
+        res.push_str(&format!(",\"{}\": {} ",    to_camelcase("cur per sec"),  cur_rate));
+        res.push_str(&format!(",\"{}\": {} ",    to_camelcase("avg per sec"),  cur_rate));
+        res.push_str(&format!(",\"{}\": {} ",    to_camelcase("time used"),    time_used));
+        res.push_str(&format!(",\"{}\": {} ",    to_camelcase("time left"),    time_left));
+    } else {
+        for e in elements.iter() {
+            res.push_str(&make_string_for_element(percent,
+                                                  cur_rate,
+                                                  avg_rate,
+                                                  context.unit.clone(),
+                                                  time_used,
+                                                  time_left,
+                                                  e));
+            res.push_str("  ");
+        }
     }
     res
 }
 
 fn pr_verbosity_level_to_settings (level:PRVerbosityLevel) -> VerbositySettings {
     match level {
-        PRVerbosityLevel::L0 => VerbositySettings { verbose_while_active : false,
-                                                    verbose_when_done    : false, },
-        PRVerbosityLevel::L1 => VerbositySettings { verbose_while_active : false,
-                                                    verbose_when_done    : true,  },
-        PRVerbosityLevel::L2 => VerbositySettings { verbose_while_active : true,
-                                                    verbose_when_done    : true,  },
+        PRVerbosityLevel::L0    => VerbositySettings { verbose_while_active : false,
+                                                       verbose_when_done    : false,
+                                                       json_enabled         : false, },
+        PRVerbosityLevel::L1    => VerbositySettings { verbose_while_active : false,
+                                                       verbose_when_done    : true,
+                                                       json_enabled         : false, },
+        PRVerbosityLevel::L2    => VerbositySettings { verbose_while_active : true,
+                                                       verbose_when_done    : true,
+                                                       json_enabled         : false, },
+        PRVerbosityLevel::LJSON => VerbositySettings { verbose_while_active : true,
+                                                       verbose_when_done    : true,
+                                                       json_enabled         : true,  },
     }
 }
 

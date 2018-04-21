@@ -6,6 +6,9 @@ use time_utils;
 use misc_utils;
 use std::io::SeekFrom;
 
+use json_printer::{JSONPrinter,
+                   BracketType};
+
 use progress_report::*;
 
 use std::time::UNIX_EPOCH;
@@ -38,7 +41,7 @@ use sbx_specs::{ver_to_usize,
                 ver_uses_rs,
                 ver_to_max_data_file_size};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Stats {
     uid                         : [u8; SBX_FILE_UID_LEN],
     version                     : Version,
@@ -52,6 +55,7 @@ pub struct Stats {
     total_data_blocks           : u32,
     start_time                  : f64,
     end_time                    : f64,
+    json_printer                : Arc<JSONPrinter>,
 }
 
 impl fmt::Display for Stats {
@@ -75,58 +79,66 @@ impl fmt::Display for Stats {
         let time_elapsed            = (self.end_time - self.start_time) as i64;
         let (hour, minute, second)  = time_utils::seconds_to_hms(time_elapsed);
 
+        let json_printer = &self.json_printer;
+
+        json_printer.write_open_bracket(f, Some("stats"), BracketType::Curly)?;
+
         if rs_enabled {
-            writeln!(f, "File UID                                   : {}",
-                     misc_utils::bytes_to_upper_hex_string(&self.uid))?;
-            writeln!(f, "SBX version                                : {} (0x{:X})",
-                     ver_to_usize(self.version),
-                     ver_to_usize(self.version))?;
-            writeln!(f, "Block size used in encoding                : {}", block_size)?;
-            writeln!(f, "Data  size used in encoding                : {}", data_size)?;
-            writeln!(f, "Number of blocks written                   : {}", blocks_written)?;
-            writeln!(f, "Number of blocks written (metadata)        : {}", meta_blocks_written)?;
-            writeln!(f, "Number of blocks written (data only)       : {}", data_blocks_written)?;
-            writeln!(f, "Number of blocks written (data parity)     : {}", data_par_blocks_written)?;
-            writeln!(f, "Amount of data encoded (bytes)             : {}", data_bytes_encoded)?;
-            writeln!(f, "File size                                  : {}", in_file_size)?;
-            writeln!(f, "SBX container size                         : {}", out_file_size)?;
-            writeln!(f, "Hash                                       : {}", match self.hash_bytes {
+            write_maybe_json!(f, json_printer, "File UID                                   : {}",
+                              misc_utils::bytes_to_upper_hex_string(&self.uid))?;
+            write_maybe_json!(f, json_printer, "SBX version                                : {}",
+                              ver_to_usize(self.version))?;
+            write_maybe_json!(f, json_printer, "Block size used in encoding                : {}", block_size              => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Data  size used in encoding                : {}", data_size               => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written                   : {}", blocks_written          => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written (metadata)        : {}", meta_blocks_written     => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written (data only)       : {}", data_blocks_written     => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written (data parity)     : {}", data_par_blocks_written => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Amount of data encoded (bytes)             : {}", data_bytes_encoded      => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "File size                                  : {}", in_file_size            => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "SBX container size                         : {}", out_file_size           => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Hash                                       : {}", match self.hash_bytes {
                 None        => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
                                        multihash::hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            writeln!(f, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)
+            write_maybe_json!(f, json_printer, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)?;
         } else {
-            writeln!(f, "File UID                            : {}",
-                     misc_utils::bytes_to_upper_hex_string(&self.uid))?;
-            writeln!(f, "SBX version                         : {}", ver_to_usize(self.version))?;
-            writeln!(f, "Block size used in encoding         : {}", block_size)?;
-            writeln!(f, "Data  size used in encoding         : {}", data_size)?;
-            writeln!(f, "Number of blocks written            : {}", blocks_written)?;
-            writeln!(f, "Number of blocks written (metadata) : {}", meta_blocks_written)?;
-            writeln!(f, "Number of blocks written (data)     : {}", data_blocks_written)?;
-            writeln!(f, "Amount of data encoded (bytes)      : {}", data_bytes_encoded)?;
-            writeln!(f, "File size                           : {}", in_file_size)?;
-            writeln!(f, "SBX container size                  : {}", out_file_size)?;
-            writeln!(f, "Hash                                : {}", match self.hash_bytes {
+            write_maybe_json!(f, json_printer, "File UID                            : {}",
+                              misc_utils::bytes_to_upper_hex_string(&self.uid))?;
+            write_maybe_json!(f, json_printer, "SBX version                         : {}", ver_to_usize(self.version))?;
+            write_maybe_json!(f, json_printer, "Block size used in encoding         : {}", block_size          => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Data  size used in encoding         : {}", data_size           => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written            : {}", blocks_written      => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written (metadata) : {}", meta_blocks_written => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written (data)     : {}", data_blocks_written => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Amount of data encoded (bytes)      : {}", data_bytes_encoded  => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "File size                           : {}", in_file_size        => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "SBX container size                  : {}", out_file_size       => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Hash                                : {}", match self.hash_bytes {
                 None    => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
                                        multihash::hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            writeln!(f, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)
+            write_maybe_json!(f, json_printer, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)?;
         }
+
+        json_printer.write_close_bracket(f)?;
+
+        Ok(())
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Param {
     version            : Version,
     uid                : [u8; SBX_FILE_UID_LEN],
     data_par_burst     : Option<(usize, usize, usize)>,
     rs_enabled         : bool,
     meta_enabled       : bool,
+    json_printer       : Arc<JSONPrinter>,
     hash_type          : multihash::HashType,
     in_file            : String,
     out_file           : String,
@@ -138,6 +150,7 @@ impl Param {
                uid                : &[u8; SBX_FILE_UID_LEN],
                data_par_burst     : Option<(usize, usize, usize)>,
                meta_enabled       : bool,
+               json_printer       : &Arc<JSONPrinter>,
                hash_type          : multihash::HashType,
                in_file            : &str,
                out_file           : &str,
@@ -148,6 +161,7 @@ impl Param {
             data_par_burst,
             rs_enabled     : ver_uses_rs(version),
             meta_enabled   : ver_forces_meta_enabled(version) || meta_enabled,
+            json_printer   : Arc::clone(json_printer),
             hash_type,
             in_file        : String::from(in_file),
             out_file       : String::from(out_file),
@@ -174,6 +188,7 @@ impl Stats {
             out_file_size           : 0,
             start_time              : 0.,
             end_time                : 0.,
+            json_printer            : Arc::clone(&param.json_printer),
         }
     }
 }
@@ -319,7 +334,7 @@ fn block_sync_and_write(block  : &mut Block,
 
 pub fn encode_file(param : &Param)
                    -> Result<Stats, Error> {
-    let ctrlc_stop_flag = setup_ctrlc_handler();
+    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
     // setup file reader and writer
     let mut reader = FileReader::new(&param.in_file,

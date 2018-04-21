@@ -24,6 +24,8 @@ rsbx is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), 
   - This allows data recovery even when data is fragmented and out of order
 - Supports error correction(via Reed-Solomon erasure code)
 - Supports burst sector error resistance
+- JSON mode
+  - Output information in JSON format instead of human readable text
 
 ## Goals
 As rsbx is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.

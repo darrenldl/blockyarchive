@@ -29,9 +29,17 @@ for ver in ${VERSIONS[*]}; do
         container_name=corrupt_$data_shards\_$parity_shards\_$ver.sbx
 
         echo "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
-        ./rsbx encode --sbx-version $ver -f dummy $container_name \
-               --hash sha1 \
-               --rs-data $data_shards --rs-parity $parity_shards &>/dev/null
+        output=$(./rsbx encode --json --sbx-version $ver -f dummy $container_name \
+                        --hash sha1 \
+                        --rs-data $data_shards --rs-parity $parity_shards 2>/dev/null)
+        if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then
+            echo "Invalid JSON"
+            exit_code=1
+        fi
+        if [[ $(echo $output | jq -r ".stats.hash" | awk '{ print $1 }') != "SHA1" ]]; then
+            echo "Invalid JSON"
+            exit_code=1
+        fi
 
         echo "Corrupting at $parity_shards random positions"
         for (( p=0; p < $parity_shards; p++ )); do
@@ -41,12 +49,28 @@ for ver in ${VERSIONS[*]}; do
         done
 
         echo "Repairing"
-        ./rsbx repair -y $container_name &>/dev/null
+        output=$(./rsbx repair --json $container_name 2>/dev/null)
+        if [[ $(echo $output | jq -r ".error") != "null" ]]; then
+            echo "Invalid JSON"
+            exit_code=1
+        fi
+        if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then
+            echo "Invalid JSON"
+            exit_code=1
+        fi
 
         output_name=dummy_$data_shards\_$parity_shards
 
         echo "Decoding"
-        ./rsbx decode -f $container_name $output_name &>/dev/null
+        output=$(./rsbx decode --json -f $container_name $output_name 2>/dev/null)
+        if [[ $(echo $output | jq -r ".error") != "null" ]]; then
+            echo "Invalid JSON"
+            exit_code=1
+        fi
+        if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then
+            echo "Invalid JSON"
+            exit_code=1
+        fi
 
         echo "Comparing decoded data to original"
         cmp dummy $output_name

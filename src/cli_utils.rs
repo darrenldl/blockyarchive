@@ -4,6 +4,11 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use ctrlc;
 
+use sbx_specs::ver_to_usize;
+
+use json_printer::{JSONPrinter,
+                   BracketType};
+
 pub fn in_file_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("in_file")
         .value_name("INFILE")
@@ -118,13 +123,27 @@ pub fn rs_parity_arg<'a, 'b>() -> Arg<'a, 'b> {
         .help("Reed-Solomon parity shard count")
 }
 
-pub fn report_ref_block_info(ref_block_pos : u64,
+pub fn report_ref_block_info(json_printer  : &JSONPrinter,
+                             ref_block_pos : u64,
                              ref_block     : &sbx_block::Block) {
-    println!("Using {} block as reference block, located at byte {} (0x{:X})",
-             if ref_block.is_meta() { "metadata" }
-             else                   { "data"     },
-             ref_block_pos,
-             ref_block_pos);
+    if json_printer.json_enabled() {
+        json_printer.print_open_bracket(Some("ref block info"), BracketType::Curly);
+
+        print_maybe_json!(json_printer, "type : {}",
+                          if ref_block.is_meta() { "metadata" }
+                          else                   { "data"     });
+        print_maybe_json!(json_printer, "ver : {}", ver_to_usize(ref_block.get_version()));
+        print_maybe_json!(json_printer, "pos : {}", ref_block_pos);
+
+        json_printer.print_close_bracket();
+    } else {
+        println!("Using {} block as reference block, SBX version {}, located at byte {} (0x{:X})",
+                 if ref_block.is_meta() { "metadata" }
+                 else                   { "data"     },
+                 ver_to_usize(ref_block.get_version()),
+                 ref_block_pos,
+                 ref_block_pos);
+    }
 }
 
 pub fn guess_burst_arg<'a, 'b>() -> Arg<'a, 'b> {
@@ -137,16 +156,28 @@ before scanning for metadata blocks.
 This operation does not respect the misalignment and range requirements.")
 }
 
-pub fn setup_ctrlc_handler() -> Arc<AtomicBool> {
+pub fn json_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("json")
+        .long("json")
+        .help("Output information in JSON format. Note that rsbx does not
+guarantee the JSON data to be well-formed if rsbx is interrupted.
+This also disables progress report text.")
+}
+
+pub fn setup_ctrlc_handler(json_enabled : bool) -> Arc<AtomicBool> {
     let stop_flag         = Arc::new(AtomicBool::new(false));
     let handler_stop_flag = Arc::clone(&stop_flag);
 
     ctrlc::set_handler(move || {
         handler_stop_flag.store(true, Ordering::SeqCst);
-        println!("Interrupted");
+        if !json_enabled {
+            println!("Interrupted");
+        }
     }).expect("Failed to set Ctrl-C handler");
 
-    println!("Press Ctrl-C to interrupt");
+    if !json_enabled {
+        println!("Press Ctrl-C to interrupt");
+    }
 
     stop_flag
 }

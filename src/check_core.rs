@@ -4,6 +4,9 @@ use file_utils;
 use misc_utils;
 use progress_report::*;
 
+use json_printer::{JSONPrinter,
+                   BracketType};
+
 use cli_utils::setup_ctrlc_handler;
 
 use file_reader::{FileReader,
@@ -29,6 +32,7 @@ use cli_utils::report_ref_block_info;
 pub struct Param {
     ref_block_choice   : RefBlockChoice,
     report_blank       : bool,
+    json_printer       : Arc<JSONPrinter>,
     in_file            : String,
     verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
@@ -37,12 +41,14 @@ pub struct Param {
 impl Param {
     pub fn new(ref_block_choice   : RefBlockChoice,
                report_blank       : bool,
+               json_printer       : &Arc<JSONPrinter>,
                in_file            : &str,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel) -> Param {
         Param {
             ref_block_choice,
             report_blank,
+            json_printer : Arc::clone(json_printer),
             in_file  : String::from(in_file),
             verbose,
             pr_verbosity_level,
@@ -50,7 +56,7 @@ impl Param {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Stats {
     version                        : Version,
     pub meta_or_par_blocks_decoded : u64,
@@ -59,23 +65,26 @@ pub struct Stats {
     total_blocks                   : u64,
     start_time                     : f64,
     end_time                       : f64,
+    json_printer                   : Arc<JSONPrinter>,
 }
 
 impl Stats {
-    pub fn new(ref_block : &Block,
-               file_size : u64) -> Stats {
+    pub fn new(ref_block    : &Block,
+               file_size    : u64,
+               json_printer : &Arc<JSONPrinter>) -> Stats {
         use file_utils::from_container_size::calc_total_block_count;
         let total_blocks =
             calc_total_block_count(ref_block.get_version(),
                                    file_size);
         Stats {
-            version                 : ref_block.get_version(),
-            blocks_decode_failed    : 0,
+            version                    : ref_block.get_version(),
+            blocks_decode_failed       : 0,
             meta_or_par_blocks_decoded : 0,
             data_or_par_blocks_decoded : 0,
             total_blocks,
-            start_time              : 0.,
-            end_time                : 0.,
+            start_time                 : 0.,
+            end_time                   : 0.,
+            json_printer               : Arc::clone(json_printer),
         }
     }
 }
@@ -100,13 +109,19 @@ impl fmt::Display for Stats {
         let time_elapsed           = (self.end_time - self.start_time) as i64;
         let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
 
-        writeln!(f, "SBX version                              : {}", ver_to_usize(self.version))?;
-        writeln!(f, "Block size used in checking              : {}", block_size)?;
-        writeln!(f, "Number of blocks processed               : {}", self.units_so_far())?;
-        writeln!(f, "Number of blocks passed check (metadata) : {}", self.meta_or_par_blocks_decoded)?;
-        writeln!(f, "Number of blocks passed check (data)     : {}", self.data_or_par_blocks_decoded)?;
-        writeln!(f, "Number of blocks failed check            : {}", self.blocks_decode_failed)?;
-        writeln!(f, "Time elapsed                             : {:02}:{:02}:{:02}", hour, minute, second)?;
+        let json_printer = &self.json_printer;
+
+        json_printer.write_open_bracket(f, Some("stats"), BracketType::Curly)?;
+
+        write_maybe_json!(f, json_printer, "SBX version                              : {}", ver_to_usize(self.version))?;
+        write_maybe_json!(f, json_printer, "Block size used in checking              : {}", block_size                         => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks processed               : {}", self.units_so_far()                => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks passed check (metadata) : {}", self.meta_or_par_blocks_decoded    => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks passed check (data)     : {}", self.data_or_par_blocks_decoded    => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks failed check            : {}", self.blocks_decode_failed          => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Time elapsed                             : {:02}:{:02}:{:02}", hour, minute, second)?;
+
+        json_printer.write_close_bracket(f)?;
 
         Ok(())
     }
@@ -114,12 +129,16 @@ impl fmt::Display for Stats {
 
 pub fn check_file(param : &Param)
                   -> Result<Option<Stats>, Error> {
-    let ctrlc_stop_flag = setup_ctrlc_handler();
+    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
-    let (_, ref_block) = get_ref_block!(param, ctrlc_stop_flag);
+    let json_printer = &param.json_printer;
+
+    let (_, ref_block) = get_ref_block!(param, json_printer, ctrlc_stop_flag);
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
-    let stats = Arc::new(Mutex::new(Stats::new(&ref_block, file_size)));
+    let stats = Arc::new(Mutex::new(Stats::new(&ref_block,
+                                               file_size,
+                                               &param.json_printer)));
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
@@ -142,6 +161,10 @@ pub fn check_file(param : &Param)
     let mut bytes_processed : u64 = 0;
 
     reporter.start();
+
+    if param.verbose {
+        json_printer.print_open_bracket(Some("blocks failed"), BracketType::Square);
+    }
 
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
@@ -171,12 +194,22 @@ pub fn check_file(param : &Param)
                         sbx_block::slice_buf(ref_block.get_version(),
                                              &buffer))
                 {
-                    print_if_verbose!(param, reporter =>
-                                      "Block failed check, version : {}, block size : {}, at byte {} (0x{:X})",
-                                      ver_usize,
-                                      block_size,
-                                      block_pos,
-                                      block_pos;);
+                    if json_printer.json_enabled() {
+                        if param.verbose {
+                            json_printer.print_open_bracket(None, BracketType::Curly);
+
+                            print_maybe_json!(json_printer, "pos : {}", block_pos);
+
+                            json_printer.print_close_bracket();
+                        }
+                    } else {
+                        print_if_verbose!(param, reporter =>
+                                          "Block failed check, version : {}, block size : {}, at byte {} (0x{:X})",
+                                          ver_usize,
+                                          block_size,
+                                          block_pos,
+                                          block_pos;);
+                    }
 
                     stats.lock().unwrap().blocks_decode_failed += 1;
                 }
@@ -184,8 +217,14 @@ pub fn check_file(param : &Param)
         }
     }
 
+    if param.verbose {
+        json_printer.print_close_bracket();
+    }
+
     if stats.lock().unwrap().blocks_decode_failed > 0 {
-        print_if_verbose!(param, reporter => "";);
+        if !json_printer.json_enabled() {
+            print_if_verbose!(param, reporter => "";);
+        }
     }
 
     reporter.stop();

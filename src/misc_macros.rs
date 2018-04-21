@@ -11,7 +11,7 @@ macro_rules! unwrap_or {
 
 macro_rules! get_ref_block {
     (
-        $param:expr, $ref_block_choice:expr, $stop_flag:expr
+        $param:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
     ) => {{
         use std::sync::atomic::Ordering;
 
@@ -31,17 +31,17 @@ macro_rules! get_ref_block {
             };
 
         if $param.verbose {
-            println!();
-            report_ref_block_info(ref_block_pos, &ref_block);
-            println!();
+            print_if_not_json!($json_printer, "");
+            report_ref_block_info($json_printer, ref_block_pos, &ref_block);
+            print_if_not_json!($json_printer, "");
         }
 
         (ref_block_pos, ref_block)
     }};
     (
-        $param:expr, $stop_flag:expr
+        $param:expr, $json_printer:expr, $stop_flag:expr
     ) => {{
-        get_ref_block!($param, $param.ref_block_choice, $stop_flag)
+        get_ref_block!($param, $json_printer, $param.ref_block_choice, $stop_flag)
     }}
 }
 
@@ -93,11 +93,11 @@ macro_rules! get_RSP_from_ref_block {
 
 macro_rules! return_if_not_ver_uses_rs {
     (
-        $version:expr
+        $version:expr, $json_printer:expr
     ) => {{
         use sbx_specs::*;
         if !ver_uses_rs($version) {
-            println!("Version {} does not use Reed-Solomon erasure code, exiting now", ver_to_usize($version));
+            print_if_not_json!($json_printer, "Version {} does not use Reed-Solomon erasure code, exiting now", ver_to_usize($version));
             return Ok(None);
         }
     }}
@@ -140,10 +140,16 @@ macro_rules! get_burst_or_guess {
                                    0
                                });
 
-        print_if_verbose!($param =>
-                          "Using burst error resistance level {} for the container", burst;
-                          "";
-        );
+        if $param.json_printer.json_enabled() {
+            if $param.verbose {
+                print_maybe_json!($param.json_printer, "burst error resistance level : {}", burst);
+            }
+        } else {
+            print_if_verbose!($param =>
+                              "Using burst error resistance level {} for the container", burst;
+                              "";
+            );
+        }
 
         burst
     }}

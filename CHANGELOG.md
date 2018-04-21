@@ -1,3 +1,9 @@
+## 1.1.0
+- Added --json flag to all modes
+  - If specified, all information will be outputted in JSON format instead of human readable text
+  - This includes progress report text, which is outputted to stderr
+- Progress report text changed to use stderr
+
 ## 1.0.8
 - Updated file size retrieval procedure to handle block devices properly
   - Previously modes would not interact with block devices correctly since metadata of block devices gives file size of 0

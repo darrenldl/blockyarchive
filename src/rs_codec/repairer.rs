@@ -8,7 +8,12 @@ use sbx_specs::{Version,
                 SBX_LARGEST_BLOCK_SIZE,
                 SBX_FIRST_DATA_SEQ_NUM};
 
+use std::sync::Arc;
+
 use std::fmt;
+
+use json_printer::{JSONPrinter,
+                   BracketType};
 
 use super::RSCodecState;
 
@@ -21,6 +26,7 @@ pub struct RSRepairer {
     buf_present    : SmallVec<[bool; 32]>,
     ref_block      : Block,
     active         : bool,
+    json_printer   : Arc<JSONPrinter>,
 }
 
 pub struct RSRepairStats<'a> {
@@ -31,55 +37,108 @@ pub struct RSRepairStats<'a> {
     pub present        : &'a SmallVec<[bool; 32]>,
     pub missing_count  : usize,
     pub present_count  : usize,
+    json_printer       : Arc<JSONPrinter>,
 }
 
 impl<'a> fmt::Display for RSRepairStats<'a> {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         let block_size = ver_to_block_size(self.version) as u64;
 
-        if self.missing_count > 0 {
-            if self.successful {
-                write!(f, "Repair successful for ")?;
-            } else {
-                write!(f, "Repair failed     for ")?;
-            }
+        let json_printer = &self.json_printer;
 
-            write!(f, "block set [{}..={}], ",
-                   self.start_seq_num,
-                   self.start_seq_num + self.present.len() as u32 - 1)?;
+        let end_seq_num_inc = self.start_seq_num + self.present.len() as u32 - 1;
 
-            if self.successful {
-                write!(f, "repaired block no. : ")?;
-            } else {
-                write!(f, "failed   block no. : ")?;
-            }
+        if json_printer.json_enabled() {
+            if self.missing_count > 0 {
+                json_printer.write_open_bracket(f, None, BracketType::Curly)?;
 
-            let mut first_num = true;
-            for i in 0..self.present.len() {
-                if !self.present[i] {
-                    let seq_num = self.start_seq_num + i as u32;
+                if self.successful {
+                    write_maybe_json!(f, json_printer, "success : true")?;
+                } else {
+                    write_maybe_json!(f, json_printer, "success : false")?;
+                }
 
-                    if !first_num {
-                        writeln!(f, "")?;
+                write_maybe_json!(f, json_printer, "block set start : {}",
+                                  self.start_seq_num)?;
+                write_maybe_json!(f, json_printer, "block set end inclusive : {}",
+                                  end_seq_num_inc)?;
+
+                {
+                    json_printer.write_open_bracket(f, Some("blocks"), BracketType::Square)?;
+
+                    for i in 0..self.present.len() {
+                        if !self.present[i] {
+                            json_printer.write_open_bracket(f, None, BracketType::Curly)?;
+
+                            let seq_num = self.start_seq_num + i as u32;
+
+                            let index     =
+                                sbx_block::calc_data_block_write_index(seq_num,
+                                                                       None,
+                                                                       Some(self.data_par_burst));
+                            let block_pos = index * block_size;
+
+                            write_maybe_json!(f, json_printer, "seq num : {}", seq_num)?;
+                            write_maybe_json!(f, json_printer, "pos : {}", block_pos)?;
+
+                            json_printer.write_close_bracket(f)?;
+                        }
                     }
 
-                    let index     =
-                        sbx_block::calc_data_block_write_index(seq_num,
-                                                               None,
-                                                               Some(self.data_par_burst));
-                    let block_pos = index * block_size;
-
-                    write!(f, "{} at byte {} (0x{:X})",
-                           seq_num,
-                           block_pos,
-                           block_pos)?;
-
-                    first_num = false;
+                    json_printer.write_close_bracket(f)?;
                 }
+
+                json_printer.write_close_bracket(f)?;
+
+                Ok(())
+            } else {
+                Ok(())
             }
-            Ok(())
         } else {
-            Ok(())
+            if self.missing_count > 0 {
+                if self.successful {
+                    write!(f, "Repair successful for ")?;
+                } else {
+                    write!(f, "Repair failed     for ")?;
+                }
+
+                write!(f, "block set [{}..={}], ",
+                       self.start_seq_num,
+                       end_seq_num_inc)?;
+
+                if self.successful {
+                    write!(f, "repaired block no. : ")?;
+                } else {
+                    write!(f, "failed   block no. : ")?;
+                }
+
+                let mut first_num = true;
+                for i in 0..self.present.len() {
+                    if !self.present[i] {
+                        let seq_num = self.start_seq_num + i as u32;
+
+                        if !first_num {
+                            writeln!(f, "")?;
+                        }
+
+                        let index     =
+                            sbx_block::calc_data_block_write_index(seq_num,
+                                                                   None,
+                                                                   Some(self.data_par_burst));
+                        let block_pos = index * block_size;
+
+                        write!(f, "{} at byte {} (0x{:X})",
+                               seq_num,
+                               block_pos,
+                               block_pos)?;
+
+                        first_num = false;
+                    }
+                }
+                Ok(())
+            } else {
+                Ok(())
+            }
         }
     }
 }
@@ -125,7 +184,8 @@ macro_rules! codec_ready {
 }
 
 impl RSRepairer {
-    pub fn new(ref_block     : &Block,
+    pub fn new(json_printer  : &Arc<JSONPrinter>,
+               ref_block     : &Block,
                data_shards   : usize,
                parity_shards : usize,
                burst         : usize) -> RSRepairer {
@@ -147,6 +207,7 @@ impl RSRepairer {
             buf_present,
             ref_block      : ref_block.clone(),
             active         : false,
+            json_printer   : Arc::clone(json_printer),
         }
     }
 
@@ -282,6 +343,7 @@ impl RSRepairer {
         (RSRepairStats { version        : self.version,
                          data_par_burst : self.data_par_burst,
                          successful,
+                         json_printer   : Arc::clone(&self.json_printer),
                          start_seq_num  : first_seq_num_in_cur_set,
                          present        : &self.buf_present,
                          missing_count  : self.missing_count(),

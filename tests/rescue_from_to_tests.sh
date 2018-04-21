@@ -7,8 +7,16 @@ touch dummy_empty1
 touch dummy_empty2
 
 echo "Encoding files"
-./rsbx encode -f dummy_empty1 --uid DEADBEEF0001 &>/dev/null
-./rsbx encode -f dummy_empty2 --uid DEADBEEF0002 &>/dev/null
+output=$(./rsbx encode --json -f dummy_empty1 --uid DEADBEEF0001 2>/dev/null)
+if [[ $(echo $output | jq -r ".stats.fileUID") != "DEADBEEF0001" ]]; then
+    echo "Invalid JSON"
+    exit_code=1
+fi
+output=$(./rsbx encode --json -f dummy_empty2 --uid DEADBEEF0002 2>/dev/null)
+if [[ $(echo $output | jq -r ".stats.fileUID") != "DEADBEEF0002" ]]; then
+    echo "Invalid JSON"
+    exit_code=1
+fi
 
 echo "Crafting dummy disk file"
 rm dummy_empty_disk &>/dev/null
@@ -19,7 +27,11 @@ echo "Rescuing from dummy disk"
 
 echo "Checking that rsbx only decodes first block"
 rm rescued_data/DEADBEEF* &>/dev/null
-./rsbx rescue dummy_empty_disk rescued_data --from 0 --to 511 &>/dev/null
+output=$(./rsbx rescue --json dummy_empty_disk rescued_data --from 0 --to 511 2>/dev/null)
+if [[ $(echo $output | jq -r ".error") != "null" ]]; then
+    echo "Invalid JSON"
+    exit_code=1
+fi
 if [ -f "rescued_data/DEADBEEF0001" ]; then
   echo "===> Okay"
 else
@@ -35,7 +47,11 @@ fi
 
 echo "Checking that rsbx only decodes second block"
 rm rescued_data/DEADBEEF* &>/dev/null
-./rsbx rescue dummy_empty_disk rescued_data --from 512 --to 512 &>/dev/null
+output=$(./rsbx rescue --json dummy_empty_disk rescued_data --from 512 --to 512 2>/dev/null)
+if [[ $(echo $output | jq -r ".error") != "null" ]]; then
+    echo "Invalid JSON"
+    exit_code=1
+fi
 if [ ! -f "rescued_data/DEADBEEF0001" ]; then
   echo "===> Okay"
 else
@@ -51,7 +67,11 @@ fi
 
 echo "Checking that rsbx decodes both blocks"
 rm rescued_data/DEADBEEF* &>/dev/null
-./rsbx rescue dummy_empty_disk rescued_data &>/dev/null
+output=$(./rsbx rescue --json dummy_empty_disk rescued_data 2>/dev/null)
+if [[ $(echo $output | jq -r ".error") != "null" ]]; then
+    echo "Invalid JSON"
+    exit_code=1
+fi
 if [ -f "rescued_data/DEADBEEF0001" ]; then
   echo "===> Okay"
 else

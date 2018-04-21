@@ -5,6 +5,8 @@ use integer_utils::IntegerUtils;
 
 use std::path::PathBuf;
 
+use smallvec::SmallVec;
+
 #[derive(Debug, PartialEq)]
 pub enum HexError {
     InvalidHexString,
@@ -90,6 +92,11 @@ pub fn ignore<T1, T2>(_ : Result<T1, T2>) {}
 pub fn f64_max (v1 : f64, v2 : f64) -> f64 {
     if v1 < v2 { v2 }
     else       { v1 }
+}
+
+pub fn f64_min (v1 : f64, v2 : f64) -> f64 {
+    if v1 < v2 { v1 }
+    else       { v2 }
 }
 
 pub struct RequiredLenAndSeekTo {
@@ -183,4 +190,55 @@ pub fn buffer_is_blank(buf : &[u8]) -> bool {
     }
 
     true
+}
+
+pub fn to_camelcase(string : &str) -> String {
+    let mut res = String::with_capacity(100);
+
+    let split : SmallVec<[&str; 16]> = string.split(' ').collect();
+
+    res.push_str(&split[0].to_lowercase());
+    for s in &split[1..] {
+        let s = strip_front_end_chars(s, " ()");
+        let mut s = s.chars();
+        match s.next() {
+            None => {},
+            Some(c) => {
+                let x : String = c.to_uppercase().chain(s).collect();
+                res.push_str(&x);
+            }
+        };
+    };
+
+    res
+}
+
+pub fn strip_front_end_chars<'a, 'b>(string : &'a str, chars : &'b str) -> &'a str {
+    let mut start   = None;
+    let mut end_inc = 0;
+    for (i, c) in string.chars().enumerate() {
+        if let None = chars.find(c) {
+            if let None = start {
+                start = Some(i);
+            }
+            end_inc = i;
+        }
+    }
+
+    if end_inc < string.len() {
+        &string[start.unwrap_or(0)..end_inc+1]
+    } else {
+        &string[start.unwrap_or(0)..string.len()]
+    }
+}
+
+pub fn escape_quotes(string : &str) -> String {
+    let mut res = String::with_capacity(100);
+    for c in string.chars() {
+        if c == '"' {
+            res.push('\\');
+        }
+        res.push(c);
+    }
+    res
 }

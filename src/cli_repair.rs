@@ -5,6 +5,8 @@ use std::str::FromStr;
 use clap::*;
 use cli_utils::*;
 
+use json_printer::BracketType;
+
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("repair")
         .about("Repair SBX container")
@@ -25,16 +27,26 @@ fails to guess correctly."))
         .arg(Arg::with_name("dry_run")
              .long("dry-run")
              .help("Only do repairs in memory. The container will not be modified."))
+        .arg(json_arg()
+             .help("Output information in JSON format. Note that rsbx does not
+guarantee the JSON data to be well-formed if rsbx is interrupted.
+This also implies --skip-warning and disables progress report text."))
 }
 
 pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let in_file = get_in_file!(matches);
+    let json_printer = get_json_printer!(matches);
 
-    let pr_verbosity_level = get_pr_verbosity_level!(matches);
+    json_printer.print_open_bracket(None, BracketType::Curly);
 
-    let burst = get_burst_opt!(matches);
+    let in_file = get_in_file!(matches, json_printer);
 
-    if matches.is_present("dry_run") {
+    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
+
+    let burst = get_burst_opt!(matches, json_printer);
+
+    if matches.is_present("dry_run")
+        && !json_printer.json_enabled()
+    {
         print_block!(
             "Note : This is a dry run only, the container is not modified.";
             "";
@@ -43,6 +55,7 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     if !matches.is_present("skip_warning")
         && !matches.is_present("dry_run")
+        && !json_printer.json_enabled()
     {
         print_block!(
             "Warning :";
@@ -62,12 +75,13 @@ pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let param = Param::new(in_file,
                            matches.is_present("dry_run"),
+                           &json_printer,
                            matches.is_present("verbose"),
                            pr_verbosity_level,
                            burst);
     match repair_core::repair_file(&param) {
-        Ok(Some(s)) => exit_with_msg!(ok => "{}", s),
-        Ok(None)    => exit_with_msg!(ok => ""),
-        Err(e)      => exit_with_msg!(op => "{}", e),
+        Ok(Some(s)) => exit_with_msg!(ok json_printer => "{}", s),
+        Ok(None)    => exit_with_msg!(ok json_printer => ""),
+        Err(e)      => exit_with_msg!(op json_printer => "{}", e),
     }
 }

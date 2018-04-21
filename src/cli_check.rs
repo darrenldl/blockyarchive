@@ -4,6 +4,8 @@ use check_core::Param;
 use clap::*;
 use cli_utils::*;
 
+use json_printer::BracketType;
+
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("check")
         .about("Check integrity of SBX blocks in container")
@@ -17,20 +19,26 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
 Specify this if you want rsbx to report blank blocks as well."))
         .arg(verbose_arg()
              .help("Show reference block info, show individual check results"))
+        .arg(json_arg())
 }
 
 pub fn check<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let pr_verbosity_level = get_pr_verbosity_level!(matches);
+    let json_printer = get_json_printer!(matches);
 
-    let in_file  = get_in_file!(matches);
+    json_printer.print_open_bracket(None, BracketType::Curly);
+
+    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
+
+    let in_file  = get_in_file!(matches, json_printer);
     let param = Param::new(get_ref_block_choice!(matches),
                            matches.is_present("report_blank"),
+                           &json_printer,
                            in_file,
                            matches.is_present("verbose"),
                            pr_verbosity_level);
     match check_core::check_file(&param) {
-        Ok(Some(s)) => exit_with_msg!(ok => "{}", s),
-        Ok(None)    => exit_with_msg!(ok => ""),
-        Err(e)      => exit_with_msg!(op => "{}", e),
+        Ok(Some(s)) => exit_with_msg!(ok json_printer => "{}", s),
+        Ok(None)    => exit_with_msg!(ok json_printer => ""),
+        Err(e)      => exit_with_msg!(op json_printer => "{}", e),
     }
 }

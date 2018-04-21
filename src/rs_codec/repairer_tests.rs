@@ -8,6 +8,9 @@ use sbx_specs::{Version,
                 SBX_LARGEST_BLOCK_SIZE};
 use reed_solomon_erasure::ReedSolomon;
 
+use json_printer::JSONPrinter;
+use std::sync::Arc;
+
 use rand;
 
 use rand_utils::fill_random_bytes;
@@ -29,11 +32,13 @@ macro_rules! make_random_block_buffers {
 
 #[test]
 fn test_repairer_repair_properly_simple_cases() {
+    let json_printer = Arc::new(JSONPrinter::new(false));
+
     let version = Version::V17;
     let r = ReedSolomon::new(10, 3).unwrap();
 
     let ref_block = Block::new(version, &[0; 6], BlockType::Data);
-    let mut repairer = RSRepairer::new(&ref_block, 10, 3, 0);
+    let mut repairer = RSRepairer::new(&json_printer, &ref_block, 10, 3, 0);
 
     let mut buffer = make_random_block_buffers!(4096, 13);
 
@@ -221,6 +226,8 @@ quickcheck! {
                                    corrupt : usize,
                                    reuse   : usize,
                                    seq_num : u32) -> bool {
+        let json_printer = Arc::new(JSONPrinter::new(false));
+
         let data   = 1 + data % 10;
         let parity = 1 + parity % 10;
         let burst  = 1 + burst % 10;
@@ -240,7 +247,7 @@ quickcheck! {
             let mut uid : [u8; 6] = [0; 6];
             fill_random_bytes(&mut uid);
             let ref_block = Block::new(version, &uid, BlockType::Data);
-            let mut repairer = RSRepairer::new(&ref_block, data, parity, burst);
+            let mut repairer = RSRepairer::new(&json_printer, &ref_block, data, parity, burst);
 
             if !(!repairer.active()
                  && repairer.unfilled_slot_count() == data + parity
@@ -387,7 +394,7 @@ quickcheck! {
             let mut uid : [u8; 6] = [0; 6];
             fill_random_bytes(&mut uid);
             let ref_block = Block::new(version, &uid, BlockType::Data);
-            let mut repairer = RSRepairer::new(&ref_block, data, parity, burst);
+            let mut repairer = RSRepairer::new(&json_printer, &ref_block, data, parity, burst);
 
             if !(!repairer.active()
                  && repairer.unfilled_slot_count() == data + parity

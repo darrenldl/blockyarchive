@@ -7,13 +7,21 @@ VERSIONS=(1 2 3)
 # Encode in all 3 versions
 for ver in ${VERSIONS[*]}; do
   echo "Encoding in version $ver"
-  ./rsbx encode --sbx-version $ver -f --no-meta dummy dummy$ver.sbx &>/dev/null
+  output=$(./rsbx encode --json --sbx-version $ver -f --no-meta dummy dummy$ver.sbx 2>/dev/null)
+  if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then
+      echo "Invalid JSON"
+      exit_code=1
+  fi
 done
 
 # Decode all of them
 for ver in ${VERSIONS[*]}; do
   echo "Decoding version $ver container"
-  ./rsbx decode -f dummy$ver.sbx dummy$ver &>/dev/null
+  output=$(./rsbx decode --json -f dummy$ver.sbx dummy$ver 2>/dev/null)
+  if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then
+      echo "Invalid JSON"
+      exit_code=1
+  fi
 done
 
 # Compare to original file

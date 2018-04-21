@@ -3,6 +3,9 @@ use rescue_core;
 use sbx_specs::SBX_FILE_UID_LEN;
 use std::str::FromStr;
 
+use sbx_block::BlockType;
+use json_printer::BracketType;
+
 use file_utils;
 
 use clap::*;
@@ -47,15 +50,20 @@ rejected. If FROM-BYTE exceeds the largest possible
 position(file size - 1), then it will be treated as (file size - 1).
 The rounding procedure is applied after all auto-adjustments."))
         .arg(to_byte_arg())
+        .arg(json_arg())
 }
 
 pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
-    use sbx_block::BlockType;
+    let json_printer = get_json_printer!(matches);
+
+    json_printer.print_open_bracket(None, BracketType::Curly);
+
     let mut temp_uid = [0; SBX_FILE_UID_LEN];
     let uid : Option<&[u8; SBX_FILE_UID_LEN]> = {
         match matches.value_of("uid") {
             None    => None ,
-            Some(x) => { parse_uid!(temp_uid, x); Some(&temp_uid) }
+            Some(x) => { parse_uid!(temp_uid, x, json_printer);
+                         Some(&temp_uid) }
         }
     };
 
@@ -66,25 +74,27 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
                 "any"  => None,
                 "meta" => Some(BlockType::Meta),
                 "data" => Some(BlockType::Data),
-                _      => exit_with_msg!(usr => "Invalid block type")
+                _      => exit_with_msg!(usr json_printer => "Invalid block type")
             }
         }
     };
 
-    let from_pos = get_from_pos!(matches);
-    let to_pos   = get_to_pos!(matches);
+    let from_pos = get_from_pos!(matches, json_printer);
+    let to_pos   = get_to_pos!(matches, json_printer);
 
-    let pr_verbosity_level = get_pr_verbosity_level!(matches);
+    let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
     let in_file  = matches.value_of("in_file").unwrap();
-    exit_if_file!(not_exists in_file => "File \"{}\" does not exist", in_file);
+    exit_if_file!(not_exists in_file
+                  => json_printer
+                  => "File \"{}\" does not exist", in_file);
     let out_dir = matches.value_of("out_dir").unwrap();
 
     if !file_utils::check_if_file_exists(out_dir) {
-        exit_with_msg!(usr => "Directory \"{}\" does not exist", out_dir);
+        exit_with_msg!(usr json_printer => "Directory \"{}\" does not exist", out_dir);
     }
     if !file_utils::check_if_file_is_dir(out_dir) {
-        exit_with_msg!(usr => "\"{}\" is not a directory", out_dir);
+        exit_with_msg!(usr json_printer => "\"{}\" is not a directory", out_dir);
     }
 
     let log_file = matches.value_of("log_file");
@@ -95,11 +105,12 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
                            from_pos,
                            to_pos,
                            matches.is_present("force_misalign"),
+                           &json_printer,
                            block_type,
                            uid,
                            pr_verbosity_level);
     match rescue_core::rescue_from_file(&param) {
-        Ok(s)  => exit_with_msg!(ok => "{}", s),
-        Err(e) => exit_with_msg!(op => "{}", e)
+        Ok(s)  => exit_with_msg!(ok json_printer => "{}", s),
+        Err(e) => exit_with_msg!(op json_printer => "{}", e)
     }
 }

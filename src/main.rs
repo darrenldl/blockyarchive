@@ -65,8 +65,13 @@ mod misc_macros;
 #[macro_use]
 mod block_preds;
 
+#[macro_use]
+mod json_macros;
+
 mod multihash;
 mod multihash_tests;
+mod json_printer;
+mod json_utils;
 mod misc_utils;
 mod misc_utils_tests;
 mod file_utils;
@@ -86,6 +91,9 @@ mod log;
 
 mod rs_codec;
 
+#[macro_use]
+mod cli_macros;
+
 mod encode_core;
 mod decode_core;
 mod rescue_core;
@@ -98,9 +106,6 @@ mod progress_report;
 
 mod file_reader;
 mod file_writer;
-
-#[macro_use]
-mod cli_macros;
 
 mod cli_utils;
 
@@ -153,7 +158,8 @@ fn real_main () -> i32 {
         cli_calc::calc(matches)
     }
     else {
-        exit_with_msg!(ok => "Invoke with -h or --help for help message\n");
+        exit_with_msg!(ok json_printer::JSONPrinter::new(false)
+                       => "Invoke with -h or --help for help message\n");
     }
 }
 
