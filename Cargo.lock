@@ -301,11 +301,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pond"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
 name = "quickcheck"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -420,7 +415,6 @@ dependencies = [
  "ctrlc 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex-slice 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "pond 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "quickcheck 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "reed-solomon-erasure 3.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -588,7 +582,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum num-iter 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)" = "4b226df12c5a59b63569dd57fafb926d91b385dfce33d8074a412411b689d593"
 "checksum num-traits 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "0b3c2bd9b9d21e48e956b763c9f37134dc62d9e95da6edb3f672cacb6caf3cd3"
 "checksum num_cpus 1.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c51a3322e4bca9d212ad9a158a02abc6934d005490c054a2778df73a70aa0a30"
-"checksum pond 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "8f6cda29c865da4e8ecf2ae7c0e2f6164c127570e6315bd46b9c16b44abd2882"
 "checksum quickcheck 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "15cda2c09a11b72e8563c57760dd5cf8b1fb3bb595df5759b5653048ab04e030"
 "checksum rand 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "eba5f8cb59cc50ed56be8880a5c7b496bfd9bd26394e176bc67884094145c2c5"
 "checksum rayon 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)" = "b614fe08b6665cb9a231d07ac1364b0ef3cb3698f1239ee0c4c3a88a524f54c8"

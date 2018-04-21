@@ -12,8 +12,6 @@ extern crate rand;
 
 extern crate chrono;
 
-extern crate pond;
-
 extern crate smallvec;
 extern crate ctrlc;
 
