@@ -14,14 +14,17 @@ rsbx returns
   - This is mainly for in case the partial data is useful to the user
 
 ## Output
-In non-JSON mode
-- Progress report texts are outputted to stderr
-- All other texts are outputted to stdout, including error messages
-In JSON mode
-- Progress report JSON data is outputted to stderr
-  - Each line holds a single JSON object
-- All other JSON data is outputted to stdout
-  - The entire output forms a single JSON object
+The cli argument parsing library(clap) outputs errors to stderr
+
+If no errors are discovered by the cli argument parsing library, then
+- In non-JSON mode
+  - Progress report texts are outputted to stderr
+  - All other texts are outputted to stdout, including error messages
+- In JSON mode
+  - Progress report JSON data is outputted to stderr
+    - Each line holds a single JSON object
+  - All other JSON data is outputted to stdout
+    - The entire output forms a single JSON object
 
 ## Block handling in general
 #### Basic block validity
