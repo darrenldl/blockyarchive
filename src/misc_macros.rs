@@ -155,6 +155,98 @@ macro_rules! get_burst_or_guess {
     }}
 }
 
+macro_rules! print_if {
+    (
+        verbose =>
+            $param:expr,
+            $reporter:expr
+            =>
+            $(
+                $($expr:expr),*;
+            )*
+    ) => {{
+        if $param.verbose {
+            pause_reporter!($reporter =>
+                            print_block!(
+                                $( $($expr),*; )*
+                            );
+            );
+        }
+    }};
+    (
+        verbose =>
+            $param:expr
+            =>
+            $(
+                $($expr:expr),*;
+            )*
+    ) => {{
+        if $param.verbose {
+            print_block!(
+                $( $($expr),*; )*
+            );
+        }
+    }};
+    (
+        json =>
+            $printer:expr
+            =>
+            $(
+                $($expr:expr),*;
+            )*
+    ) => {{
+        if $printer.json_enabled() {
+            print_block!(
+                $( $($expr),*; )*
+            );
+        }
+    }};
+    (
+        not_json =>
+            $printer:expr
+            =>
+            $(
+                $($expr:expr),*;
+            )*
+    ) => {{
+        if !$printer.json_enabled() {
+            print_block!(
+                $( $($expr),*; )*
+            );
+        }
+    }};
+    (
+        verbose json =>
+            $param:expr,
+            $printer:expr
+            =>
+            $(
+                $($expr:expr),*;
+            )*
+    ) => {{
+        if $param.verbose && $printer.json_enabled() {
+            print_block!(
+                $( $($expr),*; )*
+            );
+        }
+    }};
+    (
+        verbose not_json =>
+            $param:expr,
+            $printer:expr
+            =>
+            $(
+                $($expr:expr),*;
+            )*
+    ) => {{
+        if $param.verbose && !$printer.json_enabled() {
+            print_block!(
+                $( $($expr),*; )*
+            );
+        }
+    }};
+}
+
 macro_rules! print_if_verbose {
     (
         $param:expr =>

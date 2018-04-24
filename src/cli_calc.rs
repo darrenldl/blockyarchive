@@ -86,8 +86,9 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     json_printer.print_open_bracket(Some("stats"), BracketType::Curly);
 
-    print_if_not_json!(json_printer,    "SBX container general info");
-    print_if_not_json!(json_printer,    "========================================");
+    print_if!(not_json => json_printer =>
+             "SBX container general info";
+             "========================================";);
     if ver_uses_rs(version) {
         print_maybe_json!(json_printer, "    SBX container version        : {}",
                           ver_to_usize(version));
