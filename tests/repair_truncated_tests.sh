@@ -54,7 +54,7 @@ for ver in ${VERSIONS[*]}; do
         truncate -s $truncated_container_size $container_name
 
         echo "Repairing"
-        output=$(./rsbx repair --json $container_name 2>/dev/null)
+        output=$(./rsbx repair --json --verbose $container_name 2>/dev/null)
         if [[ $(echo $output | jq -r ".error") != "null" ]]; then
             echo "Invalid JSON"
             exit_code=1
