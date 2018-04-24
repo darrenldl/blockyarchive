@@ -55,6 +55,17 @@ macro_rules! print_block {
     }}
 }
 
+macro_rules! write_block {
+    (
+        $f:expr,
+        $(
+            $($arg:expr),*;
+        )*
+    ) => {{
+        $( writeln!($f, $($arg),*)? );*
+    }}
+}
+
 macro_rules! get_RSD_from_ref_block {
     (
         $ref_block_pos:expr, $ref_block:expr, $purpose:expr
@@ -241,6 +252,39 @@ macro_rules! print_if {
     ) => {{
         if $param.verbose && !$printer.json_enabled() {
             print_block!(
+                $( $($expr),*; )*
+            );
+        }
+    }};
+}
+
+macro_rules! write_if {
+    (
+        json =>
+            $f:expr,
+            $printer:expr
+            =>
+            $(
+                $($expr:expr),*;
+            )*
+    ) => {{
+        if $printer.json_enabled() {
+            write_block!($f,
+                $( $($expr),*; )*
+            );
+        }
+    }};
+    (
+        not_json =>
+            $f:expr,
+            $printer:expr
+            =>
+            $(
+                $($expr:expr),*;
+            )*
+    ) => {{
+        if !$printer.json_enabled() {
+            write_block!($f,
                 $( $($expr),*; )*
             );
         }

@@ -107,7 +107,7 @@ impl fmt::Display for Stats {
         write_maybe_json!(f, json_printer, "Time elapsed                             : {:02}:{:02}:{:02}", hour, minute, second)?;
 
         if self.blocks_decode_failed == 0 {
-            write_if_not_json!(f, json_printer, "No repairs required")?;
+            write_if!(not_json => f, json_printer => "No repairs required";);
         } else {
             if self.data_or_par_blocks_repair_failed == 0 {
                 write_if_not_json!(f, json_printer, "All corrupted/missing blocks were repaired successfully")?;
