@@ -118,8 +118,8 @@ pub fn show_file(param : &Param)
     let json_printer = &param.json_printer;
 
     if param.guess_burst {
-        print_if_not_json!(json_printer, "Guessing burst error resistance level");
-        print_if_not_json!(json_printer, "");
+        print_if!(not_json => json_printer => "Guessing burst error resistance level";);
+        print_if!(not_json => json_printer => "";);
 
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&param.in_file,
@@ -132,7 +132,7 @@ pub fn show_file(param : &Param)
 
         report_ref_block_info(json_printer, ref_block_pos, &ref_block);
 
-        print_if_not_json!(json_printer, "");
+        print_if!(not_json => json_printer => "";);
 
         if ver_uses_rs(ref_block.get_version()) {
             match block_utils::guess_burst_err_resistance_level(&param.in_file,
