@@ -13,7 +13,7 @@ macro_rules! exit_with_msg {
         if $json_printer.json_enabled() {
             print_json_field!("error", format!($($x),*), false, $json_printer.first_item());
         } else {
-            println!($($x),*);
+            print!($($x),*);
         }
         $json_printer.print_close_bracket();
         return 1;
@@ -24,7 +24,7 @@ macro_rules! exit_with_msg {
         if $json_printer.json_enabled() {
             print_json_field!("error", format!($($x),*), false, $json_printer.first_item());
         } else {
-            println!($($x),*);
+            print!($($x),*);
         }
         $json_printer.print_close_bracket();
         return 2;
