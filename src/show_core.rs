@@ -70,8 +70,7 @@ impl ProgressReport for Stats {
 impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         if self.meta_block_count == 0 {
-            write_if!(not_json => f, self.json_printer => "No metadata blocks found";);
-            Ok(())
+            write_if!(not_json => f, self.json_printer => "No metadata blocks found";)
         } else {
             Ok(())
         }

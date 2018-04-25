@@ -273,6 +273,7 @@ macro_rules! write_if {
                 $( $($expr),*; )*
             );
         }
+        Ok(())
     }};
     (
         not_json =>
@@ -283,11 +284,15 @@ macro_rules! write_if {
                 $($expr:expr),*;
             )*
     ) => {{
+        use std::fmt;
+
         if !$printer.json_enabled() {
             write_block!($f,
                 $( $($expr),*; )*
             );
         }
+        let ok : fmt::Result = Ok(());
+        ok
     }};
 }
 

@@ -55,36 +55,12 @@ macro_rules! print_if_not_json {
     }}
 }
 
-macro_rules! write_if_not_json {
-    (
-        $f:expr, $json_printer:expr, $($val:expr),*
-    ) => {{
-        if !$json_printer.json_enabled() {
-            writeln!($f, $($val),*)
-        } else {
-            Ok(())
-        }
-    }}
-}
-
 macro_rules! print_if_json {
     (
         $json_printer:expr, $($val:expr),*
     ) => {{
         if $json_printer.json_enabled() {
             println!($($val),*);
-        }
-    }}
-}
-
-macro_rules! write_if_json {
-    (
-        $f:expr, $json_printer:expr, $($val:expr),*
-    ) => {{
-        if $json_printer.json_enabled() {
-            writeln!($f, $($val),*)
-        } else {
-            Ok(())
         }
     }}
 }
