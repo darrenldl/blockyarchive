@@ -110,12 +110,12 @@ impl fmt::Display for Stats {
             write_if!(not_json => f, json_printer => "No repairs required";);
         } else {
             if self.data_or_par_blocks_repair_failed == 0 {
-                write_if!(not_json => f, json_printer => "All corrupted/missing blocks were repaired successfully";)?;
+                write_if!(not_json => f, json_printer => "All corrupted/missing blocks were repaired successfully";);
             } else {
                 if self.blocks_decode_failed == self.data_or_par_blocks_repair_failed {
-                    write_if!(not_json => f, json_printer => "All repairs failed";)?;
+                    write_if!(not_json => f, json_printer => "All repairs failed";);
                 } else {
-                    write_if!(not_json => f, json_printer => "Some repairs failed";)?;
+                    write_if!(not_json => f, json_printer => "Some repairs failed";);
                 }
             }
         }
