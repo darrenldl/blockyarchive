@@ -45,26 +45,6 @@ macro_rules! print_json_field {
     }};
 }
 
-/*macro_rules! print_maybe_json_open_bracket {
-    (
-        $json_context:expr
-    ) => {{
-        if $json_context.json_enabled {
-            println!("{{");
-        }
-    }}
-}*/
-
-/*macro_rules! print_maybe_json_close_bracket {
-    (
-        $json_context:expr
-    ) => {{
-        if $json_context.json_enabled {
-            println!("}}");
-        }
-    }}
-}*/
-
 macro_rules! print_if_not_json {
     (
         $json_printer:expr, $($val:expr),*
