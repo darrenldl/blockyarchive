@@ -206,8 +206,8 @@ fn repair_blocks_and_update_stats_using_repair_stats(param       : &Param,
     }
 
     if repair_stats.missing_count > 0 {
-        print_if_verbose!(param, reporter =>
-                          "{}", repair_stats;);
+        print_if!(verbose => param, reporter =>
+                  "{}", repair_stats;);
     }
 
     if !param.dry_run {
@@ -256,17 +256,15 @@ pub fn repair_file(param : &Param)
                                                       data_par_burst,
                                                       x),
             None    => {
-                if !json_printer.json_enabled() {
-                    print_block!(
-                        "";
-                        "Warning :";
-                        "";
-                        "    No recorded file size found, using container file size to estimate total";
-                        "    number of blocks. This may overestimate total number of blocks, and may";
-                        "    show false repair/verify failures when gaps in container are encountered.";
-                        "";
-                    );
-                }
+                print_if!(not_json => json_printer =>
+                          "";
+                          "Warning :";
+                          "";
+                          "    No recorded file size found, using container file size to estimate total";
+                          "    number of blocks. This may overestimate total number of blocks, and may";
+                          "    show false repair/verify failures when gaps in container are encountered.";
+                          "";
+                );
                 let file_size = file_utils::get_file_size(&param.in_file)?;
                 file_size / block_size as u64
             },
@@ -326,8 +324,8 @@ pub fn repair_file(param : &Param)
                             json_printer.print_close_bracket();
                         }
                     } else {
-                        print_if_verbose!(param, reporter =>
-                                          "Replaced invalid metadata block at {} (0x{:X}) with reference block", p, p;);
+                        print_if!(verbose => param, reporter =>
+                                  "Replaced invalid metadata block at {} (0x{:X}) with reference block", p, p;);
                     }
 
                     stats.lock().unwrap().blocks_decode_failed += 1;
@@ -347,9 +345,7 @@ pub fn repair_file(param : &Param)
     json_printer.print_close_bracket();
 
     if stats.lock().unwrap().meta_blocks_repaired > 0 {
-        if !json_printer.json_enabled() {
-            print_if_verbose!(param, reporter => "";);
-        }
+        print_if!(verbose not_json => param, json_printer => "";);
     }
 
     json_printer.print_open_bracket(Some("data repairs"), BracketType::Square);
@@ -395,9 +391,7 @@ pub fn repair_file(param : &Param)
     json_printer.print_close_bracket();
 
     if stats.lock().unwrap().blocks_decode_failed > 0 {
-        if !json_printer.json_enabled() {
-            print_if_verbose!(param, reporter => "";);
-        }
+        print_if!(verbose not_json => param, json_printer => "";);
     }
 
     reporter.stop();
