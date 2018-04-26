@@ -15,10 +15,20 @@ for ver in ${VERSIONS[*]}; do
   fi
 done
 
+# Check all of them
+for ver in ${VERSIONS[*]}; do
+    echo "Checking version $ver container"
+    output=$(./rsbx check --json --verbose dummy$ver.sbx 2>/dev/null)
+    if [[ $(echo $output | jq -r ".stats.numberOfBlocksFailedCheck") != 0 ]]; then
+        echo "Invalid JSON"
+        exit_code=1
+    fi
+done
+
 # Decode all of them
 for ver in ${VERSIONS[*]}; do
   echo "Decoding version $ver container"
-  output=$(./rsbx decode --json -f dummy$ver.sbx dummy$ver 2>/dev/null)
+  output=$(./rsbx decode --json --verbose -f dummy$ver.sbx dummy$ver 2>/dev/null)
   if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then
       echo "Invalid JSON"
       exit_code=1
