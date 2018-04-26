@@ -6,6 +6,11 @@ if [[ $TRAVIS == true ]]; then
     fi
 fi
 
+if [[ $TRAVIS == true ]]; then
+    TARGET=$HOME/kcov
+    export PATH=$TARGET/bin:$PATH
+fi
+
 # export RUSTFLAGS="-C link-dead-code"
 
 cargo build
