@@ -58,13 +58,13 @@ use general_error::Error;
 use general_error::ErrorKind;
 
 #[macro_use]
+mod json_macros;
+
+#[macro_use]
 mod misc_macros;
 
 #[macro_use]
 mod block_preds;
-
-#[macro_use]
-mod json_macros;
 
 mod multihash;
 mod multihash_tests;

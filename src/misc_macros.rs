@@ -31,9 +31,9 @@ macro_rules! get_ref_block {
             };
 
         if $param.verbose {
-            print_if_not_json!($json_printer, "");
+            print_if!(not_json => $json_printer => "";);
             report_ref_block_info($json_printer, ref_block_pos, &ref_block);
-            print_if_not_json!($json_printer, "");
+            print_if!(not_json => $json_printer => "";);
         }
 
         (ref_block_pos, ref_block)
@@ -108,7 +108,7 @@ macro_rules! return_if_not_ver_uses_rs {
     ) => {{
         use sbx_specs::*;
         if !ver_uses_rs($version) {
-            print_if_not_json!($json_printer, "Version {} does not use Reed-Solomon erasure code, exiting now", ver_to_usize($version));
+            print_if!(not_json => $json_printer => "Version {} does not use Reed-Solomon erasure code, exiting now", ver_to_usize($version););
             return Ok(None);
         }
     }}
@@ -151,16 +151,11 @@ macro_rules! get_burst_or_guess {
                                    0
                                });
 
-        if $param.json_printer.json_enabled() {
-            if $param.verbose {
-                print_maybe_json!($param.json_printer, "burst error resistance level : {}", burst);
-            }
-        } else {
-            print_if_verbose!($param =>
-                              "Using burst error resistance level {} for the container", burst;
-                              "";
-            );
-        }
+        print_if!(verbose not_json => $param, $param.json_printer =>
+                  "Using burst error resistance level {} for the container", burst;
+                  "";);
+
+        print_field_if_json!($param.json_printer, "burst error resistance level : {}", burst);
 
         burst
     }}

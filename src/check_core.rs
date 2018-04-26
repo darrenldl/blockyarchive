@@ -203,12 +203,12 @@ pub fn check_file(param : &Param)
                             json_printer.print_close_bracket();
                         }
                     } else {
-                        print_if_verbose!(param, reporter =>
-                                          "Block failed check, version : {}, block size : {}, at byte {} (0x{:X})",
-                                          ver_usize,
-                                          block_size,
-                                          block_pos,
-                                          block_pos;);
+                        print_if!(verbose => param, reporter =>
+                                  "Block failed check, version : {}, block size : {}, at byte {} (0x{:X})",
+                                  ver_usize,
+                                  block_size,
+                                  block_pos,
+                                  block_pos;);
                     }
 
                     stats.lock().unwrap().blocks_decode_failed += 1;
@@ -223,7 +223,7 @@ pub fn check_file(param : &Param)
 
     if stats.lock().unwrap().blocks_decode_failed > 0 {
         if !json_printer.json_enabled() {
-            print_if_verbose!(param, reporter => "";);
+            print_if!(verbose => param, reporter => "";);
         }
     }
 
