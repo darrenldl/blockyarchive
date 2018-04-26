@@ -291,35 +291,6 @@ macro_rules! write_if {
     }};
 }
 
-macro_rules! print_if_verbose {
-    (
-        $param:expr =>
-            $(
-                $($expr:expr),*;
-            )*
-    ) => {{
-        if $param.verbose {
-            print_block!(
-                $( $($expr),*; )*
-            );
-        }
-    }};
-    (
-        $param:expr, $reporter:expr =>
-            $(
-                $($expr:expr),*;
-            )*
-    ) => {{
-        if $param.verbose {
-            pause_reporter!($reporter =>
-                            print_block!(
-                                $( $($expr),*; )*
-                            );
-            );
-        }
-    }}
-}
-
 macro_rules! pause_reporter {
     (
         $reporter:expr =>
