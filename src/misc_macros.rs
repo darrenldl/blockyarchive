@@ -224,7 +224,7 @@ macro_rules! print_if {
     (
         verbose json =>
             $param:expr,
-            $printer:expr
+        $printer:expr
             =>
             $(
                 $($expr:expr),*;
@@ -239,7 +239,7 @@ macro_rules! print_if {
     (
         verbose not_json =>
             $param:expr,
-            $printer:expr
+        $printer:expr
             =>
             $(
                 $($expr:expr),*;
@@ -248,6 +248,42 @@ macro_rules! print_if {
         if $param.verbose && !$printer.json_enabled() {
             print_block!(
                 $( $($expr),*; )*
+            );
+        }
+    }};
+    (
+        verbose json =>
+            $param:expr,
+        $reporter:expr,
+        $printer:expr
+            =>
+            $(
+                $($expr:expr),*;
+            )*
+    ) => {{
+        if $param.verbose && $printer.json_enabled() {
+            pause_reporter!($reporter =>
+                            print_block!(
+                                $( $($expr),*; )*
+                            );
+            );
+        }
+    }};
+    (
+        verbose not_json =>
+            $param:expr,
+        $reporter:expr,
+        $printer:expr
+            =>
+            $(
+                $($expr:expr),*;
+            )*
+    ) => {{
+        if $param.verbose && !$printer.json_enabled() {
+            pause_reporter!($reporter =>
+                            print_block!(
+                                $( $($expr),*; )*
+                            );
             );
         }
     }};

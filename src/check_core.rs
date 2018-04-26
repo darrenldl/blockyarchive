@@ -222,9 +222,7 @@ pub fn check_file(param : &Param)
     }
 
     if stats.lock().unwrap().blocks_decode_failed > 0 {
-        if !json_printer.json_enabled() {
-            print_if!(verbose => param, reporter => "";);
-        }
+        print_if!(verbose not_json => param, reporter, json_printer => "";);
     }
 
     reporter.stop();
