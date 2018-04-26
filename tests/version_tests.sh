@@ -9,6 +9,10 @@ for ver in ${VERSIONS[*]}; do
   echo "Encoding in version $ver"
   output=$(./rsbx encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
                   --rs-data 10 --rs-parity 2 2>/dev/null)
+  if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo "Invalid JSON"
+      exit_code=1
+  fi
   if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then
       echo "Invalid JSON"
       exit_code=1
@@ -19,6 +23,10 @@ done
 for ver in ${VERSIONS[*]}; do
     echo "Checking version $ver container"
     output=$(./rsbx check --json --verbose dummy$ver.sbx 2>/dev/null)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
+        echo "Invalid JSON"
+        exit_code=1
+    fi
     if [[ $(echo $output | jq -r ".stats.numberOfBlocksFailedCheck") != 0 ]]; then
         echo "Invalid JSON"
         exit_code=1
@@ -29,6 +37,10 @@ done
 for ver in ${VERSIONS[*]}; do
   echo "Decoding version $ver container"
   output=$(./rsbx decode --json --verbose -f dummy$ver.sbx dummy$ver 2>/dev/null)
+  if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo "Invalid JSON"
+      exit_code=1
+  fi
   if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then
       echo "Invalid JSON"
       exit_code=1
