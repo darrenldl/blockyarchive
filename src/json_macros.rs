@@ -1,5 +1,3 @@
-#![allow(unused_macros)]
-
 macro_rules! write_json_field {
     (
         $f:expr, $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
@@ -43,26 +41,6 @@ macro_rules! print_json_field {
             println!("\"{}\": \"{}\"", to_camelcase($key), escape_quotes(&$val));
         }
     }};
-}
-
-macro_rules! print_if_not_json {
-    (
-        $json_printer:expr, $($val:expr),*
-    ) => {{
-        if !$json_printer.json_enabled() {
-            println!($($val),*);
-        }
-    }}
-}
-
-macro_rules! print_if_json {
-    (
-        $json_printer:expr, $($val:expr),*
-    ) => {{
-        if $json_printer.json_enabled() {
-            println!($($val),*);
-        }
-    }}
 }
 
 macro_rules! print_field_if_json {
