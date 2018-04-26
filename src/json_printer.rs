@@ -19,6 +19,15 @@ struct JSONContext {
     bracket_type : BracketType,
 }
 
+impl JSONContext {
+    pub fn new(bracket_type : BracketType) -> JSONContext {
+        JSONContext {
+            first_item   : true,
+            bracket_type,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct JSONPrinter {
     json_enabled : bool,
@@ -99,8 +108,7 @@ impl JSONPrinter {
 
         println!("{}", bracket_type_to_str_open(bracket_type));
 
-        self.contexts.lock().unwrap().push(JSONContext { first_item   : true,
-                                                         bracket_type });
+        self.contexts.lock().unwrap().push(JSONContext::new(bracket_type));
     }
 
     pub fn write_open_bracket(&self,
@@ -121,8 +129,7 @@ impl JSONPrinter {
 
         writeln!(f, "{}", bracket_type_to_str_open(bracket_type))?;
 
-        self.contexts.lock().unwrap().push(JSONContext { first_item   : true,
-                                                         bracket_type });
+        self.contexts.lock().unwrap().push(JSONContext::new(bracket_type));
 
         Ok(())
     }
