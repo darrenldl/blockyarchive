@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if [[ $TRAVIS == true ]]; then
+    if ! [[ $TARGET == x86_64-unknown-linux-gnu && $DISABLE_COV == "" ]]; then
+        exit 0
+    fi
+fi
+
 # export RUSTFLAGS="-C link-dead-code"
 
 cargo build
