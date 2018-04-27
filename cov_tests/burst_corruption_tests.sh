@@ -55,6 +55,19 @@ for ver in ${VERSIONS[*]}; do
             exit_code=1
         fi
 
+        echo -n "Checking burst error resistance level"
+        output=$(kcov_rsbx show --json --guess-burst $container_name)
+        if [[ $(echo $output | jq -r ".error") != null ]]; then
+            echo " ==> Invalid JSON"
+            exit_code=1
+        fi
+        if [[ $(echo $output | jq -r ".bestGuessForBurstErrorResistanceLevel") == $burst ]]; then
+            echo -n " ==> Okay"
+        else
+            echo -n " ==> NOT okay"
+            exit_code=1
+        fi
+
         if   [[ $ver == 17 ]]; then
             block_size=512
         elif [[ $ver == 18 ]]; then
