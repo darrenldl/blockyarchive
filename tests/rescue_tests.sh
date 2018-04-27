@@ -69,15 +69,15 @@ for f in $FILES; do
   fi
 done
 
-echo "Comparing decoded data to original"
+echo -n "Comparing decoded data to original"
 FILES=rescued_data/*.decoded
 for f in $FILES; do
   echo -n "Comparing file $f to original"
   cmp dummy $f
   if [[ $? == 0 ]]; then
-    echo "==> Okay"
+    echo " ==> Okay"
   else
-    echo "==> NOT okay"
+    echo " ==> NOT okay"
     exit_code=1
   fi
 done

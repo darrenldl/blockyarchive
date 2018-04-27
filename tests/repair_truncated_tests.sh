@@ -58,7 +58,7 @@ for ver in ${VERSIONS[*]}; do
         truncated_container_size=$(($actual_container_size
                                     - $parity_shards * $block_size))
 
-        echo "Truncating container from $file_size to $truncated_container_size"
+        echo "Truncating container from $actual_container_size to $truncated_container_size"
         truncate -s $truncated_container_size $container_name
 
         echo -n "Repairing"

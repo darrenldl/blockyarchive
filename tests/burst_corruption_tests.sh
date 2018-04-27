@@ -99,9 +99,9 @@ for ver in ${VERSIONS[*]}; do
         echo -n "Comparing decoded data to original"
         cmp dummy $output_name
         if [[ $? == 0 ]]; then
-            echo "==> Okay"
+            echo " ==> Okay"
         else
-            echo "==> NOT okay"
+            echo " ==> NOT okay"
             exit_code=1
         fi
     done

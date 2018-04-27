@@ -32,7 +32,6 @@ else
     exit_code=1
 fi
 
-
 echo "Crafting dummy disk file"
 rm dummy_empty_disk &>/dev/null
 cat dummy_empty1.sbx >> dummy_empty_disk
