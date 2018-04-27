@@ -32,12 +32,12 @@ done
 # Show all
 for ver in ${VERSIONS[*]}; do
     echo "Checking show output for $ver container"
-    output=$(kcov_rsbx check --json dummy$ver.sbx)
+    output=$(kcov_rsbx show --json dummy$ver.sbx)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
         echo " ==> Invalid JSON"
         exit_code=1
     fi
-    if [[ $(echo $output | jq -r ".stats.sbxContainerVersion") == $ver ]]; then
+    if [[ $(echo $output | jq -r ".blocks[0].sbxContainerVersion") == $ver ]]; then
         echo " ==> Okay"
     else
         echo " ==> NOT okay"

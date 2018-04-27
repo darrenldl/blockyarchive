@@ -45,7 +45,7 @@ for ver in ${VERSIONS[*]}; do
         echo " ==> Invalid JSON"
         exit_code=1
     fi
-    if [[ $(echo $output | jq -r ".stats.sbxContainerVersion") == $ver ]]; then
+    if [[ $(echo $output | jq -r ".blocks[0].sbxContainerVersion") == $ver ]]; then
         echo " ==> Okay"
     else
         echo " ==> NOT okay"
