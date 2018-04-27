@@ -42,7 +42,7 @@ done
 # Show all
 for ver in ${VERSIONS[*]}; do
     echo -n "Checking show output for $ver container"
-    output=$(kcov_rsbx show --json dummy$ver.sbx)
+    output=$(kcov_rsbx show --json --pv 1 dummy$ver.sbx 2>/dev/null)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
         echo " ==> Invalid JSON"
         exit_code=1
