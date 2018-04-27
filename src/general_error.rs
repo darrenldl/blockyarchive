@@ -32,9 +32,9 @@ impl fmt::Display for Error {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorKind::*;
         match self.kind {
-            FileError(ref e)   => writeln!(f, "File error : {}", e),
-            LogError(ref e)    => writeln!(f, "Log error : {}", e),
-            MessageOnly(ref e) => writeln!(f, "Error : {}", e),
+            FileError(ref e)   => write!(f, "File error : {}", e),
+            LogError(ref e)    => write!(f, "Log error : {}", e),
+            MessageOnly(ref e) => write!(f, "Error : {}", e),
         }
     }
 }
