@@ -8,19 +8,55 @@ VERSIONS=(1)
 
 # Encode in all 3 versions
 for ver in ${VERSIONS[*]}; do
-  echo "Encoding in version $ver"
-  kcov_rsbx encode --sbx-version $ver -f --no-meta dummy dummy$ver.sbx &>/dev/null
+  echo -n "Encoding in version $ver"
+  output=$(kcov_rsbx encode --json --sbx-version $ver -f --no-meta dummy dummy$ver.sbx)
+  if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo " ==> Invalid JSON"
+      exit_code=1
+  fi
+  if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+      echo " ==> Okay"
+  else
+      echo " ==> NOT okay"
+      exit_code=1
+  fi
+done
+
+# Check all off them
+for ver in ${VERSIONS[*]}; do
+    echo -n "Checking version $ver container"
+    output=$(kcov_rsbx check --json --verbose dummy$ver.sbx)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
+        echo " ==> Invalid JSON"
+        exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.numberOfBlocksFailedCheck") == 0 ]]; then
+        echo " ==> Okay"
+    else
+        echo " ==> NOT okay"
+        exit_code=1
+    fi
 done
 
 # Decode all of them
 for ver in ${VERSIONS[*]}; do
-  echo "Decoding version $ver container"
-  kcov_rsbx decode -f dummy$ver.sbx dummy$ver &>/dev/null
+  echo -n "Decoding version $ver container"
+  output=$(kcov_rsbx decode --json -f dummy$ver.sbx dummy$ver)
+  if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo " ==> Invalid JSON"
+      exit_code=1
+  fi
+  if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+      echo " ==> Okay"
+  else
+      echo " ==> NOT okay"
+      exit_code=1
+  fi
 done
 
 # Compare to original file
 for ver in ${VERSIONS[*]}; do
-  echo "Comparing decoded version $ver container data to original"
+  echo -n "Comparing decoded version $ver container data to original"
   cmp dummy dummy$ver &>/dev/null
   if [[ $? == 0 ]]; then
     echo "==> NOT okay"

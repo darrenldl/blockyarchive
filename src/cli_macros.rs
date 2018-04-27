@@ -13,7 +13,7 @@ macro_rules! exit_with_msg {
         if $json_printer.json_enabled() {
             print_json_field!("error", format!($($x),*), false, $json_printer.first_item());
         } else {
-            print!($($x),*);
+            println!($($x),*);
         }
         $json_printer.print_close_bracket();
         return 1;
@@ -24,7 +24,7 @@ macro_rules! exit_with_msg {
         if $json_printer.json_enabled() {
             print_json_field!("error", format!($($x),*), false, $json_printer.first_item());
         } else {
-            print!($($x),*);
+            println!($($x),*);
         }
         $json_printer.print_close_bracket();
         return 2;
@@ -57,15 +57,12 @@ macro_rules! get_pr_verbosity_level {
         $matches:expr, $json_enabled:expr
     ) => {{
         use progress_report;
-        if get_json_enabled!($matches) {
-            progress_report::PRVerbosityLevel::LJSON
-        } else {
-            match $matches.value_of("pr_verbosity_level") {
-                None    => progress_report::PRVerbosityLevel::L2,
-                Some(x) => match progress_report::string_to_verbosity_level(x) {
-                    Ok(x)  => x,
-                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid progress report verbosity level")
-                }
+        use progress_report::PRVerbosityLevel;
+        match $matches.value_of("pr_verbosity_level") {
+            None    => if get_json_enabled!($matches) { PRVerbosityLevel::L0 } else { PRVerbosityLevel::L2 },
+            Some(x) => match progress_report::string_to_verbosity_level(x) {
+                Ok(x)  => x,
+                Err(_) => exit_with_msg!(usr $json_enabled => "Invalid progress report verbosity level")
             }
         }
     }}

@@ -230,7 +230,8 @@ pub fn rescue_from_file(param : &Param)
     let reporter = Arc::new(ProgressReporter::new(&stats,
                                                   "Data rescue progress",
                                                   "bytes",
-                                                  param.pr_verbosity_level));
+                                                  param.pr_verbosity_level,
+                                                  param.json_printer.json_enabled()));
 
     let mut block = Block::dummy();
 

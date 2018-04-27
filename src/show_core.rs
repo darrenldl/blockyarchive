@@ -125,6 +125,7 @@ pub fn show_file(param : &Param)
             match block_utils::get_ref_block(&param.in_file,
                                              RefBlockChoice::MustBe(BlockType::Meta),
                                              param.pr_verbosity_level,
+                                             param.json_printer.json_enabled(),
                                              &ctrlc_stop_flag)? {
                 None => { return Err(Error::with_message("Failed to find reference block")); },
                 Some(x) => x,
@@ -159,7 +160,8 @@ pub fn show_file(param : &Param)
     let reporter = ProgressReporter::new(&stats,
                                          "Metadata block scanning progress",
                                          "bytes",
-                                         param.pr_verbosity_level);
+                                         param.pr_verbosity_level,
+                                         param.json_printer.json_enabled());
 
     let mut block = Block::dummy();
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =

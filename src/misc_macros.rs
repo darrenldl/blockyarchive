@@ -19,6 +19,7 @@ macro_rules! get_ref_block {
             match block_utils::get_ref_block(&$param.in_file,
                                              $ref_block_choice,
                                              $param.pr_verbosity_level,
+                                             $param.json_printer.json_enabled(),
                                              &$stop_flag)? {
                 None => {
                     if $stop_flag.load(Ordering::SeqCst) {

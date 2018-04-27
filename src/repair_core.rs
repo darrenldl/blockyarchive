@@ -282,7 +282,8 @@ pub fn repair_file(param : &Param)
     let reporter = Arc::new(ProgressReporter::new(&stats,
                                                   "SBX block repairing progress",
                                                   "blocks",
-                                                  param.pr_verbosity_level));
+                                                  param.pr_verbosity_level,
+                                                  param.json_printer.json_enabled()));
 
     let pred = block_pred_same_ver_uid!(ref_block);
 

@@ -26,10 +26,26 @@ for ver in ${VERSIONS[*]}; do
 
         container_name=truncated_$data_shards\_$parity_shards\_$ver.sbx
 
-        echo "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
-        kcov_rsbx encode --sbx-version $ver -f dummy $container_name \
-               --hash sha1 \
-               --rs-data $data_shards --rs-parity $parity_shards &>/dev/null
+        echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
+        output=$(kcov_rsbx encode --json --sbx-version $ver -f dummy $container_name \
+                           --hash sha1 \
+                           --rs-data $data_shards --rs-parity $parity_shards)
+        if [[ $(echo $output | jq -r ".error") != null ]]; then
+            echo " ==> Invalid JSON"
+            exit_code=1
+        fi
+        if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+            echo -n " ==> Okay"
+        else
+            echo -n " ==> NOT okay"
+            exit_code=1
+        fi
+        if [[ $(echo $output | jq -r ".stats.hash" | awk '{ print $1 }') == "SHA1" ]]; then
+            echo " ==> Okay"
+        else
+            echo " ==> NOT okay"
+            exit_code=1
+        fi
 
         if   [[ $ver == 17 ]]; then
             block_size=512
@@ -44,23 +60,43 @@ for ver in ${VERSIONS[*]}; do
         truncated_container_size=$(($actual_container_size
                                     - $parity_shards * $block_size))
 
-        echo "Truncating container from $file_size to $truncated_file_size"
+        echo "Truncating container from $actual_container_size to $truncated_container_size"
         truncate -s $truncated_container_size $container_name
 
-        echo "Repairing"
-        kcov_rsbx repair -y $container_name &>/dev/null
+        echo -n "Repairing"
+        output=$(kcov_rsbx repair --json --verbose $container_name)
+        if [[ $(echo $output | jq -r ".error") != null ]]; then
+            echo " ==> Invalid JSON"
+            exit_code=1
+        fi
+        if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+            echo " ==> Okay"
+        else
+            echo " ==> NOT okay"
+            exit_code=1
+        fi
 
         output_name=dummy_$data_shards\_$parity_shards
 
-        echo "Decoding"
-        kcov_rsbx decode -f $container_name $output_name &>/dev/null
+        echo -n "Decoding"
+        output=$(kcov_rsbx decode --json -f $container_name $output_name)
+        if [[ $(echo $output | jq -r ".error") != null ]]; then
+            echo " ==> Invalid JSON"
+            exit_code=1
+        fi
+        if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+            echo " ==> Okay"
+        else
+            echo " ==> NOT okay"
+            exit_code=1
+        fi
 
-        echo "Comparing decoded data to original"
+        echo -n "Comparing decoded data to original"
         cmp dummy $output_name
         if [[ $? == 0 ]]; then
-            echo "==> Okay"
+            echo " ==> Okay"
         else
-            echo "==> NOT okay"
+            echo " ==> NOT okay"
             exit_code=1
         fi
     done

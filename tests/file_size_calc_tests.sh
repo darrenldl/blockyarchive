@@ -37,7 +37,7 @@ for ver in ${VERSIONS[*]}; do
 
         output=$(./rsbx encode --json --info-only --sbx-version $ver dummy \
                         --rs-data $data_shards --rs-parity $parity_shards \
-                        --burst $burst 2>/dev/null)
+                        --burst $burst)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -48,7 +48,7 @@ for ver in ${VERSIONS[*]}; do
 
         output=$(./rsbx calc --json $actual_file_size --sbx-version $ver \
                         --rs-data $data_shards --rs-parity $parity_shards \
-                        --burst $burst 2>/dev/null)
+                        --burst $burst)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -60,7 +60,7 @@ for ver in ${VERSIONS[*]}; do
         output=$(./rsbx encode --json --sbx-version $ver -f dummy \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards \
-                        --burst $burst 2>/dev/null)
+                        --burst $burst)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1

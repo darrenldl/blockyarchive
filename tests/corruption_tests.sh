@@ -31,7 +31,7 @@ for ver in ${VERSIONS[*]}; do
         echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
         output=$(./rsbx encode --json --sbx-version $ver -f dummy $container_name \
                         --hash sha1 \
-                        --rs-data $data_shards --rs-parity $parity_shards 2>/dev/null)
+                        --rs-data $data_shards --rs-parity $parity_shards)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -57,7 +57,7 @@ for ver in ${VERSIONS[*]}; do
         done
 
         echo -n "Repairing"
-        output=$(./rsbx repair --json --verbose $container_name 2>/dev/null)
+        output=$(./rsbx repair --json --verbose $container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -72,7 +72,7 @@ for ver in ${VERSIONS[*]}; do
         output_name=dummy_$data_shards\_$parity_shards
 
         echo -n "Decoding"
-        output=$(./rsbx decode --json -f $container_name $output_name 2>/dev/null)
+        output=$(./rsbx decode --json -f $container_name $output_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1

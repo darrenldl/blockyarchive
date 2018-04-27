@@ -8,7 +8,7 @@ VERSIONS=(1 2 3 17 18 19)
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver"
   output=$(./rsbx encode --json --sbx-version $ver -f dummy rescue$ver.sbx \
-                  --rs-data 10 --rs-parity 2 2>/dev/null)
+                  --rs-data 10 --rs-parity 2)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -52,7 +52,7 @@ echo "Rescuing from dummy disk"
 rm -rf rescued_data &>/dev/null
 mkdir rescued_data &>/dev/null
 rm rescue_log &>/dev/null
-output=$(./rsbx rescue --json dummy_disk rescued_data rescue_log 2>/dev/null)
+output=$(./rsbx rescue --json dummy_disk rescued_data rescue_log)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
@@ -62,22 +62,22 @@ fi
 echo "Decoding all rescued data"
 FILES=rescued_data/*
 for f in $FILES; do
-  output=$(./rsbx decode --json $f $f.decoded 2>/dev/null)
+  output=$(./rsbx decode --json $f $f.decoded)
   if [[ $(echo $output | jq -r ".error") != "null" ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
   fi
 done
 
-echo "Comparing decoded data to original"
+echo -n "Comparing decoded data to original"
 FILES=rescued_data/*.decoded
 for f in $FILES; do
   echo -n "Comparing file $f to original"
   cmp dummy $f
   if [[ $? == 0 ]]; then
-    echo "==> Okay"
+    echo " ==> Okay"
   else
-    echo "==> NOT okay"
+    echo " ==> NOT okay"
     exit_code=1
   fi
 done

@@ -116,6 +116,7 @@ pub fn read_block_lazily(block  : &mut Block,
 pub fn get_ref_block(in_file            : &str,
                      ref_block_choice   : RefBlockChoice,
                      pr_verbosity_level : PRVerbosityLevel,
+                     json_enabled       : bool,
                      stop_flag          : &Arc<AtomicBool>)
                      -> Result<Option<(u64, Block)>, Error> {
     let file_size = file_utils::get_file_size(in_file)?;
@@ -125,7 +126,8 @@ pub fn get_ref_block(in_file            : &str,
     let reporter = ProgressReporter::new(&stats,
                                          "Reference block scanning progress",
                                          "bytes",
-                                         pr_verbosity_level);
+                                         pr_verbosity_level,
+                                         json_enabled);
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
         [0; SBX_LARGEST_BLOCK_SIZE];
