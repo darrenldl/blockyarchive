@@ -368,7 +368,8 @@ pub fn encode_file(param : &Param)
     let reporter = ProgressReporter::new(&stats,
                                          "Data encoding progress",
                                          "chunks",
-                                         param.pr_verbosity_level);
+                                         param.pr_verbosity_level,
+                                         param.json_printer.json_enabled());
 
     // set up hash state
     let mut hash_ctx =

@@ -17,7 +17,6 @@ pub enum PRVerbosityLevel {
     L0,
     L1,
     L2,
-    LJSON,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -41,6 +40,24 @@ struct VerbositySettings {
     json_enabled         : bool,
 }
 
+impl VerbositySettings {
+    pub fn new(level        : PRVerbosityLevel,
+               json_enabled : bool)
+               -> VerbositySettings {
+        match level {
+            PRVerbosityLevel::L0    => VerbositySettings { verbose_while_active : false,
+                                                           verbose_when_done    : false,
+                                                           json_enabled,                 },
+            PRVerbosityLevel::L1    => VerbositySettings { verbose_while_active : false,
+                                                           verbose_when_done    : true,
+                                                           json_enabled,                 },
+            PRVerbosityLevel::L2    => VerbositySettings { verbose_while_active : true,
+                                                           verbose_when_done    : true,
+                                                           json_enabled,                 },
+        }
+    }
+}
+
 pub struct Context {
     header_printed        : bool,
     finish_printed        : bool,
@@ -58,6 +75,7 @@ impl Context {
     pub fn new(header                : &str,
                unit                  : &str,
                pr_verbosity_level    : PRVerbosityLevel,
+               json_enabled          : bool,
                active_print_elements : Vec<ProgressElement>,
                finish_print_elements : Vec<ProgressElement>) -> Context {
         Context {
@@ -70,7 +88,8 @@ impl Context {
             active_print_elements,
             finish_print_elements,
             max_print_length      : 0,
-            verbosity_settings    : pr_verbosity_level_to_settings(pr_verbosity_level),
+            verbosity_settings    : VerbositySettings::new(pr_verbosity_level,
+                                                           json_enabled),
         }
     }
 }
@@ -89,7 +108,8 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
     pub fn new(stats              : &Arc<Mutex<T>>,
                header             : &str,
                unit               : &str,
-               pr_verbosity_level : PRVerbosityLevel)
+               pr_verbosity_level : PRVerbosityLevel,
+               json_enabled       : bool)
                -> ProgressReporter<T> {
         use self::ProgressElement::*;
         let stats                   = Arc::clone(stats);
@@ -97,6 +117,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             Arc::new(Mutex::new(Context::new(header,
                                              unit,
                                              pr_verbosity_level,
+                                             json_enabled,
                                              vec![ProgressBar,
                                                   Percentage,
                                                   CurrentRateShort,
@@ -396,23 +417,6 @@ fn make_message(context      : &Context,
         }
     }
     res
-}
-
-fn pr_verbosity_level_to_settings (level:PRVerbosityLevel) -> VerbositySettings {
-    match level {
-        PRVerbosityLevel::L0    => VerbositySettings { verbose_while_active : false,
-                                                       verbose_when_done    : false,
-                                                       json_enabled         : false, },
-        PRVerbosityLevel::L1    => VerbositySettings { verbose_while_active : false,
-                                                       verbose_when_done    : true,
-                                                       json_enabled         : false, },
-        PRVerbosityLevel::L2    => VerbositySettings { verbose_while_active : true,
-                                                       verbose_when_done    : true,
-                                                       json_enabled         : false, },
-        PRVerbosityLevel::LJSON => VerbositySettings { verbose_while_active : true,
-                                                       verbose_when_done    : true,
-                                                       json_enabled         : true,  },
-    }
 }
 
 mod helper {

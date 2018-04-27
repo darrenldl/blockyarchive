@@ -56,13 +56,10 @@ macro_rules! get_pr_verbosity_level {
     (
         $matches:expr, $json_enabled:expr
     ) => {{
+        use progress_report;
         use progress_report::PRVerbosityLevel;
         if get_json_enabled!($matches) {
-            if $matches.is_present("verbose") {
-                PRVerbosityLevel::LJSON
-            } else {
-                PRVerbosityLevel::L0
-            }
+            PRVerbosityLevel::L0
         } else {
             match $matches.value_of("pr_verbosity_level") {
                 None    => PRVerbosityLevel::L2,

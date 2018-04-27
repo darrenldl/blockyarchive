@@ -280,7 +280,8 @@ pub fn decode(param           : &Param,
     let reporter = ProgressReporter::new(&stats,
                                          "Data decoding progress",
                                          "blocks",
-                                         param.pr_verbosity_level);
+                                         param.pr_verbosity_level,
+                                         param.json_printer.json_enabled());
 
     let mut block = Block::dummy();
 
@@ -417,7 +418,8 @@ fn hash(param           : &Param,
     let reporter = ProgressReporter::new(&stats,
                                          "Output file hashing progress",
                                          "bytes",
-                                         param.pr_verbosity_level);
+                                         param.pr_verbosity_level,
+                                         param.json_printer.json_enabled());
 
     let mut buffer : [u8; HASH_FILE_BLOCK_SIZE] = [0; HASH_FILE_BLOCK_SIZE];
 
