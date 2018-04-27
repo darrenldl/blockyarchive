@@ -189,9 +189,18 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
     }
 
     pub fn pause(&self) {
+        let verbosity_settings   = &self.context.lock().unwrap().verbosity_settings;
+        let verbose_while_active = verbosity_settings.verbose_while_active;
+        let verbose_when_done    = verbosity_settings.verbose_when_done;
+        let json_enabled         = verbosity_settings.json_enabled;
+
         // overwrite progress text
-        eprint!("\r{1:0$}", self.context.lock().unwrap().max_print_length, "");
-        eprint!("\r");
+        if (verbose_while_active || verbose_when_done)
+            && !json_enabled
+        {
+            eprint!("\r{1:0$}", self.context.lock().unwrap().max_print_length, "");
+            eprint!("\r");
+        }
         self.active_flag.store(false, Ordering::SeqCst);
     }
 
