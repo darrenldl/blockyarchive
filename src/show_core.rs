@@ -145,6 +145,7 @@ pub fn show_file(param : &Param)
             }
         } else {
             print_if!(not_json => json_printer => "Reference block version does not use Reed-Solomon erasure code";);
+            print_field_if_json!(json_printer, "Best guess for burst error resistance level : null" => skip_quotes);
         }
 
         print_if!(not_json => json_printer => "";);
