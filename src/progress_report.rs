@@ -189,7 +189,9 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
     }
 
     pub fn pause(&self) {
-        let verbosity_settings   = &self.context.lock().unwrap().verbosity_settings;
+        let verbosity_settings : VerbositySettings =
+            self.context.lock().unwrap().verbosity_settings;
+
         let verbose_while_active = verbosity_settings.verbose_while_active;
         let verbose_when_done    = verbosity_settings.verbose_when_done;
         let json_enabled         = verbosity_settings.json_enabled;
