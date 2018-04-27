@@ -1,4 +1,12 @@
-#![allow(unused_macros)]
+macro_rules! skip_quote_for_term {
+    (
+        $val:expr
+    ) => {{
+        $val == "null"
+            || $val == "true"
+            || $val == "false"
+    }}
+}
 
 macro_rules! write_json_field {
     (
@@ -10,11 +18,7 @@ macro_rules! write_json_field {
             write!($f, ",")?;
         }
 
-        if $skip_quotes
-            || $val == "null"
-            || $val == "true"
-            || $val == "false"
-        {
+        if $skip_quotes || skip_quote_for_term!($val) {
             writeln!($f, "\"{}\": {}", to_camelcase($key), escape_quotes(&$val))
         } else {
             writeln!($f, "\"{}\": \"{}\"", to_camelcase($key), escape_quotes(&$val))
@@ -33,80 +37,12 @@ macro_rules! print_json_field {
             print!(",");
         }
 
-        if $skip_quotes
-            || $val == "null"
-            || $val == "true"
-            || $val == "false"
-        {
+        if $skip_quotes || skip_quote_for_term!($val) {
             println!("\"{}\": {}", to_camelcase($key), escape_quotes(&$val));
         } else {
             println!("\"{}\": \"{}\"", to_camelcase($key), escape_quotes(&$val));
         }
     }};
-}
-
-/*macro_rules! print_maybe_json_open_bracket {
-    (
-        $json_context:expr
-    ) => {{
-        if $json_context.json_enabled {
-            println!("{{");
-        }
-    }}
-}*/
-
-/*macro_rules! print_maybe_json_close_bracket {
-    (
-        $json_context:expr
-    ) => {{
-        if $json_context.json_enabled {
-            println!("}}");
-        }
-    }}
-}*/
-
-macro_rules! print_if_not_json {
-    (
-        $json_printer:expr, $($val:expr),*
-    ) => {{
-        if !$json_printer.json_enabled() {
-            println!($($val),*);
-        }
-    }}
-}
-
-macro_rules! write_if_not_json {
-    (
-        $f:expr, $json_printer:expr, $($val:expr),*
-    ) => {{
-        if !$json_printer.json_enabled() {
-            writeln!($f, $($val),*)
-        } else {
-            Ok(())
-        }
-    }}
-}
-
-macro_rules! print_if_json {
-    (
-        $json_printer:expr, $($val:expr),*
-    ) => {{
-        if $json_printer.json_enabled() {
-            println!($($val),*);
-        }
-    }}
-}
-
-macro_rules! write_if_json {
-    (
-        $f:expr, $json_printer:expr, $($val:expr),*
-    ) => {{
-        if $json_printer.json_enabled() {
-            writeln!($f, $($val),*)
-        } else {
-            Ok(())
-        }
-    }}
 }
 
 macro_rules! print_field_if_json {

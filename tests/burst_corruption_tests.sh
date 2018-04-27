@@ -31,16 +31,25 @@ for ver in ${VERSIONS[*]}; do
 
         container_name=burst_$data_shards\_$parity_shards\_$burst\_$ver.sbx
 
+        echo -n "Encoding"
         output=$(./rsbx encode --json --sbx-version $ver -f dummy $container_name \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards \
                         --burst $burst 2>/dev/null)
-        if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then
-            echo "Invalid JSON"
+        if [[ $(echo $output | jq -r ".error") != null ]]; then
+            echo " ==> Invalid JSON"
             exit_code=1
         fi
-        if [[ $(echo $output | jq -r ".stats.hash" | awk '{ print $1 }') != "SHA1" ]]; then
-            echo "Invalid JSON"
+        if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+            echo -n " ==> Okay"
+        else
+            echo -n " ==> NOT okay"
+            exit_code=1
+        fi
+        if [[ $(echo $output | jq -r ".stats.hash" | awk '{ print $1 }') == "SHA1" ]]; then
+            echo " ==> Okay"
+        else
+            echo " ==> NOT okay"
             exit_code=1
         fi
 
@@ -59,31 +68,35 @@ for ver in ${VERSIONS[*]}; do
             corrupt $pos $block_size $burst $container_name
         done
 
-        echo "Repairing"
-        output=$(./rsbx repair --json $container_name 2>/dev/null)
-        if [[ $(echo $output | jq -r ".error") != "null" ]]; then
-            echo "Invalid JSON"
+        echo -n "Repairing"
+        output=$(./rsbx repair --json --verbose $container_name 2>/dev/null)
+        if [[ $(echo $output | jq -r ".error") != null ]]; then
+            echo " ==> Invalid JSON"
             exit_code=1
         fi
-        if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then
-            echo "Invalid JSON"
+        if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+            echo " ==> Okay"
+        else
+            echo " ==> NOT okay"
             exit_code=1
         fi
 
         output_name=dummy_$data_shards\_$parity_shards
 
-        echo "Decoding"
+        echo -n "Decoding"
         output=$(./rsbx decode --json -f $container_name $output_name 2>/dev/null)
-        if [[ $(echo $output | jq -r ".error") != "null" ]]; then
-            echo "Invalid JSON"
+        if [[ $(echo $output | jq -r ".error") != null ]]; then
+            echo " ==> Invalid JSON"
             exit_code=1
         fi
-        if [[ $(echo $output | jq -r ".stats.sbxVersion") != "$ver" ]]; then
-            echo "Invalid JSON"
+        if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+            echo " ==> Okay"
+        else
+            echo " ==> NOT okay"
             exit_code=1
         fi
 
-        echo "Comparing decoded data to original"
+        echo -n "Comparing decoded data to original"
         cmp dummy $output_name
         if [[ $? == 0 ]]; then
             echo "==> Okay"
