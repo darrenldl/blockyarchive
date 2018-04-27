@@ -37,6 +37,22 @@ for ver in ${VERSIONS[*]}; do
     fi
 done
 
+# Show all
+for ver in ${VERSIONS[*]}; do
+    echo -n "Checking show output for $ver container"
+    output=$(./rsbx show --json dummy$ver.sbx)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
+        echo " ==> Invalid JSON"
+        exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.sbxContainerVersion") == $ver ]]; then
+        echo " ==> Okay"
+    else
+        echo " ==> NOT okay"
+        exit_code=1
+    fi
+done
+
 # Decode all of them
 for ver in ${VERSIONS[*]}; do
   echo -n "Decoding version $ver container"
