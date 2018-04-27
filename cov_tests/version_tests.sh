@@ -16,7 +16,7 @@ done
 # Check all
 for ver in ${VERSIONS[*]}; do
     echo "Checking version $ver container"
-    output=$(kcov_rsbx check --json --verbose dummy$ver.sbx 2>/dev/null)
+    output=$(kcov_rsbx check --json --verbose dummy$ver.sbx)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
         echo " ==> Invalid JSON"
         exit_code=1
