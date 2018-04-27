@@ -30,7 +30,7 @@ fails to guess correctly."))
         .arg(json_arg()
              .help("Output information in JSON format. Note that rsbx does not
 guarantee the JSON data to be well-formed if rsbx is interrupted.
-This also implies --skip-warning and disables progress report text."))
+This also implies --skip-warning, and changes progress report text to be in JSON."))
 }
 
 pub fn repair<'a>(matches : &ArgMatches<'a>) -> i32 {
