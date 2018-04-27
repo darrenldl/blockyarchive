@@ -48,7 +48,7 @@ for ver in ${VERSIONS[*]}; do
         truncate -s $truncated_container_size $container_name
 
         echo "Repairing"
-        kcov_rsbx repair -y $container_name &>/dev/null
+        kcov_rsbx repair -y --verbose $container_name &>/dev/null
 
         output_name=dummy_$data_shards\_$parity_shards
 
