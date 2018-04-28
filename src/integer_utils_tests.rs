@@ -7,6 +7,11 @@ fn test_round_down_to_multiple_simple_cases() {
     assert_eq!(21, usize::round_down_to_multiple(21, 7));
     assert_eq!(100, usize::round_down_to_multiple(100, 10));
     assert_eq!(16, usize::round_down_to_multiple(17, 16));
+    assert_eq!(4, usize::round_down_to_multiple(4, 4));
+    assert_eq!(77, usize::round_down_to_multiple(77, 77));
+    assert_eq!(22, usize::round_down_to_multiple(22, 11));
+    assert_eq!(8, usize::round_down_to_multiple(8, 4));
+    assert_eq!(16, usize::round_down_to_multiple(16, 4));
 }
 
 #[test]
@@ -15,6 +20,11 @@ fn test_round_up_to_multiple_simple_cases() {
     assert_eq!(21, usize::round_up_to_multiple(21, 7));
     assert_eq!(100, usize::round_up_to_multiple(100, 10));
     assert_eq!(32, usize::round_up_to_multiple(17, 16));
+    assert_eq!(4, usize::round_up_to_multiple(4, 4));
+    assert_eq!(77, usize::round_up_to_multiple(77, 77));
+    assert_eq!(22, usize::round_up_to_multiple(22, 11));
+    assert_eq!(8, usize::round_up_to_multiple(8, 4));
+    assert_eq!(16, usize::round_up_to_multiple(16, 4));
 }
 
 quickcheck! {
