@@ -84,26 +84,26 @@ impl fmt::Display for Stats {
         json_printer.write_open_bracket(f, Some("stats"), BracketType::Curly)?;
 
         if rs_enabled {
-            write_maybe_json!(f, json_printer, "File UID                                   : {}",
+            write_maybe_json!(f, json_printer, "File UID                               : {}",
                               misc_utils::bytes_to_upper_hex_string(&self.uid))?;
-            write_maybe_json!(f, json_printer, "SBX version                                : {}",
+            write_maybe_json!(f, json_printer, "SBX version                            : {}",
                               ver_to_usize(self.version))?;
-            write_maybe_json!(f, json_printer, "Block size used in encoding                : {}", block_size              => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Data  size used in encoding                : {}", data_size               => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks written                   : {}", blocks_written          => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks written (metadata)        : {}", meta_blocks_written     => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks written (data only)       : {}", data_blocks_written     => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks written (data parity)     : {}", data_par_blocks_written => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Amount of data encoded (bytes)             : {}", data_bytes_encoded      => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "File size                                  : {}", in_file_size            => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "SBX container size                         : {}", out_file_size           => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Hash                                       : {}", match self.hash_bytes {
+            write_maybe_json!(f, json_printer, "Block size used in encoding            : {}", block_size              => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Data  size used in encoding            : {}", data_size               => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written               : {}", blocks_written          => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written (metadata)    : {}", meta_blocks_written     => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written (data only)   : {}", data_blocks_written     => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written (data parity) : {}", data_par_blocks_written => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Amount of data encoded (bytes)         : {}", data_bytes_encoded      => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "File size                              : {}", in_file_size            => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "SBX container size                     : {}", out_file_size           => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Hash                                   : {}", match self.hash_bytes {
                 None        => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
                                        multihash::hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            write_maybe_json!(f, json_printer, "Time elapsed                               : {:02}:{:02}:{:02}", hour, minute, second)?;
+            write_maybe_json!(f, json_printer, "Time elapsed                           : {:02}:{:02}:{:02}", hour, minute, second)?;
         } else {
             write_maybe_json!(f, json_printer, "File UID                            : {}",
                               misc_utils::bytes_to_upper_hex_string(&self.uid))?;

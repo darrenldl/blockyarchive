@@ -145,6 +145,7 @@ pub fn show_file(param : &Param)
             }
         } else {
             print_if!(not_json => json_printer => "Reference block version does not use Reed-Solomon erasure code";);
+            print_field_if_json!(json_printer, "Best guess for burst error resistance level : null" => skip_quotes);
         }
 
         print_if!(not_json => json_printer => "";);
@@ -225,21 +226,21 @@ pub fn show_file(param : &Param)
                 print_field_if_json!(json_printer,    "Metadata block number : {}", meta_block_count => skip_quotes);
             }
 
-            print_if!(not_json => json_printer => "Found at byte          : {} (0x{:X})",
+            print_if!(not_json => json_printer =>     "Found at byte          : {} (0x{:X})",
                       block_pos + seek_to,
                       block_pos + seek_to;);
-            print_maybe_json!(json_printer,        "Found at byte          : {}",
-                              block_pos + seek_to => skip_quotes);
+            print_field_if_json!(json_printer,        "Found at byte          : {}",
+                                 block_pos + seek_to => skip_quotes);
 
-            print_if!(not_json => json_printer =>  "";);
+            print_if!(not_json => json_printer =>     "";);
 
-            print_maybe_json!(json_printer,        "File UID               : {}",
+            print_maybe_json!(json_printer,           "File UID               : {}",
                               misc_utils::bytes_to_upper_hex_string(&block.get_uid()));
-            print_maybe_json!(json_printer,        "File name              : {}",
+            print_maybe_json!(json_printer,           "File name              : {}",
                               block.get_FNM().unwrap().unwrap_or("N/A".to_string()));
-            print_maybe_json!(json_printer,        "SBX container name     : {}",
+            print_maybe_json!(json_printer,           "SBX container name     : {}",
                               block.get_SNM().unwrap().unwrap_or("N/A".to_string()));
-            print_maybe_json!(json_printer,        "SBX container version  : {}",
+            print_maybe_json!(json_printer,           "SBX container version  : {}",
                               if ver_uses_rs(block.get_version()) && !json_printer.json_enabled() {
                                   format!("{} (0x{:X})",
                                           ver_to_usize(block.get_version()),
@@ -247,7 +248,7 @@ pub fn show_file(param : &Param)
                               } else {
                                   ver_to_usize(block.get_version()).to_string()
                               });
-            print_maybe_json!(json_printer,        "RS data shard count    : {}",
+            print_maybe_json!(json_printer,           "RS data shard count    : {}",
                               if ver_uses_rs(block.get_version()) {
                                   match block.get_RSD().unwrap() {
                                       None    => null_if_json_else!(json_printer, "N/A").to_string(),
@@ -256,7 +257,7 @@ pub fn show_file(param : &Param)
                               } else {
                                   null_if_json_else!(json_printer, "version does not use RS").to_string()
                               }                                                    => skip_quotes);
-            print_maybe_json!(json_printer,        "RS parity shard count  : {}",
+            print_maybe_json!(json_printer,           "RS parity shard count  : {}",
                               if ver_uses_rs(block.get_version()) {
                                   match block.get_RSP().unwrap() {
                                       None    => null_if_json_else!(json_printer, "N/A").to_string(),
@@ -265,11 +266,11 @@ pub fn show_file(param : &Param)
                               } else {
                                   null_if_json_else!(json_printer, "version does not use RS").to_string()
                               }                                                    => skip_quotes);
-            print_maybe_json!(json_printer,        "File size              : {}", match block.get_FSZ().unwrap() {
+            print_maybe_json!(json_printer,           "File size              : {}", match block.get_FSZ().unwrap() {
                 None    => null_if_json_else!(json_printer, "N/A").to_string(),
                 Some(x) => x.to_string()
             }                                                                      => skip_quotes);
-            print_maybe_json!(json_printer,        "File modification time : {}", match block.get_FDT().unwrap() {
+            print_maybe_json!(json_printer,           "File modification time : {}", match block.get_FDT().unwrap() {
                 None    => null_if_json_else!(json_printer, "N/A").to_string(),
                 Some(x) => match (time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::UTC),
                                   time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::Local)) {
@@ -277,7 +278,7 @@ pub fn show_file(param : &Param)
                     _                  => "Invalid recorded date time".to_string(),
                 }
             });
-            print_maybe_json!(json_printer,        "SBX encoding time      : {}", match block.get_SDT().unwrap() {
+            print_maybe_json!(json_printer,           "SBX encoding time      : {}", match block.get_SDT().unwrap() {
                 None    => null_if_json_else!(json_printer, "N/A").to_string(),
                 Some(x) => match (time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::UTC),
                                   time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::Local)) {
@@ -285,7 +286,7 @@ pub fn show_file(param : &Param)
                     _                  => "Invalid recorded date time".to_string(),
                 }
             });
-            print_maybe_json!(json_printer,        "Hash                   : {}", match block.get_HSH().unwrap() {
+            print_maybe_json!(json_printer,           "Hash                   : {}", match block.get_HSH().unwrap() {
                 None    => null_if_json_else!(json_printer, "N/A").to_string(),
                 Some(h) => format!("{} - {}",
                                    hash_type_to_string(h.0),
