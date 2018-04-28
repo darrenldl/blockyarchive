@@ -51,7 +51,7 @@ quickcheck! {
             && ((val > 0 && ((val % multiple_of == 0 && res == val)
                              || (val % multiple_of != 0 && res >  val)))
                 || val == 0)
-            && usize::round_down_to_multiple(val, multiple_of) % multiple_of == 0
+            && usize::round_up_to_multiple(val, multiple_of) % multiple_of == 0
     }
 
     fn qc_ensure_at_least(val      : usize,
