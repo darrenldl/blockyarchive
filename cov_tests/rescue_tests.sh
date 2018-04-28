@@ -23,6 +23,10 @@ for ver in ${VERSIONS[*]}; do
   fi
 done
 
+rescue1uid=$(kcov_rsbx show --json rescue1.sbx | jq -r ".blocks[0].fileUID")
+rescue3uid=$(kcov_rsbx show --json rescue3.sbx | jq -r ".blocks[0].fileUID")
+rescue18uid=$(kcov_rsbx show --json rescue18.sbx | jq -r ".blocks[0].fileUID")
+
 # Generate random filler data
 echo "Generating random filler data"
 dd if=/dev/urandom of=filler1 bs=10240 count=1 &>/dev/null
@@ -48,6 +52,30 @@ rm rescue_log &>/dev/null
 output=$(kcov_rsbx rescue --json dummy_disk rescued_data rescue_log)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
     echo " ==> Invalid JSON"
+    exit_code=1
+fi
+
+# Check if original bytes were used
+echo -n "Checking if original bytes from containers were used"
+cmp rescued_data/"$rescue1uid" rescue1.sbx
+if [[ $? == 0 ]]; then
+    echo -n " ==> Okay"
+else
+    echo -n " ==> NOT okay"
+    exit_code=1
+fi
+cmp rescued_data/"$rescue3uid" rescue3.sbx
+if [[ $? == 0 ]]; then
+    echo -n " ==> Okay"
+else
+    echo -n " ==> NOT okay"
+    exit_code=1
+fi
+cmp rescued_data/"$rescue18uid" rescue18.sbx
+if [[ $? == 0 ]]; then
+    echo " ==> Okay"
+else
+    echo " ==> NOT okay"
     exit_code=1
 fi
 
