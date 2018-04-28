@@ -1,6 +1,5 @@
 pub trait IntegerUtils {
     type Item;
-    fn use_then_add1(&mut Self::Item) -> Self::Item;
     fn round_down_to_multiple(Self::Item, Self::Item) -> Self::Item;
     fn round_up_to_multiple(Self::Item, Self::Item) -> Self::Item;
     fn ensure_at_least(Self::Item, Self::Item) -> Self::Item;
@@ -14,11 +13,6 @@ macro_rules! impl_integer_utils {
         $(
             impl IntegerUtils for $x {
                 type Item = $x;
-
-                fn use_then_add1(val : &mut Self::Item) -> Self::Item {
-                    *val += 1;
-                    *val - 1
-                }
 
                 fn round_down_to_multiple(val         : Self::Item,
                                           multiple_of : Self::Item)
