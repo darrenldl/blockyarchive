@@ -56,13 +56,30 @@ for ver in ${VERSIONS[*]}; do
             exit_code=1
         fi
 
+        new_burst=$[$burst+2]
+
         echo -n "Sorting container"
-        output=$(./rsbx sort --json --burst $burst $container_name sorted_$container_name)
+        output=$(./rsbx sort --json --burst $new_burst $container_name sorted_$container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
         fi
         if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+            echo " ==> Okay"
+        else
+            echo " ==> NOT okay"
+            exit_code=1
+        fi
+
+        echo -n "Checking sorted container burst error resistance level"
+        output=$(./rsbx show --json --guess-burst sorted_$container_name)
+        if [[ $(echo $output | jq -r ".error") != null ]]; then
+            echo " ==> Invalid JSON"
+            exit_code=1
+        fi
+        burst_shown=$(echo $output | jq -r ".bestGuessForBurstErrorResistanceLevel")
+        if [[ (($ver == "1" || $ver == "2" || $ver == "3") && ($burst_shown == "null"))
+            || (($ver == "17" || $ver == "18" || $ver == "19") && ($burst_shown == $new_burst)) ]]; then
             echo " ==> Okay"
         else
             echo " ==> NOT okay"
