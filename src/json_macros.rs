@@ -45,6 +45,7 @@ macro_rules! print_json_field {
     }};
 }
 
+#[macro_export]
 macro_rules! print_field_if_json {
     (
         $json_printer:expr, $($t:tt)*
@@ -55,6 +56,7 @@ macro_rules! print_field_if_json {
     }}
 }
 
+#[macro_export]
 macro_rules! print_maybe_json {
     (
         $json_printer:expr, $($val:expr),* => skip_quotes

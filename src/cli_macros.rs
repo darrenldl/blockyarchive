@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! exit_with_msg {
     (
         ok $json_printer:expr => $($x:expr),*
