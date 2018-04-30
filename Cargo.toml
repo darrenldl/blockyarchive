@@ -36,10 +36,12 @@ license     = "MIT"
 [[bin]]
 name = "rsbx"
 path = "src/bin/main.rs"
+doc  = false
 
 [lib]
 name = "rsbx_lib"
 path = "src/lib.rs"
+doc  = false
 
 [dependencies]
 reed-solomon-erasure = { version = "3.0", features = ["pure-rust"] }
