@@ -5,12 +5,6 @@ use clap::*;
 extern crate rsbx_lib;
 use rsbx_lib::*;
 
-//#[macro_use]
-//use rsbx_lib::cli_macros;
-
-//#[macro_use]
-//use rsbx_lib::json_macros;
-
 fn real_main () -> i32 {
     let matches = App::new("rsbx")
         .version(env!("CARGO_PKG_VERSION"))
