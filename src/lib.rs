@@ -57,10 +57,10 @@ use general_error::Error;
 use general_error::ErrorKind;
 
 #[macro_use]
-pub mod json_macros;
+mod json_macros;
 
 #[macro_use]
-pub mod misc_macros;
+mod misc_macros;
 
 #[macro_use]
 mod block_preds;
@@ -80,7 +80,7 @@ mod integer_utils;
 mod integer_utils_tests;
 mod block_utils;
 
-mod sbx_block;
+pub mod sbx_block;
 mod sbx_specs;
 mod sbx_specs_tests;
 
@@ -89,7 +89,7 @@ mod log;
 mod rs_codec;
 
 #[macro_use]
-pub mod cli_macros;
+mod cli_macros;
 
 mod encode_core;
 mod decode_core;
