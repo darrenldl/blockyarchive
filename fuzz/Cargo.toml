@@ -18,13 +18,5 @@ git = "https://github.com/rust-fuzz/libfuzzer-sys.git"
 members = ["."]
 
 [[bin]]
-name = "fuzz_sbx_header"
-path = "fuzz_targets/fuzz_sbx_header.rs"
-
-[[bin]]
-name = "fuzz_sbx_metadata"
-path = "fuzz_targets/fuzz_sbx_metadata.rs"
-
-[[bin]]
 name = "fuzz_sbx_block"
 path = "fuzz_targets/fuzz_sbx_block.rs"
