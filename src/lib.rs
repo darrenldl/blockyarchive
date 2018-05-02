@@ -81,7 +81,7 @@ mod integer_utils_tests;
 mod block_utils;
 
 pub mod sbx_block;
-mod sbx_specs;
+pub mod sbx_specs;
 mod sbx_specs_tests;
 
 mod log;
