@@ -1,3 +1,7 @@
+## 1.1.1
+- Added fuzzing suite
+  - No code changes as no bugs were found
+
 ## 1.1.0
 - Added --json flag to all modes
   - If specified, all information will be outputted in JSON format instead of human readable text
