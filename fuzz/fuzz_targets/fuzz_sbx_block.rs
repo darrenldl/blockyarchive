@@ -20,6 +20,11 @@ fuzz_target!(|data: &[u8]| {
             buffer.copy_from_slice(&data[0..block_size]);
             buffer2.copy_from_slice(&data[0..block_size]);
 
+            for i in 0..16 {
+                buffer[i]  = 0;
+                buffer2[i] = 0;
+            }
+
             block.sync_to_buffer(None, &mut buffer).unwrap();
 
             block2.sync_from_buffer(&buffer, None).unwrap();
