@@ -2,7 +2,6 @@
 #[macro_use] extern crate libfuzzer_sys;
 extern crate rsbx_lib;
 
-use rsbx_lib::sbx_block;
 use rsbx_lib::sbx_block::Block;
 
 use rsbx_lib::sbx_specs;
