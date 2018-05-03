@@ -45,14 +45,14 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "arrayvec 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "cc 1.0.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "constant_time_eq 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "cty 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "cc"
-version = "1.0.14"
+version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -194,7 +194,7 @@ version = "0.1.0"
 source = "git+https://github.com/rust-fuzz/libfuzzer-sys.git#86bcaac9b59faa0d4c3c6c4abde805a9e0a5017a"
 dependencies = [
  "arbitrary 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "cc 1.0.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -312,7 +312,7 @@ name = "reed-solomon-erasure"
 version = "3.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "cc 1.0.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "rayon 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallvec 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -332,7 +332,7 @@ dependencies = [
 
 [[package]]
 name = "rsbx"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "blake2_c 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -351,7 +351,7 @@ name = "rsbx-fuzz"
 version = "0.0.1"
 dependencies = [
  "libfuzzer-sys 0.1.0 (git+https://github.com/rust-fuzz/libfuzzer-sys.git)",
- "rsbx 1.1.0",
+ "rsbx 1.1.1",
 ]
 
 [[package]]
@@ -454,7 +454,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum bitflags 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4efd02e230a02e18f92fc2735f44597385ed02ad8f831e7c1c1156ee5e1ab3a5"
 "checksum bitflags 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "d0c54bb8f454c567f21197eefcdbf5679d0bd99f2ddbe52e84c77061952e6789"
 "checksum blake2_c 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "8e0863458f0eccaa77ee4a8f2c1b21d111d75902749f50036bb99ba91592307c"
-"checksum cc 1.0.14 (registry+https://github.com/rust-lang/crates.io-index)" = "6e9b718157695b866802180607488c861f3c640bf5c135544adf1be60a190418"
+"checksum cc 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)" = "0ebb87d1116151416c0cf66a0e3fb6430cccd120fd6300794b4dfaa050ac40ba"
 "checksum cfg-if 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "d4c819a1287eb618df47cc647173c5c4c66ba19d888a6e50d605672aed3140de"
 "checksum chrono 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1cce36c92cb605414e9b824f866f5babe0a0368e39ea07393b9b63cf3844c0e6"
 "checksum clap 2.31.2 (registry+https://github.com/rust-lang/crates.io-index)" = "f0f16b89cbb9ee36d87483dc939fe9f1e13c05898d56d7b230a0d4dff033a536"

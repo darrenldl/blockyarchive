@@ -8,8 +8,10 @@ use rsbx_lib::sbx_specs;
 
 fuzz_target!(|data: &[u8]| {
     let mut block = Block::dummy();
+    let mut block2 = Block::dummy();
 
     let mut buffer : [u8; 4096] = [0; 4096];
+    let mut buffer2 : [u8; 4096] = [0; 4096];
 
     if data.len() >= 4096 {
         if let Ok(()) = block.sync_from_buffer(data, None) {
@@ -17,7 +19,15 @@ fuzz_target!(|data: &[u8]| {
 
             block.sync_to_buffer(None, &mut buffer).unwrap();
 
-            assert_eq!(&buffer[0..block_size], &data[0..block_size]);
+            block2.sync_from_buffer(&buffer, None).unwrap();
+
+            block2.sync_to_buffer(None, &mut buffer2).unwrap();
+
+            if block.get_seq_num() > 0 {
+                assert_eq!(&buffer[0..block_size], &data[0..block_size]);
+            }
+
+            assert_eq!(&buffer[..], &buffer2[..]);
         }
     }
 });
