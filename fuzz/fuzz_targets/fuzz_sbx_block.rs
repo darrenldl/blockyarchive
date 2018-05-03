@@ -11,7 +11,7 @@ fuzz_target!(|data: &[u8]| {
 
     let mut buffer : [u8; 4096] = [0; 4096];
 
-    if data.len() > 4096 {
+    if data.len() >= 4096 {
         if let Ok(()) = block.sync_from_buffer(data, None) {
             let block_size = sbx_specs::ver_to_block_size(block.get_version());
 
