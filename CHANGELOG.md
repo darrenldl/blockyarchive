@@ -1,6 +1,8 @@
 ## 1.1.1
 - Added fuzzing suite
-  - No code changes as no bugs were found
+  - No code changes from this as no bugs were found
+- Dependency update
+  - Updated nom from ^3.2 to ^4.0
 
 ## 1.1.0
 - Added --json flag to all modes
