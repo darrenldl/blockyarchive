@@ -175,7 +175,7 @@ impl Log for Stats {
     fn deserialize(&mut self, input : &[u8]) -> Result<(), ()> {
         match parsers::stats_p(input) {
             Ok((_, Ok((bytes, _, meta, data)))) => {
-                self.bytes_processed              =
+                self.bytes_processed =
                     u64::round_down_to_multiple(
                         u64::ensure_at_most(self.total_bytes, bytes),
                         SBX_SCAN_BLOCK_SIZE as u64);
