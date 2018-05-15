@@ -36,7 +36,8 @@ fuzz_target!(|data: &[u8]| {
                 assert_eq!(&buffer[0..block_size], &buffer2[0..block_size]);
             }
 
-            assert_eq!(&buffer[0..16], &buffer2[0..16]);
+            assert_eq!(&buffer[0..4],  &buffer2[0..4]);
+            assert_eq!(&buffer[6..16], &buffer2[6..16]);
         }
     }
 });
