@@ -173,10 +173,9 @@ impl Log for Stats {
     }
 
     fn deserialize(&mut self, input : &[u8]) -> Result<(), ()> {
-        use nom::IResult;
         match parsers::stats_p(input) {
-            IResult::Done(_, Ok((bytes, _, meta, data))) => {
-                self.bytes_processed              =
+            Ok((_, Ok((bytes, _, meta, data)))) => {
+                self.bytes_processed =
                     u64::round_down_to_multiple(
                         u64::ensure_at_most(self.total_bytes, bytes),
                         SBX_SCAN_BLOCK_SIZE as u64);
@@ -184,7 +183,7 @@ impl Log for Stats {
                 self.data_or_par_blocks_processed = data;
                 Ok(())
             },
-            _                                             => Err(())
+            _                                   => Err(())
         }
     }
 }

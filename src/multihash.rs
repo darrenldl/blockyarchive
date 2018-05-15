@@ -283,14 +283,14 @@ pub mod parsers {
                             HashType::BLAKE2S_256,  specs::BLAKE2S_256_PARAM);
 
     named!(pub multihash_w_len_p <HashBytes>,
-           alt!(sha1_w_len_p         |
-                sha256_w_len_p       |
-                sha2_512_256_w_len_p |
-                sha512_w_len_p       |
-                blake2b_256_w_len_p  |
-                blake2b_512_w_len_p  |
-                blake2s_128_w_len_p  |
-                blake2s_256_w_len_p
+           alt_complete!(sha1_w_len_p         |
+                         sha256_w_len_p       |
+                         sha2_512_256_w_len_p |
+                         sha512_w_len_p       |
+                         blake2b_256_w_len_p  |
+                         blake2b_512_w_len_p  |
+                         blake2s_128_w_len_p  |
+                         blake2s_256_w_len_p
            )
     );
 }

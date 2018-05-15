@@ -54,15 +54,13 @@ impl Header {
 
     pub fn from_bytes(&mut self, buffer : &[u8]) -> Result<(), Error> {
         use super::Error;
-        use nom::IResult::*;
-
         if buffer.len() != 16 {
             return Err(Error::IncorrectBufferSize);
         }
 
         match parsers::header_p(buffer) {
-            Done(_, header) => { *self = header;
-                                 Ok(()) },
+            Ok((_, header)) => { *self = header;
+                                  Ok(()) },
             _               => Err(Error::ParseError)
         }
     }
@@ -93,13 +91,12 @@ mod parsers {
     );
 
     named!(ver_p <Version>,
-           alt!(
-               do_parse!(_v : tag!(&[ 1]) >> (Version::V1))  |
-               do_parse!(_v : tag!(&[ 2]) >> (Version::V2))  |
-               do_parse!(_v : tag!(&[ 3]) >> (Version::V3))  |
-               do_parse!(_v : tag!(&[17]) >> (Version::V17)) |
-               do_parse!(_v : tag!(&[18]) >> (Version::V18)) |
-               do_parse!(_v : tag!(&[19]) >> (Version::V19))
+           alt_complete!(do_parse!(_v : tag!(&[ 1]) >> (Version::V1))  |
+                         do_parse!(_v : tag!(&[ 2]) >> (Version::V2))  |
+                         do_parse!(_v : tag!(&[ 3]) >> (Version::V3))  |
+                         do_parse!(_v : tag!(&[17]) >> (Version::V17)) |
+                         do_parse!(_v : tag!(&[18]) >> (Version::V18)) |
+                         do_parse!(_v : tag!(&[19]) >> (Version::V19))
            )
     );
 

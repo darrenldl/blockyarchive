@@ -123,6 +123,12 @@ fn test_to_bytes_simple_cases() {
 #[test]
 fn test_from_bytes_simple_cases() {
     {
+        let input = b"";
+
+        let metas = metadata::from_bytes(input).unwrap();
+        assert_eq!(0, metas.len());
+    }
+    {
         let input = b"FNM\x0Ahelloworld";
         let expect = Metadata::FNM("helloworld".to_string());
 

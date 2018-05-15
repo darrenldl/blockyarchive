@@ -258,14 +258,14 @@ mod parsers {
 
     named!(pub meta_p <Vec<UncheckedMetadata>>,
            many0!(
-               alt!(fnm_p  |
-                    snm_p  |
-                    fsz_p  |
-                    fdt_p  |
-                    sdt_p  |
-                    hsh_p  |
-                    rsd_p  |
-                    rsp_p
+               alt_complete!(fnm_p |
+                             snm_p |
+                             fsz_p |
+                             fdt_p |
+                             sdt_p |
+                             hsh_p |
+                             rsd_p |
+                             rsp_p
                )
            )
     );
@@ -332,10 +332,9 @@ pub fn filter_invalid_metadata(input : Vec<UncheckedMetadata>) -> Vec<Metadata> 
 
 pub fn from_bytes(bytes : &[u8])
                   -> Result<Vec<Metadata>, Error> {
-    use nom::IResult;
     match parsers::meta_p(bytes) {
-        IResult::Done(_, res) => Ok(filter_invalid_metadata(res)),
-        _                     => Err(Error::ParseError)
+        Ok((_, res)) => Ok(filter_invalid_metadata(res)),
+        _            => Err(Error::ParseError)
     }
 }
 
