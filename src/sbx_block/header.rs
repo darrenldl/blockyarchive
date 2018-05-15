@@ -54,15 +54,13 @@ impl Header {
 
     pub fn from_bytes(&mut self, buffer : &[u8]) -> Result<(), Error> {
         use super::Error;
-        use nom::IResult::*;
-
         if buffer.len() != 16 {
             return Err(Error::IncorrectBufferSize);
         }
 
         match parsers::header_p(buffer) {
-            Done(_, header) => { *self = header;
-                                 Ok(()) },
+            Ok((_, header)) => { *self = header;
+                                  Ok(()) },
             _               => Err(Error::ParseError)
         }
     }
