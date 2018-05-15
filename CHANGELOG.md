@@ -3,6 +3,12 @@
   - No code changes from this as no bugs were found
 - Dependency update
   - Updated nom from ^3.2 to ^4.0
+- Fixed incorrect use of nom combinators
+  - Previously was using `alt!` while `alt_complete!` should have been used
+  - This affects the following parsers
+    - `multihash` (multihash parser for metadata of hash)
+    - `sbx_block::metadata` (metadata parser for metadata blocks)
+    - `sbx_block::header::ver_p` (version parser for version byte in header)
 
 ## 1.1.0
 - Added --json flag to all modes
