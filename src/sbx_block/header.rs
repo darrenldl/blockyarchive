@@ -91,13 +91,12 @@ mod parsers {
     );
 
     named!(ver_p <Version>,
-           alt!(
-               do_parse!(_v : tag!(&[ 1]) >> (Version::V1))  |
-               do_parse!(_v : tag!(&[ 2]) >> (Version::V2))  |
-               do_parse!(_v : tag!(&[ 3]) >> (Version::V3))  |
-               do_parse!(_v : tag!(&[17]) >> (Version::V17)) |
-               do_parse!(_v : tag!(&[18]) >> (Version::V18)) |
-               do_parse!(_v : tag!(&[19]) >> (Version::V19))
+           alt_complete!(do_parse!(_v : tag!(&[ 1]) >> (Version::V1))  |
+                         do_parse!(_v : tag!(&[ 2]) >> (Version::V2))  |
+                         do_parse!(_v : tag!(&[ 3]) >> (Version::V3))  |
+                         do_parse!(_v : tag!(&[17]) >> (Version::V17)) |
+                         do_parse!(_v : tag!(&[18]) >> (Version::V18)) |
+                         do_parse!(_v : tag!(&[19]) >> (Version::V19))
            )
     );
 
