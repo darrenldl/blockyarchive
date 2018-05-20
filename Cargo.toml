@@ -44,7 +44,7 @@ path = "src/lib.rs"
 doc  = false
 
 [dependencies]
-reed-solomon-erasure = { version = "3.0", features = ["pure-rust"] }
+reed-solomon-erasure = { version = "3.1", features = ["pure-rust"] }
 ring                 = "0.12.1"
 blake2_c             = "0.3"
 rand                 = "0.4"
