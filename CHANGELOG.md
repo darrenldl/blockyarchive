@@ -1,8 +1,12 @@
+## 1.1.2
+- Dependency update
+  - Updated `reed-solomon-erasure` from `^3.0` to `^3.1`
+
 ## 1.1.1
 - Added fuzzing suite
   - No code changes from this as no bugs were found
 - Dependency update
-  - Updated nom from ^3.2 to ^4.0
+  - Updated `nom` from `^3.2` to `^4.0`
 - Fixed incorrect use of nom combinators
   - Previously was using `alt!` while `alt_complete!` should have been used
   - This affects the following parsers
