@@ -1,6 +1,7 @@
 ## 1.1.3
 - Dependencies upate
   - Updated `rand` from `0.4` to `0.5.4`
+
 ## 1.1.2
 - Dependencies update
   - Updated `reed-solomon-erasure` from `^3.0` to `^3.1`
