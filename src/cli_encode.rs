@@ -27,7 +27,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(in_file_arg()
              .help("File to encode"))
         .arg(out_arg()
-             .help("SBX container name(defaults to INFILE.sbx). If OUT is a
+             .help("SBX container name (defaults to INFILE.sbx). If OUT is a
 directory, then the container is stored as OUT/INFILE.sbx."))
         .arg(Arg::with_name("force")
              .short("f")
@@ -53,8 +53,8 @@ This means this option has no effect for version 17, 18, 19."))
              .value_name("UID-HEX")
              .long("uid")
              .takes_value(true)
-             .help("Alternative file uid in hex(by default uid is randomly generated).
-Uid must be exactly 6 bytes(12 hex digits) in length."))
+             .help("Alternative file uid in hex (by default uid is randomly generated).
+Uid must be exactly 6 bytes (12 hex digits) in length."))
         .arg(rs_data_arg())
         .arg(rs_parity_arg())
         .arg(burst_arg()
