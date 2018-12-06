@@ -149,7 +149,7 @@ pub fn report_ref_block_info(json_printer  : &JSONPrinter,
 pub fn guess_burst_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("guess_burst")
         .long("guess-burst")
-        .help("Guess burst error resistance level(guesses up to 1000) at start.
+        .help("Guess burst error resistance level (guesses up to 1000) at start.
 Note that this requires scanning for a reference block, and may
 go through the entire file as a result, thus may cause major delay
 before scanning for metadata blocks.

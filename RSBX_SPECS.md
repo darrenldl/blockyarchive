@@ -4,7 +4,7 @@ The specification is concerned only with actual data operations, UI/UX related m
 ## Exit code
 rsbx returns
 - 0 if no errors occured
-- 1 if error is detected in user input(i.e. parameters provided)
+- 1 if error is detected in user input (i.e. parameters provided)
 - 2 if error is detected during operation
 
 ## Error handling behaviour in general
@@ -14,7 +14,7 @@ rsbx returns
   - This is mainly for in case the partial data is useful to the user
 
 ## Output
-The cli argument parsing library(clap) outputs errors to stderr
+The cli argument parsing library (clap) outputs errors to stderr
 
 If no errors are discovered by the cli argument parsing library, then
 - In non-JSON mode
@@ -53,7 +53,7 @@ Metadata block is valid if
 ## Finding reference block
 1. The entire SBX container is scanned using alignment of 128 bytes, 128 is used as it is the largest common divisor of 512(block size for version 1), 128(block size for verion 2), and 4096(block size for version 3)
   - if any block type is allowed
-    - the first whatever valid block(i.e. valid metadata or data block) will be used as reference block
+    - the first whatever valid block (i.e. valid metadata or data block) will be used as reference block
   - else
     - if there is any valid metadata block in SBX container, then the first one will be used as reference block
     - else the first valid data block will be used as reference block
@@ -75,21 +75,21 @@ Metadata block is valid if
 - file last modification time
 - encoding start time
 2. If metadata is enabled, then a partial metadata block is written into the output file as filler
-  - The written metadata block is valid, but does not contain the actual file hash, a filler pattern of 0x00 is used in place of the hash part of the multihash(the header and length indicator of multihash are still valid)
-3. Load version specific data sized chunk one at a time from input file to encode and output(and if metadata is enabled, Multihash hash state/ctx is updated as well(the actual hash state/ctx used depends on hash type, defaults to SHA256)
+  - The written metadata block is valid, but does not contain the actual file hash, a filler pattern of 0x00 is used in place of the hash part of the multihash (the header and length indicator of multihash are still valid)
+3. Load version specific data sized chunk one at a time from input file to encode and output (and if metadata is enabled, Multihash hash state/ctx is updated as well - the actual hash state/ctx used depends on hash type, defaults to SHA256)
   - data size = block size - header size (e.g. version 1 has data size of 512 - 16 = 496)
 4. If metadata is enabled, the encoder seeks back to starting position of output file and overwrites the metadata block with one that contains the actual hash
 
 ## Decode workflow
 Metadata block is valid if
-- Metadata block validity criteria are satisfied(see **Block handling in general** above)
-- Version and uid matches reference block(see below)
+- Metadata block validity criteria are satisfied (see **Block handling in general** above)
+- Version and uid matches reference block (see below)
 
 Data block is valid if and only if
-- Basic block validity criteria are satisfied(see **Block handling in general** above)
-- Version and uid matches reference block(see below)
+- Basic block validity criteria are satisfied (see **Block handling in general** above)
+- Version and uid matches reference block (see below)
 
-1. A reference block is retrieved first and is used for guidance on alignment, version, and uid(see **Finding reference block** procedure specified above)
+1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
 2. Scan for valid blocks from start of SBX container to decode and output using reference block's block size as alignment
   - if a block is invalid, nothing is done
   - if a block is valid, and is a metadata block, nothing is done
@@ -104,7 +104,7 @@ Data block is valid if and only if
   - otherwise nothing is done
 
 #### Handling of duplicate metadata/data blocks
-- First valid metadata block will be used(if exists)
+- First valid metadata block will be used (if exists)
 - For all other data blocks, the last seen valid data block will be used for a given sequence number
 
 #### Handling of corrupted/missing blocks
@@ -120,7 +120,7 @@ Data block is valid if and only if
   - the log file will be updated on every ~1.0 second
 - each block is appended to OUTDIR/UID, where :
   - OUTDIR = output directory specified
-  - UID    = uid of the block in hex(uppercase)
+  - UID    = uid of the block in hex (uppercase)
 - the original bytes in the file is used, that is, the output block bytes are not generated from scratch by rsbx
 2. User is expected to attempt to decode the rescued data in OUTDIR using the rsbx decode command
 
@@ -128,18 +128,18 @@ Data block is valid if and only if
 1. Scan for metadata blocks from start of provided file using 128 bytes alignment
 - if show all flag is supplied, all valid metadata blocks are displayed
 - else only the first valid metadata block are displayed
-- all displaying of blocks are immediate(no buffering of blocks)
+- all displaying of blocks are immediate (no buffering of blocks)
 
 ## Repair workflow
 Metadata block is valid if
-- Metadata block validity criteria are satisfied(see **Block handling in general** above)
-- Version and uid matches reference block(see below)
+- Metadata block validity criteria are satisfied (see **Block handling in general** above)
+- Version and uid matches reference block (see below)
 
 Data block is valid if and only if
-- Basic block validity criteria are satisfied(see **Block handling in general** above)
-- Version and uid matches reference block(see below)
+- Basic block validity criteria are satisfied (see **Block handling in general** above)
+- Version and uid matches reference block (see below)
 
-1. A reference block is retrieved first and is used for guidance on alignment, version, and uid(see **Finding reference block** procedure specified above)
+1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
 - a metadata block must be used as reference block in this mode
 2. If the version of ref block does not use RS, then exit
 3. If `RSD` and `RSP` fields are not found in the ref block, then exit
@@ -157,7 +157,7 @@ Data block is valid if and only if
 - The the RS codec is invoked once to attempt repair, and write out remaining blocks if repair is successful
 
 ## Check workflow
-1. A reference block is retrieved first and is used for guidance on alignment, version, and uid(see **Finding reference block** procedure specified above)
+1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
 2. Scan for valid blocks from start of SBX container to decode and output using reference block's block size as alignment
 - if a block is invalid, and error message is shown
 - if a block is valid, nothing is done
@@ -168,21 +168,21 @@ Data block is valid if and only if
 
 ## Sort workflow
 Metadata block is valid if
-- Metadata block validity criteria are satisfied(see **Block handling in general** above)
-- Version and uid matches reference block(see below)
+- Metadata block validity criteria are satisfied (see **Block handling in general** above)
+- Version and uid matches reference block (see below)
 
 Data block is valid if and only if
-- Basic block validity criteria are satisfied(see **Block handling in general** above)
-- Version and uid matches reference block(see below)
+- Basic block validity criteria are satisfied (see **Block handling in general** above)
+- Version and uid matches reference block (see below)
 
-1. A reference block is retrieved first and is used for guidance on alignment, version, and uid(see **Finding reference block** procedure specified above)
+1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
 2. Read block from input file sequentailly, and write to position calculated from sequence number, block size and burst error resistance level to output file
 - The burst error resistance level by default is guessed using the **Guessing burst error resistance level** procedure specified above
 - The first metadata block is used for all metadata blocks in output container
 - The last valid data block is used for each sequence number
 
 #### Handling of missing blocks
-- Jumps/gaps caused by missing blocks are left to file system to handle(i.e. this may result in sparse file, or file with blank data in the gaps)
+- Jumps/gaps caused by missing blocks are left to file system to handle (i.e. this may result in sparse file, or file with blank data in the gaps)
 
 ## Calc workflow
 Calc mode only operates at UI/UX level and does not handle any file data, thus it is not documented here.
@@ -202,7 +202,7 @@ Calc mode only operates at UI/UX level and does not handle any file data, thus i
 - Get enough valid SBX blocks of your container such that a successful decoding or repair may take place
 
 ## To successfully repair your SBX container
-- The container has metadata block(or enough metadata parity blocks to reconstruct if corrupted/missing)
+- The container has metadata block (or enough metadata parity blocks to reconstruct if corrupted/missing)
 - The blocks' sequence numbers are in consistent order
 - The container has enough valid parity blocks to correct all errors
 

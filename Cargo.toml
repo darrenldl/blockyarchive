@@ -45,9 +45,9 @@ doc  = false
 
 [dependencies]
 reed-solomon-erasure = { version = "3.1", features = ["pure-rust"] }
-ring                 = "0.12.1"
+ring                 = "0.13.2"
 blake2_c             = "0.3"
-rand                 = "0.5.4"
+rand                 = "0.6.1"
 smallvec             = "0.6"
 nom                  = "4.0"
 chrono               = "0.4"
@@ -55,4 +55,4 @@ clap                 = "2.30.0"
 ctrlc                = "3.1"
 
 [dev-dependencies]
-quickcheck = "0.6"
+quickcheck = "0.7"

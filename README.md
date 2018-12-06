@@ -20,9 +20,9 @@ This implementation adds forward error correction on top of the SeqBox format by
 rsbx is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), but much more optimized.
 
 ## Features overall
-- Data recovery that does not depend on file system metadata(sector level recovery)
+- Data recovery that does not depend on file system metadata (sector level recovery)
   - This allows data recovery even when data is fragmented and out of order
-- Supports error correction(via Reed-Solomon erasure code)
+- Supports error correction (via Reed-Solomon erasure code)
 - Supports burst sector error resistance
 - JSON mode
   - Output information in JSON format instead of human readable text
@@ -52,10 +52,10 @@ Repo [rsbx-helpers](https://github.com/darrenldl/rsbx-helpers) contains helpers 
 [rsbx specs](RSBX_SPECS.md)
 
 ## Contributions
-Contributions are welcome. Note that by submitting contributions, you agree to license your work under the same license used by this project(MIT).
+Contributions are welcome. Note that by submitting contributions, you agree to license your work under the same license used by this project (MIT).
 
 ## Acknowledgement
-I would like to thank [Marco](https://github.com/MarcoPon)(official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx. I would also like to thank him for his feedback on the numbering of the error correction enabled SBX versions(version 17, 18, 19).
+I would like to thank [Marco](https://github.com/MarcoPon)(official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx. I would also like to thank him for his feedback on the numbering of the error correction enabled SBX versions (version 17, 18, 19).
 
 I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of the osbx project, of which most of the designs are carried over to rsbx, and also his further feedback on this project as well.
 
