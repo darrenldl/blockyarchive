@@ -1,6 +1,7 @@
 language: rust
 services: docker
 sudo: required
+dist: xenial
 
 branches:
   except:
