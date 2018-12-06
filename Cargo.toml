@@ -47,7 +47,7 @@ doc  = false
 reed-solomon-erasure = { version = "3.1", features = ["pure-rust"] }
 ring                 = "0.13.2"
 blake2_c             = "0.3"
-rand                 = "0.5.4"
+rand                 = "0.6.1"
 smallvec             = "0.6"
 nom                  = "4.0"
 chrono               = "0.4"
