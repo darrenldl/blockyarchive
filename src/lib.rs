@@ -51,6 +51,7 @@ macro_rules! break_if_eof_seen {
 }
 
 mod file_error;
+mod stdin_error;
 
 mod general_error;
 use general_error::Error;
@@ -101,6 +102,7 @@ mod check_core;
 
 mod progress_report;
 
+mod reader;
 mod file_reader;
 mod file_writer;
 

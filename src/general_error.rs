@@ -1,10 +1,12 @@
 use file_error;
+use stdin_error;
 use log;
 use std::fmt;
 
 #[derive(Clone)]
 pub enum ErrorKind {
     FileError(file_error::FileError),
+    StdinError(stdin_error::StdinError),
     LogError(log::LogError),
     MessageOnly(String)
 }

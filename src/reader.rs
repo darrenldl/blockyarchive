@@ -1,0 +1,51 @@
+use file_reader::{FileReader,
+                  FileReaderParam};
+use general_error::Error;
+use std::io::Read;
+use stdin_error::{StdinError,
+                  to_err};
+
+const READ_RETRIES : usize = 5;
+
+pub struct ReadResult {
+    pub len_read : usize,
+    pub eof_seen : bool,
+}
+
+pub enum ReaderType {
+    File(FileReader),
+    Stdin(std::io::Stdin),
+}
+
+pub struct Reader {
+    reader : ReaderType,
+}
+
+impl Reader {
+    pub fn new(reader : ReaderType) -> Reader {
+        Reader {
+            reader
+        }
+    }
+
+    pub fn read(&mut self, buf : &mut [u8]) -> Result<ReadResult, Error> {
+        match self.reader {
+            ReaderType::File(f)  => f.read(buf),
+            ReaderType::Stdin(s) => {
+                let mut len_read = 0;
+                let mut tries    = 0;
+                while len_read < buf.len() && tries < READ_RETRIES {
+                    match s.read(&mut buf[len_read..]) {
+                        Ok(len) => { len_read += len; },
+                        Err(e)  => { return Err(to_err(StdinError::new(e.kind()))); }
+                    }
+
+                    tries += 1;
+                }
+
+                Ok(ReadResult { len_read,
+                                eof_seen : len_read < buf.len() })
+            }
+        }
+    }
+}
