@@ -1,5 +1,4 @@
-use file_reader::{FileReader,
-                  FileReaderParam};
+use file_reader::FileReader;
 use general_error::Error;
 use std::io::Read;
 use stdin_error::{StdinError,
@@ -30,8 +29,8 @@ impl Reader {
 
     pub fn read(&mut self, buf : &mut [u8]) -> Result<ReadResult, Error> {
         match self.reader {
-            ReaderType::File(f)  => f.read(buf),
-            ReaderType::Stdin(s) => {
+            ReaderType::File(ref mut f)  => f.read(buf),
+            ReaderType::Stdin(ref mut s) => {
                 let mut len_read = 0;
                 let mut tries    = 0;
                 while len_read < buf.len() && tries < READ_RETRIES {

@@ -35,6 +35,7 @@ impl fmt::Display for Error {
         use self::ErrorKind::*;
         match self.kind {
             FileError(ref e)   => write!(f, "File error : {}", e),
+            StdinError(ref e)  => write!(f, "Stdin error : {}", e),
             LogError(ref e)    => write!(f, "Log error : {}", e),
             MessageOnly(ref e) => write!(f, "Error : {}", e),
         }
