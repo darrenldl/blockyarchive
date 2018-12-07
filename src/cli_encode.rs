@@ -140,6 +140,10 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
     if matches.is_present("info_only") {
         json_printer.print_open_bracket(Some("stats"), BracketType::Curly);
 
+        if file_utils::check_if_file_is_stdin(in_file) {
+            exit_with_msg!(usr json_printer => "No information is available for stdin input");
+        }
+
         let in_file_meta  = match file_utils::get_file_metadata(in_file) {
             Ok(x)  => x,
             Err(_) => exit_with_msg!(usr json_printer => "Failed to get metadata of \"{}\"",
