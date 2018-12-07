@@ -1,5 +1,6 @@
 use file_error;
 use stdin_error;
+use stdout_error;
 use log;
 use std::fmt;
 
@@ -7,6 +8,7 @@ use std::fmt;
 pub enum ErrorKind {
     FileError(file_error::FileError),
     StdinError(stdin_error::StdinError),
+    StdoutError(stdout_error::StdoutError),
     LogError(log::LogError),
     MessageOnly(String)
 }
@@ -34,10 +36,11 @@ impl fmt::Display for Error {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorKind::*;
         match self.kind {
-            FileError(ref e)   => write!(f, "File error : {}", e),
-            StdinError(ref e)  => write!(f, "Stdin error : {}", e),
-            LogError(ref e)    => write!(f, "Log error : {}", e),
-            MessageOnly(ref e) => write!(f, "Error : {}", e),
+            FileError(ref e)    => write!(f, "File error : {}", e),
+            StdinError(ref e)   => write!(f, "Stdin error : {}", e),
+            StdoutError(ref e)  => write!(f, "Stdout error : {}", e),
+            LogError(ref e)     => write!(f, "Log error : {}", e),
+            MessageOnly(ref e)  => write!(f, "Error : {}", e),
         }
     }
 }

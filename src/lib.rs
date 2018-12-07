@@ -52,6 +52,7 @@ macro_rules! break_if_eof_seen {
 
 mod file_error;
 mod stdin_error;
+mod stdout_error;
 
 mod general_error;
 use general_error::Error;
