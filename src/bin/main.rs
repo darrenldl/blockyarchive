@@ -1,7 +1,6 @@
 extern crate clap;
 use clap::*;
 
-#[macro_use]
 extern crate rsbx_lib;
 use rsbx_lib::*;
 
