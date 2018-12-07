@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use file_writer::FileWriter;
 use std::io::SeekFrom;
 use general_error::Error;
