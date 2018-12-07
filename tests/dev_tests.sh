@@ -25,6 +25,14 @@ if [[ $? != 0 ]]; then
     test_failed=$[$test_failed+1]
 fi
 
+echo "========================================"
+echo "Starting version tests (stdin as encode input)"
+echo "========================================"
+./version_tests_encode_stdin.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
 # nometa tests
 echo "========================================"
 echo "Starting nometa tests"
