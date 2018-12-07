@@ -106,7 +106,19 @@ macro_rules! get_in_file {
                       => $json_enabled
                       => "File \"{}\" does not exist", in_file);
         in_file
-    }}
+    }};
+    (
+        accept_stdin $matches:expr, $json_enabled:expr
+    ) => {{
+        use file_utils;
+        let in_file  = $matches.value_of("in_file").unwrap();
+        if !file_utils::check_if_file_is_stdin(in_file) {
+            exit_if_file!(not_exists in_file
+                          => $json_enabled
+                          => "File \"{}\" does not exist", in_file);
+        }
+        in_file
+    }};
 }
 
 macro_rules! get_version {
