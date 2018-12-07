@@ -211,13 +211,20 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                       => json_printer
                       => "File \"{}\" already exists", out);
 
+        let in_file =
+            if file_utils::check_if_file_is_stdin(in_file) {
+                None
+            } else {
+                Some(in_file)
+            };
+
         let param = Param::new(version,
                                &uid,
                                data_par_burst,
                                meta_enabled,
                                &json_printer,
                                hash_type,
-                               Some(in_file),
+                               in_file,
                                &out,
                                pr_verbosity_level);
         match encode_core::encode_file(&param) {
