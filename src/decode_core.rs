@@ -16,6 +16,8 @@ use file_reader::{FileReader,
                   FileReaderParam};
 use file_writer::{FileWriter,
                   FileWriterParam};
+use writer::{Writer,
+             WriterType};
 
 use multihash;
 use multihash::*;
@@ -268,10 +270,14 @@ pub fn decode(param           : &Param,
         None        => panic!(),
         Some(ref x) => x,
     };
-    let mut writer = FileWriter::new(out_file,
-                                     FileWriterParam { read     : false,
-                                                       append   : false,
-                                                       buffered : true   })?;
+
+    let mut writer = match param.out_file {
+        Some(ref out_file) => Writer::new(WriterType::File(FileWriter::new(out_file,
+                                                                           FileWriterParam { read     : false,
+                                                                                             append   : false,
+                                                                                             buffered : true   })?)),
+        None               => Writer::new(WriterType::Stdout(std::io::stdout())),
+    };
 
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block,
                                                in_file_size,
