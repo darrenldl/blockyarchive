@@ -51,8 +51,8 @@ impl Reader {
 
     pub fn metadata(&self) -> Option<Result<Metadata, Error>> {
         match self.reader {
-            ReaderType::File(f)  => Some(f.metadata()),
-            ReaderType::Stdin(_) => None,
+            ReaderType::File(ref f) => Some(f.metadata()),
+            ReaderType::Stdin(_)    => None,
         }
     }
 

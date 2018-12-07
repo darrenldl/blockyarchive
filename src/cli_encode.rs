@@ -203,7 +203,7 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                                meta_enabled,
                                &json_printer,
                                hash_type,
-                               in_file,
+                               Some(in_file),
                                &out,
                                pr_verbosity_level);
         match encode_core::encode_file(&param) {
