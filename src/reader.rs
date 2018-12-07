@@ -47,4 +47,11 @@ impl Reader {
             }
         }
     }
+
+    pub fn get_file_size(&mut self) -> Option<Result<u64, Error>> {
+        match self.reader {
+            ReaderType::File(ref mut f)  => Some(f.get_file_size()),
+            ReaderType::Stdin(_)         => None,
+        }
+    }
 }
