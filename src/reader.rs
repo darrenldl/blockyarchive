@@ -1,6 +1,7 @@
 use file_reader::FileReader;
 use general_error::Error;
 use std::io::Read;
+use std::fs::Metadata;
 use stdin_error::{StdinError,
                   to_err};
 
@@ -45,6 +46,13 @@ impl Reader {
                 Ok(ReadResult { len_read,
                                 eof_seen : len_read < buf.len() })
             }
+        }
+    }
+
+    pub fn metadata(&self) -> Option<Result<Metadata, Error>> {
+        match self.reader {
+            ReaderType::File(f)  => Some(f.metadata()),
+            ReaderType::Stdin(_) => None,
         }
     }
 

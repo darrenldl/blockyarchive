@@ -16,6 +16,8 @@ use cli_utils::setup_ctrlc_handler;
 
 use file_reader::{FileReader,
                   FileReaderParam};
+use reader::{Reader,
+             ReaderType};
 use file_writer::{FileWriter,
                   FileWriterParam};
 
@@ -206,7 +208,7 @@ impl ProgressReport for Stats {
 fn pack_metadata(block         : &mut Block,
                  param         : &Param,
                  stats         : &Stats,
-                 file_metadata : &fs::Metadata,
+                 file_metadata : &Option<fs::Metadata>,
                  file_size     : u64,
                  hash          : Option<multihash::HashBytes>) {
     block.set_seq_num(0);
@@ -222,12 +224,16 @@ fn pack_metadata(block         : &mut Block,
     { // add file size
         meta.push(Metadata::FSZ(file_size)); }
     { // add file last modifcation time
-        match file_metadata.modified() {
-            Ok(t)  => match t.duration_since(UNIX_EPOCH) {
-                Ok(t)  => meta.push(Metadata::FDT(t.as_secs() as i64)),
-                Err(_) => {}
-            },
-            Err(_) => {} }}
+        match file_metadata {
+            &Some(m) =>
+                match m.modified() {
+                    Ok(t)  => match t.duration_since(UNIX_EPOCH) {
+                        Ok(t)  => meta.push(Metadata::FDT(t.as_secs() as i64)),
+                        Err(_) => {}
+                    },
+                    Err(_) => {}
+                },
+            &None => {} } }
     { // add sbx encoding time
         meta.push(Metadata::SDT(stats.start_time as i64)); }
     { // add hash
@@ -247,7 +253,7 @@ fn pack_metadata(block         : &mut Block,
 
 fn write_meta_blocks(param         : &Param,
                      stats         : &Arc<Mutex<Stats>>,
-                     file_metadata : &fs::Metadata,
+                     file_metadata : &Option<fs::Metadata>,
                      file_size     : u64,
                      hash          : Option<multihash::HashBytes>,
                      block         : &mut Block,
@@ -337,29 +343,35 @@ pub fn encode_file(param : &Param)
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
     // setup file reader and writer
-    let mut reader = FileReader::new(&param.in_file,
-                                     FileReaderParam { write    : false,
-                                                       buffered : true   })?;
+    let mut reader = Reader::new(ReaderType::File(FileReader::new(&param.in_file,
+                                                                  FileReaderParam { write    : false,
+                                                                                    buffered : true   })?));
     let mut writer = FileWriter::new(&param.out_file,
                                      FileWriterParam { read     : false,
                                                        append   : false,
                                                        buffered : true   })?;
 
     { // check if in file size exceeds maximum
-        let in_file_size     = reader.get_file_size()?;
-        let max_in_file_size = ver_to_max_data_file_size(param.version);
+        match reader.get_file_size() {
+            None    => {},
+            Some(r) => {
+                let in_file_size = r?;
 
-        if in_file_size > max_in_file_size {
-            return Err(Error::with_message(&format!("File size of \"{}\" exceeds the maximum supported file size, size : {}, max : {}",
-                                                    &param.in_file,
-                                                    in_file_size,
-                                                    max_in_file_size)));
+                let max_in_file_size = ver_to_max_data_file_size(param.version);
+
+                if in_file_size > max_in_file_size {
+                    return Err(Error::with_message(&format!("File size of \"{}\" exceeds the maximum supported file size, size : {}, max : {}",
+                                                            &param.in_file,
+                                                            in_file_size,
+                                                            max_in_file_size)));
+                }
+            }
         }
     }
 
-    let metadata = reader.metadata()?;
+    let metadata = reader.metadata();
 
-    let file_size = reader.get_file_size()?;
+    let file_size = reader.get_file_size();
 
     // setup stats
     let stats = Arc::new(Mutex::new(Stats::new(param, file_size)));
