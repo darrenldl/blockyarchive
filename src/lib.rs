@@ -105,6 +105,7 @@ mod progress_report;
 
 mod reader;
 mod file_reader;
+mod writer;
 mod file_writer;
 
 mod cli_utils;
