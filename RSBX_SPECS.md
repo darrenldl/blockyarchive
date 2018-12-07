@@ -146,13 +146,15 @@ Data block is valid if and only if
    - if log file is specified, then
 
      - if the log file exists, then it will be used to initialize the scan's starting position
-
        - bytes_processed field will be rounded down to closest multiple of 128 automatically
 
    - the log file will be updated on every ~1.0 second
+
    - each block is appended to OUTDIR/UID, where :
+
      - OUTDIR = output directory specified
      - UID    = uid of the block in hex (uppercase)
+
    - the original bytes in the file is used, that is, the output block bytes are not generated from scratch by rsbx
 2. User is expected to attempt to decode the rescued data in OUTDIR using the rsbx decode command
 
