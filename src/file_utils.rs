@@ -37,6 +37,14 @@ pub fn check_if_file_is_dir(file : &str) -> bool {
     Path::new(file).is_dir()
 }
 
+pub fn check_if_file_is_stdin(file : &str) -> bool {
+    file == "-"
+}
+
+pub fn check_if_file_is_stdout(file : &str) -> bool {
+    file == "-"
+}
+
 pub fn calc_meta_block_count_exc_burst_gaps(version        : Version,
                                             meta_enabled   : Option<bool>,
                                             data_par_burst : Option<(usize, usize, usize)>)

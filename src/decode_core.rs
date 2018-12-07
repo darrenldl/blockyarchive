@@ -480,42 +480,51 @@ pub fn decode_file(param : &Param)
         };
 
     // compute output file name
-    let out_file_path : String = match param.out_file {
+    let out_file_path : Option<String> = match param.out_file {
         None => {
             match recorded_file_name {
                 None    => { return Err(Error::with_message("No original file name was found in SBX container and no output file name/path was provided")); },
-                Some(x) => x
+                Some(x) => Some(x)
             }
         },
         Some(ref out) => {
-            if file_utils::check_if_file_is_dir(&out) {
+            if        file_utils::check_if_file_is_stdout(out) {
+                None
+            } else if file_utils::check_if_file_is_dir(out) {
                 match recorded_file_name {
                     None    => { return Err(Error::with_message(&format!("No original file name was found in SBX container and \"{}\" is a directory",
                                                                          &out))); }
                     Some(x) => {
-                        misc_utils::make_path(&[&out, &x])
+                        Some(misc_utils::make_path(&[out, &x]))
                     }
                 }
             } else {
-                out.clone()
+                Some(out.clone())
             }
         }
     };
 
     // check if can write out
-    if !param.force_write {
-        if file_utils::check_if_file_exists(&out_file_path) {
-            return Err(Error::with_message(&format!("File \"{}\" already exists",
-                                                    out_file_path)));
+    if let Some(ref out_file_path) = out_file_path {
+        if !param.force_write {
+            if file_utils::check_if_file_exists(out_file_path) {
+                return Err(Error::with_message(&format!("File \"{}\" already exists",
+                                                        out_file_path)));
+            }
         }
     }
+
+    let out_file_path : Option<&str> = match out_file_path {
+        Some(ref f) => Some(f),
+        None        => None,
+    };
 
     // regenerate param
     let param = Param::new(param.ref_block_choice,
                            param.force_write,
                            &param.json_printer,
                            &param.in_file,
-                           Some(&out_file_path),
+                           out_file_path,
                            param.verbose,
                            param.pr_verbosity_level);
 
