@@ -30,6 +30,7 @@ use sbx_specs::Version;
 use sbx_block::Block;
 use sbx_block;
 use sbx_specs::{ver_to_block_size,
+                ver_to_data_size,
                 SBX_LARGEST_BLOCK_SIZE,
                 SBX_FILE_UID_LEN,
                 ver_uses_rs,
@@ -266,10 +267,6 @@ pub fn decode(param           : &Param,
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
-    let out_file : &str = match param.out_file {
-        None        => panic!(),
-        Some(ref x) => x,
-    };
 
     let mut writer = match param.out_file {
         Some(ref out_file) => Writer::new(WriterType::File(FileWriter::new(out_file,
@@ -356,7 +353,10 @@ pub fn decode(param           : &Param,
                                                      block.get_seq_num(),
                                                      data_par_shards)
             {
-                writer.seek(SeekFrom::Start(write_pos as u64))?;
+                match writer.seek(SeekFrom::Start(write_pos as u64)) {
+                    Some(r) => { r?; },
+                    None    => {},
+                }
 
                 writer.write(sbx_block::slice_data_buf(ref_block.get_version(),
                                                        &buffer))?;
@@ -371,7 +371,10 @@ pub fn decode(param           : &Param,
         match ref_block.get_FSZ().unwrap() {
             None    => {},
             Some(x) => {
-                writer.set_len(x)?;
+                match writer.set_len(x) {
+                    Some(r) => { r?; },
+                    None    => {},
+                }
             }
         }
     } else {
@@ -386,7 +389,12 @@ pub fn decode(param           : &Param,
         }
     }
 
-    stats.lock().unwrap().out_file_size = writer.get_file_size()?;
+    let data_blocks_decoded = stats.lock().unwrap().data_blocks_decoded;
+
+    stats.lock().unwrap().out_file_size = match writer.get_file_size() {
+        Some(r) => r?,
+        None    => data_blocks_decoded * ver_to_data_size(ref_block.get_version()) as u64,
+    };
 
     let res = stats.lock().unwrap().clone();
 
