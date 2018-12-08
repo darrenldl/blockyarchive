@@ -329,7 +329,8 @@ macro_rules! get_json_printer {
     ) => {{
         use json_printer::JSONPrinter;
         use std::sync::Arc;
+        use output_channel::OutputChannel;
 
-        Arc::new(JSONPrinter::new($matches.is_present("json")))
+        Arc::new(JSONPrinter::new($matches.is_present("json"), OutputChannel::Stdout))
     }}
 }

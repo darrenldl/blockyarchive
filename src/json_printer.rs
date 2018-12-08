@@ -7,6 +7,8 @@ use misc_utils::to_camelcase;
 
 use std::fmt;
 
+use output_channel::OutputChannel;
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum BracketType {
     Curly,
@@ -30,15 +32,17 @@ impl JSONContext {
 
 #[derive(Debug)]
 pub struct JSONPrinter {
-    json_enabled : bool,
-    contexts     : Mutex<SmallVec<[JSONContext; 8]>>
+    json_enabled   : bool,
+    output_channel : OutputChannel,
+    contexts       : Mutex<SmallVec<[JSONContext; 8]>>
 }
 
 impl Clone for JSONPrinter {
     fn clone(&self) -> Self {
         JSONPrinter {
-            json_enabled : self.json_enabled,
-            contexts     : Mutex::new(self.contexts.lock().unwrap().clone())
+            json_enabled   : self.json_enabled,
+            output_channel : self.output_channel,
+            contexts       : Mutex::new(self.contexts.lock().unwrap().clone())
         }
     }
 }
@@ -76,15 +80,24 @@ fn bracket_type_to_str_close(bracket_type : BracketType) -> &'static str {
 }
 
 impl JSONPrinter {
-    pub fn new(json_enabled : bool) -> JSONPrinter {
+    pub fn new(json_enabled : bool, output_channel : OutputChannel) -> JSONPrinter {
         JSONPrinter {
             json_enabled,
+            output_channel,
             contexts     : Mutex::new(SmallVec::new()),
         }
     }
 
     pub fn json_enabled(&self) -> bool {
         self.json_enabled
+    }
+
+    pub fn output_channel(&self) -> OutputChannel {
+        self.output_channel
+    }
+
+    pub fn set_output_channel(&mut self, output_channel : OutputChannel) {
+        self.output_channel = output_channel
     }
 
     pub fn first_item(&self) -> bool {

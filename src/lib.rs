@@ -81,6 +81,7 @@ mod time_utils_tests;
 mod integer_utils;
 mod integer_utils_tests;
 mod block_utils;
+mod output_channel;
 
 pub mod sbx_block;
 pub mod sbx_specs;
