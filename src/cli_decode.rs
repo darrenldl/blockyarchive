@@ -41,7 +41,26 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
     // update json_printer output channel if stdout is going to be used by file output
     if let Some(ref f) = out {
         if file_utils::check_if_file_is_stdout(f) {
-            Arc::get_mut(&mut json_printer).unwrap().set_output_channel(OutputChannel::Stderr)
+            let output_channel = OutputChannel::Stderr;
+
+            if !json_printer.json_enabled() {
+                println_at_output_channel!(output_channel => "Warning :");
+                println_at_output_channel!(output_channel => "");
+                println_at_output_channel!(output_channel => "   Since output is stdout, rsbx can only output data chunks in the");
+                println_at_output_channel!(output_channel => "   same order as the stored SBX blocks.");
+                println_at_output_channel!(output_channel => "");
+                println_at_output_channel!(output_channel => "   In other words, if the SBX blocks are not correctly ordered, then");
+                println_at_output_channel!(output_channel => "   the output data will be incorrect.");
+                println_at_output_channel!(output_channel => "");
+                println_at_output_channel!(output_channel => "   You may fix this by sorting the SBX container using the rsbx sort");
+                println_at_output_channel!(output_channel => "   command.");
+                println_at_output_channel!(output_channel => "");
+                println_at_output_channel!(output_channel => "   Also since rsbx cannot truncate the resulting output, data padding");
+                println_at_output_channel!(output_channel => "   may persist at the end of output.");
+                println_at_output_channel!(output_channel => "");
+            }
+
+            Arc::get_mut(&mut json_printer).unwrap().set_output_channel(output_channel);
         }
     }
 
