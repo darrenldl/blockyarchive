@@ -275,6 +275,23 @@ pub fn decode(param           : &Param,
               -> Result<Stats, Error> {
     let in_file_size = file_utils::get_file_size(&param.in_file)?;
 
+    let orig_file_size =
+        if ref_block.is_meta() {
+            ref_block.get_FSZ().unwrap()
+        } else {
+            None
+        };
+
+    let data_par_burst =
+        if ver_uses_rs(param.version) {
+        } else {
+            None
+        };
+
+    let last_seq_num = file_utils::from_orig_file_size::calc_total_block_count_exc_burst_exc_burst_gaps(param.version,
+                                                                                                        Some(true),
+                                                                                                        ());
+
     let json_printer = &param.json_printer;
 
     let mut reader = FileReader::new(&param.in_file,
@@ -384,9 +401,8 @@ pub fn decode(param           : &Param,
         match ref_block.get_FSZ().unwrap() {
             None    => {},
             Some(x) => {
-                match writer.set_len(x) {
-                    Some(r) => { r?; },
-                    None    => {},
+                if let Some(r) writer.set_len(x) {
+                    r?;
                 }
             }
         }
