@@ -335,6 +335,7 @@ macro_rules! get_json_printer {
     }}
 }
 
+#[macro_export]
 macro_rules! print_at_output_channel {
     (
         $channel:expr => $($x:expr),*
@@ -348,6 +349,7 @@ macro_rules! print_at_output_channel {
     }}
 }
 
+#[macro_export]
 macro_rules! println_at_output_channel {
     (
         $channel:expr => $($x:expr),*
