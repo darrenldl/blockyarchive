@@ -3,6 +3,7 @@ use std::fmt;
 use file_utils;
 use misc_utils;
 use std::io::SeekFrom;
+use progress_report;
 
 use json_printer::{JSONPrinter,
                    BracketType};
@@ -514,6 +515,12 @@ pub fn decode_file(param : &Param)
         }
     }
 
+    // if output to stdout, disable progress report
+    let pr_verbosity_level = match out_file_path {
+        Some(_) => param.pr_verbosity_level,
+        None    => progress_report::PRVerbosityLevel::L0,
+    };
+
     let out_file_path : Option<&str> = match out_file_path {
         Some(ref f) => Some(f),
         None        => None,
@@ -526,7 +533,7 @@ pub fn decode_file(param : &Param)
                            &param.in_file,
                            out_file_path,
                            param.verbose,
-                           param.pr_verbosity_level);
+                           pr_verbosity_level);
 
     let mut stats = decode(&param,
                            ref_block_pos,
