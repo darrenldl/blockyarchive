@@ -1,4 +1,4 @@
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum OutputChannel {
     Stdout,
     Stderr,

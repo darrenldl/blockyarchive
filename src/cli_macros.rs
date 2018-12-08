@@ -3,7 +3,7 @@ macro_rules! exit_with_msg {
     (
         ok $json_printer:expr => $($x:expr),*
     ) => {{
-        print!($($x),*);
+        print_at_output_channel!($json_printer.output_channel() => $($x),*);
         print_field_if_json!($json_printer, "error : null");
         $json_printer.print_close_bracket();
         return 0;
@@ -12,9 +12,9 @@ macro_rules! exit_with_msg {
         usr $json_printer:expr => $($x:expr),*
     ) => {{
         if $json_printer.json_enabled() {
-            print_json_field!("error", format!($($x),*), false, $json_printer.first_item());
+            print_json_field!($json_printer.output_channel() => "error", format!($($x),*), false, $json_printer.first_item());
         } else {
-            println!($($x),*);
+            println_at_output_channel!($json_printer.output_channel() => $($x),*);
         }
         $json_printer.print_close_bracket();
         return 1;
@@ -23,9 +23,9 @@ macro_rules! exit_with_msg {
         op $json_printer:expr => $($x:expr),*
     ) => {{
         if $json_printer.json_enabled() {
-            print_json_field!("error", format!($($x),*), false, $json_printer.first_item());
+            print_json_field!($json_printer.output_channel() => "error", format!($($x),*), false, $json_printer.first_item());
         } else {
-            println!($($x),*);
+            println_at_output_channel!($json_printer.output_channel() => $($x),*);
         }
         $json_printer.print_close_bracket();
         return 2;
@@ -332,5 +332,31 @@ macro_rules! get_json_printer {
         use output_channel::OutputChannel;
 
         Arc::new(JSONPrinter::new($matches.is_present("json"), OutputChannel::Stdout))
+    }}
+}
+
+macro_rules! print_at_output_channel {
+    (
+        $channel:expr => $($x:expr),*
+    ) => {{
+        use output_channel::OutputChannel;
+
+        match $channel {
+            OutputChannel::Stdout => print!($($x),*),
+            OutputChannel::Stderr => eprint!($($x),*),
+        }
+    }}
+}
+
+macro_rules! println_at_output_channel {
+    (
+        $channel:expr => $($x:expr),*
+    ) => {{
+        use output_channel::OutputChannel;
+
+        match $channel {
+            OutputChannel::Stdout => println!($($x),*),
+            OutputChannel::Stderr => eprintln!($($x),*),
+        }
     }}
 }

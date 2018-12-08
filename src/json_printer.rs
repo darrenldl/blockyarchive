@@ -47,13 +47,6 @@ impl Clone for JSONPrinter {
     }
 }
 
-fn print_comma_if_not_first(context : &mut JSONContext) {
-    if !context.first_item {
-        print!(",");
-    }
-    context.first_item = false;
-}
-
 fn write_comma_if_not_first(f       : &mut fmt::Formatter,
                             context : &mut JSONContext)
                             -> fmt::Result {
@@ -104,6 +97,13 @@ impl JSONPrinter {
         self.contexts.lock().unwrap().last().unwrap().first_item
     }
 
+    fn print_comma_if_not_first(&self, context : &mut JSONContext) {
+        if !context.first_item {
+            print_at_output_channel!(self.output_channel => ",");
+        }
+        context.first_item = false;
+    }
+
     pub fn print_open_bracket(&self,
                               name         : Option<&str>,
                               bracket_type : BracketType) {
@@ -111,15 +111,15 @@ impl JSONPrinter {
 
         match self.contexts.lock().unwrap().last_mut() {
             None    => {},
-            Some(x) => print_comma_if_not_first(x)
+            Some(x) => self.print_comma_if_not_first(x)
         }
 
         match name {
             None    => {},
-            Some(n) => print!("\"{}\": ", to_camelcase(n))
+            Some(n) => print_at_output_channel!(self.output_channel => "\"{}\": ", to_camelcase(n))
         }
 
-        println!("{}", bracket_type_to_str_open(bracket_type));
+        println_at_output_channel!(self.output_channel => "{}", bracket_type_to_str_open(bracket_type));
 
         self.contexts.lock().unwrap().push(JSONContext::new(bracket_type));
     }
@@ -152,7 +152,7 @@ impl JSONPrinter {
 
         let context = self.contexts.lock().unwrap().pop().unwrap();
 
-        println!("{}", bracket_type_to_str_close(context.bracket_type));
+        println_at_output_channel!(self.output_channel => "{}", bracket_type_to_str_close(context.bracket_type));
     }
 
     pub fn write_close_bracket(&self,
@@ -173,11 +173,11 @@ impl JSONPrinter {
 
             let (l, r) : (&str, &str) = split_key_val_pair(&msg);
 
-            print_json_field!(l, r, skip_quotes, context.first_item);
+            print_json_field!(self.output_channel => l, r, skip_quotes, context.first_item);
 
             context.first_item = false;
         } else {
-            println!("{}", msg);
+            println_at_output_channel!(self.output_channel => "{}", msg);
         }
     }
 

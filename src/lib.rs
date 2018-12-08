@@ -65,6 +65,9 @@ mod json_macros;
 mod misc_macros;
 
 #[macro_use]
+mod cli_macros;
+
+#[macro_use]
 mod block_preds;
 
 mod multihash;
@@ -81,7 +84,7 @@ mod time_utils_tests;
 mod integer_utils;
 mod integer_utils_tests;
 mod block_utils;
-mod output_channel;
+pub mod output_channel;
 
 pub mod sbx_block;
 pub mod sbx_specs;
@@ -90,9 +93,6 @@ mod sbx_specs_tests;
 mod log;
 
 mod rs_codec;
-
-#[macro_use]
-mod cli_macros;
 
 mod encode_core;
 mod decode_core;

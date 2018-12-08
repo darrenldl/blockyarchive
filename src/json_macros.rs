@@ -28,19 +28,19 @@ macro_rules! write_json_field {
 
 macro_rules! print_json_field {
     (
-        $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
+        $output_channel:expr => $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
     ) => {{
         use misc_utils::{escape_quotes,
                          to_camelcase};
 
         if !$no_comma {
-            print!(",");
+            print_at_output_channel!($output_channel => ",");
         }
 
         if $skip_quotes || skip_quote_for_term!($val) {
-            println!("\"{}\": {}", to_camelcase($key), escape_quotes(&$val));
+            println_at_output_channel!($output_channel => "\"{}\": {}", to_camelcase($key), escape_quotes(&$val));
         } else {
-            println!("\"{}\": \"{}\"", to_camelcase($key), escape_quotes(&$val));
+            println_at_output_channel!($output_channel => "\"{}\": \"{}\"", to_camelcase($key), escape_quotes(&$val));
         }
     }};
 }
