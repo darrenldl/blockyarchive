@@ -5,6 +5,9 @@
   - Updated `ring` from `0.12.1` to `0.13.2`
 - Doc fix
   - Added space before parantheses in code comments, documentation and help messages
+- Added stdin input option for encode mode
+- Added stdout output option for decode mode
+- Fixed data padding bytes calculation in encode mode
 
 ## 1.1.2
 
