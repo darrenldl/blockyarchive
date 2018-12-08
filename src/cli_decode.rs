@@ -53,7 +53,7 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
                 println_at_output_channel!(output_channel => "   the output data will be incorrect.");
                 println_at_output_channel!(output_channel => "");
                 println_at_output_channel!(output_channel => "   You may fix this by sorting the SBX container using the rsbx sort");
-                println_at_output_channel!(output_channel => "   command.");
+                println_at_output_channel!(output_channel => "   command before decoding to stdout.");
                 println_at_output_channel!(output_channel => "");
                 println_at_output_channel!(output_channel => "   Also since rsbx cannot truncate the resulting output, data padding");
                 println_at_output_channel!(output_channel => "   may persist at the end of output.");
