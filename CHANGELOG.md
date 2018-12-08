@@ -1,4 +1,4 @@
-## 1.1.3
+## 2.0.0
 
 - Dependencies upate
   - Updated `rand` from `0.4` to `0.5.4`
