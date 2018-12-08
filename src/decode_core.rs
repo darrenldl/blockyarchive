@@ -3,7 +3,6 @@ use std::fmt;
 use file_utils;
 use misc_utils;
 use std::io::SeekFrom;
-use progress_report;
 
 use json_printer::{JSONPrinter,
                    BracketType};
@@ -556,5 +555,8 @@ pub fn decode_file(param : &Param)
                                &ref_block,
                                &ctrlc_stop_flag)?;
 
-    Ok(Some(stats))
+    match out_file_path {
+        Some(_) => Ok(Some(stats)),
+        None    => Ok(None),
+    }
 }
