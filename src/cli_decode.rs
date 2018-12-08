@@ -6,6 +6,11 @@ use json_printer::BracketType;
 use clap::*;
 use cli_utils::*;
 
+use output_channel::OutputChannel;
+use file_utils;
+
+use std::sync::Arc;
+
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("decode")
         .about("Decode SBX container")
@@ -29,14 +34,22 @@ it is used directly."))
 }
 
 pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
-    let json_printer = get_json_printer!(matches);
+    let mut json_printer = get_json_printer!(matches);
+
+    let out              = matches.value_of("out");
+
+    // update json_printer output channel if stdout is going to be used by file output
+    if let Some(ref f) = out {
+        if file_utils::check_if_file_is_stdout(f) {
+            Arc::get_mut(&mut json_printer).unwrap().set_output_channel(OutputChannel::Stderr)
+        }
+    }
 
     json_printer.print_open_bracket(None, BracketType::Curly);
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
     let in_file = get_in_file!(matches, json_printer);
-    let out     = matches.value_of("out");
 
     let param = Param::new(get_ref_block_choice!(matches),
                            matches.is_present("force"),
