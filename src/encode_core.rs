@@ -509,6 +509,7 @@ pub fn encode_file(param : &Param)
                                  &mut writer)?;
 
                 stats.lock().unwrap().data_blocks_written += 1;
+                stats.lock().unwrap().data_padding_bytes  += ver_to_data_size(param.version);
 
                 if let Some(parity_to_use) =
                     rs_codec.encode_no_block_sync(&padding)
