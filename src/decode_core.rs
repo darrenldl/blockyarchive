@@ -63,7 +63,7 @@ pub struct Stats {
 }
 
 #[derive(Clone, Debug)]
-enum HashResult {
+pub enum HashResult {
     MaybeHash(Option<HashBytes>),
     NothingToHash,
 }
@@ -145,20 +145,23 @@ impl fmt::Display for Stats {
             })?;
         }
         match (recorded_hash, computed_hash) {
-            (&Some(ref recorded_hash), &Some(ref computed_hash)) => {
+            (_,                        &NothingToHash)                      => {
+                write_if!(not_json => f, json_printer => "No hash is available for stdout output";)?;
+            },
+            (&Some(ref recorded_hash), &MaybeHash(Some(ref computed_hash))) => {
                 if recorded_hash.1 == computed_hash.1 {
                     write_if!(not_json => f, json_printer => "The output file hash matches the recorded hash";)?;
                 } else {
                     write_if!(not_json => f, json_printer => "The output file does NOT match the recorded hash";)?;
                 }
             },
-            (&Some(_),                 &None)                    => {
+            (&Some(_),                 &MaybeHash(None))                    => {
                 write_if!(not_json => f, json_printer => "No hash is available for output file";)?;
             },
-            (&None,                    &Some(_))                 => {
+            (&None,                    &MaybeHash(Some(_)))                 => {
                 write_if!(not_json => f, json_printer => "No recorded hash is available";)?;
             },
-            (&None,                    &None)                    => {
+            (&None,                    &MaybeHash(None))                    => {
                 write_if!(not_json => f, json_printer => "Neither recorded hash nor output file hash is available";)?;
             }
         }
@@ -235,7 +238,7 @@ impl Stats {
             start_time              : 0.,
             end_time                : 0.,
             recorded_hash           : None,
-            computed_hash           : None,
+            computed_hash           : HashResult::MaybeHash(None),
             json_printer            : Arc::clone(json_printer),
         }
     }
