@@ -269,6 +269,43 @@ impl ProgressReport for Stats {
     fn total_units(&self)        -> u64      { self.total_blocks as u64 }
 }
 
+fn write_data_only_block(data_par_shards              : Option<(u64, u64, u64)>,
+                         data_size_of_last_data_block : u64,
+                         block                        : Block,
+                         writer                       : &mut Writer,
+                         buffer                       : &[u8])
+                         -> Result<(), Error> {
+    match data_par_shards {
+        Some((data, par)) => {
+            if !block.is_parity(data, par) {
+                writer.write(
+                    match last_data_seq_num {
+                        Some(last_data_seq_num) => {
+                            if seq_num as u64 == last_data_seq_num {
+                                &sbx_block::slice_data_buf(ref_block.get_version(),
+                                                           &buffer)
+                                    [0..data_size_of_last_data_block.unwrap() as usize]
+                            } else {
+                                sbx_block::slice_data_buf(ref_block.get_version(),
+                                                          &buffer)
+                            }
+                        },
+                        None =>
+                            sbx_block::slice_data_buf(ref_block.get_version(),
+                                                      &buffer)
+                    }
+                )?;
+            }
+        },
+        None              => {
+            writer.write(
+                sbx_block::slice_data_buf(ref_block.get_version(),
+                                          &buffer)
+            )?;
+        },
+    }
+}
+
 pub fn decode(param           : &Param,
               ref_block_pos   : u64,
               ref_block       : &Block,
@@ -429,87 +466,110 @@ pub fn decode(param           : &Param,
                 None                 => None,
             };
 
-            let mut seq_num = 1;
-            while seq_num <= SBX_LAST_SEQ_NUM {
-                break_if_atomic_bool!(ctrlc_stop_flag);
+            match last_data_seq_num {
+                Some(last_data_seq_num) => {
+                    // do burst resistant pattern read
+                    let mut seq_num = 1;
+                    while seq_num <= last_data_seq_num {
+                        break_if_atomic_bool!(ctrlc_stop_flag);
 
-                let pos = sbx_block::calc_data_block_write_pos(ref_block.get_version(),
-                                                               seq_num,
-                                                               None,
-                                                               data_par_burst);
+                        let pos = sbx_block::calc_data_block_write_pos(ref_block.get_version(),
+                                                                       seq_num,
+                                                                       None,
+                                                                       data_par_burst);
 
-                reader.seek(SeekFrom::Start(pos))?;
+                        reader.seek(SeekFrom::Start(pos))?;
 
-                // read at reference block block size
-                let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
-                                                                    &mut buffer))?;
+                        // read at reference block block size
+                        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+                                                                            &mut buffer))?;
 
-                break_if_eof_seen!(read_res);
+                        break_if_eof_seen!(read_res);
 
-                match block.sync_from_buffer(&buffer, Some(&pred)) {
-                    Ok(_)  => {
-                        if block.get_seq_num() != seq_num {
+                        match block.sync_from_buffer(&buffer, Some(&pred)) {
+                            Ok(_)  => {
+                                if block.get_seq_num() != seq_num {
+                                    stats.lock().unwrap().blocks_decode_failed += 1;
+                                    continue;
+                                }
+                            },
+                            Err(_) => {
+                                stats.lock().unwrap().blocks_decode_failed += 1;
+                                continue;
+                            },
+                        }
+
+
+                        if block.is_meta() { // do nothing if block is meta
+                            stats.lock().unwrap().meta_blocks_decoded += 1;
+                        } else {
+                            match data_par_shards {
+                                Some((data, par)) => {
+                                    if block.is_parity(data, par) {
+                                        stats.lock().unwrap().data_par_blocks_decoded += 1;
+                                    } else {
+                                        stats.lock().unwrap().data_blocks_decoded += 1;
+                                    }
+                                },
+                                None => {
+                                    stats.lock().unwrap().data_blocks_decoded += 1;
+                                }
+                            }
+
+                            // write data block
+                            write_data_only_block(data_par_shards,
+                                                  data_size_of_last_data_block,
+                                                  block,
+                                                  &mut writer,
+                                                  buffer)?;
+                        }
+
+                        seq_num += 1;
+                    }
+                },
+                None                    => {
+                    // do sequential read
+                    loop {
+                        break_if_atomic_bool!(ctrlc_stop_flag);
+
+                        // read at reference block block size
+                        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+                                                                            &mut buffer))?;
+
+                        break_if_eof_seen!(read_res);
+
+                        if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
                             stats.lock().unwrap().blocks_decode_failed += 1;
                             continue;
                         }
-                    },
-                    Err(_) => {
-                        stats.lock().unwrap().blocks_decode_failed += 1;
-                        continue;
-                    },
-                }
 
-
-                if block.is_meta() { // do nothing if block is meta
-                    stats.lock().unwrap().meta_blocks_decoded += 1;
-                } else {
-                    match data_par_shards {
-                        Some((data, par)) => {
-                            if block.is_parity(data, par) {
-                                stats.lock().unwrap().data_par_blocks_decoded += 1;
-                            } else {
-                                stats.lock().unwrap().data_blocks_decoded += 1;
+                        if block.is_meta() { // do nothing if block is meta
+                            stats.lock().unwrap().meta_blocks_decoded += 1;
+                        } else {
+                            match data_par_shards {
+                                Some((data, par)) => {
+                                    if block.is_parity(data, par) {
+                                        stats.lock().unwrap().data_par_blocks_decoded += 1;
+                                    } else {
+                                        stats.lock().unwrap().data_blocks_decoded += 1;
+                                    }
+                                },
+                                None => {
+                                    stats.lock().unwrap().data_blocks_decoded += 1;
+                                }
                             }
-                        },
-                        None => {
-                            stats.lock().unwrap().data_blocks_decoded += 1;
+
+                            // write data block
+                            write_data_only_block(data_par_shards,
+                                                  data_size_of_last_data_block,
+                                                  block,
+                                                  &mut writer,
+                                                  buffer)?;
                         }
                     }
-
-                    // write data block
-                    match data_par_shards {
-                        Some((data, par)) => {
-                            if !block.is_parity(data, par) {
-                                writer.write(
-                                    match last_data_seq_num {
-                                        Some(last_data_seq_num) => {
-                                            if seq_num as u64 == last_data_seq_num {
-                                                &sbx_block::slice_data_buf(ref_block.get_version(),
-                                                                           &buffer)
-                                                    [0..data_size_of_last_data_block.unwrap() as usize]
-                                            } else {
-                                                sbx_block::slice_data_buf(ref_block.get_version(),
-                                                                          &buffer)
-                                            }
-                                        },
-                                        None =>
-                                            sbx_block::slice_data_buf(ref_block.get_version(),
-                                                                      &buffer)
-                                    }
-                                )?;
-                            }
-                        },
-                        None              => {
-                            writer.write(
-                                sbx_block::slice_data_buf(ref_block.get_version(),
-                                                          &buffer)
-                            )?;
-                        },
-                    }
-                }
-
-                seq_num += 1;
+                },
             }
+
         },
     }
     reporter.stop();
