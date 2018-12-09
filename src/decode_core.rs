@@ -471,23 +471,35 @@ pub fn decode(param           : &Param,
                     }
 
                     // write data block
-                    writer.write(
-                        match last_seq_num {
-                            Some(last_seq_num) => {
-                                if seq_num as u64 == last_seq_num {
-                                    &sbx_block::slice_data_buf(ref_block.get_version(),
-                                                               &buffer)
-                                        [0..data_size_of_last_data_block.unwrap() as usize]
-                                } else {
-                                    sbx_block::slice_data_buf(ref_block.get_version(),
-                                                              &buffer)
-                                }
-                            },
-                            None =>
+                    match data_par_shards {
+                        Some((data, par)) => {
+                            if !block.is_parity(data, par) {
+                                writer.write(
+                                    match last_seq_num {
+                                        Some(last_seq_num) => {
+                                            if seq_num as u64 == last_seq_num {
+                                                &sbx_block::slice_data_buf(ref_block.get_version(),
+                                                                           &buffer)
+                                                    [0..data_size_of_last_data_block.unwrap() as usize]
+                                            } else {
+                                                sbx_block::slice_data_buf(ref_block.get_version(),
+                                                                          &buffer)
+                                            }
+                                        },
+                                        None =>
+                                            sbx_block::slice_data_buf(ref_block.get_version(),
+                                                                      &buffer)
+                                    }
+                                )?;
+                            }
+                        },
+                        None              => {
+                            writer.write(
                                 sbx_block::slice_data_buf(ref_block.get_version(),
                                                           &buffer)
-                        }
-                    )?;
+                            )?;
+                        },
+                    }
                 }
 
                 seq_num += 1;
