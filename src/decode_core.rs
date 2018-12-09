@@ -269,9 +269,11 @@ impl ProgressReport for Stats {
     fn total_units(&self)        -> u64      { self.total_blocks as u64 }
 }
 
-fn write_data_only_block(data_par_shards              : Option<(u64, u64, u64)>,
-                         data_size_of_last_data_block : u64,
-                         block                        : Block,
+fn write_data_only_block(data_par_shards              : Option<(usize, usize)>,
+                         last_data_seq_num            : Option<u32>,
+                         data_size_of_last_data_block : Option<u64>,
+                         ref_block                    : &Block,
+                         block                        : &Block,
                          writer                       : &mut Writer,
                          buffer                       : &[u8])
                          -> Result<(), Error> {
@@ -281,7 +283,7 @@ fn write_data_only_block(data_par_shards              : Option<(u64, u64, u64)>,
                 writer.write(
                     match last_data_seq_num {
                         Some(last_data_seq_num) => {
-                            if seq_num as u64 == last_data_seq_num {
+                            if block.get_seq_num() == last_data_seq_num {
                                 &sbx_block::slice_data_buf(ref_block.get_version(),
                                                            &buffer)
                                     [0..data_size_of_last_data_block.unwrap() as usize]
@@ -296,12 +298,16 @@ fn write_data_only_block(data_par_shards              : Option<(u64, u64, u64)>,
                     }
                 )?;
             }
+
+            Ok(())
         },
         None              => {
             writer.write(
                 sbx_block::slice_data_buf(ref_block.get_version(),
                                           &buffer)
             )?;
+
+            Ok(())
         },
     }
 }
@@ -468,6 +474,9 @@ pub fn decode(param           : &Param,
 
             match last_data_seq_num {
                 Some(last_data_seq_num) => {
+                    // correct last_data_seq_num if necessary
+                    let last_data_seq_num = std::cmp::min(last_data_seq_num, SBX_LAST_SEQ_NUM as u64) as u32;
+
                     // do burst resistant pattern read
                     let mut seq_num = 1;
                     while seq_num <= last_data_seq_num {
@@ -518,10 +527,12 @@ pub fn decode(param           : &Param,
 
                             // write data block
                             write_data_only_block(data_par_shards,
+                                                  Some(last_data_seq_num),
                                                   data_size_of_last_data_block,
-                                                  block,
+                                                  &ref_block,
+                                                  &block,
                                                   &mut writer,
-                                                  buffer)?;
+                                                  &buffer)?;
                         }
 
                         seq_num += 1;
@@ -561,10 +572,12 @@ pub fn decode(param           : &Param,
 
                             // write data block
                             write_data_only_block(data_par_shards,
-                                                  data_size_of_last_data_block,
-                                                  block,
+                                                  None,
+                                                  None,
+                                                  &ref_block,
+                                                  &block,
                                                   &mut writer,
-                                                  buffer)?;
+                                                  &buffer)?;
                         }
                     }
                 },
