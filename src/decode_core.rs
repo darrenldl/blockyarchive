@@ -304,16 +304,15 @@ pub fn decode(param           : &Param,
             None
         };
 
-    let last_seq_num = file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps(ref_block.get_version(),
-                                                                                              Some(true),
-                                                                                              data_par_burst,
-                                                                                              orig_file_size);
-
     let data_size                    = ver_to_data_size(ref_block.get_version());
     let data_size_of_last_data_block =
-        match orig_file_size % data_size {
-            0 => data_size,
-            x => x,
+        match orig_file_size {
+            Some(orig_file_size) =>
+                match orig_file_size % data_size as u64 {
+                    0 => Some(data_size as u64),
+                    x => Some(x),
+                }
+            None    => None,
         };
 
     let json_printer = &param.json_printer;
@@ -417,6 +416,14 @@ pub fn decode(param           : &Param,
                 }
             },
         None    => {
+            let last_seq_num = match orig_file_size {
+                Some(orig_file_size) => Some(file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps(ref_block.get_version(),
+                                                                                                                    Some(true),
+                                                                                                                    data_par_burst,
+                                                                                                                    orig_file_size) as u64),
+                None                 => None,
+            };
+
             let mut seq_num = 1;
             while seq_num <= SBX_LAST_SEQ_NUM {
                 break_if_atomic_bool!(ctrlc_stop_flag);
@@ -465,22 +472,22 @@ pub fn decode(param           : &Param,
                     }
 
                     // write data block
-                    if let Some(write_pos) =
-                        sbx_block::calc_data_chunk_write_pos(ref_block.get_version(),
-                                                             block.get_seq_num(),
-                                                             data_par_shards)
-                    {
-                        let write_slice =
-                            if block.get_seq_num() == last_seq_num {
-                                &sbx_block::slice_data_buf(ref_block.get_version(),
-                                                           &buffer)
-                                    [0..data_size_of_last_data_block]
-                            } else {
+                    writer.write(
+                        match last_seq_num {
+                            Some(last_seq_num) =>
+                                if block.get_seq_num() as u64 == last_seq_num {
+                                    &sbx_block::slice_data_buf(ref_block.get_version(),
+                                                               &buffer)
+                                        [0..data_size_of_last_data_block.unwrap() as usize]
+                                } else {
+                                    sbx_block::slice_data_buf(ref_block.get_version(),
+                                                              &buffer)
+                                },
+                            None =>
                                 sbx_block::slice_data_buf(ref_block.get_version(),
                                                           &buffer)
-                            };
-                        writer.write()?;
-                    }
+                        }
+                    )?;
                 }
 
                 seq_num += 1;
