@@ -417,10 +417,9 @@ pub fn decode(param           : &Param,
             },
         None    => {
             let last_seq_num = match orig_file_size {
-                Some(orig_file_size) => Some(file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps(ref_block.get_version(),
-                                                                                                                    Some(true),
-                                                                                                                    data_par_burst,
-                                                                                                                    orig_file_size) as u64),
+                Some(orig_file_size) => Some(file_utils::from_orig_file_size::calc_data_block_count_exc_burst_gaps(ref_block.get_version(),
+                                                                                                                   data_par_burst,
+                                                                                                                   orig_file_size) as u64),
                 None                 => None,
             };
 
@@ -474,15 +473,16 @@ pub fn decode(param           : &Param,
                     // write data block
                     writer.write(
                         match last_seq_num {
-                            Some(last_seq_num) =>
-                                if block.get_seq_num() as u64 == last_seq_num {
+                            Some(last_seq_num) => {
+                                if seq_num as u64 == last_seq_num {
                                     &sbx_block::slice_data_buf(ref_block.get_version(),
                                                                &buffer)
                                         [0..data_size_of_last_data_block.unwrap() as usize]
                                 } else {
                                     sbx_block::slice_data_buf(ref_block.get_version(),
                                                               &buffer)
-                                },
+                                }
+                            },
                             None =>
                                 sbx_block::slice_data_buf(ref_block.get_version(),
                                                           &buffer)
