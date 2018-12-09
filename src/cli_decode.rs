@@ -44,20 +44,22 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
             let output_channel = OutputChannel::Stderr;
 
             if !json_printer.json_enabled() {
-                println_at_output_channel!(output_channel => "Warning :");
-                println_at_output_channel!(output_channel => "");
-                println_at_output_channel!(output_channel => "   Since output is stdout, rsbx can only output data chunks in the");
-                println_at_output_channel!(output_channel => "   same order as the stored SBX blocks.");
-                println_at_output_channel!(output_channel => "");
-                println_at_output_channel!(output_channel => "   In other words, if the SBX blocks are not correctly ordered, then");
-                println_at_output_channel!(output_channel => "   the output data will be incorrect.");
-                println_at_output_channel!(output_channel => "");
-                println_at_output_channel!(output_channel => "   You may fix this by sorting the SBX container using the rsbx sort");
-                println_at_output_channel!(output_channel => "   command before decoding to stdout.");
-                println_at_output_channel!(output_channel => "");
-                println_at_output_channel!(output_channel => "   rsbx also tries to avoid outputting the data padding at the end of");
-                println_at_output_channel!(output_channel => "   the container at a best effort basis, but may fail.");
-                println_at_output_channel!(output_channel => "");
+                print_block!(output_channel =>
+                             "Warning :";
+                             "";
+                             "   Since output is stdout, rsbx can only output data chunks in the";
+                             "   same order as the stored SBX blocks.";
+                             "";
+                             "   In other words, if the SBX blocks are not correctly ordered, then";
+                             "   the output data will be incorrect.";
+                             "";
+                             "   You may fix this by sorting the SBX container using the rsbx sort";
+                             "   command before decoding to stdout.";
+                             "";
+                             "   rsbx also tries to avoid outputting the data padding at the end of";
+                             "   the container at a best effort basis, but may fail.";
+                             "";
+                );
             }
 
             Arc::get_mut(&mut json_printer).unwrap().set_output_channel(output_channel);
