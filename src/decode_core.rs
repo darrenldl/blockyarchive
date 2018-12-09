@@ -671,8 +671,5 @@ pub fn decode_file(param : &Param)
                                &ref_block,
                                &ctrlc_stop_flag)?;
 
-    match out_file_path {
-        Some(_) => Ok(Some(stats)),
-        None    => Ok(None),
-    }
+    Ok(Some(stats))
 }
