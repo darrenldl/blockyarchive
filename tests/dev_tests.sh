@@ -72,6 +72,22 @@ echo "Starting hash tests"
 echo "========================================"
 ./hash_tests.sh
 if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting hash tests"
+echo "========================================"
+./hash_tests_encode_stdin.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting hash tests"
+echo "========================================"
+./hash_tests_decode_stdout.sh
+if [[ $? != 0 ]]; then
     test_failed=$[$test_failed+1]
 fi
 
