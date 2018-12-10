@@ -414,7 +414,7 @@ pub fn decode(param           : &Param,
     reporter.start();
 
     match param.out_file {
-        Some(_) =>
+        Some(_) => // output to file
             loop {
                 break_if_atomic_bool!(ctrlc_stop_flag);
 
@@ -458,12 +458,39 @@ pub fn decode(param           : &Param,
                     }
                 }
             },
-        None    => {
+        None    => { // output to stdout
+            let total_block_count = {
+                use file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps;
+                match ref_block.get_FSZ().unwrap() {
+                    Some(x) =>
+                        calc_total_block_count_exc_burst_gaps(version,
+                                                              None,
+                                                              data_par_burst,
+                                                              x),
+                    None    => {
+                        print_if!(not_json => json_printer =>
+                                  "Warning :";
+                                  "";
+                                  "    No recorded file size found, using container file size to estimate total";
+                                  "    number of blocks. This may overestimate total number of blocks, and may";
+                                  "    show incorrect block counts.";
+                                  "";
+                        );
+                        let file_size = file_utils::get_file_size(&param.in_file)?;
+                        file_size / block_size as u64
+                    },
+                }
+            };
+
             let last_data_seq_num = match orig_file_size {
                 Some(orig_file_size) => {
                     let last_seq_num = file_utils::from_orig_file_size::calc_data_block_count_exc_burst_gaps(ref_block.get_version(),
                                                                                                              data_par_burst,
                                                                                                              orig_file_size) as u64;
+
+                    // correct last_data_seq_num if necessary
+                    let last_seq_num = std::cmp::min(last_seq_num, SBX_LAST_SEQ_NUM as u64) as u32;
+
                     match data_par_burst {
                         Some((_, par, _)) => Some(last_seq_num - par as u64),
                         None              => Some(last_seq_num),
@@ -472,15 +499,13 @@ pub fn decode(param           : &Param,
                 None                 => None,
             };
 
-            match last_data_seq_num {
-                Some(last_data_seq_num) => {
-                    // correct last_data_seq_num if necessary
-                    let last_data_seq_num = std::cmp::min(last_data_seq_num, SBX_LAST_SEQ_NUM as u64) as u32;
-
-                    // do burst resistant pattern read
+            match data_par_burst {
+                Some((data, parity, burst)) => { // do burst resistant pattern read
                     let mut seq_num = 1;
-                    while seq_num <= last_data_seq_num {
+                    while seq_num <= SBX_LAST_SEQ_NUM {
                         break_if_atomic_bool!(ctrlc_stop_flag);
+
+                        if stats.lock().unwrap().units_so_far() >= total_block_count { break; }
 
                         let pos = sbx_block::calc_data_block_write_pos(ref_block.get_version(),
                                                                        seq_num,
@@ -493,7 +518,10 @@ pub fn decode(param           : &Param,
                         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                                             &mut buffer))?;
 
-                        break_if_eof_seen!(read_res);
+                        if read_res.eof_seen {
+                            stats.lock().unwrap().blocks_decode_failed += 1;
+                            continue;
+                        }
 
                         match block.sync_from_buffer(&buffer, Some(&pred)) {
                             Ok(_)  => {
@@ -508,38 +536,29 @@ pub fn decode(param           : &Param,
                             },
                         }
 
-
                         if block.is_meta() { // do nothing if block is meta
                             stats.lock().unwrap().meta_blocks_decoded += 1;
                         } else {
-                            match data_par_shards {
-                                Some((data, par)) => {
-                                    if block.is_parity(data, par) {
-                                        stats.lock().unwrap().data_par_blocks_decoded += 1;
-                                    } else {
-                                        stats.lock().unwrap().data_blocks_decoded += 1;
-                                    }
-                                },
-                                None => {
-                                    stats.lock().unwrap().data_blocks_decoded += 1;
-                                }
-                            }
+                            if block.is_parity(data, parity) {
+                                stats.lock().unwrap().data_par_blocks_decoded += 1;
+                            } else {
+                                stats.lock().unwrap().data_blocks_decoded += 1;
 
-                            // write data block
-                            write_data_only_block(data_par_shards,
-                                                  Some(last_data_seq_num),
-                                                  data_size_of_last_data_block,
-                                                  &ref_block,
-                                                  &block,
-                                                  &mut writer,
-                                                  &buffer)?;
+                                // write data block
+                                write_data_only_block(data_par_shards,
+                                                      last_data_seq_num,
+                                                      data_size_of_last_data_block,
+                                                      &ref_block,
+                                                      &block,
+                                                      &mut writer,
+                                                      &buffer)?;
+                            }
                         }
 
                         seq_num += 1;
                     }
                 },
-                None                    => {
-                    // do sequential read
+                None                        => { // do sequential read
                     loop {
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
@@ -571,14 +590,22 @@ pub fn decode(param           : &Param,
                             }
 
                             // write data block
-                            write_data_only_block(data_par_shards,
-                                                  None,
-                                                  None,
+                            write_data_only_block(None,
+                                                  last_data_seq_num,
+                                                  data_size_of_last_data_block,
                                                   &ref_block,
                                                   &block,
                                                   &mut writer,
                                                   &buffer)?;
                         }
+                    }
+                }
+            }
+
+            match last_data_seq_num {
+                None                    => {
+                    // do sequential read
+                    loop {
                     }
                 },
             }
