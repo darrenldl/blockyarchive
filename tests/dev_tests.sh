@@ -201,6 +201,22 @@ echo "Starting burst corruption tests"
 echo "========================================"
 ./burst_corruption_tests.sh
 if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting burst corruption tests (stdin as encode input)"
+echo "========================================"
+./burst_corruption_tests_encode_stdin.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting burst corruption tests (stdout as decode output)"
+echo "========================================"
+./burst_corruption_tests.sh
+if [[ $? != 0 ]]; then
     test_failed=$[$test_failed+1]
 fi
 
