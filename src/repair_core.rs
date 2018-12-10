@@ -10,8 +10,9 @@ use progress_report::*;
 use cli_utils::setup_ctrlc_handler;
 
 use file_reader::{FileReader,
-                  ReadResult,
                   FileReaderParam};
+
+use reader::ReadResult;
 
 use general_error::Error;
 use sbx_specs::Version;

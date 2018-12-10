@@ -11,6 +11,8 @@ use std::io::Seek;
 use std::fs::Metadata;
 use std::fs::OpenOptions;
 
+use reader::ReadResult;
+
 const READ_RETRIES : usize = 5;
 
 macro_rules! file_op {
@@ -61,11 +63,6 @@ pub struct FileReaderParam {
 enum FileHandle {
     Buffered(BufReader<File>),
     Unbuffered(File),
-}
-
-pub struct ReadResult {
-    pub len_read : usize,
-    pub eof_seen : bool,
 }
 
 pub struct FileReader {

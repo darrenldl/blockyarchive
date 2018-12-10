@@ -53,6 +53,14 @@ macro_rules! print_block {
         )*
     ) => {{
         $( println!($($arg),*) );*
+    }};
+    (
+        $output_channel:expr =>
+        $(
+            $($arg:expr),*;
+        )*
+    ) => {{
+        $( println_at_output_channel!($output_channel => $($arg),*) );*
     }}
 }
 
@@ -203,7 +211,7 @@ macro_rules! print_if {
             )*
     ) => {{
         if $printer.json_enabled() {
-            print_block!(
+            print_block!( $printer.output_channel() =>
                 $( $($expr),*; )*
             );
         }
@@ -217,7 +225,7 @@ macro_rules! print_if {
             )*
     ) => {{
         if !$printer.json_enabled() {
-            print_block!(
+            print_block!( $printer.output_channel() =>
                 $( $($expr),*; )*
             );
         }
@@ -232,7 +240,7 @@ macro_rules! print_if {
             )*
     ) => {{
         if $param.verbose && $printer.json_enabled() {
-            print_block!(
+            print_block!( $printer.output_channel() =>
                 $( $($expr),*; )*
             );
         }
@@ -247,7 +255,7 @@ macro_rules! print_if {
             )*
     ) => {{
         if $param.verbose && !$printer.json_enabled() {
-            print_block!(
+            print_block!( $printer.output_channel() =>
                 $( $($expr),*; )*
             );
         }
@@ -264,7 +272,7 @@ macro_rules! print_if {
     ) => {{
         if $param.verbose && $printer.json_enabled() {
             pause_reporter!($reporter =>
-                            print_block!(
+                            print_block!( $printer.output_channel() =>
                                 $( $($expr),*; )*
                             );
             );

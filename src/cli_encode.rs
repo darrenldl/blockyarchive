@@ -101,11 +101,21 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
             None
         };
 
-    let in_file = get_in_file!(matches, json_printer);
+    let in_file = get_in_file!(accept_stdin matches, json_printer);
     let out = match matches.value_of("out") {
-        None    => format!("{}.sbx", in_file),
+        None    => {
+            if file_utils::check_if_file_is_stdin(in_file) {
+                exit_with_msg!(usr json_printer => "Explicit output file name is required when input is stdin");
+            } else {
+                format!("{}.sbx", in_file)
+            }
+        },
         Some(x) => {
             if file_utils::check_if_file_is_dir(x) {
+                if file_utils::check_if_file_is_stdin(in_file) {
+                    exit_with_msg!(usr json_printer => "Explicit output file name is required when input is stdin");
+                }
+
                 let in_file = file_utils::get_file_name_part_of_path(in_file);
                 misc_utils::make_path(&[x,
                                         &format!("{}.sbx", in_file)])
@@ -129,6 +139,10 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     if matches.is_present("info_only") {
         json_printer.print_open_bracket(Some("stats"), BracketType::Curly);
+
+        if file_utils::check_if_file_is_stdin(in_file) {
+            exit_with_msg!(usr json_printer => "No information is available for stdin input");
+        }
 
         let in_file_meta  = match file_utils::get_file_metadata(in_file) {
             Ok(x)  => x,
@@ -196,6 +210,13 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                       => matches.is_present("force")
                       => json_printer
                       => "File \"{}\" already exists", out);
+
+        let in_file =
+            if file_utils::check_if_file_is_stdin(in_file) {
+                None
+            } else {
+                Some(in_file)
+            };
 
         let param = Param::new(version,
                                &uid,

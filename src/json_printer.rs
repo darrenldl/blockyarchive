@@ -7,6 +7,8 @@ use misc_utils::to_camelcase;
 
 use std::fmt;
 
+use output_channel::OutputChannel;
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum BracketType {
     Curly,
@@ -30,24 +32,19 @@ impl JSONContext {
 
 #[derive(Debug)]
 pub struct JSONPrinter {
-    json_enabled : bool,
-    contexts     : Mutex<SmallVec<[JSONContext; 8]>>
+    json_enabled   : bool,
+    output_channel : OutputChannel,
+    contexts       : Mutex<SmallVec<[JSONContext; 8]>>
 }
 
 impl Clone for JSONPrinter {
     fn clone(&self) -> Self {
         JSONPrinter {
-            json_enabled : self.json_enabled,
-            contexts     : Mutex::new(self.contexts.lock().unwrap().clone())
+            json_enabled   : self.json_enabled,
+            output_channel : self.output_channel,
+            contexts       : Mutex::new(self.contexts.lock().unwrap().clone())
         }
     }
-}
-
-fn print_comma_if_not_first(context : &mut JSONContext) {
-    if !context.first_item {
-        print!(",");
-    }
-    context.first_item = false;
 }
 
 fn write_comma_if_not_first(f       : &mut fmt::Formatter,
@@ -76,9 +73,10 @@ fn bracket_type_to_str_close(bracket_type : BracketType) -> &'static str {
 }
 
 impl JSONPrinter {
-    pub fn new(json_enabled : bool) -> JSONPrinter {
+    pub fn new(json_enabled : bool, output_channel : OutputChannel) -> JSONPrinter {
         JSONPrinter {
             json_enabled,
+            output_channel,
             contexts     : Mutex::new(SmallVec::new()),
         }
     }
@@ -87,8 +85,23 @@ impl JSONPrinter {
         self.json_enabled
     }
 
+    pub fn output_channel(&self) -> OutputChannel {
+        self.output_channel
+    }
+
+    pub fn set_output_channel(&mut self, output_channel : OutputChannel) {
+        self.output_channel = output_channel
+    }
+
     pub fn first_item(&self) -> bool {
         self.contexts.lock().unwrap().last().unwrap().first_item
+    }
+
+    fn print_comma_if_not_first(&self, context : &mut JSONContext) {
+        if !context.first_item {
+            print_at_output_channel!(self.output_channel => ",");
+        }
+        context.first_item = false;
     }
 
     pub fn print_open_bracket(&self,
@@ -98,15 +111,15 @@ impl JSONPrinter {
 
         match self.contexts.lock().unwrap().last_mut() {
             None    => {},
-            Some(x) => print_comma_if_not_first(x)
+            Some(x) => self.print_comma_if_not_first(x)
         }
 
         match name {
             None    => {},
-            Some(n) => print!("\"{}\": ", to_camelcase(n))
+            Some(n) => print_at_output_channel!(self.output_channel => "\"{}\": ", to_camelcase(n))
         }
 
-        println!("{}", bracket_type_to_str_open(bracket_type));
+        println_at_output_channel!(self.output_channel => "{}", bracket_type_to_str_open(bracket_type));
 
         self.contexts.lock().unwrap().push(JSONContext::new(bracket_type));
     }
@@ -139,7 +152,7 @@ impl JSONPrinter {
 
         let context = self.contexts.lock().unwrap().pop().unwrap();
 
-        println!("{}", bracket_type_to_str_close(context.bracket_type));
+        println_at_output_channel!(self.output_channel => "{}", bracket_type_to_str_close(context.bracket_type));
     }
 
     pub fn write_close_bracket(&self,
@@ -160,11 +173,11 @@ impl JSONPrinter {
 
             let (l, r) : (&str, &str) = split_key_val_pair(&msg);
 
-            print_json_field!(l, r, skip_quotes, context.first_item);
+            print_json_field!(self.output_channel => l, r, skip_quotes, context.first_item);
 
             context.first_item = false;
         } else {
-            println!("{}", msg);
+            println_at_output_channel!(self.output_channel => "{}", msg);
         }
     }
 

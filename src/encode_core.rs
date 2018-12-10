@@ -16,6 +16,8 @@ use cli_utils::setup_ctrlc_handler;
 
 use file_reader::{FileReader,
                   FileReaderParam};
+use reader::{Reader,
+             ReaderType};
 use file_writer::{FileWriter,
                   FileWriterParam};
 
@@ -70,10 +72,10 @@ impl fmt::Display for Stats {
             meta_blocks_written
             + data_blocks_written
             + data_par_blocks_written;
-        let data_bytes_encoded      =
-            self.data_blocks_written as usize
-            * data_size
-            - self.data_padding_bytes;
+        let data_bytes_encoded      = self.data_bytes_encoded();
+            // self.data_blocks_written as u64
+            // * data_size as u64
+            // - self.data_padding_bytes as u64;
         let in_file_size            = self.in_file_size;
         let out_file_size           = self.out_file_size;
         let time_elapsed            = (self.end_time - self.start_time) as i64;
@@ -140,7 +142,7 @@ pub struct Param {
     meta_enabled       : bool,
     json_printer       : Arc<JSONPrinter>,
     hash_type          : multihash::HashType,
-    in_file            : String,
+    in_file            : Option<String>,
     out_file           : String,
     pr_verbosity_level : PRVerbosityLevel,
 }
@@ -152,7 +154,7 @@ impl Param {
                meta_enabled       : bool,
                json_printer       : &Arc<JSONPrinter>,
                hash_type          : multihash::HashType,
-               in_file            : &str,
+               in_file            : Option<&str>,
                out_file           : &str,
                pr_verbosity_level : PRVerbosityLevel) -> Param {
         Param {
@@ -163,7 +165,10 @@ impl Param {
             meta_enabled   : ver_forces_meta_enabled(version) || meta_enabled,
             json_printer   : Arc::clone(json_printer),
             hash_type,
-            in_file        : String::from(in_file),
+            in_file        : match in_file {
+                None    => None,
+                Some(f) => Some(String::from(f)),
+            },
             out_file       : String::from(out_file),
             pr_verbosity_level,
         }
@@ -171,10 +176,8 @@ impl Param {
 }
 
 impl Stats {
-    pub fn new(param : &Param, file_size : u64) -> Stats {
+    pub fn new(param : &Param, file_size : Option<u64>) -> Stats {
         use file_utils::from_orig_file_size::calc_data_chunk_count;
-        let total_data_blocks =
-            calc_data_chunk_count(param.version, file_size) as u32;
         Stats {
             uid                     : param.uid,
             version                 : param.version,
@@ -183,13 +186,24 @@ impl Stats {
             data_blocks_written     : 0,
             data_par_blocks_written : 0,
             data_padding_bytes      : 0,
-            total_data_blocks,
+            total_data_blocks       : match file_size {
+                Some(file_size) => calc_data_chunk_count(param.version, file_size) as u32,
+                None            => 0,
+            },
             in_file_size            : 0,
             out_file_size           : 0,
             start_time              : 0.,
             end_time                : 0.,
             json_printer            : Arc::clone(&param.json_printer),
         }
+    }
+
+    pub fn data_bytes_encoded(&self) -> u64 {
+        let data_size = ver_to_data_size(self.version);
+
+        self.data_blocks_written as u64
+            * data_size as u64
+            - self.data_padding_bytes as u64
     }
 }
 
@@ -206,28 +220,39 @@ impl ProgressReport for Stats {
 fn pack_metadata(block         : &mut Block,
                  param         : &Param,
                  stats         : &Stats,
-                 file_metadata : &fs::Metadata,
-                 file_size     : u64,
+                 file_metadata : &Option<fs::Metadata>,
+                 file_size     : Option<u64>,
                  hash          : Option<multihash::HashBytes>) {
     block.set_seq_num(0);
 
     let meta = block.meta_mut().unwrap();
 
     { // add file name
-        let file_name = file_utils::get_file_name_part_of_path(&param.in_file);
-        meta.push(Metadata::FNM(file_name)); }
+        match param.in_file {
+            None        => {},
+            Some(ref f) => {
+                let file_name = file_utils::get_file_name_part_of_path(f);
+                meta.push(Metadata::FNM(file_name)); }
+        } }
     { // add sbx file name
         let file_name = file_utils::get_file_name_part_of_path(&param.out_file);
         meta.push(Metadata::SNM(file_name)); }
     { // add file size
-        meta.push(Metadata::FSZ(file_size)); }
+        match file_size {
+            Some(f) => meta.push(Metadata::FSZ(f)),
+            None    => {},
+        } }
     { // add file last modifcation time
-        match file_metadata.modified() {
-            Ok(t)  => match t.duration_since(UNIX_EPOCH) {
-                Ok(t)  => meta.push(Metadata::FDT(t.as_secs() as i64)),
-                Err(_) => {}
-            },
-            Err(_) => {} }}
+        match file_metadata {
+            &Some(ref m) =>
+                match m.modified() {
+                    Ok(t)  => match t.duration_since(UNIX_EPOCH) {
+                        Ok(t)  => meta.push(Metadata::FDT(t.as_secs() as i64)),
+                        Err(_) => {}
+                    },
+                    Err(_) => {}
+                },
+            &None => {} } }
     { // add sbx encoding time
         meta.push(Metadata::SDT(stats.start_time as i64)); }
     { // add hash
@@ -247,8 +272,8 @@ fn pack_metadata(block         : &mut Block,
 
 fn write_meta_blocks(param         : &Param,
                      stats         : &Arc<Mutex<Stats>>,
-                     file_metadata : &fs::Metadata,
-                     file_size     : u64,
+                     file_metadata : &Option<fs::Metadata>,
+                     file_size     : Option<u64>,
                      hash          : Option<multihash::HashBytes>,
                      block         : &mut Block,
                      buffer        : &mut [u8],
@@ -337,29 +362,43 @@ pub fn encode_file(param : &Param)
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
     // setup file reader and writer
-    let mut reader = FileReader::new(&param.in_file,
-                                     FileReaderParam { write    : false,
-                                                       buffered : true   })?;
+    let mut reader = match param.in_file {
+        Some(ref f) => Reader::new(ReaderType::File(FileReader::new(f,
+                                                                    FileReaderParam { write    : false,
+                                                                                      buffered : true   })?)),
+        None        => Reader::new(ReaderType::Stdin(std::io::stdin())),
+    };
+
     let mut writer = FileWriter::new(&param.out_file,
                                      FileWriterParam { read     : false,
                                                        append   : false,
                                                        buffered : true   })?;
 
-    { // check if in file size exceeds maximum
-        let in_file_size     = reader.get_file_size()?;
-        let max_in_file_size = ver_to_max_data_file_size(param.version);
+    let metadata = match reader.metadata() {
+        Some(m) => Some(m?),
+        None    => None,
+    };
 
-        if in_file_size > max_in_file_size {
-            return Err(Error::with_message(&format!("File size of \"{}\" exceeds the maximum supported file size, size : {}, max : {}",
-                                                    &param.in_file,
-                                                    in_file_size,
-                                                    max_in_file_size)));
+    let file_size = match reader.get_file_size() {
+        Some(s) => Some(s?),
+        None    => None,
+    };
+
+    { // check if in file size exceeds maximum
+        match file_size {
+            None            => {},
+            Some(file_size) => {
+                let max_in_file_size = ver_to_max_data_file_size(param.version);
+
+                if file_size > max_in_file_size {
+                    return Err(Error::with_message(&format!("File size of \"{}\" exceeds the maximum supported file size, size : {}, max : {}",
+                                                            param.in_file.as_ref().unwrap(),
+                                                            file_size,
+                                                            max_in_file_size)));
+                }
+            }
         }
     }
-
-    let metadata = reader.metadata()?;
-
-    let file_size = reader.get_file_size()?;
 
     // setup stats
     let stats = Arc::new(Mutex::new(Stats::new(param, file_size)));
@@ -470,6 +509,7 @@ pub fn encode_file(param : &Param)
                                  &mut writer)?;
 
                 stats.lock().unwrap().data_blocks_written += 1;
+                stats.lock().unwrap().data_padding_bytes  += ver_to_data_size(param.version);
 
                 if let Some(parity_to_use) =
                     rs_codec.encode_no_block_sync(&padding)
@@ -490,6 +530,13 @@ pub fn encode_file(param : &Param)
         }
     }
 
+    let data_bytes_encoded = stats.lock().unwrap().data_bytes_encoded();
+
+    let file_size = match file_size {
+        Some(s) => s,
+        None    => data_bytes_encoded,
+    };
+
     if param.meta_enabled {
         let hash_bytes = hash_ctx.finish_into_hash_bytes();
 
@@ -497,7 +544,7 @@ pub fn encode_file(param : &Param)
         write_meta_blocks(param,
                           &stats,
                           &metadata,
-                          file_size,
+                          Some(file_size),
                           Some(hash_bytes.clone()),
                           &mut block,
                           &mut data,
@@ -510,7 +557,7 @@ pub fn encode_file(param : &Param)
 
     reporter.stop();
 
-    stats.lock().unwrap().in_file_size  = reader.get_file_size()?;
+    stats.lock().unwrap().in_file_size  = file_size;
     stats.lock().unwrap().out_file_size = writer.get_file_size()?;
 
     let stats = stats.lock().unwrap().clone();

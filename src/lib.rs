@@ -51,6 +51,8 @@ macro_rules! break_if_eof_seen {
 }
 
 mod file_error;
+mod stdin_error;
+mod stdout_error;
 
 mod general_error;
 use general_error::Error;
@@ -61,6 +63,9 @@ mod json_macros;
 
 #[macro_use]
 mod misc_macros;
+
+#[macro_use]
+mod cli_macros;
 
 #[macro_use]
 mod block_preds;
@@ -79,6 +84,7 @@ mod time_utils_tests;
 mod integer_utils;
 mod integer_utils_tests;
 mod block_utils;
+pub mod output_channel;
 
 pub mod sbx_block;
 pub mod sbx_specs;
@@ -87,9 +93,6 @@ mod sbx_specs_tests;
 mod log;
 
 mod rs_codec;
-
-#[macro_use]
-mod cli_macros;
 
 mod encode_core;
 mod decode_core;
@@ -101,7 +104,9 @@ mod check_core;
 
 mod progress_report;
 
+mod reader;
 mod file_reader;
+mod writer;
 mod file_writer;
 
 mod cli_utils;

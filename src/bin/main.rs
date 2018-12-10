@@ -1,7 +1,6 @@
 extern crate clap;
 use clap::*;
 
-#[macro_use]
 extern crate rsbx_lib;
 use rsbx_lib::*;
 
@@ -45,7 +44,7 @@ fn real_main () -> i32 {
         rsbx_lib::cli_calc::calc(matches)
     }
     else {
-        exit_with_msg!(ok rsbx_lib::json_printer::JSONPrinter::new(false)
+        exit_with_msg!(ok rsbx_lib::json_printer::JSONPrinter::new(false, rsbx_lib::output_channel::OutputChannel::Stdout)
                        => "Invoke with -h or --help for help message\n");
     }
 }

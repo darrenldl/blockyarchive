@@ -143,8 +143,7 @@ impl FileWriter {
         }
     }
 
-    pub fn seek(&mut self, pos : SeekFrom)
-                -> Result<u64, Error> {
+    pub fn seek(&mut self, pos : SeekFrom) -> Result<u64, Error> {
         match file_op!(self seek => pos) {
             Ok(pos) => Ok(pos),
             Err(e)  => Err(to_err(FileError::new(e.kind(), &self.path)))

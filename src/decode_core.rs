@@ -16,6 +16,8 @@ use file_reader::{FileReader,
                   FileReaderParam};
 use file_writer::{FileWriter,
                   FileWriterParam};
+use writer::{Writer,
+             WriterType};
 
 use multihash;
 use multihash::*;
@@ -28,9 +30,11 @@ use sbx_specs::Version;
 use sbx_block::Block;
 use sbx_block;
 use sbx_specs::{ver_to_block_size,
+                ver_to_data_size,
                 SBX_LARGEST_BLOCK_SIZE,
                 SBX_FILE_UID_LEN,
                 ver_uses_rs,
+                SBX_LAST_SEQ_NUM,
                 ver_to_usize};
 
 use time_utils;
@@ -101,8 +105,8 @@ impl fmt::Display for Stats {
                 (&None,    &None)        => null_if_json_else!(json_printer, "N/A").to_string(),
                 (&Some(_), &None)        => null_if_json_else!(json_printer, "N/A - recorded hash type is not supported by rsbx").to_string(),
                 (_,        &Some(ref h)) => format!("{} - {}",
-                                                    hash_type_to_string(h.0),
-                                                    misc_utils::bytes_to_lower_hex_string(&h.1))
+                                                               hash_type_to_string(h.0),
+                                                               misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
         } else {
             write_maybe_json!(f, json_printer, "File UID                            : {}",
@@ -126,8 +130,8 @@ impl fmt::Display for Stats {
                 (&None,    &None)        => null_if_json_else!(json_printer, "N/A").to_string(),
                 (&Some(_), &None)        => null_if_json_else!(json_printer, "N/A - recorded hash type is not supported by rsbx").to_string(),
                 (_,        &Some(ref h)) => format!("{} - {}",
-                                                    hash_type_to_string(h.0),
-                                                    misc_utils::bytes_to_lower_hex_string(&h.1))
+                                                               hash_type_to_string(h.0),
+                                                               misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
         }
         match (recorded_hash, computed_hash) {
@@ -252,30 +256,112 @@ impl ProgressReport for Stats {
     fn total_units(&self)        -> u64      { self.total_blocks as u64 }
 }
 
+fn write_data_only_block(data_par_shards              : Option<(usize, usize)>,
+                         is_last_data_block              : bool,
+                         data_size_of_last_data_block : Option<u64>,
+                         ref_block                    : &Block,
+                         block                        : &Block,
+                         writer                       : &mut Writer,
+                         hash_ctx                     : &mut Option<hash::Ctx>,
+                         buffer                       : &[u8])
+                         -> Result<(), Error> {
+    let slice =
+        if is_last_data_block {
+            &sbx_block::slice_data_buf(ref_block.get_version(),
+                                       &buffer)
+                [0..data_size_of_last_data_block.unwrap() as usize]
+        } else {
+            sbx_block::slice_data_buf(ref_block.get_version(),
+                                      &buffer)
+        };
+
+    match data_par_shards {
+        Some((data, par)) => {
+            if !block.is_parity(data, par) {
+                writer.write(slice)?;
+
+                if let &mut Some(ref mut ctx) = hash_ctx {
+                    ctx.update(slice);
+                }
+            }
+        },
+        None              => {
+            writer.write(slice)?;
+
+            if let &mut Some(ref mut ctx) = hash_ctx {
+                ctx.update(slice);
+            }
+        }
+    }
+
+    Ok(())
+}
+
 pub fn decode(param           : &Param,
               ref_block_pos   : u64,
               ref_block       : &Block,
               ctrlc_stop_flag : &Arc<AtomicBool>)
-              -> Result<Stats, Error> {
+              -> Result<(Stats, Option<HashBytes>), Error> {
     let in_file_size = file_utils::get_file_size(&param.in_file)?;
+
+    let orig_file_size =
+        if ref_block.is_meta() {
+            ref_block.get_FSZ().unwrap()
+        } else {
+            None
+        };
+
+    let data_par_burst =
+        if ver_uses_rs(ref_block.get_version()) && ref_block.is_meta() {
+            match (ref_block.get_RSD(), ref_block.get_RSP()) {
+                (Ok(Some(data)), Ok(Some(parity))) => {
+                    let data   = data   as usize;
+                    let parity = parity as usize;
+
+                    // try to obtain burst error resistance level
+                    match block_utils::guess_burst_err_resistance_level(&param.in_file,
+                                                                        ref_block_pos,
+                                                                        &ref_block) {
+                        Ok(Some(l)) => Some((data, parity, l)),
+                        _           => Some((data, parity, 0)), // assume burst resistance level is 0
+                    }
+                },
+                _                                  => None,
+            }
+        } else {
+            None
+        };
+
+    let data_size                    = ver_to_data_size(ref_block.get_version());
+    let data_size_of_last_data_block =
+        match orig_file_size {
+            Some(orig_file_size) =>
+                match orig_file_size % data_size as u64 {
+                    0 => Some(data_size as u64),
+                    x => Some(x),
+                }
+            None    => None,
+        };
 
     let json_printer = &param.json_printer;
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
-    let out_file : &str = match param.out_file {
-        None        => panic!(),
-        Some(ref x) => x,
+
+    let mut writer = match param.out_file {
+        Some(ref out_file) => Writer::new(WriterType::File(FileWriter::new(out_file,
+                                                                           FileWriterParam { read     : false,
+                                                                                             append   : false,
+                                                                                             buffered : true   })?)),
+        None               => Writer::new(WriterType::Stdout(std::io::stdout())),
     };
-    let mut writer = FileWriter::new(out_file,
-                                     FileWriterParam { read     : false,
-                                                       append   : false,
-                                                       buffered : true   })?;
 
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block,
                                                in_file_size,
                                                &param.json_printer)));
+
+    let mut hash_bytes = None;
 
     let reporter = ProgressReporter::new(&stats,
                                          "Data decoding progress",
@@ -310,54 +396,228 @@ pub fn decode(param           : &Param,
             None
         };
 
+    let version = ref_block.get_version();
+
+    let block_size = ver_to_block_size(version);
+
     let pred = block_pred_same_ver_uid!(ref_block);
 
     reporter.start();
 
-    loop {
-        break_if_atomic_bool!(ctrlc_stop_flag);
+    match param.out_file {
+        Some(_) => // output to file
+            loop {
+                break_if_atomic_bool!(ctrlc_stop_flag);
 
-        // read at reference block block size
-        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
-                                                            &mut buffer))?;
+                // read at reference block block size
+                let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+                                                                    &mut buffer))?;
 
-        break_if_eof_seen!(read_res);
+                break_if_eof_seen!(read_res);
 
-        if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
-            stats.lock().unwrap().blocks_decode_failed += 1;
-            continue;
-        }
+                if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
+                    stats.lock().unwrap().blocks_decode_failed += 1;
+                    continue;
+                }
 
-        if block.is_meta() { // do nothing if block is meta
-            stats.lock().unwrap().meta_blocks_decoded += 1;
-        } else {
-            match data_par_shards {
-                Some((data, par)) => {
-                    if block.is_parity(data, par) {
-                        stats.lock().unwrap().data_par_blocks_decoded += 1;
-                    } else {
-                        stats.lock().unwrap().data_blocks_decoded += 1;
+                if block.is_meta() { // do nothing if block is meta
+                    stats.lock().unwrap().meta_blocks_decoded += 1;
+                } else {
+                    match data_par_shards {
+                        Some((data, par)) => {
+                            if block.is_parity(data, par) {
+                                stats.lock().unwrap().data_par_blocks_decoded += 1;
+                            } else {
+                                stats.lock().unwrap().data_blocks_decoded += 1;
+                            }
+                        },
+                        None => {
+                            stats.lock().unwrap().data_blocks_decoded += 1;
+                        }
+                    }
+
+                    // write data block
+                    if let Some(write_pos) =
+                        sbx_block::calc_data_chunk_write_pos(ref_block.get_version(),
+                                                             block.get_seq_num(),
+                                                             data_par_shards)
+                    {
+                        writer.seek(SeekFrom::Start(write_pos as u64)).unwrap()?;
+
+                        writer.write(sbx_block::slice_data_buf(ref_block.get_version(),
+                                                               &buffer))?;
+                    }
+                }
+            },
+        None    => { // output to stdout
+            let stored_hash_bytes =
+                if ref_block.is_data() {
+                    None
+                } else {
+                    ref_block.get_HSH().unwrap()
+                };
+
+            let mut hash_ctx =
+                match stored_hash_bytes {
+                    None          => None,
+                    Some((ht, _)) => match hash::Ctx::new(ht) {
+                        Err(()) => None,
+                        Ok(ctx) => Some(ctx),
+                    }
+                };
+
+            let total_block_count = {
+                use file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps;
+                match ref_block.get_FSZ() {
+                    Ok(Some(x)) =>
+                        calc_total_block_count_exc_burst_gaps(version,
+                                                              None,
+                                                              data_par_burst,
+                                                              x),
+                    _           => {
+                        print_if!(not_json => json_printer =>
+                                  "Warning :";
+                                  "";
+                                  "    No recorded file size found, using container file size to estimate total";
+                                  "    number of blocks. This may overestimate total number of blocks, and may";
+                                  "    show incorrect block counts.";
+                                  "";
+                        );
+                        let file_size = file_utils::get_file_size(&param.in_file)?;
+                        file_size / block_size as u64
+                    },
+                }
+            };
+
+            let total_data_chunk_count = match orig_file_size {
+                Some(orig_file_size) => Some(file_utils::from_orig_file_size::calc_data_chunk_count(version, orig_file_size)),
+                None                 => None,
+            };
+
+            match data_par_burst {
+                Some((data, parity, _)) => { // do burst resistant pattern read
+                    let mut seq_num = 1;
+                    while seq_num <= SBX_LAST_SEQ_NUM {
+                        break_if_atomic_bool!(ctrlc_stop_flag);
+
+                        if stats.lock().unwrap().units_so_far() >= total_block_count { break; }
+
+                        let pos = sbx_block::calc_data_block_write_pos(ref_block.get_version(),
+                                                                       seq_num,
+                                                                       None,
+                                                                       data_par_burst);
+
+                        reader.seek(SeekFrom::Start(pos))?;
+
+                        // read at reference block block size
+                        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+                                                                            &mut buffer))?;
+
+                        if read_res.eof_seen {
+                            stats.lock().unwrap().blocks_decode_failed += 1;
+                            continue;
+                        }
+
+                        match block.sync_from_buffer(&buffer, Some(&pred)) {
+                            Ok(_)  => {
+                                if block.get_seq_num() != seq_num {
+                                    stats.lock().unwrap().blocks_decode_failed += 1;
+                                    continue;
+                                }
+                            },
+                            Err(_) => {
+                                stats.lock().unwrap().blocks_decode_failed += 1;
+                                continue;
+                            },
+                        }
+
+                        if block.is_meta() { // do nothing if block is meta
+                            stats.lock().unwrap().meta_blocks_decoded += 1;
+                        } else {
+                            if block.is_parity(data, parity) {
+                                stats.lock().unwrap().data_par_blocks_decoded += 1;
+                            } else {
+                                stats.lock().unwrap().data_blocks_decoded += 1;
+
+                                let is_last_data_block = match total_data_chunk_count {
+                                    Some(count) => stats.lock().unwrap().data_blocks_decoded == count,
+                                    None        => false,
+                                };
+
+                                // write data chunk
+                                write_data_only_block(data_par_shards,
+                                                      is_last_data_block,
+                                                      data_size_of_last_data_block,
+                                                      &ref_block,
+                                                      &block,
+                                                      &mut writer,
+                                                      &mut hash_ctx,
+                                                      &buffer)?;
+
+                                if is_last_data_block { break; }
+                            }
+                        }
+
+                        seq_num += 1;
                     }
                 },
-                None => {
-                    stats.lock().unwrap().data_blocks_decoded += 1;
+                None                        => { // do sequential read
+                    loop {
+                        break_if_atomic_bool!(ctrlc_stop_flag);
+
+                        // read at reference block block size
+                        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+                                                                            &mut buffer))?;
+
+                        break_if_eof_seen!(read_res);
+
+                        if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
+                            stats.lock().unwrap().blocks_decode_failed += 1;
+                            continue;
+                        }
+
+                        if block.is_meta() { // do nothing if block is meta
+                            stats.lock().unwrap().meta_blocks_decoded += 1;
+                        } else {
+                            match data_par_shards {
+                                Some((data, par)) => {
+                                    if block.is_parity(data, par) {
+                                        stats.lock().unwrap().data_par_blocks_decoded += 1;
+                                    } else {
+                                        stats.lock().unwrap().data_blocks_decoded += 1;
+                                    }
+                                },
+                                None => {
+                                    stats.lock().unwrap().data_blocks_decoded += 1;
+                                }
+                            }
+
+                            let is_last_data_block = match total_data_chunk_count {
+                                Some(count) => stats.lock().unwrap().data_blocks_decoded == count,
+                                None        => false,
+                            };
+
+                            // write data block
+                            write_data_only_block(None,
+                                                  is_last_data_block,
+                                                  data_size_of_last_data_block,
+                                                  &ref_block,
+                                                  &block,
+                                                  &mut writer,
+                                                  &mut hash_ctx,
+                                                  &buffer)?;
+
+                            if is_last_data_block { break; }
+                        }
+                    }
                 }
             }
 
-            // write data block
-            if let Some(write_pos) =
-                sbx_block::calc_data_chunk_write_pos(ref_block.get_version(),
-                                                     block.get_seq_num(),
-                                                     data_par_shards)
-            {
-                writer.seek(SeekFrom::Start(write_pos as u64))?;
-
-                writer.write(sbx_block::slice_data_buf(ref_block.get_version(),
-                                                       &buffer))?;
+            if let Some(ctx) = hash_ctx {
+                hash_bytes = Some(ctx.finish_into_hash_bytes());
             }
-        }
+        },
     }
-
     reporter.stop();
 
     // truncate file possibly
@@ -365,7 +625,9 @@ pub fn decode(param           : &Param,
         match ref_block.get_FSZ().unwrap() {
             None    => {},
             Some(x) => {
-                writer.set_len(x)?;
+                if let Some(r) = writer.set_len(x) {
+                    r?;
+                }
             }
         }
     } else {
@@ -380,11 +642,16 @@ pub fn decode(param           : &Param,
         }
     }
 
-    stats.lock().unwrap().out_file_size = writer.get_file_size()?;
+    let data_blocks_decoded = stats.lock().unwrap().data_blocks_decoded;
+
+    stats.lock().unwrap().out_file_size = match writer.get_file_size() {
+        Some(r) => r?,
+        None    => data_blocks_decoded * ver_to_data_size(ref_block.get_version()) as u64,
+    };
 
     let res = stats.lock().unwrap().clone();
 
-    Ok(res)
+    Ok((res, hash_bytes))
 }
 
 fn hash(param           : &Param,
@@ -407,9 +674,12 @@ fn hash(param           : &Param,
             }
         };
 
-    let mut reader = FileReader::new(&param.out_file.clone().unwrap(),
-                                     FileReaderParam { write    : false,
-                                                       buffered : true   })?;
+    let mut reader = match param.out_file {
+        Some(ref f) => FileReader::new(f,
+                                       FileReaderParam { write    : false,
+                                                         buffered : true   })?,
+        None        => return Ok(None),
+    };
 
     let file_size = reader.get_file_size()?;
 
@@ -466,53 +736,65 @@ pub fn decode_file(param : &Param)
         };
 
     // compute output file name
-    let out_file_path : String = match param.out_file {
+    let out_file_path : Option<String> = match param.out_file {
         None => {
             match recorded_file_name {
                 None    => { return Err(Error::with_message("No original file name was found in SBX container and no output file name/path was provided")); },
-                Some(x) => x
+                Some(x) => Some(x)
             }
         },
         Some(ref out) => {
-            if file_utils::check_if_file_is_dir(&out) {
+            if        file_utils::check_if_file_is_stdout(out) {
+                None
+            } else if file_utils::check_if_file_is_dir(out) {
                 match recorded_file_name {
                     None    => { return Err(Error::with_message(&format!("No original file name was found in SBX container and \"{}\" is a directory",
                                                                          &out))); }
                     Some(x) => {
-                        misc_utils::make_path(&[&out, &x])
+                        Some(misc_utils::make_path(&[out, &x]))
                     }
                 }
             } else {
-                out.clone()
+                Some(out.clone())
             }
         }
     };
 
     // check if can write out
-    if !param.force_write {
-        if file_utils::check_if_file_exists(&out_file_path) {
-            return Err(Error::with_message(&format!("File \"{}\" already exists",
-                                                    out_file_path)));
+    if let Some(ref out_file_path) = out_file_path {
+        if !param.force_write {
+            if file_utils::check_if_file_exists(out_file_path) {
+                return Err(Error::with_message(&format!("File \"{}\" already exists",
+                                                        out_file_path)));
+            }
         }
     }
+
+    let out_file_path : Option<&str> = match out_file_path {
+        Some(ref f) => Some(f),
+        None        => None,
+    };
 
     // regenerate param
     let param = Param::new(param.ref_block_choice,
                            param.force_write,
                            &param.json_printer,
                            &param.in_file,
-                           Some(&out_file_path),
+                           out_file_path,
                            param.verbose,
                            param.pr_verbosity_level);
 
-    let mut stats = decode(&param,
-                           ref_block_pos,
-                           &ref_block,
-                           &ctrlc_stop_flag)?;
+    let (mut stats, hash_res) = decode(&param,
+                                       ref_block_pos,
+                                       &ref_block,
+                                       &ctrlc_stop_flag)?;
 
-    stats.computed_hash = hash(&param,
-                               &ref_block,
-                               &ctrlc_stop_flag)?;
+    stats.computed_hash = match hash_res {
+        Some(r) => Some(r),
+        None    => hash(&param,
+                        &ref_block,
+                        &ctrlc_stop_flag)?,
+    };
 
     Ok(Some(stats))
 }

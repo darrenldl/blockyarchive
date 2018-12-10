@@ -119,12 +119,15 @@ Data block is valid if and only if
    - if a block is invalid, nothing is done
    - if a block is valid, and is a metadata block, nothing is done
    - if a block is valid, and is a data parity block, nothing is done
-   - if a block is valid, and is a data block, then it will be written to the writepos at output file, where writepos = (sequence number - 1) * block size of reference block in bytes
+   - if a block is valid, and is a data block, then
+     - if output is file, then it will be written to the writepos at output file, where writepos = (sequence number - 1) * block size of reference block in bytes
+
+     - else if output is stdout, it will be written to stdout directly
 3. If possible, truncate output file to remove data padding done for the last block during encoding
-   - if reference block is a metadata block, and contains file size field, then the output file will be truncated to that file size
+   - if reference block is a metadata block, and contains file size field, and output is a file, then the output file will be truncated to that file size
    - otherwise nothing is done
 4. If possible, report/record if the hash of decoded file matches the recorded hash during encoding
-   - if reference block is a metadata block, and contains the hash field, then the output file will be hashed to check against the recorded hash
+   - if reference block is a metadata block, and contains the hash field, and output is a file, then the output file will be hashed to check against the recorded hash
      - output file will not be deleted even if hash does not match
    - otherwise nothing is done
 
@@ -146,13 +149,15 @@ Data block is valid if and only if
    - if log file is specified, then
 
      - if the log file exists, then it will be used to initialize the scan's starting position
-
        - bytes_processed field will be rounded down to closest multiple of 128 automatically
 
    - the log file will be updated on every ~1.0 second
+
    - each block is appended to OUTDIR/UID, where :
+
      - OUTDIR = output directory specified
      - UID    = uid of the block in hex (uppercase)
+
    - the original bytes in the file is used, that is, the output block bytes are not generated from scratch by rsbx
 2. User is expected to attempt to decode the rescued data in OUTDIR using the rsbx decode command
 

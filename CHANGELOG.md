@@ -1,15 +1,21 @@
-## 1.1.3
+## 2.0.0
+
 - Dependencies upate
   - Updated `rand` from `0.4` to `0.5.4`
   - Updated `ring` from `0.12.1` to `0.13.2`
 - Doc fix
   - Added space before parantheses in code comments, documentation and help messages
+- Added stdin input option for encode mode
+- Added stdout output option for decode mode
+- Fixed data padding bytes calculation in encode mode
 
 ## 1.1.2
+
 - Dependencies update
   - Updated `reed-solomon-erasure` from `^3.0` to `^3.1`
 
 ## 1.1.1
+
 - Added fuzzing suite
   - No code changes from this as no bugs were found
 - Dependency update
@@ -22,27 +28,33 @@
     - `sbx_block::header::ver_p` (version parser for version byte in header)
 
 ## 1.1.0
+
 - Added --json flag to all modes
   - If specified, all information will be outputted in JSON format instead of human readable text
   - This includes progress report text, which is outputted to stderr
 - Progress report text changed to use stderr
 
 ## 1.0.8
+
 - Updated file size retrieval procedure to handle block devices properly
   - Previously modes would not interact with block devices correctly since metadata of block devices gives file size of 0
   - Currently modes retrieve file size via seeking to the end of file, this gives the block device size correctly
 
 ## 1.0.7
+
 - Polished repair stats text
 
 ## 1.0.6
+
 - Improved calc mode dialog about interpretation of error correction parameters
 
 ## 1.0.5
+
 - No code changes
 - Added binary releases via GitHub releases
 
 ## 1.0.4
+
 - Help messages polish
 - Added text in help messages about rsbx's limitations on burst error resistance level
 - Massively improved code coverage
@@ -60,6 +72,7 @@
 - Fixed meta blocks written stats reporting in encode mode, issue #59
 
 ## 1.0.3
+
 - General output text polishing
 - Fixed container size calculation for when --no-meta flag is supplied
 - Fixed encode mode for when --no-meta flag is supplied
@@ -70,14 +83,17 @@
 - Fixed a crash that occurs when sort mode is used with a SBX container of RS enabled version, and using data block as reference block
 
 ## 1.0.2
+
 - Fixed wording of error correction parameters interpretation strings in calc mode
 - Fixed container size calculation for when file size is 0
   - Previously for RS enabled SBX versions, rsbx would fail to take burst gaps between metadata blocks into account
 
 ## 1.0.1
+
 - Added displaying of metadata block repairs in repair mode when verbose flag is supplied
 
 ## 1.0.0
+
 - Added fields to stats display in encode mode
   - uid
   - file size
@@ -94,20 +110,24 @@
 - Added displaying of position in file of blocks requiring repair in repair mode
 
 ## 0.9.3
+
 - Various UI/UX improvements in subcommands
   - Added --info-only flag to encode mode to show info about encoding
   - Added file and container sizes to encode mode stats
 - Added calc mode to show detailed info about encoding configuration
 
 ## 0.9.2 (forgot to publish, whoops)
+
 - Made decode mode output file path determination more robust
   - Only the file part of the SNM field is used rather than the entire path when computing the final output path
 - Added `--info-only` flag to encode mode
   - Using the flag shows various calculation results and statistical information
 
 ## 0.9.1
+
 - Fixed encode mode output file determination logic
   - Prior to this version, encode mode would append the entire input path to the output path if output path is a directory, instead of just appending only the file name part
 
 ## 0.9.0
+
 - Base version

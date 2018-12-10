@@ -2,31 +2,29 @@ pub use std::io::ErrorKind;
 use std::fmt;
 
 #[derive(Clone)]
-pub struct FileError {
+pub struct StdoutError {
     pub kind : ErrorKind,
-    path     : String,
 }
 
-impl FileError {
-    pub fn new(kind : ErrorKind, path : &str) -> FileError {
-        FileError {
+impl StdoutError {
+    pub fn new(kind : ErrorKind) -> StdoutError {
+        StdoutError {
             kind,
-            path : String::from(path),
         }
     }
 }
 
-pub fn to_err(e : FileError) -> super::Error {
+pub fn to_err(e : StdoutError) -> super::Error {
     use super::{Error, ErrorKind};
-    Error::new(ErrorKind::FileError(e))
+    Error::new(ErrorKind::StdoutError(e))
 }
 
-impl fmt::Display for FileError {
+impl fmt::Display for StdoutError {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorKind::*;
         match self.kind {
-            NotFound          => write!(f, "file \"{}\" not found", self.path),
-            PermissionDenied  => write!(f, "file \"{}\" permission denied", self.path),
+            NotFound          => panic!("Invalid error"),
+            PermissionDenied  => panic!("Invalid error"),
             ConnectionRefused => panic!("Invalid error"),
             ConnectionReset   => panic!("Invalid error"),
             ConnectionAborted => panic!("Invalid error"),
@@ -38,11 +36,11 @@ impl fmt::Display for FileError {
             WouldBlock        => panic!("Invalid error"),
             InvalidInput      => panic!("Invalid parameters"),
             InvalidData       => panic!("Invalid parameters"),
-            TimedOut          => write!(f, "file \"{}\" operation timed out", &self.path),
-            WriteZero         => write!(f, "file \"{}\" failed write", &self.path),
-            Interrupted       => write!(f, "file \"{}\" operation interrupted", &self.path),
-            Other             => write!(f, "file \"{}\" unknown error", &self.path),
-            UnexpectedEof     => write!(f, "file \"{}\" unexpected EOF", &self.path),
+            TimedOut          => write!(f, "stdout operation timed out"),
+            WriteZero         => panic!("Invalid error"),
+            Interrupted       => write!(f, "stdout operation interrupted"),
+            Other             => write!(f, "stdout unknown error"),
+            UnexpectedEof     => write!(f, "stdout unexpected EOF"),
             _                 => write!(f, "Unknown error")
         }
     }
