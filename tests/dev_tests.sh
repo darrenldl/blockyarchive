@@ -33,6 +33,14 @@ if [[ $? != 0 ]]; then
   test_failed=$[$test_failed+1]
 fi
 
+echo "========================================"
+echo "Starting version tests (stdout as decode output)"
+echo "========================================"
+./version_tests_decode_stdout.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
 # nometa tests
 echo "========================================"
 echo "Starting nometa tests"
@@ -40,6 +48,22 @@ echo "========================================"
 ./nometa_tests.sh
 if [[ $? != 0 ]]; then
     test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting nometa tests (stdin as encode input)"
+echo "========================================"
+./nometa_tests.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting nometa tests (stdout as decode output)"
+echo "========================================"
+./nometa_tests.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
 fi
 
 # hash test
