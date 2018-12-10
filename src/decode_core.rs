@@ -468,13 +468,13 @@ pub fn decode(param           : &Param,
 
             let total_block_count = {
                 use file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps;
-                match ref_block.get_FSZ().unwrap() {
-                    Some(x) =>
+                match ref_block.get_FSZ() {
+                    Ok(Some(x)) =>
                         calc_total_block_count_exc_burst_gaps(version,
                                                               None,
                                                               data_par_burst,
                                                               x),
-                    None    => {
+                    _           => {
                         print_if!(not_json => json_printer =>
                                   "Warning :";
                                   "";
