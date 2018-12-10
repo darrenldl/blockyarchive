@@ -318,7 +318,7 @@ if [[ $test_failed == 0 ]]; then
     exit 0
 else
     echo "$test_failed tests failed"
-    echo "List of tests failed:"
-    echo $test_failed_names
+    echo "List of tests failed"
+    echo -e $test_failed_names
     exit 1
 fi
