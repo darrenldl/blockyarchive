@@ -59,7 +59,7 @@ fi
 
 # compare decode file and stdout output
 echo "========================================"
-echo "Starting comparison between encode with file input and stdin input"
+echo "Starting comparison between decode with file input and stdout output"
 echo "========================================"
 ./compare_decode_file_and_stdout.sh
 if [[ $? != 0 ]]; then
