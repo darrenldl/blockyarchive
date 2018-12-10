@@ -6,7 +6,9 @@ if [[ $TRAVIS == true ]]; then
     fi
 fi
 
-cd tests
+if [[ $PWD != */tests ]]; then
+  cd tests
+fi
 
 ./copy_release.sh
 
