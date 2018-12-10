@@ -229,6 +229,22 @@ if [[ $? != 0 ]]; then
     test_failed=$[$test_failed+1]
 fi
 
+echo "========================================"
+echo "Starting sort tests (stdin as encode input)"
+echo "========================================"
+./sort_tests_encode_stdin.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting sort tests (stdout as decode output)"
+echo "========================================"
+./sort_tests_decode_stdout.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
 # file size tests
 echo "========================================"
 echo "Starting file size calculation tests"
