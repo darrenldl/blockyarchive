@@ -275,6 +275,7 @@ fn write_data_only_block(data_par_shards              : Option<(usize, usize)>,
                          ref_block                    : &Block,
                          block                        : &Block,
                          writer                       : &mut Writer,
+                         hash_ctx                     : &mut Option<hash::Ctx>,
                          buffer                       : &[u8])
                          -> Result<(), Error> {
     let slice =
@@ -291,10 +292,18 @@ fn write_data_only_block(data_par_shards              : Option<(usize, usize)>,
         Some((data, par)) => {
             if !block.is_parity(data, par) {
                 writer.write(slice)?;
+
+                if let &mut Some(ref mut ctx) = hash_ctx {
+                    ctx.update(slice);
+                }
             }
         },
         None              => {
             writer.write(slice)?;
+
+            if let &mut Some(ref mut ctx) = hash_ctx {
+                ctx.update(slice);
+            }
         }
     }
 
@@ -305,7 +314,7 @@ pub fn decode(param           : &Param,
               ref_block_pos   : u64,
               ref_block       : &Block,
               ctrlc_stop_flag : &Arc<AtomicBool>)
-              -> Result<Stats, Error> {
+              -> Result<(Stats, Option<HashResult>), Error> {
     let in_file_size = file_utils::get_file_size(&param.in_file)?;
 
     let orig_file_size =
@@ -364,6 +373,8 @@ pub fn decode(param           : &Param,
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block,
                                                in_file_size,
                                                &param.json_printer)));
+
+    let mut hash_result = None;
 
     let reporter = ProgressReporter::new(&stats,
                                          "Data decoding progress",
@@ -452,6 +463,22 @@ pub fn decode(param           : &Param,
                 }
             },
         None    => { // output to stdout
+            let hash_bytes =
+                if ref_block.is_data() {
+                    None
+                } else {
+                    ref_block.get_HSH().unwrap()
+                };
+
+            let mut hash_ctx =
+                match hash_bytes {
+                    None          => None,
+                    Some((ht, _)) => match hash::Ctx::new(ht) {
+                        Err(()) => None,
+                        Ok(ctx) => Some(ctx),
+                    }
+                };
+
             let total_block_count = {
                 use file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps;
                 match ref_block.get_FSZ().unwrap() {
@@ -530,13 +557,14 @@ pub fn decode(param           : &Param,
                                     None        => false,
                                 };
 
-                                // write data block
+                                // write data chunk
                                 write_data_only_block(data_par_shards,
                                                       is_last_data_block,
                                                       data_size_of_last_data_block,
                                                       &ref_block,
                                                       &block,
                                                       &mut writer,
+                                                      &mut hash_ctx,
                                                       &buffer)?;
 
                                 if is_last_data_block { break; }
@@ -589,12 +617,17 @@ pub fn decode(param           : &Param,
                                                   &ref_block,
                                                   &block,
                                                   &mut writer,
+                                                  &mut hash_ctx,
                                                   &buffer)?;
 
                             if is_last_data_block { break; }
                         }
                     }
                 }
+            }
+
+            if let Some(ctx) = hash_ctx {
+                hash_result = Some(HashResult::MaybeHash(Some(ctx.finish_into_hash_bytes())));
             }
         },
     }
@@ -631,7 +664,7 @@ pub fn decode(param           : &Param,
 
     let res = stats.lock().unwrap().clone();
 
-    Ok(res)
+    Ok((res, hash_result))
 }
 
 fn hash(param           : &Param,
@@ -766,14 +799,17 @@ pub fn decode_file(param : &Param)
                            param.verbose,
                            param.pr_verbosity_level);
 
-    let mut stats = decode(&param,
-                           ref_block_pos,
-                           &ref_block,
-                           &ctrlc_stop_flag)?;
+    let (mut stats, hash_res) = decode(&param,
+                                       ref_block_pos,
+                                       &ref_block,
+                                       &ctrlc_stop_flag)?;
 
-    stats.computed_hash = hash(&param,
-                               &ref_block,
-                               &ctrlc_stop_flag)?;
+    stats.computed_hash = match hash_res {
+        Some(r) => r,
+        None    => hash(&param,
+                        &ref_block,
+                        &ctrlc_stop_flag)?,
+    };
 
     Ok(Some(stats))
 }
