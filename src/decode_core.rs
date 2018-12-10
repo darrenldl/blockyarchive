@@ -270,7 +270,7 @@ impl ProgressReport for Stats {
 }
 
 fn write_data_only_block(data_par_shards              : Option<(usize, usize)>,
-                         last_data_seq_num            : Option<u32>,
+                         is_last_data_block              : bool,
                          data_size_of_last_data_block : Option<u64>,
                          ref_block                    : &Block,
                          block                        : &Block,
@@ -278,21 +278,13 @@ fn write_data_only_block(data_par_shards              : Option<(usize, usize)>,
                          buffer                       : &[u8])
                          -> Result<(), Error> {
     let slice =
-        match last_data_seq_num {
-            Some(last_data_seq_num) => {
-                if block.get_seq_num() == last_data_seq_num {
-                    &sbx_block::slice_data_buf(ref_block.get_version(),
-                                               &buffer)
-                        [0..data_size_of_last_data_block.unwrap() as usize]
-                } else {
-                    sbx_block::slice_data_buf(ref_block.get_version(),
-                                              &buffer)
-                }
-            },
-            None                    => {
-                sbx_block::slice_data_buf(ref_block.get_version(),
-                                          &buffer)
-            },
+        if is_last_data_block {
+            &sbx_block::slice_data_buf(ref_block.get_version(),
+                                       &buffer)
+                [0..data_size_of_last_data_block.unwrap() as usize]
+        } else {
+            sbx_block::slice_data_buf(ref_block.get_version(),
+                                      &buffer)
         };
 
     match data_par_shards {
@@ -483,22 +475,26 @@ pub fn decode(param           : &Param,
                 }
             };
 
-            let last_data_seq_num = match orig_file_size {
-                Some(orig_file_size) => {
-                    let last_seq_num = file_utils::from_orig_file_size::calc_data_block_count_exc_burst_gaps(ref_block.get_version(),
-                                                                                                             data_par_burst,
-                                                                                                             orig_file_size) as u64;
-
-                    // correct last_data_seq_num if necessary
-                    let last_seq_num = std::cmp::min(last_seq_num, SBX_LAST_SEQ_NUM as u64) as u32;
-
-                    match data_par_burst {
-                        Some((_, par, _)) => Some(last_seq_num - par as u32),
-                        None              => Some(last_seq_num),
-                    }
-                },
+            let total_data_chunk_count = match orig_file_size {
+                Some(orig_file_size) => Some(file_utils::from_orig_file_size::calc_data_chunk_count(version, orig_file_size)),
                 None                 => None,
             };
+            // let last_data_seq_num = match orig_file_size {
+            //     Some(orig_file_size) => {
+            //         let last_seq_num = file_utils::from_orig_file_size::calc_data_block_count_exc_burst_gaps(ref_block.get_version(),
+            //                                                                                                  data_par_burst,
+            //                                                                                                  orig_file_size) as u64;
+
+            //         // correct last_data_seq_num if necessary
+            //         let last_seq_num = std::cmp::min(last_seq_num, SBX_LAST_SEQ_NUM as u64) as u32;
+
+            //         match data_par_burst {
+            //             Some((_, par, _)) => Some(last_seq_num - par as u32),
+            //             None              => Some(last_seq_num),
+            //         }
+            //     },
+            //     None                 => None,
+            // };
 
             match data_par_burst {
                 Some((data, parity, _)) => { // do burst resistant pattern read
@@ -545,14 +541,21 @@ pub fn decode(param           : &Param,
                             } else {
                                 stats.lock().unwrap().data_blocks_decoded += 1;
 
+                                let is_last_data_block = match total_data_chunk_count {
+                                    Some(count) => stats.lock().unwrap().data_blocks_decoded == count,
+                                    None        => false,
+                                };
+
                                 // write data block
                                 write_data_only_block(data_par_shards,
-                                                      last_data_seq_num,
+                                                      is_last_data_block,
                                                       data_size_of_last_data_block,
                                                       &ref_block,
                                                       &block,
                                                       &mut writer,
                                                       &buffer)?;
+
+                                if is_last_data_block { break; }
                             }
                         }
 
@@ -590,14 +593,21 @@ pub fn decode(param           : &Param,
                                 }
                             }
 
+                            let is_last_data_block = match total_data_chunk_count {
+                                Some(count) => stats.lock().unwrap().data_blocks_decoded == count,
+                                None        => false,
+                            };
+
                             // write data block
                             write_data_only_block(None,
-                                                  last_data_seq_num,
+                                                  is_last_data_block,
                                                   data_size_of_last_data_block,
                                                   &ref_block,
                                                   &block,
                                                   &mut writer,
                                                   &buffer)?;
+
+                            if is_last_data_block { break; }
                         }
                     }
                 }
