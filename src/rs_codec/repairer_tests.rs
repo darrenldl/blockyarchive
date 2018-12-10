@@ -11,6 +11,8 @@ use reed_solomon_erasure::ReedSolomon;
 use json_printer::JSONPrinter;
 use std::sync::Arc;
 
+use output_channel::OutputChannel;
+
 use rand;
 
 use rand_utils::fill_random_bytes;
@@ -32,7 +34,7 @@ macro_rules! make_random_block_buffers {
 
 #[test]
 fn test_repairer_repair_properly_simple_cases() {
-    let json_printer = Arc::new(JSONPrinter::new(false));
+    let json_printer = Arc::new(JSONPrinter::new(false, OutputChannel::Stdout));
 
     let version = Version::V17;
     let r = ReedSolomon::new(10, 3).unwrap();
@@ -226,7 +228,7 @@ quickcheck! {
                                    corrupt : usize,
                                    reuse   : usize,
                                    seq_num : u32) -> bool {
-        let json_printer = Arc::new(JSONPrinter::new(false));
+        let json_printer = Arc::new(JSONPrinter::new(false, OutputChannel::Stdout));
 
         let data   = 1 + data % 10;
         let parity = 1 + parity % 10;
