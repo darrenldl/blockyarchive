@@ -8,7 +8,7 @@ touch dummy_empty2
 
 echo -n "Encoding 1st file"
 output=$(cat dummy_empty1 | \
-           ./rsbx encode --json -f - --uid DEADBEEF0001)
+           ./rsbx encode --json -f - dummy_empty1.sbx --uid DEADBEEF0001)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
@@ -21,7 +21,8 @@ else
 fi
 
 echo -n "Encoding 2nd file"
-output=$(./rsbx encode --json -f dummy_empty2 --uid DEADBEEF0002)
+output=$(cat dummy_empty2 | \
+           ./rsbx encode --json -f - dummy_empty2.sbx --uid DEADBEEF0002)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1

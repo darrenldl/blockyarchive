@@ -30,7 +30,7 @@ for ver in ${VERSIONS[*]}; do
 
         echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
         output=$(cat dummy | \
-                   ./rsbx encode --json --sbx-version $ver -f  $container_name \
+                   ./rsbx encode --json --sbx-version $ver -f - $container_name \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards)
         if [[ $(echo $output | jq -r ".error") != null ]]; then

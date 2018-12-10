@@ -32,7 +32,8 @@ for ver in ${VERSIONS[*]}; do
         container_name=burst_$data_shards\_$parity_shards\_$burst\_$ver.sbx
 
         echo -n "Encoding"
-        output=$(./rsbx encode --json --sbx-version $ver -f dummy $container_name \
+        output=$(cat dummy | \
+                   ./rsbx encode --json --sbx-version $ver -f - $container_name \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards \
                         --burst $burst)
