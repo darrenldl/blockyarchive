@@ -114,7 +114,7 @@ fi
 echo "Decoding all rescued data"
 FILES=rescued_data/*
 for f in $FILES; do
-  output=$(./rsbx decode --json $f - 2&>1 > $f.decoded)
+  output=$(./rsbx decode --json $f - 2>&1 > $f.decoded)
   if [[ $(echo $output | jq -r ".error") != "null" ]]; then
       echo " ==> Invalid JSON"
       exit_code=1

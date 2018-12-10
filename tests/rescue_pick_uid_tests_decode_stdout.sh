@@ -92,7 +92,7 @@ else
 fi
 
 echo "Decoding rescued file"
-output=$(./rsbx decode --json "rescued_data2/"$uid1 - 2&>1 > "rescued_data2/"$uid1.decoded)
+output=$(./rsbx decode --json "rescued_data2/"$uid1 - 2>&1 > "rescued_data2/"$uid1.decoded)
 if [[ $(echo $output | jq -r ".stats.fileUID") != "$uid1" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1

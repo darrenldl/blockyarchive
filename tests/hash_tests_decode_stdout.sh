@@ -55,7 +55,7 @@ done
 i=0
 for h in ${HASHES[*]}; do
   echo -n "Decoding hash $h container"
-  output=$(./rsbx decode --json -f dummy$h.sbx - 2&>1 > dummy$h)
+  output=$(./rsbx decode --json -f dummy$h.sbx - 2>&1 > dummy$h)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
