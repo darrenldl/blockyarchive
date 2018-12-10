@@ -277,39 +277,36 @@ fn write_data_only_block(data_par_shards              : Option<(usize, usize)>,
                          writer                       : &mut Writer,
                          buffer                       : &[u8])
                          -> Result<(), Error> {
+    let slice =
+        match last_data_seq_num {
+            Some(last_data_seq_num) => {
+                if block.get_seq_num() == last_data_seq_num {
+                    &sbx_block::slice_data_buf(ref_block.get_version(),
+                                               &buffer)
+                        [0..data_size_of_last_data_block.unwrap() as usize]
+                } else {
+                    sbx_block::slice_data_buf(ref_block.get_version(),
+                                              &buffer)
+                }
+            },
+            None                    => {
+                sbx_block::slice_data_buf(ref_block.get_version(),
+                                          &buffer)
+            },
+        };
+
     match data_par_shards {
         Some((data, par)) => {
             if !block.is_parity(data, par) {
-                writer.write(
-                    match last_data_seq_num {
-                        Some(last_data_seq_num) => {
-                            if block.get_seq_num() == last_data_seq_num {
-                                &sbx_block::slice_data_buf(ref_block.get_version(),
-                                                           &buffer)
-                                    [0..data_size_of_last_data_block.unwrap() as usize]
-                            } else {
-                                sbx_block::slice_data_buf(ref_block.get_version(),
-                                                          &buffer)
-                            }
-                        },
-                        None =>
-                            sbx_block::slice_data_buf(ref_block.get_version(),
-                                                      &buffer)
-                    }
-                )?;
+                writer.write(slice)?;
             }
-
-            Ok(())
         },
         None              => {
-            writer.write(
-                sbx_block::slice_data_buf(ref_block.get_version(),
-                                          &buffer)
-            )?;
-
-            Ok(())
-        },
+            writer.write(slice)?;
+        }
     }
+
+    Ok(())
 }
 
 pub fn decode(param           : &Param,
