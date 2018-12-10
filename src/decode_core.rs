@@ -479,22 +479,6 @@ pub fn decode(param           : &Param,
                 Some(orig_file_size) => Some(file_utils::from_orig_file_size::calc_data_chunk_count(version, orig_file_size)),
                 None                 => None,
             };
-            // let last_data_seq_num = match orig_file_size {
-            //     Some(orig_file_size) => {
-            //         let last_seq_num = file_utils::from_orig_file_size::calc_data_block_count_exc_burst_gaps(ref_block.get_version(),
-            //                                                                                                  data_par_burst,
-            //                                                                                                  orig_file_size) as u64;
-
-            //         // correct last_data_seq_num if necessary
-            //         let last_seq_num = std::cmp::min(last_seq_num, SBX_LAST_SEQ_NUM as u64) as u32;
-
-            //         match data_par_burst {
-            //             Some((_, par, _)) => Some(last_seq_num - par as u32),
-            //             None              => Some(last_seq_num),
-            //         }
-            //     },
-            //     None                 => None,
-            // };
 
             match data_par_burst {
                 Some((data, parity, _)) => { // do burst resistant pattern read
