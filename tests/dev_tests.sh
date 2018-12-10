@@ -78,7 +78,7 @@ if [[ $? != 0 ]]; then
 fi
 
 echo "========================================"
-echo "Starting hash tests"
+echo "Starting hash tests (stdin as encode input)"
 echo "========================================"
 ./hash_tests_encode_stdin.sh
 if [[ $? != 0 ]]; then
@@ -86,7 +86,7 @@ if [[ $? != 0 ]]; then
 fi
 
 echo "========================================"
-echo "Starting hash tests"
+echo "Starting hash tests (stdout as decode output)"
 echo "========================================"
 ./hash_tests_decode_stdout.sh
 if [[ $? != 0 ]]; then
