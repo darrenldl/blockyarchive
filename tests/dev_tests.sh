@@ -179,6 +179,22 @@ if [[ $? != 0 ]]; then
     test_failed=$[$test_failed+1]
 fi
 
+echo "========================================"
+echo "Starting corruption tests (stdin as encode input)"
+echo "========================================"
+./corruption_tests_encode_stdin.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting corruption tests (stdout as decode output)"
+echo "========================================"
+./corruption_tests_decode_stdout.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
 # burst corruption tests
 echo "========================================"
 echo "Starting burst corruption tests"
