@@ -57,6 +57,16 @@ if [[ $? != 0 ]]; then
   test_failed_names=$test_failed_names"- compare_encode_file_and_stdin.sh\n"
 fi
 
+# compare decode file and stdout output
+echo "========================================"
+echo "Starting comparison between encode with file input and stdin input"
+echo "========================================"
+./compare_decode_file_and_stdout.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- compare_decode_file_and_stdout.sh\n"
+fi
+
 # nometa tests
 echo "========================================"
 echo "Starting nometa tests"
