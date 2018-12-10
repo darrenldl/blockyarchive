@@ -77,7 +77,7 @@ for ver in ${VERSIONS[*]}; do
         output_name=dummy_$data_shards\_$parity_shards
 
         echo -n "Decoding"
-        output=$(./rsbx decode --json -f $container_name - 2&1 > $output_name)
+        output=$(./rsbx decode --json -f $container_name - 2&>1 > $output_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
