@@ -69,7 +69,7 @@ fi
 echo "========================================"
 echo "Starting nometa tests (stdout as decode output)"
 echo "========================================"
-./nometa_tests_decode_output.sh
+./nometa_tests_decode_stdout.sh
 if [[ $? != 0 ]]; then
   test_failed=$[$test_failed+1]
   test_failed_names=$test_failed_names"- nometa_tests_decode_stdout.sh\n"
