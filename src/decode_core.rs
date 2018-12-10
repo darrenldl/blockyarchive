@@ -409,6 +409,10 @@ pub fn decode(param           : &Param,
             None
         };
 
+    let version = ref_block.get_version();
+
+    let block_size = ver_to_block_size(version);
+
     let pred = block_pred_same_ver_uid!(ref_block);
 
     reporter.start();
@@ -492,7 +496,7 @@ pub fn decode(param           : &Param,
                     let last_seq_num = std::cmp::min(last_seq_num, SBX_LAST_SEQ_NUM as u64) as u32;
 
                     match data_par_burst {
-                        Some((_, par, _)) => Some(last_seq_num - par as u64),
+                        Some((_, par, _)) => Some(last_seq_num - par as u32),
                         None              => Some(last_seq_num),
                     }
                 },
@@ -500,7 +504,7 @@ pub fn decode(param           : &Param,
             };
 
             match data_par_burst {
-                Some((data, parity, burst)) => { // do burst resistant pattern read
+                Some((data, parity, _)) => { // do burst resistant pattern read
                     let mut seq_num = 1;
                     while seq_num <= SBX_LAST_SEQ_NUM {
                         break_if_atomic_bool!(ctrlc_stop_flag);
@@ -601,15 +605,6 @@ pub fn decode(param           : &Param,
                     }
                 }
             }
-
-            match last_data_seq_num {
-                None                    => {
-                    // do sequential read
-                    loop {
-                    }
-                },
-            }
-
         },
     }
     reporter.stop();
