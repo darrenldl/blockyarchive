@@ -101,17 +101,62 @@ if [[ $? != 0 ]]; then
 fi
 
 echo "========================================"
+echo "Starting rescue tests (stdin as encode input)"
+echo "========================================"
+./rescue_tests_encode_stdin.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting rescue tests (stdout as decode output)"
+echo "========================================"
+./rescue_tests_decode_stdout.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
 echo "Starting rescue with specified range tests"
 echo "========================================"
 ./rescue_from_to_tests.sh
 if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
+  test_failed=$[$test_failed+1]
 fi
+
+echo "========================================"
+echo "Starting rescue with specified range tests (stdin as encode input)"
+echo "========================================"
+./rescue_from_to_tests_encode_stdin.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting rescue with specified range tests (stdout as encode output)"
+echo "========================================"
+echo "Non applicable, skipped"
 
 echo "========================================"
 echo "Starting rescue with specified uid tests"
 echo "========================================"
 ./rescue_pick_uid_tests.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting rescue with specified uid tests (stdin as encode input)"
+echo "========================================"
+./rescue_pick_uid_tests_encode_stdin.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting rescue with specified uid tests (stdout as decode output)"
+echo "========================================"
+./rescue_pick_uid_tests_decode_stdout.sh
 if [[ $? != 0 ]]; then
     test_failed=$[$test_failed+1]
 fi
