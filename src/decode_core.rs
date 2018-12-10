@@ -58,14 +58,8 @@ pub struct Stats {
     start_time                  : f64,
     end_time                    : f64,
     pub recorded_hash           : Option<multihash::HashBytes>,
-    pub computed_hash           : HashResult,
+    pub computed_hash           : Option<multihash::HashBytes>,
     json_printer                : Arc<JSONPrinter>,
-}
-
-#[derive(Clone, Debug)]
-pub enum HashResult {
-    MaybeHash(Option<HashBytes>),
-    NothingToHash,
 }
 
 struct HashStats {
@@ -77,8 +71,6 @@ struct HashStats {
 
 impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
-        use self::HashResult::*;
-
         let rs_enabled              = ver_uses_rs(self.version);
         let block_size              = ver_to_block_size(self.version);
         let recorded_hash           = &self.recorded_hash;
@@ -110,10 +102,9 @@ impl fmt::Display for Stats {
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
             write_maybe_json!(f, json_printer, "Hash of output file                    : {}", match (recorded_hash, computed_hash) {
-                (_,        &NothingToHash)          => null_if_json_else!(json_printer, "N/A - hashing of stdout output is not supported").to_string(),
-                (&None,    &MaybeHash(None))        => null_if_json_else!(json_printer, "N/A").to_string(),
-                (&Some(_), &MaybeHash(None))        => null_if_json_else!(json_printer, "N/A - recorded hash type is not supported by rsbx").to_string(),
-                (_,        &MaybeHash(Some(ref h))) => format!("{} - {}",
+                (&None,    &None)        => null_if_json_else!(json_printer, "N/A").to_string(),
+                (&Some(_), &None)        => null_if_json_else!(json_printer, "N/A - recorded hash type is not supported by rsbx").to_string(),
+                (_,        &Some(ref h)) => format!("{} - {}",
                                                                hash_type_to_string(h.0),
                                                                misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
@@ -136,32 +127,28 @@ impl fmt::Display for Stats {
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
             write_maybe_json!(f, json_printer, "Hash of output file                 : {}", match (recorded_hash, computed_hash) {
-                (_,        &NothingToHash)          => null_if_json_else!(json_printer, "N/A - hashing of stdout output is not supported").to_string(),
-                (&None,    &MaybeHash(None))        => null_if_json_else!(json_printer, "N/A").to_string(),
-                (&Some(_), &MaybeHash(None))        => null_if_json_else!(json_printer, "N/A - recorded hash type is not supported by rsbx").to_string(),
-                (_,        &MaybeHash(Some(ref h))) => format!("{} - {}",
+                (&None,    &None)        => null_if_json_else!(json_printer, "N/A").to_string(),
+                (&Some(_), &None)        => null_if_json_else!(json_printer, "N/A - recorded hash type is not supported by rsbx").to_string(),
+                (_,        &Some(ref h)) => format!("{} - {}",
                                                                hash_type_to_string(h.0),
                                                                misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
         }
         match (recorded_hash, computed_hash) {
-            (_,                        &NothingToHash)                      => {
-                write_if!(not_json => f, json_printer => "No hash is available for stdout output";)?;
-            },
-            (&Some(ref recorded_hash), &MaybeHash(Some(ref computed_hash))) => {
+            (&Some(ref recorded_hash), &Some(ref computed_hash)) => {
                 if recorded_hash.1 == computed_hash.1 {
                     write_if!(not_json => f, json_printer => "The output file hash matches the recorded hash";)?;
                 } else {
                     write_if!(not_json => f, json_printer => "The output file does NOT match the recorded hash";)?;
                 }
             },
-            (&Some(_),                 &MaybeHash(None))                    => {
+            (&Some(_),                 &None)                    => {
                 write_if!(not_json => f, json_printer => "No hash is available for output file";)?;
             },
-            (&None,                    &MaybeHash(Some(_)))                 => {
+            (&None,                    &Some(_))                 => {
                 write_if!(not_json => f, json_printer => "No recorded hash is available";)?;
             },
-            (&None,                    &MaybeHash(None))                    => {
+            (&None,                    &None)                    => {
                 write_if!(not_json => f, json_printer => "Neither recorded hash nor output file hash is available";)?;
             }
         }
@@ -238,7 +225,7 @@ impl Stats {
             start_time              : 0.,
             end_time                : 0.,
             recorded_hash           : None,
-            computed_hash           : HashResult::MaybeHash(None),
+            computed_hash           : None,
             json_printer            : Arc::clone(json_printer),
         }
     }
@@ -314,7 +301,7 @@ pub fn decode(param           : &Param,
               ref_block_pos   : u64,
               ref_block       : &Block,
               ctrlc_stop_flag : &Arc<AtomicBool>)
-              -> Result<(Stats, Option<HashResult>), Error> {
+              -> Result<(Stats, Option<HashBytes>), Error> {
     let in_file_size = file_utils::get_file_size(&param.in_file)?;
 
     let orig_file_size =
@@ -374,7 +361,7 @@ pub fn decode(param           : &Param,
                                                in_file_size,
                                                &param.json_printer)));
 
-    let mut hash_result = None;
+    let mut hash_bytes = None;
 
     let reporter = ProgressReporter::new(&stats,
                                          "Data decoding progress",
@@ -627,7 +614,7 @@ pub fn decode(param           : &Param,
             }
 
             if let Some(ctx) = hash_ctx {
-                hash_result = Some(HashResult::MaybeHash(Some(ctx.finish_into_hash_bytes())));
+                hash_bytes = Some(ctx.finish_into_hash_bytes());
             }
         },
     }
@@ -664,15 +651,13 @@ pub fn decode(param           : &Param,
 
     let res = stats.lock().unwrap().clone();
 
-    Ok((res, hash_result))
+    Ok((res, hash_bytes))
 }
 
 fn hash(param           : &Param,
         ref_block       : &Block,
         ctrlc_stop_flag : &Arc<AtomicBool>)
-        -> Result<HashResult, Error> {
-    use self::HashResult::*;
-
+        -> Result<Option<HashBytes>, Error> {
     let hash_bytes : Option<HashBytes> =
         if ref_block.is_data() {
             None
@@ -682,9 +667,9 @@ fn hash(param           : &Param,
 
     let mut hash_ctx : hash::Ctx =
         match hash_bytes {
-            None          => { return Ok(MaybeHash(None)); },
+            None          => { return Ok(None); },
             Some((ht, _)) => match hash::Ctx::new(ht) {
-                Err(()) => { return Ok(MaybeHash(None)); },
+                Err(()) => { return Ok(None); },
                 Ok(ctx) => ctx,
             }
         };
@@ -693,7 +678,7 @@ fn hash(param           : &Param,
         Some(ref f) => FileReader::new(f,
                                        FileReaderParam { write    : false,
                                                          buffered : true   })?,
-        None        => return Ok(NothingToHash),
+        None        => return Ok(None),
     };
 
     let file_size = reader.get_file_size()?;
@@ -726,7 +711,7 @@ fn hash(param           : &Param,
 
     reporter.stop();
 
-    Ok(MaybeHash(Some(hash_ctx.finish_into_hash_bytes())))
+    Ok(Some(hash_ctx.finish_into_hash_bytes()))
 }
 
 pub fn decode_file(param : &Param)
@@ -805,7 +790,7 @@ pub fn decode_file(param : &Param)
                                        &ctrlc_stop_flag)?;
 
     stats.computed_hash = match hash_res {
-        Some(r) => r,
+        Some(r) => Some(r),
         None    => hash(&param,
                         &ref_block,
                         &ctrlc_stop_flag)?,
