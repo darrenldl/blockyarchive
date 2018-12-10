@@ -215,7 +215,7 @@ fi
 echo "========================================"
 echo "Starting burst corruption tests (stdout as decode output)"
 echo "========================================"
-./burst_corruption_tests.sh
+./burst_corruption_tests_decode_stdout.sh
 if [[ $? != 0 ]]; then
     test_failed=$[$test_failed+1]
 fi
