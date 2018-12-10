@@ -450,7 +450,7 @@ pub fn decode(param           : &Param,
                 }
             },
         None    => { // output to stdout
-            let hash_bytes =
+            let stored_hash_bytes =
                 if ref_block.is_data() {
                     None
                 } else {
@@ -458,7 +458,7 @@ pub fn decode(param           : &Param,
                 };
 
             let mut hash_ctx =
-                match hash_bytes {
+                match stored_hash_bytes {
                     None          => None,
                     Some((ht, _)) => match hash::Ctx::new(ht) {
                         Err(()) => None,
