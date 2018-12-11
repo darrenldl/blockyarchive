@@ -16,7 +16,6 @@ extern crate ctrlc;
 
 extern crate reed_solomon_erasure;
 
-extern crate ring;
 extern crate sha1;
 extern crate sha2;
 extern crate blake2_c;

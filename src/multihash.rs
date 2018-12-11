@@ -129,8 +129,8 @@ pub mod specs {
 }
 
 pub mod hash {
+    use sha1::Digest;
     use blake2_c::blake2b;
-    use ring;
 
     use super::*;
 
@@ -140,9 +140,9 @@ pub mod hash {
 
     #[allow(non_camel_case_types)]
     enum _Ctx {
-        SHA1(ring::digest::Context),
-        SHA256(ring::digest::Context),
-        SHA512(ring::digest::Context),
+        SHA1(sha1::Sha1),
+        SHA256(sha2::Sha256),
+        SHA512(sha2::Sha512),
         BLAKE2B_256(blake2b::State),
         BLAKE2B_512(blake2b::State)
     }
@@ -159,14 +159,14 @@ pub mod hash {
             let ctx = match hash_type {
                 HashType::SHA1                            =>
                     Some(_Ctx::SHA1(
-                        ring::digest::Context::new(&ring::digest::SHA1))),
+                        sha1::Sha1::new())),
                 HashType::SHA2_256     | HashType::SHA256 =>
                     Some(_Ctx::SHA256(
-                        ring::digest::Context::new(&ring::digest::SHA256))),
+                        sha2::Sha256::new())),
                 HashType::SHA2_512_256                    => None,
                 HashType::SHA2_512_512 | HashType::SHA512 =>
                     Some(_Ctx::SHA512(
-                        ring::digest::Context::new(&ring::digest::SHA512))),
+                        sha2::Sha512::new())),
                 HashType::BLAKE2B_256                     =>
                     Some(_Ctx::BLAKE2B_256(
                         blake2b::State::new(specs::Param::new(hash_type).digest_length as usize))),
@@ -195,11 +195,11 @@ pub mod hash {
         pub fn update(&mut self, data : &[u8]) {
             match self.ctx {
                 _Ctx::SHA1(ref mut ctx)        =>
-                    ctx.update(data),
+                    ctx.input(data),
                 _Ctx::SHA256(ref mut ctx)      =>
-                    ctx.update(data),
+                    ctx.input(data),
                 _Ctx::SHA512(ref mut ctx)      =>
-                    ctx.update(data),
+                    ctx.input(data),
                 _Ctx::BLAKE2B_256(ref mut ctx) => {
                     ctx.update(data); },
                 _Ctx::BLAKE2B_512(ref mut ctx) => {
@@ -210,11 +210,11 @@ pub mod hash {
         pub fn finish_to_bytes(self, hashval : &mut [u8]) {
             match self.ctx {
                 _Ctx::SHA1(ctx)            =>
-                    hashval.copy_from_slice(ctx.finish().as_ref()),
+                    hashval.copy_from_slice(ctx.result().as_ref()),
                 _Ctx::SHA256(ctx)          =>
-                    hashval.copy_from_slice(ctx.finish().as_ref()),
+                    hashval.copy_from_slice(ctx.result().as_ref()),
                 _Ctx::SHA512(ctx)          =>
-                    hashval.copy_from_slice(ctx.finish().as_ref()),
+                    hashval.copy_from_slice(ctx.result().as_ref()),
                 _Ctx::BLAKE2B_256(mut ctx) =>
                     hashval.copy_from_slice(ctx.finalize().bytes.as_slice()),
                 _Ctx::BLAKE2B_512(mut ctx) =>
