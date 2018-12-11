@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source kcov_rsbx_fun.sh
+
 exit_code=0
 
 echo "Generating random uids"

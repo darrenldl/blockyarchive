@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source kcov_rsbx_fun.sh
+
 exit_code=0
 
 VERSIONS=(1 2 3 17 18 19)
