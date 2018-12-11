@@ -52,7 +52,6 @@ script:
   - rm -rf target/cov
   - bash install_kcov.sh
   - bash cov.sh
-  - bash cov_tests/dev_tests.sh
   - bash tests/dev_tests.sh
 
 addons:
