@@ -53,6 +53,7 @@ script:
   - bash install_kcov.sh
   - bash cov.sh
   - bash tests/dev_tests.sh
+  - bash cov_tests/dev_tests.sh
 
 addons:
   apt:
