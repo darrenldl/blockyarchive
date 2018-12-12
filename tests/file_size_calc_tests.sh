@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source kcov_rsbx_fun.sh
-
 exit_code=0
 
 VERSIONS=(1 2 3 17 18 19)
@@ -37,7 +35,7 @@ for ver in ${VERSIONS[*]}; do
 
         echo "Testing for version $ver, data = $data_shards, parity = $parity_shards, burst = $burst"
 
-        output=$(kcov_rsbx encode --json --info-only --sbx-version $ver dummy \
+        output=$(./rsbx encode --json --info-only --sbx-version $ver dummy \
                         --rs-data $data_shards --rs-parity $parity_shards \
                         --burst $burst)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
@@ -48,7 +46,7 @@ for ver in ${VERSIONS[*]}; do
 
         encode_info_container_size=$(echo $output | jq -r ".stats.sbxContainerSize")
 
-        output=$(kcov_rsbx calc --json $actual_file_size --sbx-version $ver \
+        output=$(./rsbx calc --json $actual_file_size --sbx-version $ver \
                         --rs-data $data_shards --rs-parity $parity_shards \
                         --burst $burst)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
@@ -59,7 +57,7 @@ for ver in ${VERSIONS[*]}; do
 
         calc_mode_container_size=$(echo $output | jq -r ".stats.sbxContainerSize")
 
-        output=$(kcov_rsbx encode --json --sbx-version $ver -f dummy \
+        output=$(./rsbx encode --json --sbx-version $ver -f dummy \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards \
                         --burst $burst)

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source kcov_rsbx_fun.sh
-
 exit_code=0
 
 VERSIONS=(1 2 3 17 18 19)
@@ -9,7 +7,7 @@ VERSIONS=(1 2 3 17 18 19)
 # Encode in all 6 versions
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver"
-  output=$(kcov_rsbx encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
+  output=$(./rsbx encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
                   --rs-data 10 --rs-parity 2 --uid DEADBEEF0123)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
@@ -26,7 +24,7 @@ done
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver using stdin as input"
   output=$(cat dummy | \
-             kcov_rsbx encode --json --sbx-version $ver -f - dummy"$ver"_stdin.sbx \
+             ./rsbx encode --json --sbx-version $ver -f - dummy"$ver"_stdin.sbx \
                     --rs-data 10 --rs-parity 2 --uid DEADBEEF0123)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"

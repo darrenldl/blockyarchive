@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source kcov_rsbx_fun.sh
-
 exit_code=0
 
 VERSIONS=(1 2 3)
@@ -10,7 +8,7 @@ VERSIONS=(1 2 3)
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver"
   output=$(cat dummy | \
-             kcov_rsbx encode --json --sbx-version $ver -f --no-meta - dummy$ver.sbx)
+             ./rsbx encode --json --sbx-version $ver -f --no-meta - dummy$ver.sbx)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -26,7 +24,7 @@ done
 # Check all of them
 for ver in ${VERSIONS[*]}; do
   echo -n "Checking version $ver container"
-  output=$(kcov_rsbx check --json --verbose dummy$ver.sbx)
+  output=$(./rsbx check --json --verbose dummy$ver.sbx)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -42,7 +40,7 @@ done
 # Decode all of them
 for ver in ${VERSIONS[*]}; do
   echo -n "Decoding version $ver container"
-  output=$(kcov_rsbx decode --json -f dummy$ver.sbx dummy$ver)
+  output=$(./rsbx decode --json -f dummy$ver.sbx dummy$ver)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1

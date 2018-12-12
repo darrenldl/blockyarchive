@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source kcov_rsbx_fun.sh
-
 exit_code=0
 
 VERSIONS=(17 18 19)
@@ -35,7 +33,7 @@ for ver in ${VERSIONS[*]}; do
 
         echo -n "Encoding"
         output=$(cat dummy | \
-                   kcov_rsbx encode --json --sbx-version $ver -f - $container_name \
+                   ./rsbx encode --json --sbx-version $ver -f - $container_name \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards \
                         --burst $burst)
@@ -57,7 +55,7 @@ for ver in ${VERSIONS[*]}; do
         fi
 
         echo -n "Checking burst error resistance level"
-        output=$(kcov_rsbx show --json --guess-burst $container_name)
+        output=$(./rsbx show --json --guess-burst $container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -85,7 +83,7 @@ for ver in ${VERSIONS[*]}; do
         done
 
         echo -n "Repairing"
-        output=$(kcov_rsbx repair --json --verbose $container_name)
+        output=$(./rsbx repair --json --verbose $container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -100,7 +98,7 @@ for ver in ${VERSIONS[*]}; do
         output_name=dummy_$data_shards\_$parity_shards
 
         echo -n "Decoding"
-        output=$(kcov_rsbx decode --json -f $container_name $output_name)
+        output=$(./rsbx decode --json -f $container_name $output_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1

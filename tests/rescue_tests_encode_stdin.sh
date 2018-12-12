@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source kcov_rsbx_fun.sh
-
 exit_code=0
 
 VERSIONS=(1 2 3 17 18 19)
@@ -10,7 +8,7 @@ VERSIONS=(1 2 3 17 18 19)
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver"
   output=$(cat dummy | \
-             kcov_rsbx encode --json --sbx-version $ver -f - rescue$ver.sbx \
+             ./rsbx encode --json --sbx-version $ver -f - rescue$ver.sbx \
                   --rs-data 10 --rs-parity 2)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
@@ -24,12 +22,12 @@ for ver in ${VERSIONS[*]}; do
   fi
 done
 
-rescue1uid=$(kcov_rsbx show --json rescue1.sbx | jq -r ".blocks[0].fileUID")
-rescue2uid=$(kcov_rsbx show --json rescue2.sbx | jq -r ".blocks[0].fileUID")
-rescue3uid=$(kcov_rsbx show --json rescue3.sbx | jq -r ".blocks[0].fileUID")
-rescue17uid=$(kcov_rsbx show --json rescue17.sbx | jq -r ".blocks[0].fileUID")
-rescue18uid=$(kcov_rsbx show --json rescue18.sbx | jq -r ".blocks[0].fileUID")
-rescue19uid=$(kcov_rsbx show --json rescue19.sbx | jq -r ".blocks[0].fileUID")
+rescue1uid=$(./rsbx show --json rescue1.sbx | jq -r ".blocks[0].fileUID")
+rescue2uid=$(./rsbx show --json rescue2.sbx | jq -r ".blocks[0].fileUID")
+rescue3uid=$(./rsbx show --json rescue3.sbx | jq -r ".blocks[0].fileUID")
+rescue17uid=$(./rsbx show --json rescue17.sbx | jq -r ".blocks[0].fileUID")
+rescue18uid=$(./rsbx show --json rescue18.sbx | jq -r ".blocks[0].fileUID")
+rescue19uid=$(./rsbx show --json rescue19.sbx | jq -r ".blocks[0].fileUID")
 
 # Generate random filler data
 echo "Generating random filler data"
@@ -62,7 +60,7 @@ echo "Rescuing from dummy disk"
 rm -rf rescued_data &>/dev/null
 mkdir rescued_data &>/dev/null
 rm rescue_log &>/dev/null
-output=$(kcov_rsbx rescue --json dummy_disk rescued_data rescue_log)
+output=$(./rsbx rescue --json dummy_disk rescued_data rescue_log)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
@@ -117,7 +115,7 @@ fi
 echo "Decoding all rescued data"
 FILES=rescued_data/*
 for f in $FILES; do
-  output=$(kcov_rsbx decode --json $f $f.decoded)
+  output=$(./rsbx decode --json $f $f.decoded)
   if [[ $(echo $output | jq -r ".error") != "null" ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
