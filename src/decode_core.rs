@@ -591,7 +591,7 @@ pub fn decode(param           : &Param,
                     }
                 },
                 None                        => { // do sequential read
-                    let mut seq_num = 1;
+                    let mut seq_num = 0;
                     while seq_num <= SBX_LAST_SEQ_NUM {
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
