@@ -661,8 +661,6 @@ pub fn decode(param           : &Param,
                     while seq_num <= SBX_LAST_SEQ_NUM {
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
-                        // if stats.lock().unwrap().units_so_far() >= total_block_count { break; }
-
                         let pos = sbx_block::calc_data_block_write_pos(ref_block.get_version(),
                                                                        seq_num,
                                                                        None,
