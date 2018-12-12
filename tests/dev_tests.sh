@@ -10,7 +10,7 @@ if [[ $PWD != */tests ]]; then
   cd tests
 fi
 
-./copy.sh
+./copy_release.sh
 
 test_failed=0
 test_failed_names=""
