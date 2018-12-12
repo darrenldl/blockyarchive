@@ -13,7 +13,7 @@ cd cov_tests
 test_failed=0
 
 echo "Generating test data"
-dd if=/dev/urandom of=dummy bs=$[1024 * 2] count=1 &>/dev/null
+./gen_dummy.sh
 # truncate -s 10m dummy
 
 # version tests
