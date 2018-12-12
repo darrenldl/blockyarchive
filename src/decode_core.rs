@@ -44,6 +44,8 @@ use block_utils::RefBlockChoice;
 
 const HASH_FILE_BLOCK_SIZE : usize = 4096;
 
+const BLANK_BUFFER : [u8; 4096] = [0; 4096];
+
 #[derive(Clone, Debug)]
 pub struct Stats {
     uid                         : [u8; SBX_FILE_UID_LEN],
@@ -257,7 +259,7 @@ impl ProgressReport for Stats {
 }
 
 fn write_data_only_block(data_par_shards              : Option<(usize, usize)>,
-                         is_last_data_block              : bool,
+                         is_last_data_block           : bool,
                          data_size_of_last_data_block : Option<u64>,
                          ref_block                    : &Block,
                          block                        : &Block,
@@ -292,6 +294,23 @@ fn write_data_only_block(data_par_shards              : Option<(usize, usize)>,
                 ctx.update(slice);
             }
         }
+    }
+
+    Ok(())
+}
+
+fn write_blank_chunk(ref_block : &Block,
+                     writer    : &mut Writer,
+                     hash_ctx  : &mut Option<hash::Ctx>)
+                     -> Result<(), Error> {
+    let slice =
+        &sbx_block::slice_data_buf(ref_block.get_version(),
+                                   &BLANK_BUFFER);
+
+    writer.write(slice)?;
+
+    if let &mut Some(ref mut ctx) = hash_ctx {
+        ctx.update(slice);
     }
 
     Ok(())
@@ -522,11 +541,21 @@ pub fn decode(param           : &Param,
                             Ok(_)  => {
                                 if block.get_seq_num() != seq_num {
                                     stats.lock().unwrap().blocks_decode_failed += 1;
+
+                                    write_blank_chunk(&ref_block,
+                                                      &mut writer,
+                                                      &mut hash_ctx)?;
+
                                     continue;
                                 }
                             },
                             Err(_) => {
                                 stats.lock().unwrap().blocks_decode_failed += 1;
+
+                                write_blank_chunk(&ref_block,
+                                                  &mut writer,
+                                                  &mut hash_ctx)?;
+
                                 continue;
                             },
                         }
@@ -562,7 +591,8 @@ pub fn decode(param           : &Param,
                     }
                 },
                 None                        => { // do sequential read
-                    loop {
+                    let mut seq_num = 1;
+                    while seq_num <= SBX_LAST_SEQ_NUM {
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
                         // read at reference block block size
@@ -571,9 +601,27 @@ pub fn decode(param           : &Param,
 
                         break_if_eof_seen!(read_res);
 
-                        if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
-                            stats.lock().unwrap().blocks_decode_failed += 1;
-                            continue;
+                        match block.sync_from_buffer(&buffer, Some(&pred)) {
+                            Ok(_)  => {
+                                if block.get_seq_num() != seq_num {
+                                    stats.lock().unwrap().blocks_decode_failed += 1;
+
+                                    write_blank_chunk(&ref_block,
+                                                      &mut writer,
+                                                      &mut hash_ctx)?;
+
+                                    continue;
+                                }
+                            },
+                            Err(_) => {
+                                stats.lock().unwrap().blocks_decode_failed += 1;
+
+                                write_blank_chunk(&ref_block,
+                                                  &mut writer,
+                                                  &mut hash_ctx)?;
+
+                                continue;
+                            },
                         }
 
                         if block.is_meta() { // do nothing if block is meta
@@ -609,6 +657,8 @@ pub fn decode(param           : &Param,
 
                             if is_last_data_block { break; }
                         }
+
+                        seq_num += 1;
                     }
                 }
             }
