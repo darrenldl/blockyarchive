@@ -193,6 +193,10 @@ pub fn check_if_buffer_valid(buffer : &[u8]) -> bool {
     block.verify_crc(buffer).unwrap()
 }
 
+pub fn seq_num_is_meta(seq_num : u32) -> bool {
+    seq_num == 0
+}
+
 pub fn seq_num_is_parity(seq_num       : u32,
                          data_shards   : usize,
                          parity_shards : usize) -> bool {

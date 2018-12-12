@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::sync::{Arc, Mutex};
 use std::fmt;
 use file_utils;
@@ -44,22 +45,42 @@ use block_utils::RefBlockChoice;
 
 const HASH_FILE_BLOCK_SIZE : usize = 4096;
 
+const BLANK_BUFFER : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
+pub enum WriteTo {
+    File,
+    Stdout,
+}
+
+#[derive(Clone, Debug)]
+pub struct DecodeFailsBreakdown {
+    pub meta_blocks_decode_failed   : u64,
+    pub data_blocks_decode_failed   : u64,
+    pub parity_blocks_decode_failed : u64,
+}
+
+#[derive(Clone, Debug)]
+pub enum DecodeFailStats {
+    Breakdown(DecodeFailsBreakdown),
+    Total(u64),
+}
+
 #[derive(Clone, Debug)]
 pub struct Stats {
-    uid                         : [u8; SBX_FILE_UID_LEN],
-    version                     : Version,
-    pub meta_blocks_decoded     : u64,
-    pub data_blocks_decoded     : u64,
-    pub data_par_blocks_decoded : u64,
-    pub blocks_decode_failed    : u64,
-    pub in_file_size            : u64,
-    pub out_file_size           : u64,
-    total_blocks                : u64,
-    start_time                  : f64,
-    end_time                    : f64,
-    pub recorded_hash           : Option<multihash::HashBytes>,
-    pub computed_hash           : Option<multihash::HashBytes>,
-    json_printer                : Arc<JSONPrinter>,
+    uid                             : [u8; SBX_FILE_UID_LEN],
+    version                         : Version,
+    pub meta_blocks_decoded         : u64,
+    pub data_blocks_decoded         : u64,
+    pub parity_blocks_decoded       : u64,
+    pub blocks_decode_failed        : DecodeFailStats,
+    pub in_file_size                : u64,
+    pub out_file_size               : u64,
+    total_blocks                    : u64,
+    start_time                      : f64,
+    end_time                        : f64,
+    pub recorded_hash               : Option<multihash::HashBytes>,
+    pub computed_hash               : Option<multihash::HashBytes>,
+    json_printer                    : Arc<JSONPrinter>,
 }
 
 struct HashStats {
@@ -82,26 +103,42 @@ impl fmt::Display for Stats {
 
         json_printer.write_open_bracket(f, Some("stats"), BracketType::Curly)?;
 
+        let padding =
+            match self.blocks_decode_failed {
+                DecodeFailStats::Total(_)     => "",
+                DecodeFailStats::Breakdown(_) => "         ",
+            };
+
         if rs_enabled {
-            write_maybe_json!(f, json_printer, "File UID                               : {}",
+            write_maybe_json!(f, json_printer, "File UID                               {}: {}",
+                              padding,
                               misc_utils::bytes_to_upper_hex_string(&self.uid))?;
-            write_maybe_json!(f, json_printer, "SBX version                            : {}", ver_to_usize(self.version))?;
-            write_maybe_json!(f, json_printer, "Block size used in decoding            : {}", block_size                   => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks processed             : {}", self.units_so_far()          => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata)    : {}", self.meta_blocks_decoded     => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (data only)   : {}", self.data_blocks_decoded     => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (data parity) : {}", self.data_par_blocks_decoded => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks failed to decode      : {}", self.blocks_decode_failed    => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "File size                              : {}", self.out_file_size           => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "SBX container size                     : {}", self.in_file_size            => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Time elapsed                           : {:02}:{:02}:{:02}", hour, minute, second)?;
-            write_maybe_json!(f, json_printer, "Recorded hash                          : {}", match *recorded_hash {
+            write_maybe_json!(f, json_printer, "SBX version                            {}: {}", padding, ver_to_usize(self.version))?;
+            write_maybe_json!(f, json_printer, "Block size used in decoding            {}: {}", padding, block_size                    => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks processed             {}: {}", padding, self.units_so_far()           => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata)    {}: {}", padding, self.meta_blocks_decoded      => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (data only)   {}: {}", padding, self.data_blocks_decoded      => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (data parity) {}: {}", padding, self.parity_blocks_decoded    => skip_quotes)?;
+            match self.blocks_decode_failed {
+                DecodeFailStats::Total(x)         => {
+                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode      : {}", x   => skip_quotes)?
+                },
+                DecodeFailStats::Breakdown(ref x) => {
+                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (metadata)    : {}", x.meta_blocks_decode_failed   => skip_quotes)?;
+                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (data only)   : {}", x.data_blocks_decode_failed   => skip_quotes)?;
+                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (data parity) : {}", x.parity_blocks_decode_failed => skip_quotes)?;
+                },
+            };
+            write_maybe_json!(f, json_printer, "File size                              {}: {}", padding, self.out_file_size            => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "SBX container size                     {}: {}", padding, self.in_file_size             => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Time elapsed                           {}: {:02}:{:02}:{:02}", padding, hour, minute, second)?;
+            write_maybe_json!(f, json_printer, "Recorded hash                          {}: {}", padding, match *recorded_hash {
                 None        => null_if_json_else!(json_printer, "N/A").to_string(),
                 Some(ref h) => format!("{} - {}",
                                        hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            write_maybe_json!(f, json_printer, "Hash of output file                    : {}", match (recorded_hash, computed_hash) {
+            write_maybe_json!(f, json_printer, "Hash of output file                    {}: {}", padding, match (recorded_hash, computed_hash) {
                 (&None,    &None)        => null_if_json_else!(json_printer, "N/A").to_string(),
                 (&Some(_), &None)        => null_if_json_else!(json_printer, "N/A - recorded hash type is not supported by rsbx").to_string(),
                 (_,        &Some(ref h)) => format!("{} - {}",
@@ -109,24 +146,39 @@ impl fmt::Display for Stats {
                                                                misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
         } else {
-            write_maybe_json!(f, json_printer, "File UID                            : {}",
+            let padding =
+                match self.blocks_decode_failed {
+                    DecodeFailStats::Total(_)     => "",
+                    DecodeFailStats::Breakdown(_) => "         ",
+                };
+
+            write_maybe_json!(f, json_printer, "File UID                            {}: {}",
+                              padding,
                               misc_utils::bytes_to_upper_hex_string(&self.uid))?;
-            write_maybe_json!(f, json_printer, "SBX version                         : {}", ver_to_usize(self.version))?;
-            write_maybe_json!(f, json_printer, "Block size used in decoding         : {}", block_size                   => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks processed          : {}", self.units_so_far()          => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata) : {}", self.meta_blocks_decoded     => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (data)     : {}", self.data_blocks_decoded     => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks failed to decode   : {}", self.blocks_decode_failed    => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "File size                           : {}", self.out_file_size           => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "SBX container size                  : {}", self.in_file_size            => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Time elapsed                        : {:02}:{:02}:{:02}", hour, minute, second)?;
-            write_maybe_json!(f, json_printer, "Recorded hash                       : {}", match *recorded_hash {
+            write_maybe_json!(f, json_printer, "SBX version                         {}: {}", padding, ver_to_usize(self.version))?;
+            write_maybe_json!(f, json_printer, "Block size used in decoding         {}: {}", padding, block_size                   => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks processed          {}: {}", padding, self.units_so_far()          => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata) {}: {}", padding, self.meta_blocks_decoded     => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (data)     {}: {}", padding, self.data_blocks_decoded     => skip_quotes)?;
+            match self.blocks_decode_failed {
+                DecodeFailStats::Total(x)         => {
+                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode   : {}", x   => skip_quotes)?
+                },
+                DecodeFailStats::Breakdown(ref x) => {
+                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (metadata) : {}", x.meta_blocks_decode_failed   => skip_quotes)?;
+                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (data)     : {}", x.data_blocks_decode_failed   => skip_quotes)?;
+                },
+            };
+            write_maybe_json!(f, json_printer, "File size                           {}: {}", padding, self.out_file_size           => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "SBX container size                  {}: {}", padding, self.in_file_size            => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Time elapsed                        {}: {:02}:{:02}:{:02}", padding, hour, minute, second)?;
+            write_maybe_json!(f, json_printer, "Recorded hash                       {}: {}", padding, match *recorded_hash {
                 None        => null_if_json_else!(json_printer, "N/A").to_string(),
                 Some(ref h) => format!("{} - {}",
                                        hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            write_maybe_json!(f, json_printer, "Hash of output file                 : {}", match (recorded_hash, computed_hash) {
+            write_maybe_json!(f, json_printer, "Hash of output file                 {}: {}", padding, match (recorded_hash, computed_hash) {
                 (&None,    &None)        => null_if_json_else!(json_printer, "N/A").to_string(),
                 (&Some(_), &None)        => null_if_json_else!(json_printer, "N/A - recorded hash type is not supported by rsbx").to_string(),
                 (_,        &Some(ref h)) => format!("{} - {}",
@@ -206,27 +258,100 @@ impl HashStats {
 
 impl Stats {
     pub fn new(ref_block    : &Block,
+               write_to     : WriteTo,
                in_file_size : u64,
                json_printer : &Arc<JSONPrinter>) -> Stats {
         use file_utils::from_container_size::calc_total_block_count;
         let total_blocks =
             calc_total_block_count(ref_block.get_version(),
                                    in_file_size);
+        let blocks_decode_failed =
+            match write_to {
+                WriteTo::File   => DecodeFailStats::Total(0),
+                WriteTo::Stdout =>
+                    DecodeFailStats::Breakdown(DecodeFailsBreakdown {
+                        meta_blocks_decode_failed : 0,
+                        data_blocks_decode_failed : 0,
+                        parity_blocks_decode_failed : 0,
+                    })
+            };
         Stats {
-            uid                     : ref_block.get_uid(),
-            version                 : ref_block.get_version(),
-            blocks_decode_failed    : 0,
-            meta_blocks_decoded     : 0,
-            data_blocks_decoded     : 0,
-            data_par_blocks_decoded : 0,
+            uid                   : ref_block.get_uid(),
+            version               : ref_block.get_version(),
+            blocks_decode_failed,
+            meta_blocks_decoded   : 0,
+            data_blocks_decoded   : 0,
+            parity_blocks_decoded : 0,
             in_file_size,
-            out_file_size           : 0,
+            out_file_size         : 0,
             total_blocks,
-            start_time              : 0.,
-            end_time                : 0.,
-            recorded_hash           : None,
-            computed_hash           : None,
-            json_printer            : Arc::clone(json_printer),
+            start_time            : 0.,
+            end_time              : 0.,
+            recorded_hash         : None,
+            computed_hash         : None,
+            json_printer          : Arc::clone(json_printer),
+        }
+    }
+
+    pub fn incre_blocks_failed(&mut self)  {
+        match self.blocks_decode_failed {
+            DecodeFailStats::Breakdown(_)     => panic!(),
+            DecodeFailStats::Total(ref mut x) => *x += 1,
+        }
+    }
+
+    pub fn incre_meta_blocks_failed(&mut self) {
+        match self.blocks_decode_failed {
+            DecodeFailStats::Breakdown(ref mut x) => {
+                x.meta_blocks_decode_failed += 1;
+            },
+            DecodeFailStats::Total(_)             => panic!(),
+        }
+    }
+
+    pub fn incre_data_blocks_failed(&mut self) {
+        match self.blocks_decode_failed {
+            DecodeFailStats::Breakdown(ref mut x) => {
+                x.data_blocks_decode_failed += 1;
+            },
+            DecodeFailStats::Total(_)             => panic!(),
+        }
+    }
+
+    pub fn incre_parity_blocks_failed(&mut self) {
+        match self.blocks_decode_failed {
+            DecodeFailStats::Breakdown(ref mut x) => {
+                x.parity_blocks_decode_failed += 1;
+            },
+            DecodeFailStats::Total(_)             => panic!(),
+        }
+    }
+
+    pub fn blocks_failed(&self) -> u64 {
+        match self.blocks_decode_failed {
+            DecodeFailStats::Breakdown(_) => panic!(),
+            DecodeFailStats::Total(x)     => x,
+        }
+    }
+
+    pub fn meta_blocks_failed(&self) -> u64 {
+        match self.blocks_decode_failed {
+            DecodeFailStats::Breakdown(ref x) => x.meta_blocks_decode_failed,
+            DecodeFailStats::Total(_)         => panic!(),
+        }
+    }
+
+    pub fn data_blocks_failed(&self) -> u64 {
+        match self.blocks_decode_failed {
+            DecodeFailStats::Breakdown(ref x) => x.data_blocks_decode_failed,
+            DecodeFailStats::Total(_)         => panic!(),
+        }
+    }
+
+    pub fn parity_blocks_failed(&self) -> u64 {
+        match self.blocks_decode_failed {
+            DecodeFailStats::Breakdown(ref x) => x.parity_blocks_decode_failed,
+            DecodeFailStats::Total(_)         => panic!(),
         }
     }
 }
@@ -247,17 +372,24 @@ impl ProgressReport for Stats {
     fn end_time_mut(&mut self)   -> &mut f64 { &mut self.end_time }
 
     fn units_so_far(&self)       -> u64      {
+        let blocks_decode_failed = match self.blocks_decode_failed {
+            DecodeFailStats::Total(x)         => x,
+            DecodeFailStats::Breakdown(ref x) =>
+                x.meta_blocks_decode_failed +
+                x.data_blocks_decode_failed +
+                x.parity_blocks_decode_failed
+        };
         (self.meta_blocks_decoded
          + self.data_blocks_decoded
-         + self.data_par_blocks_decoded
-         + self.blocks_decode_failed) as u64
+         + self.parity_blocks_decoded
+         + blocks_decode_failed) as u64
     }
 
     fn total_units(&self)        -> u64      { self.total_blocks as u64 }
 }
 
 fn write_data_only_block(data_par_shards              : Option<(usize, usize)>,
-                         is_last_data_block              : bool,
+                         is_last_data_block           : bool,
                          data_size_of_last_data_block : Option<u64>,
                          ref_block                    : &Block,
                          block                        : &Block,
@@ -292,6 +424,31 @@ fn write_data_only_block(data_par_shards              : Option<(usize, usize)>,
                 ctx.update(slice);
             }
         }
+    }
+
+    Ok(())
+}
+
+fn write_blank_chunk(is_last_data_block : bool,
+                     data_size_of_last_data_block : Option<u64>,
+                     ref_block          : &Block,
+                     writer             : &mut Writer,
+                     hash_ctx           : &mut Option<hash::Ctx>)
+                     -> Result<(), Error> {
+    let slice =
+        if is_last_data_block {
+            &sbx_block::slice_data_buf(ref_block.get_version(),
+                                       &BLANK_BUFFER)
+                [0..data_size_of_last_data_block.unwrap() as usize]
+        } else {
+            sbx_block::slice_data_buf(ref_block.get_version(),
+                                       &BLANK_BUFFER)
+        };
+
+    writer.write(slice)?;
+
+    if let &mut Some(ref mut ctx) = hash_ctx {
+        ctx.update(slice);
     }
 
     Ok(())
@@ -357,29 +514,23 @@ pub fn decode(param           : &Param,
         None               => Writer::new(WriterType::Stdout(std::io::stdout())),
     };
 
-    let stats = Arc::new(Mutex::new(Stats::new(&ref_block,
-                                               in_file_size,
-                                               &param.json_printer)));
+    let stats : Arc<Mutex<Stats>>;
+
+    let reporter : ProgressReporter<Stats>;
 
     let mut hash_bytes = None;
-
-    let reporter = ProgressReporter::new(&stats,
-                                         "Data decoding progress",
-                                         "blocks",
-                                         param.pr_verbosity_level,
-                                         param.json_printer.json_enabled());
 
     let mut block = Block::dummy();
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
     // get hash possibly
-    if ref_block.is_meta() {
-        match ref_block.get_HSH().unwrap() {
-            None    => {},
-            Some(x) => { stats.lock().unwrap().recorded_hash = Some(x); }
-        }
-    }
+    let recorded_hash =
+        if ref_block.is_meta() {
+            ref_block.get_HSH().unwrap()
+        } else {
+            None
+        };
 
     // deal with RS related stuff
     let rs_enabled = ver_uses_rs(ref_block.get_version());
@@ -398,14 +549,23 @@ pub fn decode(param           : &Param,
 
     let version = ref_block.get_version();
 
-    let block_size = ver_to_block_size(version);
-
     let pred = block_pred_same_ver_uid!(ref_block);
 
-    reporter.start();
-
     match param.out_file {
-        Some(_) => // output to file
+        Some(_) => { // output to file
+            stats = Arc::new(Mutex::new(Stats::new(&ref_block,
+                                                   WriteTo::File,
+                                                   in_file_size,
+                                                   &param.json_printer)));
+
+            reporter = ProgressReporter::new(&stats,
+                                             "Data decoding progress",
+                                             "blocks",
+                                             param.pr_verbosity_level,
+                                             param.json_printer.json_enabled());
+
+            reporter.start();
+
             loop {
                 break_if_atomic_bool!(ctrlc_stop_flag);
 
@@ -416,7 +576,7 @@ pub fn decode(param           : &Param,
                 break_if_eof_seen!(read_res);
 
                 if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
-                    stats.lock().unwrap().blocks_decode_failed += 1;
+                    stats.lock().unwrap().incre_blocks_failed();
                     continue;
                 }
 
@@ -426,7 +586,7 @@ pub fn decode(param           : &Param,
                     match data_par_shards {
                         Some((data, par)) => {
                             if block.is_parity(data, par) {
-                                stats.lock().unwrap().data_par_blocks_decoded += 1;
+                                stats.lock().unwrap().parity_blocks_decoded += 1;
                             } else {
                                 stats.lock().unwrap().data_blocks_decoded += 1;
                             }
@@ -448,8 +608,30 @@ pub fn decode(param           : &Param,
                                                                &buffer))?;
                     }
                 }
-            },
+            }
+        },
         None    => { // output to stdout
+            fn is_last_data_block(stats : &Arc<Mutex<Stats>>, total_data_chunk_count : Option<u64>) -> bool {
+                match total_data_chunk_count {
+                    Some(count) => {
+                        let stats = stats.lock().unwrap();
+                        stats.data_blocks_decoded + stats.data_blocks_failed() == count
+                    },
+                    None        => false,
+                }
+            }
+
+            stats = Arc::new(Mutex::new(Stats::new(&ref_block,
+                                                   WriteTo::Stdout,
+                                                   in_file_size,
+                                                   &param.json_printer)));
+
+            reporter = ProgressReporter::new(&stats,
+                                             "Data decoding progress",
+                                             "blocks",
+                                             param.pr_verbosity_level,
+                                             param.json_printer.json_enabled());
+
             let stored_hash_bytes =
                 if ref_block.is_data() {
                     None
@@ -466,41 +648,18 @@ pub fn decode(param           : &Param,
                     }
                 };
 
-            let total_block_count = {
-                use file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps;
-                match ref_block.get_FSZ() {
-                    Ok(Some(x)) =>
-                        calc_total_block_count_exc_burst_gaps(version,
-                                                              None,
-                                                              data_par_burst,
-                                                              x),
-                    _           => {
-                        print_if!(not_json => json_printer =>
-                                  "Warning :";
-                                  "";
-                                  "    No recorded file size found, using container file size to estimate total";
-                                  "    number of blocks. This may overestimate total number of blocks, and may";
-                                  "    show incorrect block counts.";
-                                  "";
-                        );
-                        let file_size = file_utils::get_file_size(&param.in_file)?;
-                        file_size / block_size as u64
-                    },
-                }
-            };
-
             let total_data_chunk_count = match orig_file_size {
                 Some(orig_file_size) => Some(file_utils::from_orig_file_size::calc_data_chunk_count(version, orig_file_size)),
                 None                 => None,
             };
+
+            reporter.start();
 
             match data_par_burst {
                 Some((data, parity, _)) => { // do burst resistant pattern read
                     let mut seq_num = 1;
                     while seq_num <= SBX_LAST_SEQ_NUM {
                         break_if_atomic_bool!(ctrlc_stop_flag);
-
-                        if stats.lock().unwrap().units_so_far() >= total_block_count { break; }
 
                         let pos = sbx_block::calc_data_block_write_pos(ref_block.get_version(),
                                                                        seq_num,
@@ -514,19 +673,51 @@ pub fn decode(param           : &Param,
                                                                             &mut buffer))?;
 
                         if read_res.eof_seen {
-                            stats.lock().unwrap().blocks_decode_failed += 1;
+                            if        sbx_block::seq_num_is_meta(seq_num) {
+                                stats.lock().unwrap().incre_meta_blocks_failed();
+                            } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
+                                stats.lock().unwrap().incre_parity_blocks_failed();
+                            } else {
+                                stats.lock().unwrap().incre_data_blocks_failed();
+                            }
                             continue;
                         }
 
                         match block.sync_from_buffer(&buffer, Some(&pred)) {
                             Ok(_)  => {
                                 if block.get_seq_num() != seq_num {
-                                    stats.lock().unwrap().blocks_decode_failed += 1;
+                                    if        sbx_block::seq_num_is_meta(seq_num) {
+                                        stats.lock().unwrap().incre_meta_blocks_failed();
+                                    } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
+                                        stats.lock().unwrap().incre_parity_blocks_failed();
+                                    } else {
+                                        stats.lock().unwrap().incre_data_blocks_failed();
+                                    }
+
+                                    write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
+                                                      data_size_of_last_data_block,
+                                                      &ref_block,
+                                                      &mut writer,
+                                                      &mut hash_ctx)?;
+
                                     continue;
                                 }
                             },
                             Err(_) => {
-                                stats.lock().unwrap().blocks_decode_failed += 1;
+                                if        sbx_block::seq_num_is_meta(seq_num) {
+                                    stats.lock().unwrap().incre_meta_blocks_failed();
+                                } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
+                                    stats.lock().unwrap().incre_parity_blocks_failed();
+                                } else {
+                                    stats.lock().unwrap().incre_data_blocks_failed();
+                                }
+
+                                write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
+                                                  data_size_of_last_data_block,
+                                                  &ref_block,
+                                                  &mut writer,
+                                                  &mut hash_ctx)?;
+
                                 continue;
                             },
                         }
@@ -535,34 +726,30 @@ pub fn decode(param           : &Param,
                             stats.lock().unwrap().meta_blocks_decoded += 1;
                         } else {
                             if block.is_parity(data, parity) {
-                                stats.lock().unwrap().data_par_blocks_decoded += 1;
+                                stats.lock().unwrap().parity_blocks_decoded += 1;
                             } else {
                                 stats.lock().unwrap().data_blocks_decoded += 1;
 
-                                let is_last_data_block = match total_data_chunk_count {
-                                    Some(count) => stats.lock().unwrap().data_blocks_decoded == count,
-                                    None        => false,
-                                };
-
                                 // write data chunk
                                 write_data_only_block(data_par_shards,
-                                                      is_last_data_block,
+                                                      is_last_data_block(&stats, total_data_chunk_count),
                                                       data_size_of_last_data_block,
                                                       &ref_block,
                                                       &block,
                                                       &mut writer,
                                                       &mut hash_ctx,
                                                       &buffer)?;
-
-                                if is_last_data_block { break; }
                             }
                         }
+
+                        if is_last_data_block(&stats, total_data_chunk_count) { break; }
 
                         seq_num += 1;
                     }
                 },
                 None                        => { // do sequential read
-                    loop {
+                    let mut seq_num = 0;
+                    while seq_num <= SBX_LAST_SEQ_NUM {
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
                         // read at reference block block size
@@ -571,44 +758,60 @@ pub fn decode(param           : &Param,
 
                         break_if_eof_seen!(read_res);
 
-                        if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
-                            stats.lock().unwrap().blocks_decode_failed += 1;
-                            continue;
+                        match block.sync_from_buffer(&buffer, Some(&pred)) {
+                            Ok(_)  => {
+                                if block.get_seq_num() != seq_num {
+                                    if sbx_block::seq_num_is_meta(seq_num) {
+                                        stats.lock().unwrap().incre_meta_blocks_failed();
+                                    } else {
+                                        stats.lock().unwrap().incre_data_blocks_failed();
+                                    }
+
+                                    write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
+                                                      data_size_of_last_data_block,
+                                                      &ref_block,
+                                                      &mut writer,
+                                                      &mut hash_ctx)?;
+
+                                    continue;
+                                }
+                            },
+                            Err(_) => {
+                                if sbx_block::seq_num_is_meta(seq_num) {
+                                    stats.lock().unwrap().incre_meta_blocks_failed();
+                                } else {
+                                    stats.lock().unwrap().incre_data_blocks_failed();
+                                }
+
+                                write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
+                                                  data_size_of_last_data_block,
+                                                  &ref_block,
+                                                  &mut writer,
+                                                  &mut hash_ctx)?;
+
+                                continue;
+                            },
                         }
 
                         if block.is_meta() { // do nothing if block is meta
                             stats.lock().unwrap().meta_blocks_decoded += 1;
                         } else {
-                            match data_par_shards {
-                                Some((data, par)) => {
-                                    if block.is_parity(data, par) {
-                                        stats.lock().unwrap().data_par_blocks_decoded += 1;
-                                    } else {
-                                        stats.lock().unwrap().data_blocks_decoded += 1;
-                                    }
-                                },
-                                None => {
-                                    stats.lock().unwrap().data_blocks_decoded += 1;
-                                }
-                            }
-
-                            let is_last_data_block = match total_data_chunk_count {
-                                Some(count) => stats.lock().unwrap().data_blocks_decoded == count,
-                                None        => false,
-                            };
+                            stats.lock().unwrap().data_blocks_decoded += 1;
 
                             // write data block
                             write_data_only_block(None,
-                                                  is_last_data_block,
+                                                  is_last_data_block(&stats, total_data_chunk_count),
                                                   data_size_of_last_data_block,
                                                   &ref_block,
                                                   &block,
                                                   &mut writer,
                                                   &mut hash_ctx,
                                                   &buffer)?;
-
-                            if is_last_data_block { break; }
                         }
+
+                        if is_last_data_block(&stats, total_data_chunk_count) { break; }
+
+                        seq_num += 1;
                     }
                 }
             }
@@ -644,9 +847,14 @@ pub fn decode(param           : &Param,
 
     let data_blocks_decoded = stats.lock().unwrap().data_blocks_decoded;
 
+    stats.lock().unwrap().recorded_hash = recorded_hash;
+
     stats.lock().unwrap().out_file_size = match writer.get_file_size() {
         Some(r) => r?,
-        None    => data_blocks_decoded * ver_to_data_size(ref_block.get_version()) as u64,
+        None    => match orig_file_size {
+            Some(x) => x,
+            None    => data_blocks_decoded * ver_to_data_size(ref_block.get_version()) as u64,
+        }
     };
 
     let res = stats.lock().unwrap().clone();

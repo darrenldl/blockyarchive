@@ -59,7 +59,7 @@ for ver in ${VERSIONS[*]}; do
         new_burst=$[$burst+2]
 
         echo -n "Sorting container"
-        output=$(./rsbx sort --json --burst $new_burst $container_name sorted_$container_name)
+        output=$(./rsbx sort --json -f --burst $new_burst $container_name sorted_$container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1

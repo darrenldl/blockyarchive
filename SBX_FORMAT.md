@@ -73,7 +73,7 @@ Supported crypto hashes since 1.0.0 are
 
 Metadata block (block 0) can be disabled
 
-## For versions : 17(0x11), 18(0x12), 19(0x13)
+## For versions : 17 (0x11), 18 (0x12), 19 (0x13)
 
 Overall similar to above specs.
 

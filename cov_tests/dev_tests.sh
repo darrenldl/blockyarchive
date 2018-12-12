@@ -13,7 +13,7 @@ cd cov_tests
 test_failed=0
 
 echo "Generating test data"
-dd if=/dev/urandom of=dummy bs=$[1024 * 2] count=1 &>/dev/null
+./gen_dummy.sh
 # truncate -s 10m dummy
 
 # version tests
@@ -21,6 +21,22 @@ echo "========================================"
 echo "Starting version tests"
 echo "========================================"
 ./version_tests.sh
+if [[ $? != 0 ]]; then
+    test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting version tests (stdin as encode input)"
+echo "========================================"
+./version_tests_encode_stdin.sh
+if [[ $? != 0 ]]; then
+    test_failed=$[$test_failed+1]
+fi
+
+echo "========================================"
+echo "Starting version tests (stdout as decode output)"
+echo "========================================"
+./version_tests_decode_stdout.sh
 if [[ $? != 0 ]]; then
     test_failed=$[$test_failed+1]
 fi

@@ -52,8 +52,8 @@ script:
   - rm -rf target/cov
   - bash install_kcov.sh
   - bash cov.sh
-  - bash cov_tests/dev_tests.sh
   - bash tests/dev_tests.sh
+  - bash cov_tests/dev_tests.sh
 
 addons:
   apt:
@@ -67,7 +67,7 @@ addons:
       - libiberty-dev
 
 after_success:
-  - bash kcov_run_tests_and_upload_reports.sh
+  - bash kcov_upload_reports.sh
 
 before_deploy:
   - sh ci/before_deploy.sh
