@@ -44,7 +44,7 @@ use block_utils::RefBlockChoice;
 
 const HASH_FILE_BLOCK_SIZE : usize = 4096;
 
-const BLANK_BUFFER : [u8; 4096] = [0; 4096];
+const BLANK_BUFFER : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
 #[derive(Clone, Debug)]
 pub struct Stats {
