@@ -138,13 +138,13 @@ impl fmt::Display for Stats {
                                                                misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
         } else {
-            write_maybe_json!(f, json_printer, "File UID                                        : {}",
+            write_maybe_json!(f, json_printer, "File UID                                     : {}",
                               misc_utils::bytes_to_upper_hex_string(&self.uid))?;
-            write_maybe_json!(f, json_printer, "SBX version                                     : {}", ver_to_usize(self.version))?;
-            write_maybe_json!(f, json_printer, "Block size used in decoding                     : {}", block_size                   => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks processed                      : {}", self.units_so_far()          => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata)             : {}", self.meta_blocks_decoded     => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (data)                 : {}", self.data_blocks_decoded     => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "SBX version                                  : {}", ver_to_usize(self.version))?;
+            write_maybe_json!(f, json_printer, "Block size used in decoding                  : {}", block_size                   => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks processed                   : {}", self.units_so_far()          => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata)          : {}", self.meta_blocks_decoded     => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (data)              : {}", self.data_blocks_decoded     => skip_quotes)?;
             match self.blocks_decode_failed {
                 DecodeFailStats::Total(x)         => {
                     write_maybe_json!(f, json_printer, "Number of blocks failed to decode            : {}", x   => skip_quotes)?
@@ -154,16 +154,16 @@ impl fmt::Display for Stats {
                     write_maybe_json!(f, json_printer, "Number of blocks failed to decode (data)     : {}", x.data_blocks_decode_failed   => skip_quotes)?;
                 },
             };
-            write_maybe_json!(f, json_printer, "File size                                       : {}", self.out_file_size           => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "SBX container size                              : {}", self.in_file_size            => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Time elapsed                                    : {:02}:{:02}:{:02}", hour, minute, second)?;
-            write_maybe_json!(f, json_printer, "Recorded hash                                   : {}", match *recorded_hash {
+            write_maybe_json!(f, json_printer, "File size                                    : {}", self.out_file_size           => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "SBX container size                           : {}", self.in_file_size            => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Time elapsed                                 : {:02}:{:02}:{:02}", hour, minute, second)?;
+            write_maybe_json!(f, json_printer, "Recorded hash                                : {}", match *recorded_hash {
                 None        => null_if_json_else!(json_printer, "N/A").to_string(),
                 Some(ref h) => format!("{} - {}",
                                        hash_type_to_string(h.0),
                                        misc_utils::bytes_to_lower_hex_string(&h.1))
             })?;
-            write_maybe_json!(f, json_printer, "Hash of output file                             : {}", match (recorded_hash, computed_hash) {
+            write_maybe_json!(f, json_printer, "Hash of output file                          : {}", match (recorded_hash, computed_hash) {
                 (&None,    &None)        => null_if_json_else!(json_printer, "N/A").to_string(),
                 (&Some(_), &None)        => null_if_json_else!(json_printer, "N/A - recorded hash type is not supported by rsbx").to_string(),
                 (_,        &Some(ref h)) => format!("{} - {}",
