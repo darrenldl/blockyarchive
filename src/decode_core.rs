@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::sync::{Arc, Mutex};
 use std::fmt;
 use file_utils;
@@ -325,6 +326,34 @@ impl Stats {
             DecodeFailStats::Total(_)             => panic!(),
         }
     }
+
+    pub fn blocks_failed(&self) -> u64 {
+        match self.blocks_decode_failed {
+            DecodeFailStats::Breakdown(_) => panic!(),
+            DecodeFailStats::Total(x)     => x,
+        }
+    }
+
+    pub fn meta_blocks_failed(&self) -> u64 {
+        match self.blocks_decode_failed {
+            DecodeFailStats::Breakdown(ref x) => x.meta_blocks_decode_failed,
+            DecodeFailStats::Total(_)         => panic!(),
+        }
+    }
+
+    pub fn data_blocks_failed(&self) -> u64 {
+        match self.blocks_decode_failed {
+            DecodeFailStats::Breakdown(ref x) => x.data_blocks_decode_failed,
+            DecodeFailStats::Total(_)         => panic!(),
+        }
+    }
+
+    pub fn parity_blocks_failed(&self) -> u64 {
+        match self.blocks_decode_failed {
+            DecodeFailStats::Breakdown(ref x) => x.parity_blocks_decode_failed,
+            DecodeFailStats::Total(_)         => panic!(),
+        }
+    }
 }
 
 impl ProgressReport for HashStats {
@@ -520,8 +549,6 @@ pub fn decode(param           : &Param,
 
     let version = ref_block.get_version();
 
-    let block_size = ver_to_block_size(version);
-
     let pred = block_pred_same_ver_uid!(ref_block);
 
     match param.out_file {
@@ -584,6 +611,16 @@ pub fn decode(param           : &Param,
             }
         },
         None    => { // output to stdout
+            fn is_last_data_block(stats : &Arc<Mutex<Stats>>, total_data_chunk_count : Option<u64>) -> bool {
+                match total_data_chunk_count {
+                    Some(count) => {
+                        let stats = stats.lock().unwrap();
+                        stats.data_blocks_decoded + stats.data_blocks_failed() == count
+                    },
+                    None        => false,
+                }
+            }
+
             stats = Arc::new(Mutex::new(Stats::new(&ref_block,
                                                    WriteTo::Stdout,
                                                    in_file_size,
@@ -611,29 +648,6 @@ pub fn decode(param           : &Param,
                     }
                 };
 
-            let total_block_count = {
-                use file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps;
-                match ref_block.get_FSZ() {
-                    Ok(Some(x)) =>
-                        calc_total_block_count_exc_burst_gaps(version,
-                                                              None,
-                                                              data_par_burst,
-                                                              x),
-                    _           => {
-                        print_if!(not_json => json_printer =>
-                                  "Warning :";
-                                  "";
-                                  "    No recorded file size found, using container file size to estimate total";
-                                  "    number of blocks. This may overestimate total number of blocks, and may";
-                                  "    show incorrect block counts.";
-                                  "";
-                        );
-                        let file_size = file_utils::get_file_size(&param.in_file)?;
-                        file_size / block_size as u64
-                    },
-                }
-            };
-
             let total_data_chunk_count = match orig_file_size {
                 Some(orig_file_size) => Some(file_utils::from_orig_file_size::calc_data_chunk_count(version, orig_file_size)),
                 None                 => None,
@@ -647,7 +661,7 @@ pub fn decode(param           : &Param,
                     while seq_num <= SBX_LAST_SEQ_NUM {
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
-                        if stats.lock().unwrap().units_so_far() >= total_block_count { break; }
+                        // if stats.lock().unwrap().units_so_far() >= total_block_count { break; }
 
                         let pos = sbx_block::calc_data_block_write_pos(ref_block.get_version(),
                                                                        seq_num,
@@ -671,11 +685,6 @@ pub fn decode(param           : &Param,
                             continue;
                         }
 
-                        let is_last_data_block = match total_data_chunk_count {
-                            Some(count) => stats.lock().unwrap().data_blocks_decoded == count,
-                            None        => false,
-                        };
-
                         match block.sync_from_buffer(&buffer, Some(&pred)) {
                             Ok(_)  => {
                                 if block.get_seq_num() != seq_num {
@@ -687,7 +696,7 @@ pub fn decode(param           : &Param,
                                         stats.lock().unwrap().incre_data_blocks_failed();
                                     }
 
-                                    write_blank_chunk(is_last_data_block,
+                                    write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
                                                       data_size_of_last_data_block,
                                                       &ref_block,
                                                       &mut writer,
@@ -705,7 +714,7 @@ pub fn decode(param           : &Param,
                                     stats.lock().unwrap().incre_data_blocks_failed();
                                 }
 
-                                write_blank_chunk(is_last_data_block,
+                                write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
                                                   data_size_of_last_data_block,
                                                   &ref_block,
                                                   &mut writer,
@@ -725,7 +734,7 @@ pub fn decode(param           : &Param,
 
                                 // write data chunk
                                 write_data_only_block(data_par_shards,
-                                                      is_last_data_block,
+                                                      is_last_data_block(&stats, total_data_chunk_count),
                                                       data_size_of_last_data_block,
                                                       &ref_block,
                                                       &block,
@@ -735,7 +744,7 @@ pub fn decode(param           : &Param,
                             }
                         }
 
-                        if is_last_data_block { break; }
+                        if is_last_data_block(&stats, total_data_chunk_count) { break; }
 
                         seq_num += 1;
                     }
@@ -744,11 +753,6 @@ pub fn decode(param           : &Param,
                     let mut seq_num = 0;
                     while seq_num <= SBX_LAST_SEQ_NUM {
                         break_if_atomic_bool!(ctrlc_stop_flag);
-
-                        let is_last_data_block = match total_data_chunk_count {
-                            Some(count) => stats.lock().unwrap().data_blocks_decoded == count,
-                            None        => false,
-                        };
 
                         // read at reference block block size
                         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
@@ -765,7 +769,7 @@ pub fn decode(param           : &Param,
                                         stats.lock().unwrap().incre_data_blocks_failed();
                                     }
 
-                                    write_blank_chunk(is_last_data_block,
+                                    write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
                                                       data_size_of_last_data_block,
                                                       &ref_block,
                                                       &mut writer,
@@ -781,7 +785,7 @@ pub fn decode(param           : &Param,
                                     stats.lock().unwrap().incre_data_blocks_failed();
                                 }
 
-                                write_blank_chunk(is_last_data_block,
+                                write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
                                                   data_size_of_last_data_block,
                                                   &ref_block,
                                                   &mut writer,
@@ -794,31 +798,20 @@ pub fn decode(param           : &Param,
                         if block.is_meta() { // do nothing if block is meta
                             stats.lock().unwrap().meta_blocks_decoded += 1;
                         } else {
-                            match data_par_shards {
-                                Some((data, par)) => {
-                                    if block.is_parity(data, par) {
-                                        stats.lock().unwrap().parity_blocks_decoded += 1;
-                                    } else {
-                                        stats.lock().unwrap().data_blocks_decoded += 1;
-                                    }
-                                },
-                                None => {
-                                    stats.lock().unwrap().data_blocks_decoded += 1;
-                                }
-                            }
+                            stats.lock().unwrap().data_blocks_decoded += 1;
 
                             // write data block
                             write_data_only_block(None,
-                                                  is_last_data_block,
+                                                  is_last_data_block(&stats, total_data_chunk_count),
                                                   data_size_of_last_data_block,
                                                   &ref_block,
                                                   &block,
                                                   &mut writer,
                                                   &mut hash_ctx,
                                                   &buffer)?;
-
-                            if is_last_data_block { break; }
                         }
+
+                        if is_last_data_block(&stats, total_data_chunk_count) { break; }
 
                         seq_num += 1;
                     }
@@ -860,7 +853,10 @@ pub fn decode(param           : &Param,
 
     stats.lock().unwrap().out_file_size = match writer.get_file_size() {
         Some(r) => r?,
-        None    => data_blocks_decoded * ver_to_data_size(ref_block.get_version()) as u64,
+        None    => match orig_file_size {
+            Some(x) => x,
+            None    => data_blocks_decoded * ver_to_data_size(ref_block.get_version()) as u64,
+        }
     };
 
     let res = stats.lock().unwrap().clone();
