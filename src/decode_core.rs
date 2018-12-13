@@ -767,8 +767,22 @@ pub fn decode(param           : &Param,
                                                       &ref_block,
                                                       &mut writer,
                                                       &mut hash_ctx)?;
+                                } else {
+                                    if block.is_meta() { // do nothing if block is meta
+                                        stats.lock().unwrap().meta_blocks_decoded += 1;
+                                    } else {
+                                        stats.lock().unwrap().data_blocks_decoded += 1;
 
-                                    continue;
+                                        // write data block
+                                        write_data_only_block(None,
+                                                              is_last_data_block(&stats, total_data_chunk_count),
+                                                              data_size_of_last_data_block,
+                                                              &ref_block,
+                                                              &block,
+                                                              &mut writer,
+                                                              &mut hash_ctx,
+                                                              &buffer)?;
+                                    }
                                 }
                             },
                             Err(_) => {
@@ -783,25 +797,7 @@ pub fn decode(param           : &Param,
                                                   &ref_block,
                                                   &mut writer,
                                                   &mut hash_ctx)?;
-
-                                continue;
                             },
-                        }
-
-                        if block.is_meta() { // do nothing if block is meta
-                            stats.lock().unwrap().meta_blocks_decoded += 1;
-                        } else {
-                            stats.lock().unwrap().data_blocks_decoded += 1;
-
-                            // write data block
-                            write_data_only_block(None,
-                                                  is_last_data_block(&stats, total_data_chunk_count),
-                                                  data_size_of_last_data_block,
-                                                  &ref_block,
-                                                  &block,
-                                                  &mut writer,
-                                                  &mut hash_ctx,
-                                                  &buffer)?;
                         }
 
                         if is_last_data_block(&stats, total_data_chunk_count) { break; }
