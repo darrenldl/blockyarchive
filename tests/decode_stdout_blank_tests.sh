@@ -8,6 +8,8 @@ corrupt() {
   dd if=/dev/zero of=$2 bs=1 count=1 seek=$1 conv=notrunc &>/dev/null
 }
 
+file_size=$[1024 * 1024 * 1]
+
 corrupt_count=10
 
 for ver in ${VERSIONS[*]}; do
@@ -25,6 +27,8 @@ for ver in ${VERSIONS[*]}; do
       echo " ==> NOT okay"
       exit_code=1
     fi
+
+    container_name=dummy$ver.sbx
 
     echo "Corrupting at $corrupt_count random positions"
     for (( p=0; p < $corrupt_count; p++ )); do
