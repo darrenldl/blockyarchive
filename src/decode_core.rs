@@ -755,6 +755,11 @@ pub fn decode(param           : &Param,
 
                         match block.sync_from_buffer(&buffer, Some(&pred)) {
                             Ok(_)  => {
+                                // fix seq num for the case of no metadata block
+                                if block.get_seq_num() == 1 && seq_num == 0 {
+                                    seq_num = 1;
+                                }
+
                                 if block.get_seq_num() != seq_num {
                                     if sbx_block::seq_num_is_meta(seq_num) {
                                         stats.lock().unwrap().incre_meta_blocks_failed();
