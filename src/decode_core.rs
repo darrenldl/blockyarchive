@@ -680,12 +680,46 @@ pub fn decode(param           : &Param,
                             } else {
                                 stats.lock().unwrap().incre_data_blocks_failed();
                             }
-                            continue;
-                        }
+                        } else {
+                            match block.sync_from_buffer(&buffer, Some(&pred)) {
+                                Ok(_)  => {
+                                    if block.get_seq_num() != seq_num {
+                                        if        sbx_block::seq_num_is_meta(seq_num) {
+                                            stats.lock().unwrap().incre_meta_blocks_failed();
+                                        } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
+                                            stats.lock().unwrap().incre_parity_blocks_failed();
+                                        } else {
+                                            stats.lock().unwrap().incre_data_blocks_failed();
+                                        }
 
-                        match block.sync_from_buffer(&buffer, Some(&pred)) {
-                            Ok(_)  => {
-                                if block.get_seq_num() != seq_num {
+                                        write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
+                                                          data_size_of_last_data_block,
+                                                          &ref_block,
+                                                          &mut writer,
+                                                          &mut hash_ctx)?;
+                                    } else {
+                                        if block.is_meta() { // do nothing if block is meta
+                                            stats.lock().unwrap().meta_blocks_decoded += 1;
+                                        } else {
+                                            if block.is_parity(data, parity) {
+                                                stats.lock().unwrap().parity_blocks_decoded += 1;
+                                            } else {
+                                                stats.lock().unwrap().data_blocks_decoded += 1;
+
+                                                // write data chunk
+                                                write_data_only_block(data_par_shards,
+                                                                      is_last_data_block(&stats, total_data_chunk_count),
+                                                                      data_size_of_last_data_block,
+                                                                      &ref_block,
+                                                                      &block,
+                                                                      &mut writer,
+                                                                      &mut hash_ctx,
+                                                                      &buffer)?;
+                                            }
+                                        }
+                                    }
+                                },
+                                Err(_) => {
                                     if        sbx_block::seq_num_is_meta(seq_num) {
                                         stats.lock().unwrap().incre_meta_blocks_failed();
                                     } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
@@ -699,46 +733,7 @@ pub fn decode(param           : &Param,
                                                       &ref_block,
                                                       &mut writer,
                                                       &mut hash_ctx)?;
-
-                                    continue;
-                                }
-                            },
-                            Err(_) => {
-                                if        sbx_block::seq_num_is_meta(seq_num) {
-                                    stats.lock().unwrap().incre_meta_blocks_failed();
-                                } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
-                                    stats.lock().unwrap().incre_parity_blocks_failed();
-                                } else {
-                                    stats.lock().unwrap().incre_data_blocks_failed();
-                                }
-
-                                write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
-                                                  data_size_of_last_data_block,
-                                                  &ref_block,
-                                                  &mut writer,
-                                                  &mut hash_ctx)?;
-
-                                continue;
-                            },
-                        }
-
-                        if block.is_meta() { // do nothing if block is meta
-                            stats.lock().unwrap().meta_blocks_decoded += 1;
-                        } else {
-                            if block.is_parity(data, parity) {
-                                stats.lock().unwrap().parity_blocks_decoded += 1;
-                            } else {
-                                stats.lock().unwrap().data_blocks_decoded += 1;
-
-                                // write data chunk
-                                write_data_only_block(data_par_shards,
-                                                      is_last_data_block(&stats, total_data_chunk_count),
-                                                      data_size_of_last_data_block,
-                                                      &ref_block,
-                                                      &block,
-                                                      &mut writer,
-                                                      &mut hash_ctx,
-                                                      &buffer)?;
+                                },
                             }
                         }
 
