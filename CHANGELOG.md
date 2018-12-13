@@ -2,7 +2,8 @@
 
 - Dependencies upate
   - Updated `rand` from `0.4` to `0.5.4`
-  - Updated `ring` from `0.12.1` to `0.13.2`
+- Switched from `ring` to `sha-1` and `sha2` crates
+  - See issue [#86](https://github.com/darrenldl/rust-SeqBox/issues/86)
 - Doc fix
   - Added space before parantheses in code comments, documentation and help messages
 - Added stdin input option for encode mode
