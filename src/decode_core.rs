@@ -835,7 +835,7 @@ pub fn decode(param           : &Param,
         }
     } else {
         if !json_printer.json_enabled() {
-            print_block!( json_printer.output_channel() =>
+            print_block!(json_printer.output_channel() =>
                 "";
                 "Warning :";
                 "";
