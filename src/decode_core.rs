@@ -690,13 +690,13 @@ pub fn decode(param           : &Param,
                                             stats.lock().unwrap().incre_parity_blocks_failed();
                                         } else {
                                             stats.lock().unwrap().incre_data_blocks_failed();
-                                        }
 
-                                        write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
-                                                          data_size_of_last_data_block,
-                                                          &ref_block,
-                                                          &mut writer,
-                                                          &mut hash_ctx)?;
+                                            write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
+                                                              data_size_of_last_data_block,
+                                                              &ref_block,
+                                                              &mut writer,
+                                                              &mut hash_ctx)?;
+                                        }
                                     } else {
                                         if block.is_meta() { // do nothing if block is meta
                                             stats.lock().unwrap().meta_blocks_decoded += 1;
@@ -726,13 +726,13 @@ pub fn decode(param           : &Param,
                                         stats.lock().unwrap().incre_parity_blocks_failed();
                                     } else {
                                         stats.lock().unwrap().incre_data_blocks_failed();
-                                    }
 
-                                    write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
-                                                      data_size_of_last_data_block,
-                                                      &ref_block,
-                                                      &mut writer,
-                                                      &mut hash_ctx)?;
+                                        write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
+                                                          data_size_of_last_data_block,
+                                                          &ref_block,
+                                                          &mut writer,
+                                                          &mut hash_ctx)?;
+                                    }
                                 },
                             }
                         }
@@ -765,13 +765,13 @@ pub fn decode(param           : &Param,
                                         stats.lock().unwrap().incre_meta_blocks_failed();
                                     } else {
                                         stats.lock().unwrap().incre_data_blocks_failed();
-                                    }
 
-                                    write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
-                                                      data_size_of_last_data_block,
-                                                      &ref_block,
-                                                      &mut writer,
-                                                      &mut hash_ctx)?;
+                                        write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
+                                                          data_size_of_last_data_block,
+                                                          &ref_block,
+                                                          &mut writer,
+                                                          &mut hash_ctx)?;
+                                    }
                                 } else {
                                     if block.is_meta() { // do nothing if block is meta
                                         stats.lock().unwrap().meta_blocks_decoded += 1;
@@ -795,13 +795,13 @@ pub fn decode(param           : &Param,
                                     stats.lock().unwrap().incre_meta_blocks_failed();
                                 } else {
                                     stats.lock().unwrap().incre_data_blocks_failed();
-                                }
 
-                                write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
-                                                  data_size_of_last_data_block,
-                                                  &ref_block,
-                                                  &mut writer,
-                                                  &mut hash_ctx)?;
+                                    write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
+                                                      data_size_of_last_data_block,
+                                                      &ref_block,
+                                                      &mut writer,
+                                                      &mut hash_ctx)?;
+                                }
                             },
                         }
 
