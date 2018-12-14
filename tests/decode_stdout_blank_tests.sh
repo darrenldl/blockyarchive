@@ -13,7 +13,7 @@ file_size=$[1024 * 1024 * 1]
 corrupt_count=10
 
 for ver in ${VERSIONS[*]}; do
-  for (( i=0; i < 3; i++ )); do
+  for (( i=0; i < 5; i++ )); do
     echo -n "Encoding in version $ver"
     output=$(./rsbx encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
                     --rs-data 10 --rs-parity 2)
