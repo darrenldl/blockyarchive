@@ -39,29 +39,29 @@ for ver in ${VERSIONS[*]}; do
 
     echo -n "Decoding version $ver container"
     output=$(./rsbx decode --json --verbose dummy$ver.sbx dummy$ver -f)
-    if [[ $(echo $output | jq -r ".error") != null ]]; then
-      echo " ==> Invalid JSON"
-      exit_code=1
-    fi
-    if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
-      echo " ==> Okay"
-    else
-      echo " ==> NOT okay"
-      exit_code=1
-    fi
+    # if [[ $(echo $output | jq -r ".error") != null ]]; then
+    #   echo " ==> Invalid JSON"
+    #   exit_code=1
+    # fi
+    # if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+    #   echo " ==> Okay"
+    # else
+    #   echo " ==> NOT okay"
+    #   exit_code=1
+    # fi
 
     echo -n "Decoding version $ver container (stdout output)"
     output=$(./rsbx decode --json --verbose dummy$ver.sbx - 2>&1 > dummy"$ver"_stdout)
-    if [[ $(echo $output | jq -r ".error") != null ]]; then
-      echo " ==> Invalid JSON"
-      exit_code=1
-    fi
-    if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
-      echo " ==> Okay"
-    else
-      echo " ==> NOT okay"
-      exit_code=1
-    fi
+    # if [[ $(echo $output | jq -r ".error") != null ]]; then
+    #   echo " ==> Invalid JSON"
+    #   exit_code=1
+    # fi
+    # if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+    #   echo " ==> Okay"
+    # else
+    #   echo " ==> NOT okay"
+    #   exit_code=1
+    # fi
 
     echo -n "Comparing decode output file and stdout output"
     cmp dummy$ver dummy"$ver"_stdout
