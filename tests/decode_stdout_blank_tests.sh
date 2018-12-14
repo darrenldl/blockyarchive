@@ -37,7 +37,7 @@ for ver in ${VERSIONS[*]}; do
       corrupt $pos $container_name
     done
 
-    echo -n "Decoding version $ver container"
+    echo "Decoding version $ver container"
     output=$(./rsbx decode --json --verbose dummy$ver.sbx dummy$ver -f)
     # if [[ $(echo $output | jq -r ".error") != null ]]; then
     #   echo " ==> Invalid JSON"
@@ -50,7 +50,7 @@ for ver in ${VERSIONS[*]}; do
     #   exit_code=1
     # fi
 
-    echo -n "Decoding version $ver container (stdout output)"
+    echo "Decoding version $ver container (stdout output)"
     output=$(./rsbx decode --json --verbose dummy$ver.sbx - 2>&1 > dummy"$ver"_stdout)
     # if [[ $(echo $output | jq -r ".error") != null ]]; then
     #   echo " ==> Invalid JSON"
