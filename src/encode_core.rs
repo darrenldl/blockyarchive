@@ -353,7 +353,7 @@ fn block_sync_and_write(block  : &mut Block,
 
     match block.add1_seq_num() {
         Ok(_)  => Ok(()),
-        Err(_) => Err(Error::with_message("Block seq num already at max, addition causes overflow. This might be due to file size has changed during the encoding"))
+        Err(_) => Err(Error::with_message("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"))
     }
 }
 

@@ -59,12 +59,21 @@ fi
 
 # compare decode file and stdout output
 echo "========================================"
-echo "Starting comparison between decode with file input and stdout output"
+echo "Starting comparison between decode with file output and stdout output"
 echo "========================================"
 ./compare_decode_file_and_stdout.sh
 if [[ $? != 0 ]]; then
   test_failed=$[$test_failed+1]
   test_failed_names=$test_failed_names"- compare_decode_file_and_stdout.sh\n"
+fi
+
+echo "========================================"
+echo "Starting comparison between decode with file output and stdout output with corrupted container"
+echo "========================================"
+./compare_decode_file_and_stdout_corrupted_container.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- compare_decode_file_and_stdout_corrupted_container.sh\n"
 fi
 
 # nometa tests
@@ -93,6 +102,15 @@ echo "========================================"
 if [[ $? != 0 ]]; then
   test_failed=$[$test_failed+1]
   test_failed_names=$test_failed_names"- nometa_tests_decode_stdout.sh\n"
+fi
+
+echo "========================================"
+echo "Starting comparison between decode with file output and stdout output with nometa"
+echo "========================================"
+./compare_decode_file_and_stdout_nometa.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- compare_decode_file_and_stdout_nometa.sh\n"
 fi
 
 # hash test

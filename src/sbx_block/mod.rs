@@ -316,11 +316,11 @@ pub fn calc_data_block_write_index(seq_num        : u32,
 
             let super_block_set_size = (data_shards + parity_shards) * burst_err_resistance;
 
-            // sub A block sets partitioning deals with the super block set
+            // sub A block set partitioning deals with the super block set
             // of the sequential data index arrangement
             // i.e. sub A = partitioning of input
             //
-            // sub B block sets partitioning deals with the super block set
+            // sub B block set partitioning deals with the super block set
             // of the interleaving data index arrangement
             // i.e. sub B = partitioning of output
             //

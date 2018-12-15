@@ -25,7 +25,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(pr_verbosity_level_arg())
         .arg(burst_arg()
              .help("Burst error resistance level to use for the output container.
-Defaults to guessing the level(guesses up to 1000) used by the
+Defaults to guessing the level (guesses up to 1000) used by the
 original container and uses the result."))
         .arg(verbose_arg()
              .help("Show reference block info"))

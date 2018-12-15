@@ -129,7 +129,7 @@ macro_rules! return_if_ref_not_meta {
     ) => {{
         if $ref_block.is_data() {
             let ver_usize = ver_to_usize($ref_block.get_version());
-            return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is not a metadata block(metadata block must be used to {} for version {})",
+            return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is not a metadata block (metadata block must be used to {} for version {})",
                                                     $ref_block_pos,
                                                     $ref_block_pos,
                                                     $purpose,
