@@ -47,23 +47,23 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
                 print_block!(output_channel =>
                              "Warning :";
                              "";
-                             "   Since output is stdout, rsbx can only output data chunks in the";
-                             "   anticipated encoding order.";
+                             "    Since output is stdout, rsbx can only output data chunks in the";
+                             "    anticipated encoding order.";
                              "";
-                             "      For versions with no RS enabled (version 1, 2, 3), this means rsbx";
-                             "      outputs data chunks in the same order as the blocks are stored.";
+                             "        For versions with no RS enabled (version 1, 2, 3), this means rsbx";
+                             "        outputs data chunks in the same order as the blocks are stored.";
                              "";
-                             "      For versions with RS enabled (version 17, 18, 19), this means rsbx";
-                             "      first guesses the burst resistance level, then reads using the block";
-                             "      set interleaving pattern and outputs the data chunks.";
+                             "        For versions with RS enabled (version 17, 18, 19), this means rsbx";
+                             "        first guesses the burst resistance level, then reads using the block";
+                             "        set interleaving pattern and outputs the data chunks.";
                              "";
-                             "   rsbx also tries to strip the data padding at the end of the container";
-                             "   at a best effort basis, but does not provide any guarantees.";
+                             "    rsbx also tries to strip the data padding at the end of the container";
+                             "    at a best effort basis, but does not provide any guarantees.";
                              "";
-                             "   If the ordering matches the anticipated ordering, output of rsbx to";
-                             "   stdout should match the one produced in output to file mode. If the";
-                             "   ordering is not as anticipated, you may fix it by sorting the SBX";
-                             "   container using the rsbx sort command first.";
+                             "    If the ordering matches the anticipated ordering, output of rsbx to";
+                             "    stdout should match the one produced in output to file mode. If the";
+                             "    ordering is not as anticipated, you may fix it by sorting the SBX";
+                             "    container using the rsbx sort command first.";
                              "";
                 );
             }
