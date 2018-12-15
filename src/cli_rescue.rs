@@ -38,7 +38,7 @@ range specified in the initial run."))
              .long("only-pick-uid")
              .takes_value(true)
              .help("Only pick blocks with UID-HEX as uid. Uid must be exactly 6
-bytes(12 hex digits) in length."))
+bytes (12 hex digits) in length."))
         .arg(force_misalign_arg())
         .arg(pr_verbosity_level_arg())
         .arg(from_byte_arg()
