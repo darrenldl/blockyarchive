@@ -114,22 +114,21 @@ Data block is valid if and only if
 - Basic block validity criteria are satisfied (see **Block handling in general** above)
 - Version and uid matches reference block (see below)
 
-1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
+### If output to file
+
+1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)# 
 2. Scan for valid blocks from start of SBX container to decode and output using reference block's block size as alignment
    - if a block is invalid, nothing is done
    - if a block is valid, and is a metadata block, nothing is done
    - if a block is valid, and is a data parity block, nothing is done
-   - if a block is valid, and is a data block, then
-     - if output is file, then it will be written to the writepos at output file, where writepos = (sequence number - 1) * block size of reference block in bytes
-
-     - else if output is stdout, it will be written to stdout directly
+   - if a block is valid, and is a data block, then it will be written to the writepos at output file, where writepos = (sequence number - 1) * block size of reference block in bytes
 3. If possible, truncate output file to remove data padding done for the last block during encoding
    - if reference block is a metadata block, and contains file size field, and output is a file, then the output file will be truncated to that file size
    - otherwise nothing is done
-4. If possible, report/record if the hash of decoded file matches the recorded hash during encoding
-   - if reference block is a metadata block, and contains the hash field, and output is a file, then the output file will be hashed to check against the recorded hash
-     - output file will not be deleted even if hash does not match
-   - otherwise nothing is done
+   - If possible, report/record if the hash of decoded file matches the recorded hash during encoding
+     - if reference block is a metadata block, and contains the hash field, and output is a file, then the output file will be hashed to check against the recorded hash
+       - output file will not be deleted even if hash does not match
+     - otherwise nothing is done
 
 #### Handling of duplicate metadata/data blocks
 
@@ -140,6 +139,30 @@ Data block is valid if and only if
 
 - Corrupted blocks or missing blocks are not repaired in this mode
 - User needs to invoke repair mode to repair the archive
+
+### If output to stdout
+
+1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
+
+2. Scan for valid blocks from the SBX container in the anticipated pattern to decode and output using reference block's block size as alignment
+
+   - The anticipated pattern is same as the guessed encoding pattern, which depends on the SBX version, data parity parameters, guessed burst error resistance level
+
+   - If a block is valid, and contains the anticipated seq num, then
+
+     - if the block is a metadata block, then nothing is done
+
+     - if the block is a data parity block, then nothing is done
+
+     - if the block is a data block, then
+
+       - if blkar can determine the block is the last block, the data chunk of the block is truncated then outputted to stdout
+
+         - this is only possible when metadata block is used as reference block, and also contains the original file size
+
+       - else the data chunk of the block is outputted to stdout
+
+   - else a blank chunk of the same size as a normal data chunk is outputted to stdout
 
 ## Rescue workflow
 
