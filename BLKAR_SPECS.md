@@ -80,7 +80,7 @@ Metadata block is valid if
    - else mark the sequence number as missing
 
    - a ref block is required to provide guidance on version and uid accepted
-2. Go through level 0 to 1000(inclusive), calculate supposed sequence number at each block position, record number of mismatches for each level
+2. Go through level 0 to 1000 (inclusive), calculate supposed sequence number at each block position, record number of mismatches for each level
    - if sequence number was marked missing, then it is ignored and checked for mismatch
 3. return the level with least amount of mismatches
 
