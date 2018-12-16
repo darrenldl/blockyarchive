@@ -1,9 +1,9 @@
 # blockyarchive
 
-[![Build Status](https://travis-ci.org/darrenldl/rust-SeqBox.svg?branch=master)](https://travis-ci.org/darrenldl/rust-SeqBox)
-[![Build status](https://ci.appveyor.com/api/projects/status/ho6v99qysi9l8p6d?svg=true)](https://ci.appveyor.com/project/darrenldl/rust-seqbox)
-[![codecov](https://codecov.io/gh/darrenldl/rust-SeqBox/branch/master/graph/badge.svg)](https://codecov.io/gh/darrenldl/rust-SeqBox)
-[![Coverage Status](https://coveralls.io/repos/github/darrenldl/rust-SeqBox/badge.svg?branch=master)](https://coveralls.io/github/darrenldl/rust-SeqBox?branch=master)
+[![Build Status](https://travis-ci.org/darrenldl/blockyarchive.svg?branch=master)](https://travis-ci.org/darrenldl/blockyarchive)
+[![Build status](https://ci.appveyor.com/api/projects/status/i4dxpldp4t312gtv?svg=true)](https://ci.appveyor.com/project/darrenldl/blockyarchive)
+[![codecov](https://codecov.io/gh/darrenldl/blockyarchive/branch/master/graph/badge.svg)](https://codecov.io/gh/darrenldl/blockyarchive)
+[![Coverage Status](https://coveralls.io/repos/github/darrenldl/blockyarchive/badge.svg?branch=master)](https://coveralls.io/github/darrenldl/blockyarchive?branch=master)
 [![Crates](https://img.shields.io/crates/v/rsbx.svg)](https://crates.io/crates/rsbx)
 [![dependency status](https://deps.rs/repo/github/darrenldl/rsbx/status.svg)](https://deps.rs/repo/github/darrenldl/rsbx)
 
