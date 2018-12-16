@@ -9,6 +9,7 @@
 - Added stdin input option for encode mode
 - Added stdout output option for decode mode
 - Fixed data padding bytes calculation in encode mode
+- Renamed project from `rust-SeqBox/rsbx` to `blockyarchive/blkar`
 
 ## 1.1.2
 

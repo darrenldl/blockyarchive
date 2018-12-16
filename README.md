@@ -1,4 +1,4 @@
-# rust-SeqBox
+# blockyarchive
 
 [![Build Status](https://travis-ci.org/darrenldl/rust-SeqBox.svg?branch=master)](https://travis-ci.org/darrenldl/rust-SeqBox)
 [![Build status](https://ci.appveyor.com/api/projects/status/ho6v99qysi9l8p6d?svg=true)](https://ci.appveyor.com/project/darrenldl/rust-seqbox)
@@ -9,7 +9,7 @@
 
 [Documentation](https://github.com/darrenldl/rust-SeqBox/wiki)
 
-Enhanced implementation of SeqBox in Rust
+Blockyarchive (blkar) is an enhanced implementation of SeqBox.
 
 SeqBox is a single-file archive format designed by [Marco Pontello](https://github.com/MarcoPon) that facilitates sector level data recovery for when file system metadata is corrupted/missing, while the archive itself still exists as a normal file on file system.
 
@@ -17,7 +17,7 @@ Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for 
 
 ## Enhancements
 
-This implementation adds forward error correction on top of the SeqBox format by adding support for Reed-Solomon erasure code, and also allows arranging the blocks such that burst sector errors can be tolerated.
+Blockyarchive adds forward error correction on top of the SeqBox format by adding support for Reed-Solomon erasure code, and also allows arranging the blocks in a burst sector error resistant pattern.
 
 rsbx is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), but much more optimized.
 
