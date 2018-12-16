@@ -9,17 +9,19 @@
 
 [Documentation](https://github.com/darrenldl/rust-SeqBox/wiki)
 
-Blockyarchive (blkar) is an enhanced implementation of SeqBox.
+Blockyarchive/blkar (formerly rust-SeqBox) is a comprehensive utility for creating, rescuing, and general handling of SeqBox archives, with optional forward error correction.
 
 SeqBox is a single-file archive format designed by [Marco Pontello](https://github.com/MarcoPon) that facilitates sector level data recovery for when file system metadata is corrupted/missing, while the archive itself still exists as a normal file on file system.
 
-Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for technical details on this.
+Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for the original implementation and technical details on this.
 
-## Enhancements
+## Comparison to the original SeqBox implementation/design
 
-Blockyarchive adds forward error correction on top of the SeqBox format by adding support for Reed-Solomon erasure code, and also allows arranging the blocks in a burst sector error resistant pattern.
+The original SeqBox implementation and format does not support repairing of data, only sector level recoverability.
 
-rsbx is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), but much more optimized.
+Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format, and also allows arranging the blocks in a burst error resistant pattern.
+
+blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), but much more optimized.
 
 ## Features overall
 
@@ -32,25 +34,25 @@ rsbx is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), 
 
 ## Goals
 
-As rsbx is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
+As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
+
+## Notes to existing rust-SeqBox users
+
+`rsbx 2.0.0` is the last version to be updated for the crate `rsbx`, all future versions will be published under the crate `blkar`.
 
 ## Getting started
 
 #### Installation
 
-rsbx is available via [GitHub releases](https://github.com/darrenldl/rust-SeqBox/releases) or via `cargo`
+`blkar` is available via [GitHub releases](https://github.com/darrenldl/rust-SeqBox/releases) or via `cargo`
 
 ```
-cargo install rsbx
+cargo install blkar
 ```
 
 #### Usage guides & screencasts & other resources
 
 The [wiki](https://github.com/darrenldl/rust-SeqBox/wiki) contains comprehensive guides and resources.
-
-## Helpers
-
-Repo [rsbx-helpers](https://github.com/darrenldl/rsbx-helpers) contains helpers for extending the functionality of rsbx.
 
 ## Changelog
 
@@ -60,7 +62,7 @@ Repo [rsbx-helpers](https://github.com/darrenldl/rsbx-helpers) contains helpers 
 
 [SBX format](SBX_FORMAT.md)
 
-[rsbx specs](RSBX_SPECS.md)
+[blkar specs](BLKAR_SPECS.md)
 
 ## Contributions
 
@@ -68,7 +70,7 @@ Contributions are welcome. Note that by submitting contributions, you agree to l
 
 ## Acknowledgement
 
-I would like to thank [Marco](https://github.com/MarcoPon)(official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx. I would also like to thank him for his feedback on the numbering of the error correction enabled SBX versions (version 17, 18, 19).
+I would like to thank [Marco](https://github.com/MarcoPon) (the official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx. I would also like to thank him for his feedback on the numbering of the error correction enabled SBX versions (versions 17, 18, 19).
 
 I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of the osbx project, of which most of the designs are carried over to rsbx, and also his further feedback on this project as well.
 
