@@ -9,6 +9,12 @@
 
 [Documentation](https://github.com/darrenldl/rust-SeqBox/wiki)
 
+## Notes to existing rust-SeqBox users
+
+`rsbx 2.0.0` is the last version to be updated for the crate `rsbx`, all future versions will be published under the crate `blkar`.
+
+---
+
 Blockyarchive/blkar (formerly rust-SeqBox) is a comprehensive utility for creating, rescuing, and general handling of SeqBox archives, with optional forward error correction.
 
 SeqBox is a single-file archive format designed by [Marco Pontello](https://github.com/MarcoPon) that facilitates sector level data recovery for when file system metadata is corrupted/missing, while the archive itself still exists as a normal file on file system.
@@ -35,10 +41,6 @@ blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox),
 ## Goals
 
 As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
-
-## Notes to existing rust-SeqBox users
-
-`rsbx 2.0.0` is the last version to be updated for the crate `rsbx`, all future versions will be published under the crate `blkar`.
 
 ## Getting started
 
