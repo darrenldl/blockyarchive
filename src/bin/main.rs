@@ -8,7 +8,7 @@ fn real_main () -> i32 {
     let matches = App::new("rsbx")
         .version(env!("CARGO_PKG_VERSION"))
         .author("Darren Ldl <darrenldldev@gmail.com>")
-        .about("Rust implementation of SeqBox")
+        .about("Enhanced implementation of SeqBox in Rust")
         .subcommand(cli_encode::sub_command())
         .subcommand(cli_decode::sub_command())
         .subcommand(cli_rescue::sub_command())

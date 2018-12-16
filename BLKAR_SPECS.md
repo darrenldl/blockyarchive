@@ -1,4 +1,4 @@
-# Specification of rust-SeqBox
+# Specification of blockyarchive
 
 The specification is concerned only with actual data operations, UI/UX related matters are ignored.
 
