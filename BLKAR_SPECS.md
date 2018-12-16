@@ -100,6 +100,7 @@ Metadata block is valid if
    - The written metadata block is valid, but does not contain the actual file hash, a filler pattern of 0x00 is used in place of the hash part of the multihash (the header and length indicator of multihash are still valid)
 3. Load version specific data sized chunk one at a time from input file to encode and output (and if metadata is enabled, Multihash hash state/ctx is updated as well - the actual hash state/ctx used depends on hash type, defaults to SHA256)
    - data size = block size - header size (e.g. version 1 has data size of 512 - 16 = 496)
+   - if the seq num exceeds the maximum, the encoding procedure is terminated
 4. If metadata is enabled, the encoder seeks back to starting position of output file and overwrites the metadata block with one that contains the actual hash
 
 ## Decode workflow
