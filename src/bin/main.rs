@@ -8,7 +8,9 @@ fn real_main () -> i32 {
     let matches = App::new("rsbx")
         .version(env!("CARGO_PKG_VERSION"))
         .author("Darren Ldl <darrenldldev@gmail.com>")
-        .about("Enhanced implementation of SeqBox in Rust")
+        .about("Archive with forward error correction and sector level recoverability
+IMPORTANT : Please note that this is the last version of this software to be released under the name rsbx,
+future releases will be published under the name blkar. See project repo for details.")
         .subcommand(cli_encode::sub_command())
         .subcommand(cli_decode::sub_command())
         .subcommand(cli_rescue::sub_command())
