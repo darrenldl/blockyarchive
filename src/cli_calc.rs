@@ -137,7 +137,7 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
 
         let block_size = ver_to_block_size(version);
 
-        print!("Error correction parameters interpretation");
+        println!("Error correction parameters interpretation");
         println!("========================================");
         if burst == 0 {
             print_block!(
