@@ -144,7 +144,7 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
                 "    The container can tolerate {} SBX block corruptions", par;
                 "    in any block set.";
                 "";
-                "    A block set consists of {} blocks({} bytes).", (data + par), (data + par) * block_size;
+                "    A block set consists of {} blocks ({} bytes).", (data + par), (data + par) * block_size;
                 "";
                 "    In total, {} blocks({} bytes) may be corrupted in", par, par * block_size;
                 "    any block set.";
@@ -164,9 +164,9 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
             let super_block_set_size = (data + par) * burst;
 
             print_block!("    The container can tolerate {} burst SBX block corruptions in", par;
-                         "    any super block set({} interleaved block sets).", burst;
+                         "    any super block set ({} interleaved block sets).", burst;
                          "";
-                         "    A block set consists of {} blocks({} bytes).", block_set_size, block_set_size * block_size;
+                         "    A block set consists of {} blocks ({} bytes).", block_set_size, block_set_size * block_size;
                          "";
                          "    A super block set consists of {} blocks ({} bytes).", super_block_set_size, super_block_set_size * block_size;
                          "";
