@@ -1,8 +1,8 @@
 extern crate clap;
 use clap::*;
 
-extern crate rsbx_lib;
-use rsbx_lib::*;
+extern crate blkar_lib;
+use blkar_lib::*;
 
 fn real_main () -> i32 {
     let matches = App::new("rsbx")
@@ -25,31 +25,31 @@ future releases will be published under the name blkar. See project repo for det
         .get_matches();
 
     if      let Some(matches) = matches.subcommand_matches("encode") {
-        rsbx_lib::cli_encode::encode(matches)
+        cli_encode::encode(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("decode") {
-        rsbx_lib::cli_decode::decode(matches)
+        cli_decode::decode(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("rescue") {
-        rsbx_lib::cli_rescue::rescue(matches)
+        cli_rescue::rescue(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("show") {
-        rsbx_lib::cli_show::show(matches)
+        cli_show::show(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("repair") {
-        rsbx_lib::cli_repair::repair(matches)
+        cli_repair::repair(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("check") {
-        rsbx_lib::cli_check::check(matches)
+        cli_check::check(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("sort") {
-        rsbx_lib::cli_sort::sort(matches)
+        cli_sort::sort(matches)
     }
     else if let Some(matches) = matches.subcommand_matches("calc") {
-        rsbx_lib::cli_calc::calc(matches)
+        cli_calc::calc(matches)
     }
     else {
-        exit_with_msg!(ok rsbx_lib::json_printer::JSONPrinter::new(false, rsbx_lib::output_channel::OutputChannel::Stdout)
+        exit_with_msg!(ok json_printer::JSONPrinter::new(false, output_channel::OutputChannel::Stdout)
                        => "Invoke with -h or --help for help message\n");
     }
 }
