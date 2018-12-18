@@ -168,11 +168,11 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
                          "";
                          "    A block set consists of {} blocks({} bytes).", block_set_size, block_set_size * block_size;
                          "";
-                         "    A super block set consists of {} blocks({} bytes).", super_block_set_size, super_block_set_size * block_size;
+                         "    A super block set consists of {} blocks ({} bytes).", super_block_set_size, super_block_set_size * block_size;
                          "";
-                         "    Each burst error may be up to {} blocks({} bytes) in size.", burst, burst * block_size;
+                         "    Each burst error may be up to {} blocks ({} bytes) in size.", burst, burst * block_size;
                          "";
-                         "    In total, {} sets of {} consecutive blocks({} bytes) may be", par, burst, burst * block_size;
+                         "    In total, {} sets of {} consecutive blocks ({} bytes) may be", par, burst, burst * block_size;
                          "    corrupted in any super block set.";
                          "";
                          "    The sets of corrupted blocks may be connected as well, so the";
