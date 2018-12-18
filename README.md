@@ -23,7 +23,7 @@ Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for 
 
 ## Comparison to the original SeqBox implementation/design
 
-The original SeqBox implementation and format does not support repairing of data, only sector level recoverability.
+The original SeqBox implementation and format does not support repairing of data, only sector level recoverability. Blkar is also more robust compared to the original SeqBox implementation, as it does not assume the SBX container to be well formed, and makes as few assumptions about the SBX container as possible, if at all.
 
 Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format, and also allows arranging the blocks in a burst error resistant pattern.
 
