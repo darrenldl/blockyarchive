@@ -47,7 +47,7 @@ dependencies = [
 
 [[package]]
 name = "blkar"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "blake2_c 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -65,7 +65,7 @@ dependencies = [
 name = "blkar-fuzz"
 version = "0.0.1"
 dependencies = [
- "blkar 2.0.0",
+ "blkar 2.0.1",
  "libfuzzer-sys 0.1.0 (git+https://github.com/rust-fuzz/libfuzzer-sys.git)",
 ]
 
