@@ -1,10 +1,10 @@
 #![no_main]
 #[macro_use] extern crate libfuzzer_sys;
-extern crate rsbx_lib;
+extern crate blkar_lib;
 
-use rsbx_lib::sbx_block::Block;
+use blkar_lib::sbx_block::Block;
 
-use rsbx_lib::sbx_specs;
+use blkar_lib::sbx_specs;
 
 fuzz_target!(|data: &[u8]| {
     let mut block = Block::dummy();

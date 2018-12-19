@@ -1,6 +1,6 @@
 
 [package]
-name = "rsbx-fuzz"
+name = "blkar-fuzz"
 version = "0.0.1"
 authors = ["Automatically generated"]
 publish = false
@@ -8,7 +8,7 @@ publish = false
 [package.metadata]
 cargo-fuzz = true
 
-[dependencies.rsbx]
+[dependencies.blkar]
 path = ".."
 [dependencies.libfuzzer-sys]
 git = "https://github.com/rust-fuzz/libfuzzer-sys.git"
