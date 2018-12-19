@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source kcov_rsbx_fun.sh
+source kcov_blkar_fun.sh
 
 exit_code=0
 
@@ -11,7 +11,7 @@ uid3=$(cat /dev/urandom | tr -dc 0-9A-F | fold -w 12 | head -n 1)
 uid_unused=$(cat /dev/urandom | tr -dc 0-9a-f | fold -w 12 | head -n 1)
 
 echo -n "Encoding files"
-output=$(kcov_rsbx encode --json --uid $uid1 -f dummy rescue_picky_uid1.sbx)
+output=$(kcov_blkar encode --json --uid $uid1 -f dummy rescue_picky_uid1.sbx)
 if [[ $(echo $output | jq -r ".stats.fileUID") == "$uid1" ]]; then
     echo -n " ==> Okay"
 else
@@ -19,14 +19,14 @@ else
     exit_code=1
 fi
 echo $uid2
-output=$(kcov_rsbx encode --json --uid $uid2 -f dummy rescue_picky_uid2.sbx)
+output=$(kcov_blkar encode --json --uid $uid2 -f dummy rescue_picky_uid2.sbx)
 if [[ $(echo $output | jq -r ".stats.fileUID") == "$uid2" ]]; then
     echo -n " ==> Okay"
 else
     echo -n " ==> NOT okay"
     exit_code=1
 fi
-output=$(kcov_rsbx encode --json --uid $uid3 -f dummy rescue_picky_uid3.sbx)
+output=$(kcov_blkar encode --json --uid $uid3 -f dummy rescue_picky_uid3.sbx)
 if [[ $(echo $output | jq -r ".stats.fileUID") == "$uid3" ]]; then
     echo " ==> Okay"
 else
@@ -45,7 +45,7 @@ cat rescue_picky_uid3.sbx >> dummy_disk2
 echo -n "Rescuing from dummy disk 2 with unused uid"
 rm -rf rescued_data2 &>/dev/null
 mkdir rescued_data2 &>/dev/null
-output=$(kcov_rsbx rescue --json --only-pick-uid $uid_unused dummy_disk2 rescued_data2)
+output=$(kcov_blkar rescue --json --only-pick-uid $uid_unused dummy_disk2 rescued_data2)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
@@ -70,7 +70,7 @@ else
 fi
 
 echo -n "Rescuing from dummy disk 2 with "$uid1
-output=$(kcov_rsbx rescue --json --only-pick-uid $uid1 dummy_disk2 rescued_data2)
+output=$(kcov_blkar rescue --json --only-pick-uid $uid1 dummy_disk2 rescued_data2)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
@@ -95,7 +95,7 @@ else
 fi
 
 echo -n "Decoding rescued file"
-output=$(kcov_rsbx decode --json "rescued_data2/"$uid1 "rescued_data2/"$uid1.decoded)
+output=$(kcov_blkar decode --json "rescued_data2/"$uid1 "rescued_data2/"$uid1.decoded)
 if [[ $(echo $output | jq -r ".stats.fileUID") != "$uid1" ]]; then
     echo " ==> Invalid JSON"
     exit_code=1

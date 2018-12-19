@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source kcov_rsbx_fun.sh
+source kcov_blkar_fun.sh
 
 exit_code=0
 
@@ -16,7 +16,7 @@ a[0]=$(sha1sum   dummy | awk '{print $1}')
 i=0
 for h in ${HASHES[*]}; do
   echo -n "Encoding in hash $h"
-  output=$(kcov_rsbx encode --json --hash $h -f dummy dummy$h.sbx)
+  output=$(kcov_blkar encode --json --hash $h -f dummy dummy$h.sbx)
   hash=$(echo $output | jq -r ".stats.hash" | awk '{ print $3 }')
   if [[ $(echo $output | jq -r ".error") != "null" ]]; then
       echo "Invalid JSON"
@@ -35,7 +35,7 @@ done
 i=0
 for h in ${HASHES[*]}; do
     echo -n "Checking hash $h container"
-    output=$(kcov_rsbx check --json --verbose dummy$h.sbx)
+    output=$(kcov_blkar check --json --verbose dummy$h.sbx)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
         echo " ==> Invalid JSON"
         exit_code=1
@@ -52,7 +52,7 @@ done
 i=0
 for h in ${HASHES[*]}; do
   echo -n "Decoding hash $h container"
-  output=$(kcov_rsbx decode --json -f dummy$h.sbx dummy$h)
+  output=$(kcov_blkar decode --json -f dummy$h.sbx dummy$h)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1

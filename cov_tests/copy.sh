@@ -2,9 +2,9 @@
 
 cd ..
 
-echo "Building rsbx"
+echo "Building blkar"
 cargo build
 
-echo "Copying rsbx binary over"
-cp target/debug/rsbx ./cov_tests/rsbx
+echo "Copying blkar binary over"
+cp target/debug/blkar ./cov_tests/blkar
 cd cov_tests

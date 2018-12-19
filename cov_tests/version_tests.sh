@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source kcov_rsbx_fun.sh
+source kcov_blkar_fun.sh
 
 exit_code=0
 
@@ -9,7 +9,7 @@ VERSIONS=(1 2 3 17 18 19)
 # Encode in all 6 versions
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver"
-  output=$(kcov_rsbx encode --json --pv 2 --sbx-version $ver -f dummy dummy$ver.sbx \
+  output=$(kcov_blkar encode --json --pv 2 --sbx-version $ver -f dummy dummy$ver.sbx \
                      --rs-data 10 --rs-parity 2 2>/dev/null)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
@@ -26,7 +26,7 @@ done
 # Check all of them
 for ver in ${VERSIONS[*]}; do
     echo -n "Checking version $ver container"
-    output=$(kcov_rsbx check --json --verbose dummy$ver.sbx)
+    output=$(kcov_blkar check --json --verbose dummy$ver.sbx)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
         echo " ==> Invalid JSON"
         exit_code=1
@@ -42,7 +42,7 @@ done
 # Show all
 for ver in ${VERSIONS[*]}; do
     echo -n "Checking show output for $ver container"
-    output=$(kcov_rsbx show --json --pv 1 dummy$ver.sbx 2>/dev/null)
+    output=$(kcov_blkar show --json --pv 1 dummy$ver.sbx 2>/dev/null)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
         echo " ==> Invalid JSON"
         exit_code=1
@@ -58,7 +58,7 @@ done
 # Decode all of them
 for ver in ${VERSIONS[*]}; do
   echo -n "Decoding version $ver container"
-  output=$(kcov_rsbx decode --json --verbose -f dummy$ver.sbx dummy$ver)
+  output=$(kcov_blkar decode --json --verbose -f dummy$ver.sbx dummy$ver)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
