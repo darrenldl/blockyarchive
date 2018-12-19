@@ -17,7 +17,7 @@ Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for 
 
 ## Comparison to the original SeqBox implementation/design
 
-The original SeqBox implementation and format does not support repairing of data, only sector level recoverability.
+The original SeqBox implementation and format do not support repairing of data, only sector level recoverability.
 
 Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format, and also allows arranging the blocks in a burst error resistant pattern.
 
