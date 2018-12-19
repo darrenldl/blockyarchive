@@ -1,5 +1,5 @@
 [package]
-name    = "rsbx"
+name    = "blkar"
 version = "2.0.0"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 build   = "build.rs"
