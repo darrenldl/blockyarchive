@@ -7,7 +7,7 @@
 [![Crates](https://img.shields.io/crates/v/blkar.svg)](https://crates.io/crates/blkar)
 [![dependency status](https://deps.rs/repo/github/darrenldl/blkar/status.svg)](https://deps.rs/repo/github/darrenldl/blkar)
 
-[Documentation](https://github.com/darrenldl/rust-SeqBox/wiki)
+[Documentation](https://github.com/darrenldl/blockyarchive/wiki)
 
 Blockyarchive/blkar (formerly rust-SeqBox) is a comprehensive utility for creating, rescuing, and general handling of SeqBox archives, with optional forward error correction.
 
@@ -42,7 +42,7 @@ As blkar is to be used largely as a backup utility, security/robustness of the c
 
 #### Installation
 
-`blkar` is available via [GitHub releases](https://github.com/darrenldl/rust-SeqBox/releases) or via `cargo`
+`blkar` is available via [GitHub releases](https://github.com/darrenldl/blockyarchive/releases) or via `cargo`
 
 ```
 cargo install blkar
@@ -50,7 +50,7 @@ cargo install blkar
 
 #### Usage guides & screencasts & other resources
 
-The [wiki](https://github.com/darrenldl/rust-SeqBox/wiki) contains comprehensive guides and resources.
+The [wiki](https://github.com/darrenldl/blockyarchive/wiki) contains comprehensive guides and resources.
 
 ## Changelog
 

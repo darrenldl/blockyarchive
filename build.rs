@@ -1,6 +1,6 @@
 /* This file is translated from implementation of libcrc (https://github.com/lammertb/libcrc)
  *
- * The translation is done by Darren Ldl as part of the rust-SeqBox project
+ * The translation is done by Darren Ldl as part of the blockyarchive project
  *
  * The translated source code is under the same license as stated and used by the
  * original file (MIT License)

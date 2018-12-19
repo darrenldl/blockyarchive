@@ -15,9 +15,9 @@ exclude = [
 
 description   = "Enhanced implementation of SeqBox in Rust"
 
-documentation = "https://github.com/darrenldl/rust-SeqBox/wiki"
-homepage      = "https://github.com/darrenldl/rust-SeqBox"
-repository    = "https://github.com/darrenldl/rust-SeqBox"
+documentation = "https://github.com/darrenldl/blockyarchive/wiki"
+homepage      = "https://github.com/darrenldl/blockyarchive"
+repository    = "https://github.com/darrenldl/blockyarchive"
 
 readme        = "README.md"
 
