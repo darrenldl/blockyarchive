@@ -14,7 +14,12 @@ use clap::*;
 use cli_utils::*;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("calc")
-        .about("Calculate and display detailed information given an encoding configuration")
+        .about("Calculate and display detailed information given an encoding configuration
+
+===== IMPORTANT =====
+Please note that this is the last version of this software to be released under the name rsbx,
+future releases will be published under the name blkar. See project repo for details.
+=====================")
         .arg(Arg::with_name("in_file_size")
              .value_name("INFILE-SIZE")
              .required(true)
