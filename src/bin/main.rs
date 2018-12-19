@@ -5,7 +5,7 @@ extern crate blkar_lib;
 use blkar_lib::*;
 
 fn real_main () -> i32 {
-    let matches = App::new("rsbx")
+    let matches = App::new("blkar")
         .version(env!("CARGO_PKG_VERSION"))
         .author("Darren Ldl <darrenldldev@gmail.com>")
         .about("Archive with forward error correction and sector level recoverability")

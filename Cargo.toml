@@ -34,7 +34,7 @@ categories  = ["command-line-utilities", "encoding"]
 license     = "MIT"
 
 [[bin]]
-name = "rsbx"
+name = "blkar"
 path = "src/bin/main.rs"
 doc  = false
 
