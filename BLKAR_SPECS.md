@@ -4,7 +4,7 @@ The specification is concerned only with actual data operations, UI/UX related m
 
 ## Exit code
 
-rsbx returns
+blkar returns
 
 - 0 if no errors occured
 - 1 if error is detected in user input (i.e. parameters provided)
@@ -12,7 +12,7 @@ rsbx returns
 
 ## Error handling behaviour in general
 
-- rsbx does **not** remove the generated file(s) even in case of failure
+- blkar does **not** remove the generated file(s) even in case of failure
   - This applies to encoding, decoding, repairing, rescuing, and sorting
     - calculating, checking, showing do not generate any files
   - This is mainly for in case the partial data is useful to the user
@@ -60,7 +60,7 @@ Metadata block is valid if
 #### Handling of incorrect metadata fields in metadata block given the block is valid
 
 - To avoid propogation of errors into core logic, incorrect fields either fail to be parsed in the parsing stage, or are filtered out immediately after the parsing stage. That is, invalid metadata fields are never accessible by other modules.
-- This tradeoff means rsbx's error messages regarding metadata fields will be very coarse. For example, if the recorded file name is not a valid UTF-8 string, the core logic code will only see the field as missing, as it is dropped by the `sbx_block` module during parsing, and would not be able to tell whether the field is missing or incorrect, and also would not be able to tell the user why the field was not accessible, etc.
+- This tradeoff means blkar's error messages regarding metadata fields will be very coarse. For example, if the recorded file name is not a valid UTF-8 string, the core logic code will only see the field as missing, as it is dropped by the `sbx_block` module during parsing, and would not be able to tell whether the field is missing or incorrect, and also would not be able to tell the user why the field was not accessible, etc.
 - This overall means trading flexibility and information granularity for better security.
 
 ## Finding reference block
@@ -182,8 +182,8 @@ Data block is valid if and only if
      - OUTDIR = output directory specified
      - UID    = uid of the block in hex (uppercase)
 
-   - the original bytes in the file is used, that is, the output block bytes are not generated from scratch by rsbx
-2. User is expected to attempt to decode the rescued data in OUTDIR using the rsbx decode command
+   - the original bytes in the file is used, that is, the output block bytes are not generated from scratch by blkar
+2. User is expected to attempt to decode the rescued data in OUTDIR using the blkar decode command
 
 ## Show workflow
 
