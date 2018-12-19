@@ -15,7 +15,7 @@ corrupt_count=10
 for ver in ${VERSIONS[*]}; do
   for (( i=0; i < 5; i++ )); do
     echo -n "Encoding in version $ver"
-    output=$(./rsbx encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
+    output=$(./blkar encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
                     --rs-data 10 --rs-parity 2)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
@@ -38,7 +38,7 @@ for ver in ${VERSIONS[*]}; do
     done
 
     echo "Decoding version $ver container"
-    output=$(./rsbx decode --json --verbose dummy$ver.sbx dummy$ver -f)
+    output=$(./blkar decode --json --verbose dummy$ver.sbx dummy$ver -f)
     # if [[ $(echo $output | jq -r ".error") != null ]]; then
     #   echo " ==> Invalid JSON"
     #   exit_code=1
@@ -51,7 +51,7 @@ for ver in ${VERSIONS[*]}; do
     # fi
 
     echo "Decoding version $ver container (stdout output)"
-    output=$(./rsbx decode --json --verbose dummy$ver.sbx - 2>&1 > dummy"$ver"_stdout)
+    output=$(./blkar decode --json --verbose dummy$ver.sbx - 2>&1 > dummy"$ver"_stdout)
     # if [[ $(echo $output | jq -r ".error") != null ]]; then
     #   echo " ==> Invalid JSON"
     #   exit_code=1
