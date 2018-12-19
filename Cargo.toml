@@ -13,7 +13,7 @@ exclude = [
     ".travis.yml"
 ]
 
-description   = "Enhanced implementation of SeqBox in Rust"
+description   = "Archive with forward error correction and sector level recoverability"
 
 documentation = "https://github.com/darrenldl/blockyarchive/wiki"
 homepage      = "https://github.com/darrenldl/blockyarchive"
