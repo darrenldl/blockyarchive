@@ -1,9 +1,9 @@
 # blockyarchive
 
-[![Build Status](https://travis-ci.org/darrenldl/rust-SeqBox.svg?branch=master)](https://travis-ci.org/darrenldl/rust-SeqBox)
-[![Build status](https://ci.appveyor.com/api/projects/status/ho6v99qysi9l8p6d?svg=true)](https://ci.appveyor.com/project/darrenldl/rust-seqbox)
-[![codecov](https://codecov.io/gh/darrenldl/rust-SeqBox/branch/master/graph/badge.svg)](https://codecov.io/gh/darrenldl/rust-SeqBox)
-[![Coverage Status](https://coveralls.io/repos/github/darrenldl/rust-SeqBox/badge.svg?branch=master)](https://coveralls.io/github/darrenldl/rust-SeqBox?branch=master)
+[![Build Status](https://travis-ci.org/darrenldl/blockyarchive.svg?branch=master)](https://travis-ci.org/darrenldl/blockyarchive)
+[![Build status](https://ci.appveyor.com/api/projects/status/i4dxpldp4t312gtv?svg=true)](https://ci.appveyor.com/project/darrenldl/blockyarchive)
+[![codecov](https://codecov.io/gh/darrenldl/blockyarchive/branch/master/graph/badge.svg)](https://codecov.io/gh/darrenldl/blockyarchive)
+[![Coverage Status](https://coveralls.io/repos/github/darrenldl/blockyarchive/badge.svg?branch=master)](https://coveralls.io/github/darrenldl/blockyarchive?branch=master)
 [![Crates](https://img.shields.io/crates/v/rsbx.svg)](https://crates.io/crates/rsbx)
 [![dependency status](https://deps.rs/repo/github/darrenldl/rsbx/status.svg)](https://deps.rs/repo/github/darrenldl/rsbx)
 
@@ -23,7 +23,7 @@ Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for 
 
 ## Comparison to the original SeqBox implementation/design
 
-The original SeqBox implementation and format does not support repairing of data, only sector level recoverability.
+The original SeqBox implementation and format does not support repairing of data, only sector level recoverability. Blkar is also more robust compared to the original SeqBox implementation, as it does not assume the SBX container to be well formed, and makes as few assumptions about the SBX container as possible, if at all.
 
 Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format, and also allows arranging the blocks in a burst error resistant pattern.
 

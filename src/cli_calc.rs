@@ -14,7 +14,12 @@ use clap::*;
 use cli_utils::*;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("calc")
-        .about("Calculate and display detailed information given an encoding configuration")
+        .about("Calculate and display detailed information given an encoding configuration
+
+===== IMPORTANT =====
+Please note that this is the last version of this software to be released under the name rsbx,
+future releases will be published under the name blkar. See project repo for details.
+=====================")
         .arg(Arg::with_name("in_file_size")
              .value_name("INFILE-SIZE")
              .required(true)
@@ -137,14 +142,14 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
 
         let block_size = ver_to_block_size(version);
 
-        print!("Error correction parameters interpretation");
+        println!("Error correction parameters interpretation");
         println!("========================================");
         if burst == 0 {
             print_block!(
                 "    The container can tolerate {} SBX block corruptions", par;
                 "    in any block set.";
                 "";
-                "    A block set consists of {} blocks({} bytes).", (data + par), (data + par) * block_size;
+                "    A block set consists of {} blocks ({} bytes).", (data + par), (data + par) * block_size;
                 "";
                 "    In total, {} blocks({} bytes) may be corrupted in", par, par * block_size;
                 "    any block set.";
@@ -164,15 +169,15 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
             let super_block_set_size = (data + par) * burst;
 
             print_block!("    The container can tolerate {} burst SBX block corruptions in", par;
-                         "    any super block set({} interleaved block sets).", burst;
+                         "    any super block set ({} interleaved block sets).", burst;
                          "";
-                         "    A block set consists of {} blocks({} bytes).", block_set_size, block_set_size * block_size;
+                         "    A block set consists of {} blocks ({} bytes).", block_set_size, block_set_size * block_size;
                          "";
-                         "    A super block set consists of {} blocks({} bytes).", super_block_set_size, super_block_set_size * block_size;
+                         "    A super block set consists of {} blocks ({} bytes).", super_block_set_size, super_block_set_size * block_size;
                          "";
-                         "    Each burst error may be up to {} blocks({} bytes) in size.", burst, burst * block_size;
+                         "    Each burst error may be up to {} blocks ({} bytes) in size.", burst, burst * block_size;
                          "";
-                         "    In total, {} sets of {} consecutive blocks({} bytes) may be", par, burst, burst * block_size;
+                         "    In total, {} sets of {} consecutive blocks ({} bytes) may be", par, burst, burst * block_size;
                          "    corrupted in any super block set.";
                          "";
                          "    The sets of corrupted blocks may be connected as well, so the";

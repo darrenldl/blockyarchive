@@ -39,7 +39,7 @@ path = "src/bin/main.rs"
 doc  = false
 
 [lib]
-name = "rsbx_lib"
+name = "blkar_lib"
 path = "src/lib.rs"
 doc  = false
 
