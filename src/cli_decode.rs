@@ -13,12 +13,7 @@ use std::sync::Arc;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("decode")
-        .about("Decode SBX container
-
-===== IMPORTANT =====
-Please note that this is the last version of this software to be released under the name rsbx,
-future releases will be published under the name blkar. See project repo for details.
-=====================")
+        .about("Decode SBX container")
         .arg(in_file_arg()
              .help("SBX container to decode"))
         .arg(out_arg()
@@ -52,23 +47,24 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
                 print_block!(output_channel =>
                              "Warning :";
                              "";
-                             "    Since output is stdout, rsbx can only output data chunks in the";
+                             "    Since output is stdout, blkar can only output data chunks in the";
                              "    anticipated encoding order.";
                              "";
-                             "        For versions with no RS enabled (version 1, 2, 3), this means rsbx";
-                             "        outputs data chunks in the same order as the blocks are stored.";
+                             "        For versions with no RS enabled (version 1, 2, 3), this means blkar";
+                             "        reads in the sequential pattern with optional metadata block and";
+                             "        outputs the data chunks.";
                              "";
-                             "        For versions with RS enabled (version 17, 18, 19), this means rsbx";
+                             "        For versions with RS enabled (version 17, 18, 19), this means blkar";
                              "        first guesses the burst resistance level, then reads using the block";
                              "        set interleaving pattern and outputs the data chunks.";
                              "";
-                             "    rsbx also tries to strip the data padding at the end of the container";
+                             "    blkar also tries to strip the data padding at the end of the container";
                              "    at a best effort basis, but does not provide any guarantees.";
                              "";
-                             "    If the ordering matches the anticipated ordering, output of rsbx to";
+                             "    If the ordering matches the anticipated ordering, output of blkar to";
                              "    stdout should match the one produced in output to file mode. If the";
                              "    ordering is not as anticipated, you may fix it by sorting the SBX";
-                             "    container using the rsbx sort command first.";
+                             "    container using the blkar sort command first.";
                              "";
                 );
             }

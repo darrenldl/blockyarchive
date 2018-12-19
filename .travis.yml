@@ -10,7 +10,7 @@ branches:
 env:
   global:
   - RUSTFLAGS="-C link-dead-code"
-  - CRATE_NAME=rsbx
+  - CRATE_NAME=blkar
 
 matrix:
   include:

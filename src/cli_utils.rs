@@ -159,8 +159,8 @@ This operation does not respect the misalignment and range requirements.")
 pub fn json_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("json")
         .long("json")
-        .help("Output information in JSON format. Note that rsbx does not
-guarantee the JSON data to be well-formed if rsbx is interrupted.
+        .help("Output information in JSON format. Note that blkar does not
+guarantee the JSON data to be well-formed if blkar is interrupted.
 This also changes the progress report text (if any) to be in JSON.")
 }
 

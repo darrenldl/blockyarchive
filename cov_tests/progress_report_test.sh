@@ -2,8 +2,8 @@
 
 truncate -s 50m dummy
 
-./rsbx encode dummy --nometa -f
+./blkar encode dummy --nometa -f
 
-# ./rsbx encode dummy -f
+# ./blkar encode dummy -f
 
-./rsbx decode dummy.sbx dummy -f
+./blkar decode dummy.sbx dummy -f

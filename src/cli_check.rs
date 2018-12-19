@@ -8,12 +8,7 @@ use json_printer::BracketType;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("check")
-        .about("Check integrity of SBX blocks in container
-
-===== IMPORTANT =====
-Please note that this is the last version of this software to be released under the name rsbx,
-future releases will be published under the name blkar. See project repo for details.
-=====================")
+        .about("Check integrity of SBX blocks in container")
         .arg(in_file_arg()
              .help("SBX container to check"))
         .arg(no_meta_arg())
@@ -21,7 +16,7 @@ future releases will be published under the name blkar. See project repo for det
         .arg(Arg::with_name("report_blank")
              .long("report-blank")
              .help("Completely blank blocks are ignored by default.
-Specify this if you want rsbx to report blank blocks as well."))
+Specify this if you want blkar to report blank blocks as well."))
         .arg(verbose_arg()
              .help("Show reference block info, show individual check results"))
         .arg(json_arg())

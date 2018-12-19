@@ -1,6 +1,6 @@
 [package]
-name    = "rsbx"
-version = "2.0.0"
+name    = "blkar"
+version = "2.0.1"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 build   = "build.rs"
 exclude = [
@@ -15,9 +15,9 @@ exclude = [
 
 description   = "Enhanced implementation of SeqBox in Rust"
 
-documentation = "https://darrenldl.gitbooks.io/rsbx-manual/content/"
-homepage      = "https://github.com/darrenldl/rust-SeqBox"
-repository    = "https://github.com/darrenldl/rust-SeqBox"
+documentation = "https://github.com/darrenldl/blockyarchive/wiki"
+homepage      = "https://github.com/darrenldl/blockyarchive"
+repository    = "https://github.com/darrenldl/blockyarchive"
 
 readme        = "README.md"
 
@@ -34,7 +34,7 @@ categories  = ["command-line-utilities", "encoding"]
 license     = "MIT"
 
 [[bin]]
-name = "rsbx"
+name = "blkar"
 path = "src/bin/main.rs"
 doc  = false
 

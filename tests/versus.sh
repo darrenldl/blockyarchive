@@ -8,11 +8,11 @@ rm dummy_official.sbx &>/dev/null
 
 python3 SeqBox/sbxenc.py -uid $uid dummy dummy_official.sbx -o &>/dev/null
 
-rm dummy_rsbx.sbx &>/dev/null
+rm dummy_blkar.sbx &>/dev/null
 
-./rsbx encode dummy dummy_rsbx.sbx -f --uid $uid &>/dev/null
+./blkar encode dummy dummy_blkar.sbx -f --uid $uid &>/dev/null
 
-cmp -i 512 dummy_official.sbx dummy_rsbx.sbx
+cmp -i 512 dummy_official.sbx dummy_blkar.sbx
 if [[ $? == 0 ]]; then
   echo "==> Okay"
 else

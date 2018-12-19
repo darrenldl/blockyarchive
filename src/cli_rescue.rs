@@ -13,12 +13,7 @@ use cli_utils::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("rescue")
-        .about("Rescue SBX blocks from file/block device, essentially ddrescue but for SBX blocks
-
-===== IMPORTANT =====
-Please note that this is the last version of this software to be released under the name rsbx,
-future releases will be published under the name blkar. See project repo for details.
-=====================")
+        .about("Rescue SBX blocks from file/block device, essentially ddrescue but for SBX blocks")
         .arg(in_file_arg()
              .help("File/block device to rescue sbx data from"))
         .arg(out_dir_arg()

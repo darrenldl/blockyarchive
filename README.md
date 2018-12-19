@@ -4,16 +4,10 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/i4dxpldp4t312gtv?svg=true)](https://ci.appveyor.com/project/darrenldl/blockyarchive)
 [![codecov](https://codecov.io/gh/darrenldl/blockyarchive/branch/master/graph/badge.svg)](https://codecov.io/gh/darrenldl/blockyarchive)
 [![Coverage Status](https://coveralls.io/repos/github/darrenldl/blockyarchive/badge.svg?branch=master)](https://coveralls.io/github/darrenldl/blockyarchive?branch=master)
-[![Crates](https://img.shields.io/crates/v/rsbx.svg)](https://crates.io/crates/rsbx)
-[![dependency status](https://deps.rs/repo/github/darrenldl/rsbx/status.svg)](https://deps.rs/repo/github/darrenldl/rsbx)
+[![Crates](https://img.shields.io/crates/v/blkar.svg)](https://crates.io/crates/blkar)
+[![dependency status](https://deps.rs/repo/github/darrenldl/blkar/status.svg)](https://deps.rs/repo/github/darrenldl/blkar)
 
-[Documentation](https://github.com/darrenldl/rust-SeqBox/wiki)
-
-## Notes to existing rust-SeqBox users
-
-`rsbx 2.0.0` is the last version to be updated for the crate `rsbx`, all future versions will be published under the crate `blkar`.
-
----
+[Documentation](https://github.com/darrenldl/blockyarchive/wiki)
 
 Blockyarchive/blkar (formerly rust-SeqBox) is a comprehensive utility for creating, rescuing, and general handling of SeqBox archives, with optional forward error correction.
 
@@ -23,9 +17,11 @@ Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for 
 
 ## Comparison to the original SeqBox implementation/design
 
-The original SeqBox implementation and format does not support repairing of data, only sector level recoverability. Blkar is also more robust compared to the original SeqBox implementation, as it does not assume the SBX container to be well formed, and makes as few assumptions about the SBX container as possible, if at all.
+The original SeqBox implementation and format do not support repairing of data, only sector level recoverability.
 
 Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format, and also allows arranging the blocks in a burst error resistant pattern.
+
+Blockyarchive is also more robust compared to the original SeqBox implementation, as it does not assume the SBX container to be well formed, and makes as few assumptions about the SBX container as possible, if at all.
 
 blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), but much more optimized.
 
@@ -46,7 +42,7 @@ As blkar is to be used largely as a backup utility, security/robustness of the c
 
 #### Installation
 
-`blkar` is available via [GitHub releases](https://github.com/darrenldl/rust-SeqBox/releases) or via `cargo`
+`blkar` is available via [GitHub releases](https://github.com/darrenldl/blockyarchive/releases) or via `cargo`
 
 ```
 cargo install blkar
@@ -54,7 +50,7 @@ cargo install blkar
 
 #### Usage guides & screencasts & other resources
 
-The [wiki](https://github.com/darrenldl/rust-SeqBox/wiki) contains comprehensive guides and resources.
+The [wiki](https://github.com/darrenldl/blockyarchive/wiki) contains comprehensive guides and resources.
 
 ## Changelog
 
@@ -74,7 +70,7 @@ Contributions are welcome. Note that by submitting contributions, you agree to l
 
 I would like to thank [Marco](https://github.com/MarcoPon) (the official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx. I would also like to thank him for his feedback on the numbering of the error correction enabled SBX versions (versions 17, 18, 19).
 
-I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of the osbx project, of which most of the designs are carried over to rsbx, and also his further feedback on this project as well.
+I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of the osbx project, of which most of the designs are carried over to blkar, and also his further feedback on this project as well.
 
 The design of the readable rate in progress report text is copied from [Arch Linux pacman](https://wiki.archlinux.org/index.php/Pacman)'s progress bar design.
 

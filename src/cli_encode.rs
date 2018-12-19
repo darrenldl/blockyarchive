@@ -23,12 +23,7 @@ use cli_utils::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("encode")
-        .about("Encode file
-
-===== IMPORTANT =====
-Please note that this is the last version of this software to be released under the name rsbx,
-future releases will be published under the name blkar. See project repo for details.
-=====================")
+        .about("Encode file")
         .arg(in_file_arg()
              .help("File to encode. Supply - to use STDIN as input."))
         .arg(out_arg()
@@ -63,9 +58,9 @@ Uid must be exactly 6 bytes (12 hex digits) in length."))
         .arg(rs_data_arg())
         .arg(rs_parity_arg())
         .arg(burst_arg()
-            .help("Burst error resistance level. Note that rsbx only guesses up to
+            .help("Burst error resistance level. Note that blkar only guesses up to
 1000 in repair, show, and sort mode. If you use level above 1000,
-then rsbx will make an incorrect guess, and you will need to
+then blkar will make an incorrect guess, and you will need to
 specify it explicitly in repair and sort mode. Show mode does
 not rely on burst level, but provides an option for enabling
 automatic guessing."))
