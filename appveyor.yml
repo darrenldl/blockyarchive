@@ -2,7 +2,7 @@ environment:
   global:
     RUST_VERSION: stable
 
-    CRATE_NAME: rsbx
+    CRATE_NAME: blkar
 
     APPVEYOR_CACHE_ENTRY_ZIP_ARGS: -t7z -m0=lzma -mx=9
 
@@ -48,7 +48,7 @@ test_script:
     )
 
 before_deploy:
-  - cargo rustc --target %TARGET% --release --bin rsbx -- -C lto
+  - cargo rustc --target %TARGET% --release --bin blkar -- -C lto
   - ps: ci\before_deploy.ps1
 
 deploy:
