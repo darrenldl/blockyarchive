@@ -5,7 +5,7 @@
 [![codecov](https://codecov.io/gh/darrenldl/blockyarchive/branch/master/graph/badge.svg)](https://codecov.io/gh/darrenldl/blockyarchive)
 [![Coverage Status](https://coveralls.io/repos/github/darrenldl/blockyarchive/badge.svg?branch=master)](https://coveralls.io/github/darrenldl/blockyarchive?branch=master)
 [![Crates](https://img.shields.io/crates/v/blkar.svg)](https://crates.io/crates/blkar)
-[![dependency status](https://deps.rs/repo/github/darrenldl/blkar/status.svg)](https://deps.rs/repo/github/darrenldl/blkar)
+[![dependency status](https://deps.rs/repo/github/darrenldl/blockyarchive/status.svg)](https://deps.rs/repo/github/darrenldl/blockyarchive)
 
 [Documentation](https://github.com/darrenldl/blockyarchive/wiki)
 
