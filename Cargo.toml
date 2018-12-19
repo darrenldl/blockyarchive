@@ -15,7 +15,7 @@ exclude = [
 
 description   = "Enhanced implementation of SeqBox in Rust"
 
-documentation = "https://darrenldl.gitbooks.io/rsbx-manual/content/"
+documentation = "https://github.com/darrenldl/rust-SeqBox/wiki"
 homepage      = "https://github.com/darrenldl/rust-SeqBox"
 repository    = "https://github.com/darrenldl/rust-SeqBox"
 
