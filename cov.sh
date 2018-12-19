@@ -23,12 +23,12 @@ if [[ $? != 0 ]]; then
   exit 1
 fi
 
-files=(target/debug/rsbx)
+files=(target/debug/blkar)
 
-#for file in target/debug/rsbx-*[^\.d]; do
+#for file in target/debug/blkar-*[^\.d]; do
 # for file in ${files[@]}; do
-for file in target/debug/rsbx-*; do if [[ $file == *.d ]]; then continue; fi
+for file in target/debug/blkar-*; do if [[ $file == *.d ]]; then continue; fi
   # mkdir -p "target/cov/$(basename $file)"
-  mkdir -p "target/cov/rsbx"
-  kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/rsbx" "$file"
+  mkdir -p "target/cov/blkar"
+  kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/blkar" "$file"
 done

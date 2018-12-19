@@ -6,27 +6,27 @@ fi
 
 export PATH=$HOME/kcov/bin:$PATH
 
-for file in target/debug/rsbx-*; do
+for file in target/debug/blkar-*; do
     if [[ $file == *.d ]]; then
         continue
     fi
 
-    kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/rsbx" "$file"
+    kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/blkar" "$file"
 done
 
 wget https://codecov.io/bash -O codecov_uploader
 chmod u+x codecov_uploader
 
-./codecov_uploader -s "target/cov/rsbx"
+./codecov_uploader -s "target/cov/blkar"
 
 echo "Uploaded code coverage to Codecov"
 
-for file in target/debug/rsbx-*; do
+for file in target/debug/blkar-*; do
     if [[ $file == *.d ]]; then
         continue
     fi
 
-    kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/rsbx" "$file"
+    kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/blkar" "$file"
 done
 
 echo "Uploaded code coverage to Coveralls"
