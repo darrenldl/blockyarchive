@@ -17,9 +17,9 @@ main() {
 
     test -f Cargo.lock || cargo generate-lockfile
 
-    cross rustc --bin rsbx --target $TARGET --release -- -C lto
+    cross rustc --bin blkar --target $TARGET --release -- -C lto
 
-    cp target/$TARGET/release/rsbx $stage/
+    cp target/$TARGET/release/blkar $stage/
 
     cd $stage
     tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz *
