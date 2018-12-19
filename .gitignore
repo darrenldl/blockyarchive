@@ -9,4 +9,6 @@
 /reed-solomon-erasure/target/
 /crc-ccitt/target/
 /tests/rsbx
+/tests/blkar
 /cov_tests/rsbx
+/cov_tests/blkar
