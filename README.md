@@ -4,8 +4,8 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/i4dxpldp4t312gtv?svg=true)](https://ci.appveyor.com/project/darrenldl/blockyarchive)
 [![codecov](https://codecov.io/gh/darrenldl/blockyarchive/branch/master/graph/badge.svg)](https://codecov.io/gh/darrenldl/blockyarchive)
 [![Coverage Status](https://coveralls.io/repos/github/darrenldl/blockyarchive/badge.svg?branch=master)](https://coveralls.io/github/darrenldl/blockyarchive?branch=master)
-[![Crates](https://img.shields.io/crates/v/rsbx.svg)](https://crates.io/crates/rsbx)
-[![dependency status](https://deps.rs/repo/github/darrenldl/rsbx/status.svg)](https://deps.rs/repo/github/darrenldl/rsbx)
+[![Crates](https://img.shields.io/crates/v/blkar.svg)](https://crates.io/crates/blkar)
+[![dependency status](https://deps.rs/repo/github/darrenldl/blkar/status.svg)](https://deps.rs/repo/github/darrenldl/blkar)
 
 [Documentation](https://github.com/darrenldl/rust-SeqBox/wiki)
 
@@ -74,7 +74,7 @@ Contributions are welcome. Note that by submitting contributions, you agree to l
 
 I would like to thank [Marco](https://github.com/MarcoPon) (the official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx. I would also like to thank him for his feedback on the numbering of the error correction enabled SBX versions (versions 17, 18, 19).
 
-I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of the osbx project, of which most of the designs are carried over to rsbx, and also his further feedback on this project as well.
+I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of the osbx project, of which most of the designs are carried over to blkar, and also his further feedback on this project as well.
 
 The design of the readable rate in progress report text is copied from [Arch Linux pacman](https://wiki.archlinux.org/index.php/Pacman)'s progress bar design.
 
