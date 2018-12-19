@@ -12,12 +12,7 @@ use json_printer::BracketType;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("sort")
-        .about("Sort SBX blocks in container, can also readjust burst error resistance level
-
-===== IMPORTANT =====
-Please note that this is the last version of this software to be released under the name rsbx,
-future releases will be published under the name blkar. See project repo for details.
-=====================")
+        .about("Sort SBX blocks in container, can also readjust burst error resistance level")
         .arg(in_file_arg()
              .help("SBX container to sort"))
         .arg(out_file_arg()
