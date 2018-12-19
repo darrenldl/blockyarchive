@@ -58,9 +58,9 @@ Uid must be exactly 6 bytes (12 hex digits) in length."))
         .arg(rs_data_arg())
         .arg(rs_parity_arg())
         .arg(burst_arg()
-            .help("Burst error resistance level. Note that rsbx only guesses up to
+            .help("Burst error resistance level. Note that blkar only guesses up to
 1000 in repair, show, and sort mode. If you use level above 1000,
-then rsbx will make an incorrect guess, and you will need to
+then blkar will make an incorrect guess, and you will need to
 specify it explicitly in repair and sort mode. Show mode does
 not rely on burst level, but provides an option for enabling
 automatic guessing."))

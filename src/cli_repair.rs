@@ -16,7 +16,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(burst_arg()
              .help("Burst error resistance level used by the container.
 Use this if the level used by the container is above 1000,
-as rsbx will only guess up to 1000. Or use this when rsbx
+as blkar will only guess up to 1000. Or use this when blkar
 fails to guess correctly."))
         .arg(verbose_arg()
              .help("Show reference block info, successes and failures of all required repairs"))
@@ -28,8 +28,8 @@ fails to guess correctly."))
              .long("dry-run")
              .help("Only do repairs in memory. The container will not be modified."))
         .arg(json_arg()
-             .help("Output information in JSON format. Note that rsbx does not
-guarantee the JSON data to be well-formed if rsbx is interrupted.
+             .help("Output information in JSON format. Note that blkar does not
+guarantee the JSON data to be well-formed if blkar is interrupted.
 This also implies --skip-warning, and changes progress report text
 (if any) to be in JSON."))
 }

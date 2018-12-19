@@ -16,7 +16,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(Arg::with_name("report_blank")
              .long("report-blank")
              .help("Completely blank blocks are ignored by default.
-Specify this if you want rsbx to report blank blocks as well."))
+Specify this if you want blkar to report blank blocks as well."))
         .arg(verbose_arg()
              .help("Show reference block info, show individual check results"))
         .arg(json_arg())
