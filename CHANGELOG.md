@@ -1,14 +1,29 @@
+## 2.0.1
+
+- First release under name `blkar`
+
+- Warning message fix for stdout output in decode mode
+
 ## 2.0.0
 
 - Dependencies upate
+
   - Updated `rand` from `0.4` to `0.5.4`
+
 - Switched from `ring` to `sha-1` and `sha2` crates
+
   - See issue [#86](https://github.com/darrenldl/rust-SeqBox/issues/86)
+
 - Doc fix
+
   - Added space before parantheses in code comments, documentation and help messages
+
 - Added stdin input option for encode mode
+
 - Added stdout output option for decode mode
+
 - Fixed data padding bytes calculation in encode mode
+
 - Renamed project from `rust-SeqBox/rsbx` to `blockyarchive/blkar`
 
 ## 1.1.2
