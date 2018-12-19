@@ -203,9 +203,9 @@ Metadata and the parity blocks (blocks 0 - 3) are mandatory
 
 This block set interleaving is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html).
 
-The major difference between the two schemes is that RockFAT's one is byte based interleaving, rsbx's one is SBX block based interleaving.
+The major difference between the two schemes is that RockFAT's one is byte based interleaving, blkar's one is SBX block based interleaving.
 
-The other difference is that rsbx allows customizing level of resistance against burst sector errors.
+The other difference is that blkar allows customizing level of resistance against burst sector errors.
 
 A burst error is defined as consecutive SBX block erasures.
 
@@ -254,4 +254,4 @@ Let **K > 1 + N** :
 
 #### Limitations
 
-While an arbitrary number can be used for burst error resistance level during encoding, rsbx will only guess up to 1000 when automatically guessing the burst error resistance level.
+While an arbitrary number can be used for burst error resistance level during encoding, blkar will only guess up to 1000 when automatically guessing the burst error resistance level.
