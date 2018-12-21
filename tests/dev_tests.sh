@@ -76,6 +76,34 @@ if [[ $? != 0 ]]; then
   test_failed_names=$test_failed_names"- compare_decode_file_and_stdout_corrupted_container.sh\n"
 fi
 
+# decode manual burst tests
+echo "========================================"
+echo "Starting decode manual burst tests"
+echo "========================================"
+./decode_manual_burst.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- decode_manual_burst.sh\n"
+fi
+
+echo "========================================"
+echo "Starting decode manual burst tests (stdin as encode input)"
+echo "========================================"
+./decode_manual_burst_encode_stdin.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- decode_manual_burst_encode_stdin.sh\n"
+fi
+
+echo "========================================"
+echo "Starting decode manual burst tests (stdout as decode output)"
+echo "========================================"
+./decode_manual_burst_decode_stdout.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- decode_manual_burst_decode_stdout.sh\n"
+fi
+
 # nometa tests
 echo "========================================"
 echo "Starting nometa tests"
