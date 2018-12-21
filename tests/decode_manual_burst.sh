@@ -2,83 +2,78 @@
 
 exit_code=0
 
-VERSIONS=(1 2 3 17 18 19)
+VERSIONS=(17 18 19)
 
-# Encode in all 6 versions
+# Encode in all 3 RS enabled versions
 for ver in ${VERSIONS[*]}; do
-  echo -n "Encoding in version $ver"
-  output=$(./blkar encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
-                  --rs-data 10 --rs-parity 2)
-  if [[ $(echo $output | jq -r ".error") != null ]]; then
+  for (( i=0; i < 3; i++ )); do
+    burst=$((1001 + RANDOM % 500))
+    echo -n "Encoding in version $ver"
+    output=$(./blkar encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
+                     --rs-data 10 --rs-parity 2 --burst $burst)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
-  fi
-  if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+    fi
+    if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
       echo " ==> Okay"
-  else
+    else
       echo " ==> NOT okay"
       exit_code=1
-  fi
-done
+    fi
 
-# Check all of them
-for ver in ${VERSIONS[*]}; do
+    # Check all of them
     echo -n "Checking version $ver container"
     output=$(./blkar check --json --pv 2 --verbose dummy$ver.sbx 2>/dev/null)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
-        echo " ==> Invalid JSON"
-        exit_code=1
+      echo " ==> Invalid JSON"
+      exit_code=1
     fi
     if [[ $(echo $output | jq -r ".stats.numberOfBlocksFailedCheck") == 0 ]]; then
-        echo " ==> Okay"
+      echo " ==> Okay"
     else
-        echo " ==> NOT okay"
-        exit_code=1
+      echo " ==> NOT okay"
+      exit_code=1
     fi
-done
 
-# Show all
-for ver in ${VERSIONS[*]}; do
+    # Show
     echo -n "Checking show output for $ver container"
     output=$(./blkar show --json --pv 1 dummy$ver.sbx 2>/dev/null)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
-        echo " ==> Invalid JSON"
-        exit_code=1
-    fi
-    if [[ $(echo $output | jq -r ".blocks[0].sbxContainerVersion") == $ver ]]; then
-        echo " ==> Okay"
-    else
-        echo " ==> NOT okay"
-        exit_code=1
-    fi
-done
-
-# Decode all of them
-for ver in ${VERSIONS[*]}; do
-  echo -n "Decoding version $ver container"
-  output=$(./blkar decode --json --verbose -f dummy$ver.sbx dummy$ver)
-  if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
-  fi
-  if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+    fi
+    if [[ $(echo $output | jq -r ".blocks[0].sbxContainerVersion") == $ver ]]; then
       echo " ==> Okay"
-  else
+    else
       echo " ==> NOT okay"
       exit_code=1
-  fi
-done
+    fi
 
-# Compare to original file
-for ver in ${VERSIONS[*]}; do
-  echo -n "Comparing decoded version $ver container data to original"
-  cmp dummy dummy$ver
-  if [[ $? == 0 ]]; then
-    echo " ==> Okay"
-  else
-    echo " ==> NOT okay"
-    exit_code=1
-  fi
+    # Decode
+    echo -n "Decoding version $ver container"
+    output=$(./blkar decode --json --verbose --burst $burst -f dummy$ver.sbx dummy$ver)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo " ==> Invalid JSON"
+      exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+
+    # Compare to original file
+    echo -n "Comparing decoded version $ver container data to original"
+    cmp dummy dummy$ver
+    if [[ $? == 0 ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+  done
 done
 
 exit $exit_code
