@@ -64,6 +64,12 @@ for ver in ${VERSIONS[*]}; do
       echo " ==> NOT okay"
       exit_code=1
     fi
+    if [[ $(echo $output | jq -r ".stats.recordedHash") == $(echo $output | jq -r ".stats.hashOfOutputFile") ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
 
     # Compare to original file
     echo -n "Comparing decoded version $ver container data to original"
