@@ -219,7 +219,8 @@ pub struct Param {
     in_file            : String,
     out_file           : Option<String>,
     verbose            : bool,
-    pr_verbosity_level : PRVerbosityLevel
+    pr_verbosity_level : PRVerbosityLevel,
+    burst              : Option<usize>,
 }
 
 impl Param {
@@ -229,7 +230,8 @@ impl Param {
                in_file            : &str,
                out_file           : Option<&str>,
                verbose            : bool,
-               pr_verbosity_level : PRVerbosityLevel) -> Param {
+               pr_verbosity_level : PRVerbosityLevel,
+               burst              : Option<usize>) -> Param {
         Param {
             ref_block_choice,
             force_write,
@@ -241,6 +243,7 @@ impl Param {
             },
             verbose,
             pr_verbosity_level,
+            burst,
         }
     }
 }
@@ -469,24 +472,28 @@ pub fn decode(param           : &Param,
         };
 
     let data_par_burst =
-        if ver_uses_rs(ref_block.get_version()) && ref_block.is_meta() {
-            match (ref_block.get_RSD(), ref_block.get_RSP()) {
-                (Ok(Some(data)), Ok(Some(parity))) => {
-                    let data   = data   as usize;
-                    let parity = parity as usize;
+        match param.burst {
+            Some(b) => b,
+            None    =>
+                if ver_uses_rs(ref_block.get_version()) && ref_block.is_meta() {
+                    match (ref_block.get_RSD(), ref_block.get_RSP()) {
+                        (Ok(Some(data)), Ok(Some(parity))) => {
+                            let data   = data   as usize;
+                            let parity = parity as usize;
 
-                    // try to obtain burst error resistance level
-                    match block_utils::guess_burst_err_resistance_level(&param.in_file,
-                                                                        ref_block_pos,
-                                                                        &ref_block) {
-                        Ok(Some(l)) => Some((data, parity, l)),
-                        _           => Some((data, parity, 0)), // assume burst resistance level is 0
+                            // try to obtain burst error resistance level
+                            match block_utils::guess_burst_err_resistance_level(&param.in_file,
+                                                                                ref_block_pos,
+                                                                                &ref_block) {
+                                Ok(Some(l)) => Some((data, parity, l)),
+                                _           => Some((data, parity, 0)), // assume burst resistance level is 0
+                            }
+                        },
+                        _                                  => None,
                     }
-                },
-                _                                  => None,
-            }
-        } else {
-            None
+                } else {
+                    None
+                }
         };
 
     let data_size                    = ver_to_data_size(ref_block.get_version());
