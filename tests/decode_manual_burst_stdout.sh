@@ -37,7 +37,7 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     echo -n "Comparing decoded version $ver container data to original"
-    cmp dummy dummy$ver
+    cmp dummy dummy$ver >/dev/null
     if [[ $? != 0 ]]; then
       echo " ==> Okay"
     else
