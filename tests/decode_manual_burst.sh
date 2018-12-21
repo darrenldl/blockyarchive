@@ -8,6 +8,7 @@ VERSIONS=(17 18 19)
 for ver in ${VERSIONS[*]}; do
   for (( i=0; i < 3; i++ )); do
     burst=$((1001 + RANDOM % 500))
+
     echo -n "Encoding in version $ver, burst error resistance level $burst"
     output=$(./blkar encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
                      --rs-data 10 --rs-parity 2 --burst $burst)

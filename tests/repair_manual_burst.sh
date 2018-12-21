@@ -15,6 +15,8 @@ dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null
 
 for ver in ${VERSIONS[*]}; do
   for (( i=0; i < 3; i++ )); do
+    burst=$((1001 + RANDOM % 500))
+
     if   [[ $ver == 17 ]]; then
       data_shards=$((1 + RANDOM % 128))
       parity_shards=$((1 + RANDOM % 128))
@@ -28,10 +30,11 @@ for ver in ${VERSIONS[*]}; do
 
     container_name=corrupt_$data_shards\_$parity_shards\_$ver.sbx
 
-    echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
+    echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards, burst = $burst"
     output=$(./blkar encode --json --sbx-version $ver -f dummy $container_name \
                      --hash sha1 \
-                     --rs-data $data_shards --rs-parity $parity_shards)
+                     --rs-data $data_shards --rs-parity $parity_shards \
+                     --burst $burst)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
