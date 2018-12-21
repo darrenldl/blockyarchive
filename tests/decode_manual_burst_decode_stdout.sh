@@ -30,12 +30,12 @@ for ver in ${VERSIONS[*]}; do
       exit_code=1
     fi
     if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
-      echo " ==> Okay"
+      echo -n " ==> Okay"
     else
-      echo " ==> NOT okay"
+      echo -n " ==> NOT okay"
       exit_code=1
     fi
-    if [[ $(echo $output | jq -r ".stats.recordedHash") == $(echo $output | jq -r ".stats.hashOfOutputFile") ]]; then
+    if [[ $(echo $output | jq -r ".stats.recordedHash") != $(echo $output | jq -r ".stats.hashOfOutputFile") ]]; then
       echo " ==> Okay"
     else
       echo " ==> NOT okay"
