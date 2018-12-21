@@ -22,34 +22,6 @@ for ver in ${VERSIONS[*]}; do
       exit_code=1
     fi
 
-    # Check all of them
-    echo -n "Checking version $ver container"
-    output=$(./blkar check --json --pv 2 --verbose dummy$ver.sbx 2>/dev/null)
-    if [[ $(echo $output | jq -r ".error") != null ]]; then
-      echo " ==> Invalid JSON"
-      exit_code=1
-    fi
-    if [[ $(echo $output | jq -r ".stats.numberOfBlocksFailedCheck") == 0 ]]; then
-      echo " ==> Okay"
-    else
-      echo " ==> NOT okay"
-      exit_code=1
-    fi
-
-    # Show
-    echo -n "Checking show output for $ver container"
-    output=$(./blkar show --json --pv 1 dummy$ver.sbx 2>/dev/null)
-    if [[ $(echo $output | jq -r ".error") != null ]]; then
-      echo " ==> Invalid JSON"
-      exit_code=1
-    fi
-    if [[ $(echo $output | jq -r ".blocks[0].sbxContainerVersion") == $ver ]]; then
-      echo " ==> Okay"
-    else
-      echo " ==> NOT okay"
-      exit_code=1
-    fi
-
     # Decode
     echo -n "Decoding version $ver container"
     output=$(./blkar decode --json --verbose -f dummy$ver.sbx dummy$ver)
