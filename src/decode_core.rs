@@ -472,28 +472,28 @@ pub fn decode(param           : &Param,
         };
 
     let data_par_burst =
-        match param.burst {
-            Some(b) => b,
-            None    =>
-                if ver_uses_rs(ref_block.get_version()) && ref_block.is_meta() {
-                    match (ref_block.get_RSD(), ref_block.get_RSP()) {
-                        (Ok(Some(data)), Ok(Some(parity))) => {
-                            let data   = data   as usize;
-                            let parity = parity as usize;
+        if ver_uses_rs(ref_block.get_version()) && ref_block.is_meta() {
+            match (ref_block.get_RSD(), ref_block.get_RSP()) {
+                (Ok(Some(data)), Ok(Some(parity))) => {
+                    let data   = data   as usize;
+                    let parity = parity as usize;
 
-                            // try to obtain burst error resistance level
+                    // try to obtain burst error resistance level
+                    match param.burst {
+                        Some(l) => Some((data, parity, l)),
+                        None    =>
                             match block_utils::guess_burst_err_resistance_level(&param.in_file,
                                                                                 ref_block_pos,
                                                                                 &ref_block) {
                                 Ok(Some(l)) => Some((data, parity, l)),
                                 _           => Some((data, parity, 0)), // assume burst resistance level is 0
                             }
-                        },
-                        _                                  => None,
                     }
-                } else {
-                    None
-                }
+                },
+                _                                  => None,
+            }
+        } else {
+            None
         };
 
     let data_size                    = ver_to_data_size(ref_block.get_version());
@@ -966,7 +966,8 @@ pub fn decode_file(param : &Param)
                            &param.in_file,
                            out_file_path,
                            param.verbose,
-                           param.pr_verbosity_level);
+                           param.pr_verbosity_level,
+                           param.burst);
 
     let (mut stats, hash_res) = decode(&param,
                                        ref_block_pos,

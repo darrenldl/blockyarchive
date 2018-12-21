@@ -250,6 +250,8 @@ macro_rules! get_burst_opt {
     (
         $matches:expr, $json_enabled:expr
     ) => {{
+        use std::str::FromStr;
+
         match $matches.value_of("burst") {
             None    => None,
             Some(x) => {

@@ -1,6 +1,5 @@
 use repair_core::Param;
 use repair_core;
-use std::str::FromStr;
 
 use clap::*;
 use cli_utils::*;
