@@ -22,7 +22,7 @@ for ver in ${VERSIONS[*]}; do
       exit_code=1
     fi
 
-    # Decode
+    # Decode without --burst flag
     echo -n "Decoding version $ver container without --burst"
     output=$(./blkar decode --json --verbose -f dummy$ver.sbx - 2>&1 > dummy$ver)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
@@ -30,6 +30,12 @@ for ver in ${VERSIONS[*]}; do
       exit_code=1
     fi
     if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.recordedHash") == $(echo $output | jq -r ".stats.hashOfOutputFile") ]]; then
       echo " ==> Okay"
     else
       echo " ==> NOT okay"
@@ -45,6 +51,7 @@ for ver in ${VERSIONS[*]}; do
       exit_code=1
     fi
 
+    # Decode with --burst flag
     echo -n "Decoding version $ver container with --burst"
     output=$(./blkar decode --json --verbose --burst $burst -f dummy$ver.sbx - 2>&1 > dummy$ver)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
@@ -52,9 +59,9 @@ for ver in ${VERSIONS[*]}; do
       exit_code=1
     fi
     if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
-      echo " ==> Okay"
+      echo -n " ==> Okay"
     else
-      echo " ==> NOT okay"
+      echo -n " ==> NOT okay"
       exit_code=1
     fi
     if [[ $(echo $output | jq -r ".stats.recordedHash") == $(echo $output | jq -r ".stats.hashOfOutputFile") ]]; then
