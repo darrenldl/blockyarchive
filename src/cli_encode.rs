@@ -25,10 +25,10 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("encode")
         .about("Encode file")
         .arg(in_file_arg()
-             .help("File to encode. Supply - to use STDIN as input."))
+             .help("File to encode. Supply - to use STDIN as input. Use ./- for file named -."))
         .arg(out_arg()
-             .help("SBX container name (defaults to INFILE.sbx). If OUT is a
-directory, then the container is stored as OUT/INFILE.sbx."))
+             .help("SBX container name (defaults to INFILE.sbx). If OUT is a directory, then the
+container is stored as OUT/INFILE.sbx."))
         .arg(Arg::with_name("force")
              .short("f")
              .long("force")
