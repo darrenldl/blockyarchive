@@ -104,6 +104,34 @@ if [[ $? != 0 ]]; then
   test_failed_names=$test_failed_names"- decode_manual_burst_decode_stdout.sh\n"
 fi
 
+# repair manual burst tests
+echo "========================================"
+echo "Starting repair manual burst tests"
+echo "========================================"
+./repair_manual_burst.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- repair_manual_burst.sh\n"
+fi
+
+echo "========================================"
+echo "Starting repair manual burst tests (stdin as encode input)"
+echo "========================================"
+./repair_manual_burst_encode_stdin.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- repair_manual_burst_encode_stdin.sh\n"
+fi
+
+echo "========================================"
+echo "Starting repair manual burst tests (stdout as decode output)"
+echo "========================================"
+./repair_manual_burst_decode_stdout.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- repair_manual_burst_decode_stdout.sh\n"
+fi
+
 # nometa tests
 echo "========================================"
 echo "Starting nometa tests"
