@@ -79,7 +79,7 @@ Overall similar to above specs.
 
 Block categories : `Meta`, `Data`, `Parity`
 
-**`Meta` and `Data`** are mutually exclusive, and **`Meta` and `Parity`** are mutually exclusive. A block can be both `Data` and `Parity`.
+`Meta` and `Data` are mutually exclusive, and `Meta` and `Parity` are mutually exclusive. A block can be both `Data` and `Parity`.
 
 Assumes configuration is **M** data shards and **N** parity shards.
 
@@ -197,7 +197,7 @@ Supported forward error correction algorithms since 1.0.0 are
 
 - Reed-Solomon erasure code - probably the only one for versions 17, 18, 19
 
-Metadata and the parity blocks (blocks 0 - 3) are mandatory
+Metadata and the parity blocks are mandatory in versions 17, 18, 19.
 
 ### Block set interleaving scheme
 

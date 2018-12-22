@@ -149,6 +149,8 @@ Data block is valid if and only if
 
    - The anticipated pattern is same as the guessed encoding pattern, which depends on the SBX version, data parity parameters, guessed burst error resistance level
 
+     - blkar halts after going through the last anticipated seq num
+
    - If a block is valid, and contains the anticipated seq num, then
 
      - if the block is a metadata block, then nothing is done

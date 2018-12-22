@@ -1,3 +1,9 @@
+## 2.1.0
+
+- Added `--burst` flag to decode mode, used when output is stdout and container version is RS enabled
+
+- Updated help messages in decode, encode mode to note that `./-` can be used when the file of interest is named `-`
+
 ## 2.0.1
 
 - First release under name `blkar`

@@ -1,5 +1,4 @@
 use sort_core::Param;
-use std::str::FromStr;
 
 use sort_core;
 use file_utils;

@@ -219,7 +219,8 @@ pub struct Param {
     in_file            : String,
     out_file           : Option<String>,
     verbose            : bool,
-    pr_verbosity_level : PRVerbosityLevel
+    pr_verbosity_level : PRVerbosityLevel,
+    burst              : Option<usize>,
 }
 
 impl Param {
@@ -229,7 +230,8 @@ impl Param {
                in_file            : &str,
                out_file           : Option<&str>,
                verbose            : bool,
-               pr_verbosity_level : PRVerbosityLevel) -> Param {
+               pr_verbosity_level : PRVerbosityLevel,
+               burst              : Option<usize>) -> Param {
         Param {
             ref_block_choice,
             force_write,
@@ -241,6 +243,7 @@ impl Param {
             },
             verbose,
             pr_verbosity_level,
+            burst,
         }
     }
 }
@@ -476,11 +479,15 @@ pub fn decode(param           : &Param,
                     let parity = parity as usize;
 
                     // try to obtain burst error resistance level
-                    match block_utils::guess_burst_err_resistance_level(&param.in_file,
-                                                                        ref_block_pos,
-                                                                        &ref_block) {
-                        Ok(Some(l)) => Some((data, parity, l)),
-                        _           => Some((data, parity, 0)), // assume burst resistance level is 0
+                    match param.burst {
+                        Some(l) => Some((data, parity, l)),
+                        None    =>
+                            match block_utils::guess_burst_err_resistance_level(&param.in_file,
+                                                                                ref_block_pos,
+                                                                                &ref_block) {
+                                Ok(Some(l)) => Some((data, parity, l)),
+                                _           => Some((data, parity, 0)), // assume burst resistance level is 0
+                            }
                     }
                 },
                 _                                  => None,
@@ -959,7 +966,8 @@ pub fn decode_file(param : &Param)
                            &param.in_file,
                            out_file_path,
                            param.verbose,
-                           param.pr_verbosity_level);
+                           param.pr_verbosity_level,
+                           param.burst);
 
     let (mut stats, hash_res) = decode(&param,
                                        ref_block_pos,
