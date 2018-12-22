@@ -61,21 +61,21 @@ for ver in ${VERSIONS[*]}; do
 
     echo -n "Repairing without --burst"
     output=$(./blkar repair --json --verbose $container_name)
-    if [[ $(echo $output | jq -r ".error") != null ]]; then
-      echo " ==> Invalid JSON"
-      exit_code=1
-    fi
-    if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
-      echo -n " ==> Okay"
-    else
-      echo -n " ==> NOT okay"
-      exit_code=1
-    fi
-    if [[ $(echo $output | jq -r ".stats.numberOfBlocksFailedToRepairData") != 0 ]]; then
-      echo " ==> Okay"
-    else
-      echo " ==> NOT okay"
-      exit_code=1
+    # blkar may error out as guessing burst error level may fail entirely,
+    # so only check for values if it didn't error out
+    if [[ $(echo $output | jq -r ".error") == null ]]; then
+      if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+        echo -n " ==> Okay"
+      else
+        echo -n " ==> NOT okay"
+        exit_code=1
+      fi
+      if [[ $(echo $output | jq -r ".stats.numberOfBlocksFailedToRepairData") != 0 ]]; then
+        echo " ==> Okay"
+      else
+        echo " ==> NOT okay"
+        exit_code=1
+      fi
     fi
 
     echo -n "Repairing with --burst"
