@@ -28,7 +28,7 @@ for ver in ${VERSIONS[*]}; do
       parity_shards=$((1 + RANDOM % 128))
     fi
 
-    container_name=corrupt_$data_shards\_$parity_shards\_$ver.sbx
+    container_name=corrupt_$data_shards\_$parity_shards\_$burst\_$ver.sbx
 
     echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards, burst = $burst"
     output=$(./blkar encode --json --sbx-version $ver -f dummy $container_name \
@@ -59,13 +59,38 @@ for ver in ${VERSIONS[*]}; do
       corrupt $pos $container_name
     done
 
-    echo -n "Repairing"
+    echo -n "Repairing without --burst"
     output=$(./blkar repair --json --verbose $container_name)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
     fi
     if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.numberOfBlocksFailedToRepairData") != 0 ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+
+    echo -n "Repairing with --burst"
+    output=$(./blkar repair --json --verbose --burst $burst $container_name)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo " ==> Invalid JSON"
+      exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.numberOfBlocksFailedToRepairData") == 0 ]]; then
       echo " ==> Okay"
     else
       echo " ==> NOT okay"
