@@ -76,6 +76,8 @@ for ver in ${VERSIONS[*]}; do
         echo " ==> NOT okay"
         exit_code=1
       fi
+    else
+      echo " ==> Skipped"
     fi
 
     echo -n "Repairing with --burst"
