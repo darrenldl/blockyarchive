@@ -17,7 +17,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(in_file_arg()
              .help("SBX container to decode"))
         .arg(out_arg()
-             .help("Decoded file name. Supply - to use STDOUT as output, use ./- for file named -.
+             .help("Decoded file name. Supply - to use STDOUT as output. Use ./- for file named -.
 If OUT is not provided, then the original file name stored in the SBX container
 (STOREDNAME) is used if present. If OUT is provided and is a directory, then
 the output file is stored as OUT/STOREDNAME if STOREDNAME is present. If OUT is
