@@ -33,12 +33,7 @@ range specified in the initial run."))
     any
     meta
     data"))
-        .arg(Arg::with_name("uid")
-             .value_name("UID-HEX")
-             .long("only-pick-uid")
-             .takes_value(true)
-             .help("Only pick blocks with UID-HEX as uid. Uid must be exactly 6
-bytes (12 hex digits) in length."))
+        .arg(only_pick_uid_arg())
         .arg(force_misalign_arg())
         .arg(pr_verbosity_level_arg())
         .arg(from_byte_arg()
