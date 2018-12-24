@@ -272,6 +272,8 @@ macro_rules! parse_uid {
     ) => {{
         use misc_utils::HexError;
         use misc_utils;
+        use sbx_specs::SBX_FILE_UID_LEN;
+
         match misc_utils::hex_string_to_bytes($uid) {
             Ok(x) => {
                 if x.len() != SBX_FILE_UID_LEN {
