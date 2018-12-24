@@ -54,13 +54,7 @@ pub fn rescue<'a>(matches : &ArgMatches<'a>) -> i32 {
     json_printer.print_open_bracket(None, BracketType::Curly);
 
     let mut temp_uid = [0; SBX_FILE_UID_LEN];
-    let uid : Option<&[u8; SBX_FILE_UID_LEN]> = {
-        match matches.value_of("uid") {
-            None    => None ,
-            Some(x) => { parse_uid!(temp_uid, x, json_printer);
-                         Some(&temp_uid) }
-        }
-    };
+    let uid : Option<&[u8; SBX_FILE_UID_LEN]> = get_uid!(matches, temp_uid, json_printer);
 
     let block_type = match matches.value_of("block_type") {
         None    => None,

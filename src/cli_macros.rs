@@ -294,6 +294,18 @@ macro_rules! parse_uid {
     }}
 }
 
+macro_rules! get_uid {
+    (
+        $matches:expr, $buf:expr, $json_printer:expr
+    ) => {{
+        match $matches.value_of("uid") {
+            None      => None ,
+            Some(uid) => { parse_uid!($buf, uid, $json_printer);
+                           Some(&$buf) }
+        }
+    }}
+}
+
 macro_rules! get_ref_block_choice {
     (
         $matches:expr
