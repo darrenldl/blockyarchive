@@ -2,6 +2,8 @@
 
 - Added `--only-pick-uid` option to show mode
 
+- Changed "uid" to "UID" in output messages for consistency
+
 ## 2.1.0
 
 - Added `--burst` option to decode mode, used when output is stdout and container version is RS enabled
