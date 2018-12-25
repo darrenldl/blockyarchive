@@ -48,9 +48,9 @@ if [[ $(echo $output | jq -r ".error") != null ]]; then
     exit_code=1
 fi
 if [[ $(echo $output | jq -r ".blocks[0]") == "null" ]]; then
-  echo -n " ==> Okay"
+  echo " ==> Okay"
 else
-  echo -n " ==> NOT okay"
+  echo " ==> NOT okay"
   exit_code=1
 fi
 
@@ -67,14 +67,14 @@ else
   exit_code=1
 fi
 if [[ $(echo $output | jq -r ".blocks[1]") == "null" ]]; then
-  echo -n " ==> Okay"
+  echo " ==> Okay"
 else
-  echo -n " ==> NOT okay"
+  echo " ==> NOT okay"
   exit_code=1
 fi
 
 echo -n "Showing from dummy disk 2 with "$uid2
-output=$(./blkar show --json --only-pick-uid $uid1 dummy_disk2)
+output=$(./blkar show --json --only-pick-uid $uid2 dummy_disk2)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -86,14 +86,14 @@ else
   exit_code=1
 fi
 if [[ $(echo $output | jq -r ".blocks[1]") == "null" ]]; then
-  echo -n " ==> Okay"
+  echo " ==> Okay"
 else
-  echo -n " ==> NOT okay"
+  echo " ==> NOT okay"
   exit_code=1
 fi
 
 echo -n "Showing from dummy disk 2 with "$uid3
-output=$(./blkar show --json --only-pick-uid $uid1 dummy_disk2)
+output=$(./blkar show --json --only-pick-uid $uid3 dummy_disk2)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
@@ -105,9 +105,9 @@ else
   exit_code=1
 fi
 if [[ $(echo $output | jq -r ".blocks[1]") == "null" ]]; then
-  echo -n " ==> Okay"
+  echo " ==> Okay"
 else
-  echo -n " ==> NOT okay"
+  echo " ==> NOT okay"
   exit_code=1
 fi
 
