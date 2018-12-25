@@ -275,6 +275,24 @@ if [[ $? != 0 ]]; then
     test_failed_names=$test_failed_names"- rescue_pick_uid_tests_decode_stdout.sh\n"
 fi
 
+echo "========================================"
+echo "Starting show with specified range tests"
+echo "========================================"
+./show_from_to_tests.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- show_from_to_tests.sh\n"
+fi
+
+echo "========================================"
+echo "Starting show with specified uid tests"
+echo "========================================"
+./show_pick_uid_tests.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- show_pick_uid_tests.sh\n"
+fi
+
 # output file tests
 echo "========================================"
 echo "Starting output file path logic tests"
