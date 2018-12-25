@@ -59,6 +59,15 @@ pub fn force_misalign_arg<'a, 'b>() -> Arg<'a, 'b> {
 used and is only intended for data recovery or related purposes.")
 }
 
+pub fn only_pick_uid_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("uid")
+        .value_name("UID-HEX")
+        .long("only-pick-uid")
+        .takes_value(true)
+        .help("Only pick blocks with UID-HEX as UID. UID must be exactly 6
+bytes (12 hex digits) in length.")
+}
+
 pub fn from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("from_pos")
         .value_name("FROM-BYTE")

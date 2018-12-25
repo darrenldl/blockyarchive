@@ -272,6 +272,8 @@ macro_rules! parse_uid {
     ) => {{
         use misc_utils::HexError;
         use misc_utils;
+        use sbx_specs::SBX_FILE_UID_LEN;
+
         match misc_utils::hex_string_to_bytes($uid) {
             Ok(x) => {
                 if x.len() != SBX_FILE_UID_LEN {
@@ -290,6 +292,18 @@ macro_rules! parse_uid {
                                $uid.len(),
                                SBX_FILE_UID_LEN * 2);
             }
+        }
+    }}
+}
+
+macro_rules! get_uid {
+    (
+        $matches:expr, $buf:expr, $json_printer:expr
+    ) => {{
+        match $matches.value_of("uid") {
+            None      => None ,
+            Some(uid) => { parse_uid!($buf, uid, $json_printer);
+                           Some(&$buf) }
         }
     }}
 }

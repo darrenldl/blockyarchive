@@ -13,6 +13,8 @@ use json_printer::BracketType;
 
 use progress_report::*;
 
+use sbx_specs::SBX_FILE_UID_LEN;
+
 use file_reader::{FileReader,
                   FileReaderParam};
 
@@ -86,6 +88,7 @@ pub struct Param {
     from_pos            : Option<u64>,
     to_pos              : Option<u64>,
     in_file             : String,
+    only_pick_uid       : Option<[u8; SBX_FILE_UID_LEN]>,
     pr_verbosity_level  : PRVerbosityLevel
 }
 
@@ -97,6 +100,7 @@ impl Param {
                from_pos            : Option<u64>,
                to_pos              : Option<u64>,
                in_file             : &str,
+               only_pick_uid       : Option<&[u8; SBX_FILE_UID_LEN]>,
                pr_verbosity_level  : PRVerbosityLevel) -> Param {
         Param {
             show_all,
@@ -106,6 +110,10 @@ impl Param {
             from_pos,
             to_pos,
             in_file : String::from(in_file),
+            only_pick_uid : match only_pick_uid {
+                None    => None,
+                Some(x) => Some(x.clone())
+            },
             pr_verbosity_level,
         }
     }
@@ -212,6 +220,11 @@ pub fn show_file(param : &Param)
         if !lazy_read_res.usable { continue; }
 
         if block.is_meta() {
+            // check if block has the required UID
+            if let Some(x) = param.only_pick_uid {
+                if block.get_uid() != x { continue; }
+            }
+
             reporter.pause();
 
             json_printer.print_open_bracket(None, BracketType::Curly);

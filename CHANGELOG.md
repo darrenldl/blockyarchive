@@ -1,6 +1,12 @@
+## 2.2.0
+
+- Added `--only-pick-uid` option to show mode
+
+- Changed "uid" to "UID" in output text for consistency
+
 ## 2.1.0
 
-- Added `--burst` flag to decode mode, used when output is stdout and container version is RS enabled
+- Added `--burst` option to decode mode, used when output is stdout and container version is RS enabled
 
 - Updated help messages in decode, encode mode to note that `./-` can be used when the file of interest is named `-`
 

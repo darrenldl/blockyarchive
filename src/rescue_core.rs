@@ -284,7 +284,7 @@ pub fn rescue_from_file(param : &Param)
             if block.block_type() != x { continue; }
         }
 
-        // check if block has the required uid
+        // check if block has the required UID
         if let Some(x) = param.only_pick_uid {
             if block.get_uid() != x { continue; }
         }
