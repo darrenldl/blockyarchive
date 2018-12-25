@@ -53,7 +53,7 @@ This means this option has no effect for version 17, 18, 19."))
              .value_name("UID-HEX")
              .long("uid")
              .takes_value(true)
-             .help("Alternative file uid in hex (by default uid is randomly generated).
+             .help("Alternative file UID in hex (by default UID is randomly generated).
 Uid must be exactly 6 bytes (12 hex digits) in length."))
         .arg(rs_data_arg())
         .arg(rs_parity_arg())

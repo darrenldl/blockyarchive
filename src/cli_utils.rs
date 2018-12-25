@@ -64,7 +64,7 @@ pub fn only_pick_uid_arg<'a, 'b>() -> Arg<'a, 'b> {
         .value_name("UID-HEX")
         .long("only-pick-uid")
         .takes_value(true)
-        .help("Only pick blocks with UID-HEX as uid. Uid must be exactly 6
+        .help("Only pick blocks with UID-HEX as UID. UID must be exactly 6
 bytes (12 hex digits) in length.")
 }
 
