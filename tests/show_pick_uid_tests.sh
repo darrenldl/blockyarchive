@@ -47,6 +47,25 @@ if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
 fi
+if [[ $(echo $output | jq -r ".blocks[0]") == "null" ]]; then
+  echo -n " ==> Okay"
+else
+  echo -n " ==> NOT okay"
+  exit_code=1
+fi
+
+echo -n "Showing from dummy disk 2 with "$uid1
+output=$(./blkar show --json --only-pick-uid $uid1 dummy_disk2)
+if [[ $(echo $output | jq -r ".error") != null ]]; then
+  echo " ==> Invalid JSON"
+  exit_code=1
+fi
+if [[ $(echo $output | jq -r ".blocks[0].fileUID") == "$uid1" ]]; then
+  echo -n " ==> Okay"
+else
+  echo -n " ==> NOT okay"
+  exit_code=1
+fi
 if [[ $(echo $output | jq -r ".blocks[1]") == "null" ]]; then
   echo -n " ==> Okay"
 else
@@ -54,44 +73,41 @@ else
   exit_code=1
 fi
 
-echo -n "Rescuing from dummy disk 2 with "$uid1
-output=$(./blkar rescue --json --only-pick-uid $uid1 dummy_disk2 rescued_data2)
+echo -n "Showing from dummy disk 2 with "$uid2
+output=$(./blkar show --json --only-pick-uid $uid1 dummy_disk2)
+if [[ $(echo $output | jq -r ".error") != null ]]; then
+  echo " ==> Invalid JSON"
+  exit_code=1
+fi
+if [[ $(echo $output | jq -r ".blocks[0].fileUID") == "$uid2" ]]; then
+  echo -n " ==> Okay"
+else
+  echo -n " ==> NOT okay"
+  exit_code=1
+fi
+if [[ $(echo $output | jq -r ".blocks[1]") == "null" ]]; then
+  echo -n " ==> Okay"
+else
+  echo -n " ==> NOT okay"
+  exit_code=1
+fi
+
+echo -n "Showing from dummy disk 2 with "$uid3
+output=$(./blkar show --json --only-pick-uid $uid1 dummy_disk2)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
 fi
-if [ -f "rescued_data2/"$uid1 ]; then
+if [[ $(echo $output | jq -r ".blocks[0].fileUID") == "$uid3" ]]; then
   echo -n " ==> Okay"
 else
   echo -n " ==> NOT okay"
   exit_code=1
 fi
-if [ ! -f "rescued_data2/"$uid2 ]; then
+if [[ $(echo $output | jq -r ".blocks[1]") == "null" ]]; then
   echo -n " ==> Okay"
 else
   echo -n " ==> NOT okay"
-  exit_code=1
-fi
-if [ ! -f "rescued_data2/"$uid3 ]; then
-  echo " ==> Okay"
-else
-  echo " ==> NOT okay"
-  exit_code=1
-fi
-
-echo "Decoding rescued file"
-output=$(./blkar decode --json "rescued_data2/"$uid1 "rescued_data2/"$uid1.decoded)
-if [[ $(echo $output | jq -r ".stats.fileUID") != "$uid1" ]]; then
-  echo " ==> Invalid JSON"
-  exit_code=1
-fi
-
-echo -n "Comparing decoded data to original"
-cmp dummy "rescued_data2/"$uid1.decoded
-if [[ $? == 0 ]]; then
-  echo " ==> Okay"
-else
-  echo " ==> NOT okay"
   exit_code=1
 fi
 
