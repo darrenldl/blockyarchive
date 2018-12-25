@@ -2,7 +2,7 @@
 
 - Added `--only-pick-uid` option to show mode
 
-- Changed "uid" to "UID" in output messages for consistency
+- Changed "uid" to "UID" in output text for consistency
 
 ## 2.1.0
 
