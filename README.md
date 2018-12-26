@@ -6,6 +6,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/darrenldl/blockyarchive/badge.svg?branch=master)](https://coveralls.io/github/darrenldl/blockyarchive?branch=master)
 [![Crates](https://img.shields.io/crates/v/blkar.svg)](https://crates.io/crates/blkar)
 [![dependency status](https://deps.rs/repo/github/darrenldl/blockyarchive/status.svg)](https://deps.rs/repo/github/darrenldl/blockyarchive)
+[![Gitter chat](https://badges.gitter.im/blockyarchive/gitter.png)](https://gitter.im/blockyarchive/community)
 
 [Documentation](https://github.com/darrenldl/blockyarchive/wiki)
 
@@ -51,6 +52,10 @@ cargo install blkar
 #### Usage guides & screencasts & other resources
 
 The [wiki](https://github.com/darrenldl/blockyarchive/wiki) contains comprehensive guides and resources.
+
+## Got a question?
+
+Feel free to join the [Gitter chat](https://gitter.im/blockyarchive/community) if you've got a question. You can email me directly as well.
 
 ## Changelog
 

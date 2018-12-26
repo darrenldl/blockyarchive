@@ -288,8 +288,7 @@ impl RSRepairer {
 
         let rs_codec      = &self.rs_codec;
 
-        let successful;
-        {
+        let successful = {
             let mut buf : SmallVec<[&mut [u8]; 32]> =
                 SmallVec::with_capacity(rs_codec.total_shard_count());
             for s in self.buf.iter_mut() {
@@ -297,12 +296,11 @@ impl RSRepairer {
             }
 
             // reconstruct data portion
-            successful =
-                match rs_codec.reconstruct(&mut buf, &self.buf_present) {
-                    Ok(()) => true,
-                    Err(_) => false
-                };
-        }
+            match rs_codec.reconstruct(&mut buf, &self.buf_present) {
+                Ok(()) => true,
+                Err(_) => false
+            }
+        };
 
         let block_set_size = self.rs_codec.total_shard_count() as u32;
 
