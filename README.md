@@ -53,6 +53,10 @@ cargo install blkar
 
 The [wiki](https://github.com/darrenldl/blockyarchive/wiki) contains comprehensive guides and resources.
 
+## Got a question?
+
+Feel free to join the [Gitter chat](https://gitter.im/blockyarchive/community) if you've got a question. You can email me directly as well.
+
 ## Changelog
 
 [Changelog](CHANGELOG.md)
