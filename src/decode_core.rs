@@ -966,6 +966,7 @@ pub fn decode_file(param : &Param)
     // regenerate param
     let param = Param::new(param.ref_block_choice,
                            param.force_write,
+                           param.multi_pass,
                            &param.json_printer,
                            &param.in_file,
                            out_file_path,

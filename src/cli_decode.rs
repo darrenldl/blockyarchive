@@ -89,6 +89,7 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let param = Param::new(get_ref_block_choice!(matches),
                            matches.is_present("force"),
+                           matches.is_present("multi_pass"),
                            &json_printer,
                            in_file,
                            out,
