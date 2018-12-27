@@ -24,6 +24,8 @@ the output file is stored as OUT/STOREDNAME if STOREDNAME is present. If OUT is
 provided and is not a directory, then it is used directly."))
         .arg(force_arg()
              .help("Force overwrite even if OUT exists"))
+        .arg(multi_pass_arg()
+             .help("Disable truncation of OUT. This allows writing to OUT multiple times to update it gradually."))
         .arg(no_meta_arg())
         .arg(pr_verbosity_level_arg())
         .arg(burst_arg()
