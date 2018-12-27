@@ -112,6 +112,11 @@ pub fn burst_arg<'a, 'b>() -> Arg<'a, 'b> {
         .takes_value(true)
 }
 
+pub fn dry_run_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("dry_run")
+        .long("dry-run")
+}
+
 pub fn sbx_version_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("sbx_version")
         .value_name("SBX-VERSION")
