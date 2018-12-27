@@ -22,6 +22,8 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(multi_pass_arg()
              .help("Disable truncation of OUTFILE. This allows writing to OUTFILE multiple times to update it gradually."))
         .arg(pr_verbosity_level_arg())
+        .arg(dry_run_arg()
+             .help("Only do sorting in memory, does not output the sorted container."))
         .arg(burst_arg()
              .help("Burst error resistance level to use for the output container.
 Defaults to guessing the level (guesses up to 1000) used by the
