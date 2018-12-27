@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::fmt;
 use file_utils;
 use std::io::SeekFrom;
+use std::cmp::Ordering;
 
 use progress_report::*;
 
@@ -70,6 +71,8 @@ pub struct Stats {
     pub meta_blocks_decoded        : u64,
     pub data_or_par_blocks_decoded : u64,
     pub blocks_decode_failed       : u64,
+    pub blocks_same_order          : u64,
+    pub blocks_diff_order          : u64,
     total_blocks                   : u64,
     start_time                     : f64,
     end_time                       : f64,
@@ -90,6 +93,8 @@ impl Stats {
             meta_blocks_decoded        : 0,
             data_or_par_blocks_decoded : 0,
             total_blocks,
+            blocks_same_order          : 0,
+            blocks_diff_order          : 0,
             start_time                 : 0.,
             end_time                   : 0.,
             json_printer               : Arc::clone(json_printer),
@@ -164,7 +169,8 @@ pub fn sort_file(param : &Param)
             None
         };
 
-    let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+    let mut buffer       : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+    let mut check_buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,
@@ -193,7 +199,7 @@ pub fn sort_file(param : &Param)
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
-        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+        let read_res = reader.read(sbx_block::slice_buf_mut(version,
                                                             &mut buffer))?;
 
         break_if_eof_seen!(read_res);
@@ -209,11 +215,27 @@ pub fn sort_file(param : &Param)
                     sbx_block::calc_meta_block_all_write_pos_s(version,
                                                                data_par_burst);
 
+                // copy the value of current position in original container
+                let reader_cur_pos = reader.cur_pos()?;
+
                 for &p in write_pos_s.iter() {
+                    // write metadata blocks
                     writer.seek(SeekFrom::Start(p))?;
                     writer.write(sbx_block::slice_buf(version,
                                                       &buffer))?;
+
+                    // read block in original container
+                    reader.seek(SeekFrom::Start(p))?;
+                    reader.read(sbx_block::slice_buf_mut(version,
+                                                         &mut check_buffer))?;
+
+                    match buffer.cmp(&check_buffer) {
+                        Ordering::Equal => stats.lock().unwrap().blocks_same_order += 1,
+                        _               => stats.lock().unwrap().blocks_diff_order += 1,
+                    }
                 }
+
+                reader.seek(SeekFrom::Start(reader_cur_pos))?;
 
                 meta_written = true;
             }
