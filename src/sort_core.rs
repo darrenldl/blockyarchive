@@ -130,13 +130,18 @@ impl fmt::Display for Stats {
 
         json_printer.write_open_bracket(f, Some("stats"), BracketType::Curly)?;
 
-        write_maybe_json!(f, json_printer, "SBX version                        : {}", ver_to_usize(self.version))?;
-        write_maybe_json!(f, json_printer, "Block size used in checking        : {}", block_size                      => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks processed         : {}", self.units_so_far()             => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks sorted (metadata) : {}", self.meta_blocks_decoded        => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks sorted (data)     : {}", self.data_or_par_blocks_decoded => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks failed to sort    : {}", self.blocks_decode_failed       => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Time elapsed                       : {:02}:{:02}:{:02}", hour, minute, second)?;
+        write_maybe_json!(f, json_printer, "SBX version                               : {}", ver_to_usize(self.version))?;
+        write_maybe_json!(f, json_printer, "Block size used in checking               : {}", block_size                      => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks processed                : {}", self.units_so_far()             => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks sorted (metadata)        : {}", self.meta_blocks_decoded        => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks sorted (data)            : {}", self.data_or_par_blocks_decoded => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks in same order (metadata) : {}", self.meta_blocks_same_order     => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks in diff order (metadata) : {}", self.meta_blocks_diff_order     => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks in same order (data)     : {}", self.data_blocks_same_order     => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks in diff order (data)     : {}", self.data_blocks_diff_order     => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks sorted (data)            : {}", self.data_or_par_blocks_decoded => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks failed to sort           : {}", self.blocks_decode_failed       => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Time elapsed                              : {:02}:{:02}:{:02}", hour, minute, second)?;
 
         json_printer.write_close_bracket(f)?;
 
