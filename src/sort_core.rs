@@ -244,6 +244,7 @@ pub fn sort_file(param : &Param)
                     }
                 }
 
+                // restore the position of reader
                 reader.seek(SeekFrom::Start(reader_cur_pos))?;
 
                 meta_written = true;
@@ -254,6 +255,9 @@ pub fn sort_file(param : &Param)
                                                      block.get_seq_num(),
                                                      None,
                                                      data_par_burst);
+
+            // copy the value of current position in original container
+            let reader_cur_pos = reader.cur_pos()?;
 
             writer.seek(SeekFrom::Start(write_pos))?;
             writer.write(sbx_block::slice_buf(version,
@@ -268,6 +272,9 @@ pub fn sort_file(param : &Param)
                 Ordering::Equal => stats.lock().unwrap().data_blocks_same_order += 1,
                 _               => stats.lock().unwrap().data_blocks_diff_order += 1,
             }
+
+            // restore the position of reader
+            reader.seek(SeekFrom::Start(reader_cur_pos))?;
         }
 
         if block.is_meta() {
