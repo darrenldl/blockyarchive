@@ -71,8 +71,10 @@ pub struct Stats {
     pub meta_blocks_decoded        : u64,
     pub data_or_par_blocks_decoded : u64,
     pub blocks_decode_failed       : u64,
-    pub blocks_same_order          : u64,
-    pub blocks_diff_order          : u64,
+    pub meta_blocks_same_order     : u64,
+    pub meta_blocks_diff_order     : u64,
+    pub data_blocks_same_order     : u64,
+    pub data_blocks_diff_order     : u64,
     total_blocks                   : u64,
     start_time                     : f64,
     end_time                       : f64,
@@ -93,8 +95,10 @@ impl Stats {
             meta_blocks_decoded        : 0,
             data_or_par_blocks_decoded : 0,
             total_blocks,
-            blocks_same_order          : 0,
-            blocks_diff_order          : 0,
+            meta_blocks_same_order     : 0,
+            meta_blocks_diff_order     : 0,
+            data_blocks_same_order     : 0,
+            data_blocks_diff_order     : 0,
             start_time                 : 0.,
             end_time                   : 0.,
             json_printer               : Arc::clone(json_printer),
@@ -230,8 +234,8 @@ pub fn sort_file(param : &Param)
                                                          &mut check_buffer))?;
 
                     match buffer.cmp(&check_buffer) {
-                        Ordering::Equal => stats.lock().unwrap().blocks_same_order += 1,
-                        _               => stats.lock().unwrap().blocks_diff_order += 1,
+                        Ordering::Equal => stats.lock().unwrap().meta_blocks_same_order += 1,
+                        _               => stats.lock().unwrap().meta_blocks_diff_order += 1,
                     }
                 }
 
@@ -256,8 +260,8 @@ pub fn sort_file(param : &Param)
                                                  &mut check_buffer))?;
 
             match buffer.cmp(&check_buffer) {
-                Ordering::Equal => stats.lock().unwrap().blocks_same_order += 1,
-                _               => stats.lock().unwrap().blocks_diff_order += 1,
+                Ordering::Equal => stats.lock().unwrap().data_blocks_same_order += 1,
+                _               => stats.lock().unwrap().data_blocks_diff_order += 1,
             }
         }
 
