@@ -170,6 +170,7 @@ pub fn sort_file(param : &Param)
     let mut writer = FileWriter::new(&param.out_file,
                                      FileWriterParam { read     : false,
                                                        append   : false,
+                                                       truncate : true,
                                                        buffered : true   })?;
 
     let mut block = Block::dummy();

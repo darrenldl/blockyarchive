@@ -372,6 +372,7 @@ pub fn encode_file(param : &Param)
     let mut writer = FileWriter::new(&param.out_file,
                                      FileWriterParam { read     : false,
                                                        append   : false,
+                                                       truncate : true,
                                                        buffered : true   })?;
 
     let metadata = match reader.metadata() {

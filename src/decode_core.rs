@@ -517,6 +517,7 @@ pub fn decode(param           : &Param,
         Some(ref out_file) => Writer::new(WriterType::File(FileWriter::new(out_file,
                                                                            FileWriterParam { read     : false,
                                                                                              append   : false,
+                                                                                             truncate : true,
                                                                                              buffered : true   })?)),
         None               => Writer::new(WriterType::Stdout(std::io::stdout())),
     };
