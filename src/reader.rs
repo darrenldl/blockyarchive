@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use file_reader::FileReader;
 use general_error::Error;
 use std::io::Read;
