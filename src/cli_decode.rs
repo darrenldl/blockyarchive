@@ -22,9 +22,7 @@ If OUT is not provided, then the original file name stored in the SBX container
 (STOREDNAME) is used if present. If OUT is provided and is a directory, then
 the output file is stored as OUT/STOREDNAME if STOREDNAME is present. If OUT is
 provided and is not a directory, then it is used directly."))
-        .arg(Arg::with_name("force")
-             .short("f")
-             .long("force")
+        .arg(force_arg()
              .help("Force overwrite even if OUT exists"))
         .arg(no_meta_arg())
         .arg(pr_verbosity_level_arg())
