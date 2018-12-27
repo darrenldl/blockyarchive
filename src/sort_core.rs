@@ -33,6 +33,7 @@ use block_utils::RefBlockChoice;
 
 pub struct Param {
     ref_block_choice   : RefBlockChoice,
+    multi_pass         : bool,
     json_printer       : Arc<JSONPrinter>,
     in_file            : String,
     out_file           : String,
@@ -43,6 +44,7 @@ pub struct Param {
 
 impl Param {
     pub fn new(ref_block_choice   : RefBlockChoice,
+               multi_pass         : bool,
                json_printer       : &Arc<JSONPrinter>,
                in_file            : &str,
                out_file           : &str,
@@ -51,6 +53,7 @@ impl Param {
                burst              : Option<usize>) -> Param {
         Param {
             ref_block_choice,
+            multi_pass,
             json_printer       : Arc::clone(json_printer),
             in_file            : String::from(in_file),
             out_file           : String::from(out_file),
@@ -170,7 +173,7 @@ pub fn sort_file(param : &Param)
     let mut writer = FileWriter::new(&param.out_file,
                                      FileWriterParam { read     : false,
                                                        append   : false,
-                                                       truncate : true,
+                                                       truncate : !param.multi_pass,
                                                        buffered : true   })?;
 
     let mut block = Block::dummy();

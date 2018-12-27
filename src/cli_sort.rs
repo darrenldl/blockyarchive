@@ -19,6 +19,8 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .help("Sorted SBX container"))
         .arg(force_arg()
              .help("Force overwrite even if OUT exists"))
+        .arg(multi_pass_arg()
+             .help("Disable truncation of OUT. This allows writing to OUT multiple times to update it gradually."))
         .arg(pr_verbosity_level_arg())
         .arg(burst_arg()
              .help("Burst error resistance level to use for the output container.
@@ -48,13 +50,14 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
     let burst = get_burst_opt!(matches, json_printer);
 
     exit_if_file!(exists &out_file
-                  => matches.is_present("force")
+                  => matches.is_present("force") || matches.is_present("multi_pass")
                   => json_printer
                   => "File \"{}\" already exists", out_file);
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
     let param = Param::new(get_ref_block_choice!(matches),
+                           matches.is_present("multi_pass"),
                            &json_printer,
                            in_file,
                            &out_file,
