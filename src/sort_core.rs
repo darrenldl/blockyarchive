@@ -249,6 +249,16 @@ pub fn sort_file(param : &Param)
             writer.seek(SeekFrom::Start(write_pos))?;
             writer.write(sbx_block::slice_buf(version,
                                               &buffer))?;
+
+            // read block in original container
+            reader.seek(SeekFrom::Start(write_pos))?;
+            reader.read(sbx_block::slice_buf_mut(version,
+                                                 &mut check_buffer))?;
+
+            match buffer.cmp(&check_buffer) {
+                Ordering::Equal => stats.lock().unwrap().blocks_same_order += 1,
+                _               => stats.lock().unwrap().blocks_diff_order += 1,
+            }
         }
 
         if block.is_meta() {
