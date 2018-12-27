@@ -4,6 +4,7 @@ use std::io::Read;
 use std::fs::Metadata;
 use stdin_error::{StdinError,
                   to_err};
+use std::io::SeekFrom;
 
 const READ_RETRIES : usize = 5;
 
