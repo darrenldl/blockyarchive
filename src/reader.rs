@@ -62,4 +62,18 @@ impl Reader {
             ReaderType::Stdin(_)         => None,
         }
     }
+
+    pub fn seek(&mut self, pos : SeekFrom) -> Option<Result<u64, Error>> {
+        match self.reader {
+            ReaderType::Stdin(_)        => None,
+            ReaderType::File(ref mut f) => Some(f.seek(pos)),
+        }
+    }
+
+    pub fn cur_pos(&mut self) -> Option<Result<u64, Error>> {
+        match self.reader {
+            ReaderType::File(ref mut f) => Some(f.cur_pos()),
+            ReaderType::Stdin(_)        => None,
+        }
+    }
 }
