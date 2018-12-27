@@ -38,6 +38,7 @@ pub struct Param {
     json_printer       : Arc<JSONPrinter>,
     in_file            : String,
     out_file           : String,
+    dry_run            : bool,
     verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
     burst              : Option<usize>,
@@ -49,6 +50,7 @@ impl Param {
                json_printer       : &Arc<JSONPrinter>,
                in_file            : &str,
                out_file           : &str,
+               dry_run            : bool,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel,
                burst              : Option<usize>) -> Param {
@@ -58,6 +60,7 @@ impl Param {
             json_printer       : Arc::clone(json_printer),
             in_file            : String::from(in_file),
             out_file           : String::from(out_file),
+            dry_run,
             verbose,
             pr_verbosity_level,
             burst,
@@ -228,10 +231,12 @@ pub fn sort_file(param : &Param)
                 let reader_cur_pos = reader.cur_pos()?;
 
                 for &p in write_pos_s.iter() {
-                    // write metadata blocks
-                    writer.seek(SeekFrom::Start(p))?;
-                    writer.write(sbx_block::slice_buf(version,
-                                                      &buffer))?;
+                    if !param.dry_run {
+                        // write metadata blocks
+                        writer.seek(SeekFrom::Start(p))?;
+                        writer.write(sbx_block::slice_buf(version,
+                                                          &buffer))?;
+                    }
 
                     // read block in original container
                     reader.seek(SeekFrom::Start(p))?;
@@ -259,9 +264,11 @@ pub fn sort_file(param : &Param)
             // copy the value of current position in original container
             let reader_cur_pos = reader.cur_pos()?;
 
-            writer.seek(SeekFrom::Start(write_pos))?;
-            writer.write(sbx_block::slice_buf(version,
-                                              &buffer))?;
+            if !param.dry_run {
+                writer.seek(SeekFrom::Start(write_pos))?;
+                writer.write(sbx_block::slice_buf(version,
+                                                  &buffer))?;
+            }
 
             // read block in original container
             reader.seek(SeekFrom::Start(write_pos))?;
