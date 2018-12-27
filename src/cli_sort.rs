@@ -18,9 +18,9 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .required(true)
              .help("Sorted SBX container"))
         .arg(force_arg()
-             .help("Force overwrite even if OUT exists"))
+             .help("Force overwrite even if OUTFILE exists"))
         .arg(multi_pass_arg()
-             .help("Disable truncation of OUT. This allows writing to OUT multiple times to update it gradually."))
+             .help("Disable truncation of OUTFILE. This allows writing to OUTFILE multiple times to update it gradually."))
         .arg(pr_verbosity_level_arg())
         .arg(burst_arg()
              .help("Burst error resistance level to use for the output container.
