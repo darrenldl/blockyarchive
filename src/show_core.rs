@@ -186,7 +186,8 @@ pub fn show_file(param : &Param)
                                                                       param.to_pos,
                                                                       param.force_misalign,
                                                                       stats.lock().unwrap().bytes_processed,
-                                                                      file_size);
+                                                                      file_size,
+                                                                      None);
 
     // seek to calculated position
     reader.seek(SeekFrom::Start(seek_to))?;

@@ -109,9 +109,14 @@ pub fn calc_required_len_and_seek_to_from_byte_range_inc
      to_byte_inc       : Option<u64>,
      force_misalign    : bool,
      bytes_so_far      : u64,
-     last_possible_pos : u64) -> RequiredLenAndSeekTo
+     last_possible_pos : u64,
+     multiple_of       : Option<u64>) -> RequiredLenAndSeekTo
 {
-    let multiple_of = SBX_SCAN_BLOCK_SIZE as u64;
+    let multiple_of = match multiple_of {
+        Some(x) => x,
+        None    => SBX_SCAN_BLOCK_SIZE as u64,
+    };
+
     let align = |x : u64| -> u64 {
         if force_misalign { x }
         else              { u64::round_down_to_multiple(x,
