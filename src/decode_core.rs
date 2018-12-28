@@ -215,6 +215,7 @@ impl fmt::Display for Stats {
 pub struct Param {
     ref_block_choice   : RefBlockChoice,
     force_write        : bool,
+    multi_pass         : bool,
     json_printer       : Arc<JSONPrinter>,
     in_file            : String,
     out_file           : Option<String>,
@@ -226,6 +227,7 @@ pub struct Param {
 impl Param {
     pub fn new(ref_block_choice   : RefBlockChoice,
                force_write        : bool,
+               multi_pass         : bool,
                json_printer       : &Arc<JSONPrinter>,
                in_file            : &str,
                out_file           : Option<&str>,
@@ -235,6 +237,7 @@ impl Param {
         Param {
             ref_block_choice,
             force_write,
+            multi_pass,
             json_printer : Arc::clone(json_printer),
             in_file  : String::from(in_file),
             out_file : match out_file {
@@ -517,6 +520,7 @@ pub fn decode(param           : &Param,
         Some(ref out_file) => Writer::new(WriterType::File(FileWriter::new(out_file,
                                                                            FileWriterParam { read     : false,
                                                                                              append   : false,
+                                                                                             truncate : !param.multi_pass,
                                                                                              buffered : true   })?)),
         None               => Writer::new(WriterType::Stdout(std::io::stdout())),
     };
@@ -923,8 +927,8 @@ pub fn decode_file(param : &Param)
     let out_file_path : Option<String> = match param.out_file {
         None => {
             match recorded_file_name {
-                None    => { return Err(Error::with_message("No original file name was found in SBX container and no output file name/path was provided")); },
-                Some(x) => Some(x)
+                None        => { return Err(Error::with_message("No original file name was found in SBX container and no output file name/path was provided")); },
+                Some(ref x) => Some(file_utils::get_file_name_part_of_path(x)),
             }
         },
         Some(ref out) => {
@@ -946,7 +950,7 @@ pub fn decode_file(param : &Param)
 
     // check if can write out
     if let Some(ref out_file_path) = out_file_path {
-        if !param.force_write {
+        if !param.force_write && !param.multi_pass {
             if file_utils::check_if_file_exists(out_file_path) {
                 return Err(Error::with_message(&format!("File \"{}\" already exists",
                                                         out_file_path)));
@@ -962,6 +966,7 @@ pub fn decode_file(param : &Param)
     // regenerate param
     let param = Param::new(param.ref_block_choice,
                            param.force_write,
+                           param.multi_pass,
                            &param.json_printer,
                            &param.in_file,
                            out_file_path,

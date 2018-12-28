@@ -28,10 +28,8 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .help("File to encode. Supply - to use STDIN as input. Use ./- for files named -."))
         .arg(out_arg()
              .help("SBX container name (defaults to INFILE.sbx). If OUT is a directory, then the
-container is stored as OUT/INFILE.sbx."))
-        .arg(Arg::with_name("force")
-             .short("f")
-             .long("force")
+container is stored as OUT/INFILE.sbx (only the file part of INFILE is used)."))
+        .arg(force_arg()
              .help("Force overwrite even if OUT exists"))
         .arg(Arg::with_name("hash_type")
              .value_name("HASH-TYPE")

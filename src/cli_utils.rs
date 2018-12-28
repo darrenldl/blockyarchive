@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use clap::*;
 use sbx_block;
 use std::sync::Arc;
@@ -59,6 +60,17 @@ pub fn force_misalign_arg<'a, 'b>() -> Arg<'a, 'b> {
 used and is only intended for data recovery or related purposes.")
 }
 
+pub fn force_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("force")
+        .short("f")
+        .long("force")
+}
+
+pub fn multi_pass_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("multi_pass")
+        .long("multi-pass")
+}
+
 pub fn only_pick_uid_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("uid")
         .value_name("UID-HEX")
@@ -99,6 +111,11 @@ pub fn burst_arg<'a, 'b>() -> Arg<'a, 'b> {
         .value_name("LEVEL")
         .long("burst")
         .takes_value(true)
+}
+
+pub fn dry_run_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("dry_run")
+        .long("dry-run")
 }
 
 pub fn sbx_version_arg<'a, 'b>() -> Arg<'a, 'b> {

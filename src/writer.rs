@@ -64,7 +64,7 @@ impl Writer {
     pub fn metadata(&self) -> Option<Result<Metadata, Error>> {
         match self.writer {
             WriterType::File(ref f) => Some(f.metadata()),
-            WriterType::Stdout(_)    => None,
+            WriterType::Stdout(_)   => None,
         }
     }
 

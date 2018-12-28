@@ -17,3 +17,5 @@ rm rescue_log &>/dev/null
 rm filler* &>/dev/null
 
 rm out_test/* &>/dev/null
+
+rm sort_*.sbx.* &>/dev/null

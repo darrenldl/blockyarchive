@@ -76,6 +76,7 @@ macro_rules! file_op {
 pub struct FileWriterParam {
     pub read     : bool,
     pub append   : bool,
+    pub truncate : bool,
     pub buffered : bool,
 }
 
@@ -98,7 +99,7 @@ impl FileWriter {
             OpenOptions::new()
             .append(param.append)
             .read(read_enabled)
-            .truncate(!param.append)
+            .truncate(!param.append && param.truncate)
             .write(true)
             .create(true)
             .open(&path);

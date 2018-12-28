@@ -81,6 +81,7 @@ pub trait Log {
         let mut writer = FileWriter::new(log_file,
                                          FileWriterParam { read     : false,
                                                            append   : false,
+                                                           truncate : true,
                                                            buffered : false  })?;
         let output = self.serialize();
 

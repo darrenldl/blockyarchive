@@ -295,6 +295,7 @@ pub fn rescue_from_file(param : &Param)
         let mut writer = FileWriter::new(&path,
                                          FileWriterParam { read     : false,
                                                            append   : true,
+                                                           truncate : false,
                                                            buffered : false  })?;
 
         // use the original bytes which are still in the buffer

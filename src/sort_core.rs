@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::fmt;
 use file_utils;
 use std::io::SeekFrom;
+use std::cmp::Ordering;
 
 use progress_report::*;
 
@@ -33,9 +34,10 @@ use block_utils::RefBlockChoice;
 
 pub struct Param {
     ref_block_choice   : RefBlockChoice,
+    multi_pass         : bool,
     json_printer       : Arc<JSONPrinter>,
     in_file            : String,
-    out_file           : String,
+    out_file           : Option<String>,
     verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
     burst              : Option<usize>,
@@ -43,17 +45,22 @@ pub struct Param {
 
 impl Param {
     pub fn new(ref_block_choice   : RefBlockChoice,
+               multi_pass         : bool,
                json_printer       : &Arc<JSONPrinter>,
                in_file            : &str,
-               out_file           : &str,
+               out_file           : Option<&str>,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel,
                burst              : Option<usize>) -> Param {
         Param {
             ref_block_choice,
+            multi_pass,
             json_printer       : Arc::clone(json_printer),
             in_file            : String::from(in_file),
-            out_file           : String::from(out_file),
+            out_file           : match out_file {
+                Some(x) => Some(String::from(x)),
+                None    => None,
+            },
             verbose,
             pr_verbosity_level,
             burst,
@@ -67,6 +74,10 @@ pub struct Stats {
     pub meta_blocks_decoded        : u64,
     pub data_or_par_blocks_decoded : u64,
     pub blocks_decode_failed       : u64,
+    pub meta_blocks_same_order     : u64,
+    pub meta_blocks_diff_order     : u64,
+    pub data_blocks_same_order     : u64,
+    pub data_blocks_diff_order     : u64,
     total_blocks                   : u64,
     start_time                     : f64,
     end_time                       : f64,
@@ -87,6 +98,10 @@ impl Stats {
             meta_blocks_decoded        : 0,
             data_or_par_blocks_decoded : 0,
             total_blocks,
+            meta_blocks_same_order     : 0,
+            meta_blocks_diff_order     : 0,
+            data_blocks_same_order     : 0,
+            data_blocks_diff_order     : 0,
             start_time                 : 0.,
             end_time                   : 0.,
             json_printer               : Arc::clone(json_printer),
@@ -118,13 +133,18 @@ impl fmt::Display for Stats {
 
         json_printer.write_open_bracket(f, Some("stats"), BracketType::Curly)?;
 
-        write_maybe_json!(f, json_printer, "SBX version                        : {}", ver_to_usize(self.version))?;
-        write_maybe_json!(f, json_printer, "Block size used in checking        : {}", block_size                      => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks processed         : {}", self.units_so_far()             => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks sorted (metadata) : {}", self.meta_blocks_decoded        => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks sorted (data)     : {}", self.data_or_par_blocks_decoded => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks failed to sort    : {}", self.blocks_decode_failed       => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Time elapsed                       : {:02}:{:02}:{:02}", hour, minute, second)?;
+        write_maybe_json!(f, json_printer, "SBX version                               : {}", ver_to_usize(self.version))?;
+        write_maybe_json!(f, json_printer, "Block size used in checking               : {}", block_size                      => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks processed                : {}", self.units_so_far()             => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks sorted (metadata)        : {}", self.meta_blocks_decoded        => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks sorted (data)            : {}", self.data_or_par_blocks_decoded => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks in same order (metadata) : {}", self.meta_blocks_same_order     => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks in diff order (metadata) : {}", self.meta_blocks_diff_order     => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks in same order (data)     : {}", self.data_blocks_same_order     => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks in diff order (data)     : {}", self.data_blocks_diff_order     => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks sorted (data)            : {}", self.data_or_par_blocks_decoded => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks failed to sort           : {}", self.blocks_decode_failed       => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Time elapsed                              : {:02}:{:02}:{:02}", hour, minute, second)?;
 
         json_printer.write_close_bracket(f)?;
 
@@ -167,10 +187,17 @@ pub fn sort_file(param : &Param)
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
 
-    let mut writer = FileWriter::new(&param.out_file,
+    let mut writer =
+        match param.out_file {
+            Some(ref f) =>
+                Some(FileWriter::new(f,
                                      FileWriterParam { read     : false,
                                                        append   : false,
-                                                       buffered : true   })?;
+                                                       truncate : !param.multi_pass,
+                                                       buffered : true   })?
+                ),
+            None        => None,
+        };
 
     let mut block = Block::dummy();
 
@@ -189,7 +216,9 @@ pub fn sort_file(param : &Param)
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
-        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+        let read_pos = reader.cur_pos()?;
+
+        let read_res = reader.read(sbx_block::slice_buf_mut(version,
                                                             &mut buffer))?;
 
         break_if_eof_seen!(read_res);
@@ -201,15 +230,37 @@ pub fn sort_file(param : &Param)
 
         if block.is_meta() {
             if !meta_written {
+                let mut check_buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
+                    [0; SBX_LARGEST_BLOCK_SIZE];
+
                 let write_pos_s =
                     sbx_block::calc_meta_block_all_write_pos_s(version,
                                                                data_par_burst);
 
+                // copy the value of current position in original container
+                let reader_cur_pos = reader.cur_pos()?;
+
                 for &p in write_pos_s.iter() {
-                    writer.seek(SeekFrom::Start(p))?;
-                    writer.write(sbx_block::slice_buf(version,
-                                                      &buffer))?;
+                    if let Some(ref mut writer) = writer {
+                        // write metadata blocks
+                        writer.seek(SeekFrom::Start(p))?;
+                        writer.write(sbx_block::slice_buf(version,
+                                                          &buffer))?;
+                    }
+
+                    // read block in original container
+                    reader.seek(SeekFrom::Start(p))?;
+                    reader.read(sbx_block::slice_buf_mut(version,
+                                                         &mut check_buffer))?;
+
+                    match buffer.cmp(&check_buffer) {
+                        Ordering::Equal => stats.lock().unwrap().meta_blocks_same_order += 1,
+                        _               => stats.lock().unwrap().meta_blocks_diff_order += 1,
+                    }
                 }
+
+                // restore the position of reader
+                reader.seek(SeekFrom::Start(reader_cur_pos))?;
 
                 meta_written = true;
             }
@@ -220,9 +271,18 @@ pub fn sort_file(param : &Param)
                                                      None,
                                                      data_par_burst);
 
-            writer.seek(SeekFrom::Start(write_pos))?;
-            writer.write(sbx_block::slice_buf(version,
-                                              &buffer))?;
+
+            if let Some(ref mut writer) = writer {
+                writer.seek(SeekFrom::Start(write_pos))?;
+                writer.write(sbx_block::slice_buf(version,
+                                                  &buffer))?;
+            }
+
+            if read_pos == write_pos {
+                stats.lock().unwrap().data_blocks_same_order += 1;
+            } else {
+                stats.lock().unwrap().data_blocks_diff_order += 1;
+            }
         }
 
         if block.is_meta() {

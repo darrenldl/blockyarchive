@@ -19,13 +19,15 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(out_arg()
              .help("Decoded file name. Supply - to use STDOUT as output. Use ./- for files named -.
 If OUT is not provided, then the original file name stored in the SBX container
-(STOREDNAME) is used if present. If OUT is provided and is a directory, then
-the output file is stored as OUT/STOREDNAME if STOREDNAME is present. If OUT is
+(STOREDNAME) is used if present (only the file part of STOREDNAME is used). If
+OUT is provided and is a directory, then the output file is stored as OUT/STOREDNAME
+if STOREDNAME is present (only the file part of STOREDNAME is used). If OUT is
 provided and is not a directory, then it is used directly."))
-        .arg(Arg::with_name("force")
-             .short("f")
-             .long("force")
+        .arg(force_arg()
              .help("Force overwrite even if OUT exists"))
+        .arg(multi_pass_arg()
+             .help("Disable truncation of OUT. This allows writing to OUT multiple
+times to update it gradually."))
         .arg(no_meta_arg())
         .arg(pr_verbosity_level_arg())
         .arg(burst_arg()
@@ -89,6 +91,7 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let param = Param::new(get_ref_block_choice!(matches),
                            matches.is_present("force"),
+                           matches.is_present("multi_pass"),
                            &json_printer,
                            in_file,
                            out,
