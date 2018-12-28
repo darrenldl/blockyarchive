@@ -154,7 +154,7 @@ for ver in 17 18 19; do
       exit_code=1
     fi
 
-    new_burst=$[burst * (data_shards + parity_shards + 1)]
+    new_burst=$[burst + 2]
 
     echo -n "Sorting container with different burst error resistance level"
     output=$(./blkar sort --json -f --burst $new_burst $container_name sorted_$container_name)
@@ -169,30 +169,35 @@ for ver in 17 18 19; do
       exit_code=1
     fi
 
+    old_meta_same_order=$meta_same_order
+    old_meta_diff_order=$meta_diff_order
+    old_data_same_order=$data_same_order
+    old_data_diff_order=$data_diff_order
+
     meta_same_order=$(echo $output | jq -r ".stats.numberOfBlocksInSameOrderMetadata")
     meta_diff_order=$(echo $output | jq -r ".stats.numberOfBlocksInDiffOrderMetadata")
     data_same_order=$(echo $output | jq -r ".stats.numberOfBlocksInSameOrderData")
     data_diff_order=$(echo $output | jq -r ".stats.numberOfBlocksInDiffOrderData")
 
-    if [[ $meta_same_order == 1 ]]; then
+    if [[ $meta_same_order < $old_meta_same_order ]]; then
       echo -n " ==> Okay"
     else
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    if [[ $meta_diff_order == $parity_shards ]]; then
+    if [[ $meta_diff_order > $old_meta_diff_order ]]; then
       echo -n " ==> Okay"
     else
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    if [[ $data_same_order > 0 ]]; then
+    if [[ $data_same_order < $old_data_same_order ]]; then
       echo -n " ==> Okay"
     else
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    if [[ $data_diff_order > 0 ]]; then
+    if [[ $data_diff_order > $old_data_diff_order ]]; then
       echo " ==> Okay"
     else
       echo " ==> NOT okay"
