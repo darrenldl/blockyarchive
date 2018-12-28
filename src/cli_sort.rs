@@ -68,7 +68,7 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
-    let out =
+    let out : Option<&str> =
         if dry_run {
             None
         } else {
