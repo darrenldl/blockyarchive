@@ -63,7 +63,7 @@ for ver in ${VERSIONS[*]}; do
   echo "Decoding version $ver container"
   rm -f dummy$ver
   for i in 1 2 3 4 5 6; do
-    echo -n "  pass $i"
+    echo -n "    pass $i"
     output=$(./blkar decode --json --verbose --multi-pass dummy$ver.$i.sbx dummy$ver)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
