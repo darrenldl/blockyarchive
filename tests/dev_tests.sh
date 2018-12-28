@@ -406,7 +406,7 @@ if [[ $? != 0 ]]; then
 fi
 
 echo "========================================"
-echo "Starting sort multi pass tests"
+echo "Starting sort multi-pass tests"
 echo "========================================"
 ./sort_multi_pass.sh
 if [[ $? != 0 ]]; then
@@ -415,7 +415,7 @@ if [[ $? != 0 ]]; then
 fi
 
 echo "========================================"
-echo "Starting decode multi pass tests"
+echo "Starting decode multi-pass tests"
 echo "========================================"
 ./decode_multi_pass.sh
 if [[ $? != 0 ]]; then
