@@ -1,3 +1,21 @@
+## 2.3.0
+
+- Changed decode mode to use only file portion of stored file name in SBX container
+
+  - In previous versions, if the stored file name contains a path, then the entire path would be used, which can lead to unexpected output locations
+
+- Added `--multi-pass` flag to decode and sort mode
+
+  - This disables truncation, and allows updating the file gradually across multiple runs
+
+- Upgraded stats tracking in sort mode
+
+  - Now it also tracks number of blocks in same order and in different order
+
+- Added `--dry-run` flag to sort mode
+
+  - Combined with the improved stats tracking allows checking if the container is sorted or not
+
 ## 2.2.0
 
 - Added `--only-pick-uid` option to show mode
