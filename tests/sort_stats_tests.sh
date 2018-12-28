@@ -82,7 +82,7 @@ done
 
 for ver in 17 18 19; do
   for (( i=0; i < 3; i++ )); do
-    burst=$((RANDOM % 15))
+    burst=$((1 + RANDOM % 15))
 
     data_shards=$((1 + RANDOM % 128))
     parity_shards=$((1 + RANDOM % 128))
@@ -154,7 +154,7 @@ for ver in 17 18 19; do
       exit_code=1
     fi
 
-    new_burst=$[burst + 200]
+    new_burst=$[burst * (data_shards + parity_shards)]
 
     echo -n "Sorting container with different burst error resistance level"
     output=$(./blkar sort --json -f --burst $new_burst $container_name sorted_$container_name)
