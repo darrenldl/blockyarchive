@@ -927,8 +927,8 @@ pub fn decode_file(param : &Param)
     let out_file_path : Option<String> = match param.out_file {
         None => {
             match recorded_file_name {
-                None    => { return Err(Error::with_message("No original file name was found in SBX container and no output file name/path was provided")); },
-                Some(x) => Some(x)
+                None        => { return Err(Error::with_message("No original file name was found in SBX container and no output file name/path was provided")); },
+                Some(ref x) => Some(file_utils::get_file_name_part_of_path(x)),
             }
         },
         Some(ref out) => {
