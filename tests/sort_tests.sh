@@ -65,9 +65,9 @@ for ver in ${VERSIONS[*]}; do
             exit_code=1
         fi
         if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
-            echo -n " ==> Okay"
+            echo " ==> Okay"
         else
-            echo -n " ==> NOT okay"
+            echo " ==> NOT okay"
             exit_code=1
         fi
 
