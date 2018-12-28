@@ -405,6 +405,15 @@ if [[ $? != 0 ]]; then
   test_failed_names=$test_failed_names"- sort_dry_run.sh\n"
 fi
 
+echo "========================================"
+echo "Starting sort multi pass tests"
+echo "========================================"
+./sort_multi_pass.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- sort_multi_pass.sh\n"
+fi
+
 # file size tests
 echo "========================================"
 echo "Starting file size calculation tests"
