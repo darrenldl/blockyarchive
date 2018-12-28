@@ -19,8 +19,9 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .arg(out_arg()
              .help("Decoded file name. Supply - to use STDOUT as output. Use ./- for files named -.
 If OUT is not provided, then the original file name stored in the SBX container
-(STOREDNAME) is used if present. If OUT is provided and is a directory, then
-the output file is stored as OUT/STOREDNAME if STOREDNAME is present. If OUT is
+(STOREDNAME) is used if present (only the file part of STOREDNAME is used). If
+OUT is provided and is a directory, then the output file is stored as OUT/STOREDNAME
+if STOREDNAME is present (only the file part of STOREDNAME is used). If OUT is
 provided and is not a directory, then it is used directly."))
         .arg(force_arg()
              .help("Force overwrite even if OUT exists"))
