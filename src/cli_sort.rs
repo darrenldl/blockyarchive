@@ -16,7 +16,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
              .help("SBX container to sort"))
         .arg(out_arg()
              .help("Sorted SBX container (defaults to INFILE.sorted). If OUT is a directory, then the
-container is stored as OUT/INFILE.sorted. Ignored if --dry-run is supplied."))
+container is stored as OUT/INFILE.sorted (only the file part of INFILE is used in this case). Ignored if --dry-run is supplied."))
         .arg(force_arg()
              .help("Force overwrite even if OUTFILE exists"))
         .arg(multi_pass_arg()
