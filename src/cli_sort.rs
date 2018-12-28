@@ -55,21 +55,25 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
         },
     };
 
+    let force      = matches.is_present("force");
+    let multi_pass = matches.is_present("multi_pass");
+    let dry_run    = matches.is_present("dry_run");
+
     let burst = get_burst_opt!(matches, json_printer);
 
     exit_if_file!(exists &out
-                  => matches.is_present("force") || matches.is_present("multi_pass")
+                  => force || multi_pass || dry_run
                   => json_printer
                   => "File \"{}\" already exists", out);
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
     let param = Param::new(get_ref_block_choice!(matches),
-                           matches.is_present("multi_pass"),
+                           multi_pass,
                            &json_printer,
                            in_file,
                            &out,
-                           matches.is_present("dry_run"),
+                           dry_run,
                            matches.is_present("verbose"),
                            pr_verbosity_level,
                            burst);
