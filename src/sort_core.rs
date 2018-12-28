@@ -37,8 +37,7 @@ pub struct Param {
     multi_pass         : bool,
     json_printer       : Arc<JSONPrinter>,
     in_file            : String,
-    out_file           : String,
-    dry_run            : bool,
+    out_file           : Option<String>,
     verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
     burst              : Option<usize>,
@@ -49,8 +48,7 @@ impl Param {
                multi_pass         : bool,
                json_printer       : &Arc<JSONPrinter>,
                in_file            : &str,
-               out_file           : &str,
-               dry_run            : bool,
+               out_file           : Option<&str>,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel,
                burst              : Option<usize>) -> Param {
@@ -59,8 +57,10 @@ impl Param {
             multi_pass,
             json_printer       : Arc::clone(json_printer),
             in_file            : String::from(in_file),
-            out_file           : String::from(out_file),
-            dry_run,
+            out_file           : match out_file {
+                Some(x) => Some(String::from(x)),
+                None    => None,
+            },
             verbose,
             pr_verbosity_level,
             burst,
@@ -188,15 +188,15 @@ pub fn sort_file(param : &Param)
                                                        buffered : true   })?;
 
     let mut writer =
-        if param.dry_run {
-            None
-        } else {
-            Some(FileWriter::new(&param.out_file,
-                                 FileWriterParam { read     : false,
-                                                   append   : false,
-                                                   truncate : !param.multi_pass,
-                                                   buffered : true   })?
-            )
+        match param.out_file {
+            Some(ref f) =>
+                Some(FileWriter::new(f,
+                                     FileWriterParam { read     : false,
+                                                       append   : false,
+                                                       truncate : !param.multi_pass,
+                                                       buffered : true   })?
+                ),
+            None        => None,
         };
 
     let mut block = Block::dummy();

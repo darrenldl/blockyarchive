@@ -68,12 +68,18 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
+    let out =
+        if dry_run {
+            None
+        } else {
+            Some(&out)
+        };
+
     let param = Param::new(get_ref_block_choice!(matches),
                            multi_pass,
                            &json_printer,
                            in_file,
-                           &out,
-                           dry_run,
+                           out,
                            matches.is_present("verbose"),
                            pr_verbosity_level,
                            burst);
