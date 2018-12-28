@@ -387,6 +387,24 @@ if [[ $? != 0 ]]; then
   test_failed_names=$test_failed_names"- sort_tests_decode_stdout.sh\n"
 fi
 
+echo "========================================"
+echo "Starting sort stats tests"
+echo "========================================"
+./sort_stats_tests.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- sort_stats_tests.sh\n"
+fi
+
+echo "========================================"
+echo "Starting sort dry run tests"
+echo "========================================"
+./sort_dry_run.sh
+if [[ $? != 0 ]]; then
+  test_failed=$[$test_failed+1]
+  test_failed_names=$test_failed_names"- sort_dry_run.sh\n"
+fi
+
 # file size tests
 echo "========================================"
 echo "Starting file size calculation tests"
