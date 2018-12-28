@@ -31,7 +31,8 @@ for ver in ${VERSIONS[*]}; do
   cp dummy$ver.sbx dummy$ver.2.sbx
   cp dummy$ver.sbx dummy$ver.3.sbx
   cp dummy$ver.sbx dummy$ver.4.sbx
-  mv dummy$ver.sbx dummy$ver.5.sbx
+  cp dummy$ver.sbx dummy$ver.5.sbx
+  mv dummy$ver.sbx dummy$ver.6.sbx
 
   corrupt  5000 dummy$ver.1.sbx
   corrupt 10000 dummy$ver.1.sbx
@@ -50,13 +51,18 @@ for ver in ${VERSIONS[*]}; do
   corrupt  5000 dummy$ver.5.sbx
   corrupt 10000 dummy$ver.5.sbx
   corrupt 15000 dummy$ver.5.sbx
+
+  corrupt  5000 dummy$ver.6.sbx
+  corrupt 10000 dummy$ver.6.sbx
+  corrupt 15000 dummy$ver.6.sbx
+  corrupt 20000 dummy$ver.6.sbx
 done
 
 # Decode all of them
 for ver in ${VERSIONS[*]}; do
   echo "Decoding version $ver container"
   rm -f dummy$ver
-  for i in 1 2 3 4 5; do
+  for i in 1 2 3 4 5 6; do
     echo -n "  pass $i"
     output=$(./blkar decode --json --verbose --multi-pass dummy$ver.$i.sbx dummy$ver)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
