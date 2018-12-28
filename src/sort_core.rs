@@ -237,7 +237,7 @@ pub fn sort_file(param : &Param)
                 let reader_cur_pos = reader.cur_pos()?;
 
                 for &p in write_pos_s.iter() {
-                    if let Some(writer) = writer {
+                    if let Some(ref mut writer) = writer {
                         // write metadata blocks
                         writer.seek(SeekFrom::Start(p))?;
                         writer.write(sbx_block::slice_buf(version,
@@ -270,7 +270,7 @@ pub fn sort_file(param : &Param)
             // copy the value of current position in original container
             let reader_cur_pos = reader.cur_pos()?;
 
-            if let Some(writer) = writer {
+            if let Some(ref mut writer) = writer {
                 writer.seek(SeekFrom::Start(write_pos))?;
                 writer.write(sbx_block::slice_buf(version,
                                                   &buffer))?;
