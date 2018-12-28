@@ -71,39 +71,6 @@ for ver in ${VERSIONS[*]}; do
             exit_code=1
         fi
 
-        meta_same_order=$(echo $output | jq -r ".stats.numberOfBlocksInSameOrderMetadata")
-        meta_diff_order=$(echo $output | jq -r ".stats.numberOfBlocksInDiffOrderMetadata")
-        data_same_order=$(echo $output | jq -r ".stats.numberOfBlocksInSameOrderData")
-        data_diff_order=$(echo $output | jq -r ".stats.numberOfBlocksInDiffOrderData")
-
-        if [[ $meta_same_order == 1 ]]; then
-          echo -n " ==> Okay"
-        else
-          echo -n " ==> NOT okay"
-          exit_code=1
-        fi
-        if [[ (($ver == "1" || $ver == "2" || $ver == "3") && ($meta_diff_order == 0))
-                || (($ver == "17" || $ver == "18" || $ver == "19") && ($meta_diff_order == $parity_shards)) ]]; then
-          echo -n " ==> Okay"
-        else
-          echo -n " ==> NOT okay"
-          exit_code=1
-        fi
-        if [[ (($ver == "1" || $ver == "2" || $ver == "3") && ($data_same_order > 0))
-                  || (($ver == "17" || $ver == "18" || $ver == "19") && ($data_same_order == 0)) ]]; then
-          echo -n " ==> Okay"
-        else
-          echo -n " ==> NOT okay"
-          exit_code=1
-        fi
-        if [[ (($ver == "1" || $ver == "2" || $ver == "3") && ($data_diff_order == 0))
-                    || (($ver == "17" || $ver == "18" || $ver == "19") && ($data_diff_order > 0)) ]]; then
-          echo " ==> Okay"
-        else
-          echo " ==> NOT okay"
-          exit_code=1
-        fi
-
         echo -n "Checking sorted container burst error resistance level"
         output=$(./blkar show --json --guess-burst sorted_$container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
