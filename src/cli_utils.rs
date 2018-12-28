@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use clap::*;
 use sbx_block;
 use std::sync::Arc;

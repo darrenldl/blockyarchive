@@ -14,9 +14,9 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .about("Sort SBX blocks in container, can also readjust burst error resistance level")
         .arg(in_file_arg()
              .help("SBX container to sort"))
-        .arg(out_file_arg()
-             .required(true)
-             .help("Sorted SBX container"))
+        .arg(out_arg()
+             .help("Sorted SBX container (defaults to INFILE.sorted). If OUT is a directory, then the
+container is stored as OUT/INFILE.sorted. Ignored if --dry-run is supplied."))
         .arg(force_arg()
              .help("Force overwrite even if OUTFILE exists"))
         .arg(multi_pass_arg()
@@ -39,22 +39,27 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
     json_printer.print_open_bracket(None, BracketType::Curly);
 
     let in_file = get_in_file!(matches, json_printer);
-    let out_file = {
-        let out_file = matches.value_of("out_file").unwrap();
-
-        if file_utils::check_if_file_is_dir(out_file) {
-            misc_utils::make_path(&[out_file, in_file])
-        } else {
-            String::from(out_file)
-        }
+    let out = match matches.value_of("out") {
+        None    => {
+            format!("{}.sorted", in_file)
+        },
+        Some(x) => {
+            if file_utils::check_if_file_is_dir(x) {
+                let in_file = file_utils::get_file_name_part_of_path(in_file);
+                misc_utils::make_path(&[x,
+                                        &format!("{}.sorted", in_file)])
+            } else {
+                String::from(x)
+            }
+        },
     };
 
     let burst = get_burst_opt!(matches, json_printer);
 
-    exit_if_file!(exists &out_file
+    exit_if_file!(exists &out
                   => matches.is_present("force") || matches.is_present("multi_pass")
                   => json_printer
-                  => "File \"{}\" already exists", out_file);
+                  => "File \"{}\" already exists", out);
 
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
@@ -62,7 +67,8 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
                            matches.is_present("multi_pass"),
                            &json_printer,
                            in_file,
-                           &out_file,
+                           &out,
+                           matches.is_present("dry_run"),
                            matches.is_present("verbose"),
                            pr_verbosity_level,
                            burst);
