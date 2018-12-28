@@ -19,6 +19,8 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
 Specify this if you want blkar to report blank blocks as well."))
         .arg(verbose_arg()
              .help("Show reference block info, show individual check results"))
+        .arg(from_byte_arg())
+        .arg(to_byte_arg())
         .arg(json_arg())
 }
 

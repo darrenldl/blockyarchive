@@ -116,7 +116,6 @@ pub fn calc_required_len_and_seek_to_from_byte_range_inc
         Some(x) => x,
         None    => SBX_SCAN_BLOCK_SIZE as u64,
     };
-
     let align = |x : u64| -> u64 {
         if force_misalign { x }
         else              { u64::round_down_to_multiple(x,
