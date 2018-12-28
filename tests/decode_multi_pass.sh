@@ -26,6 +26,7 @@ for ver in ${VERSIONS[*]}; do
 done
 
 # Create corrupted copies
+echo "Creating corrupted copies"
 for ver in ${VERSIONS[*]}; do
   cp dummy$ver.sbx dummy$ver.1.sbx
   cp dummy$ver.sbx dummy$ver.2.sbx
