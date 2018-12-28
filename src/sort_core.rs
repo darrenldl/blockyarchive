@@ -188,11 +188,17 @@ pub fn sort_file(param : &Param)
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
 
-    let mut writer = FileWriter::new(&param.out_file,
-                                     FileWriterParam { read     : false,
-                                                       append   : false,
-                                                       truncate : !param.multi_pass,
-                                                       buffered : true   })?;
+    let mut writer =
+        if param.dry_run {
+            None
+        } else {
+            Some(FileWriter::new(&param.out_file,
+                                 FileWriterParam { read     : false,
+                                                   append   : false,
+                                                   truncate : !param.multi_pass,
+                                                   buffered : true   })?
+            )
+        };
 
     let mut block = Block::dummy();
 
@@ -231,7 +237,7 @@ pub fn sort_file(param : &Param)
                 let reader_cur_pos = reader.cur_pos()?;
 
                 for &p in write_pos_s.iter() {
-                    if !param.dry_run {
+                    if let Some(writer) = writer {
                         // write metadata blocks
                         writer.seek(SeekFrom::Start(p))?;
                         writer.write(sbx_block::slice_buf(version,
@@ -264,7 +270,7 @@ pub fn sort_file(param : &Param)
             // copy the value of current position in original container
             let reader_cur_pos = reader.cur_pos()?;
 
-            if !param.dry_run {
+            if let Some(writer) = writer {
                 writer.seek(SeekFrom::Start(write_pos))?;
                 writer.write(sbx_block::slice_buf(version,
                                                   &buffer))?;
