@@ -53,25 +53,25 @@ for ver in 1 2 3; do
         data_same_order=$(echo $output | jq -r ".stats.numberOfBlocksInSameOrderData")
         data_diff_order=$(echo $output | jq -r ".stats.numberOfBlocksInDiffOrderData")
 
-        if [[ $meta_same_order == 1 ]]; then
+        if (( $meta_same_order == 1 )); then
           echo -n " ==> Okay"
         else
           echo -n " ==> NOT okay"
           exit_code=1
         fi
-        if [[ $meta_diff_order == 0 ]]; then
+        if (( $meta_diff_order == 0 )); then
           echo -n " ==> Okay"
         else
           echo -n " ==> NOT okay"
           exit_code=1
         fi
-        if [[ $data_same_order > 0 ]]; then
+        if (( $data_same_order > 0 )); then
           echo -n " ==> Okay"
         else
           echo -n " ==> NOT okay"
           exit_code=1
         fi
-        if [[ $data_diff_order == 0 ]]; then
+        if (( $data_diff_order == 0 )); then
           echo " ==> Okay"
         else
           echo " ==> NOT okay"
@@ -129,30 +129,35 @@ for ver in 17 18 19; do
     data_same_order=$(echo $output | jq -r ".stats.numberOfBlocksInSameOrderData")
     data_diff_order=$(echo $output | jq -r ".stats.numberOfBlocksInDiffOrderData")
 
-    if [[ $meta_same_order == $[1 + $parity_shards] ]]; then
+    if (( $meta_same_order == $[1 + $parity_shards] )); then
       echo -n " ==> Okay"
     else
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    if [[ $meta_diff_order == 0 ]]; then
+    if (( $meta_diff_order == 0 )); then
       echo -n " ==> Okay"
     else
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    if [[ $data_same_order > 0 ]]; then
+    if (( $data_same_order > 0 )); then
       echo -n " ==> Okay"
     else
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    if [[ $data_diff_order == 0 ]]; then
+    if (( $data_diff_order == 0 )); then
       echo " ==> Okay"
     else
       echo " ==> NOT okay"
       exit_code=1
     fi
+
+    old_meta_same_order=$meta_same_order
+    old_meta_diff_order=$meta_diff_order
+    old_data_same_order=$data_same_order
+    old_data_diff_order=$data_diff_order
 
     new_burst=$[burst + 2]
 
@@ -169,35 +174,30 @@ for ver in 17 18 19; do
       exit_code=1
     fi
 
-    old_meta_same_order=$meta_same_order
-    old_meta_diff_order=$meta_diff_order
-    old_data_same_order=$data_same_order
-    old_data_diff_order=$data_diff_order
-
     meta_same_order=$(echo $output | jq -r ".stats.numberOfBlocksInSameOrderMetadata")
     meta_diff_order=$(echo $output | jq -r ".stats.numberOfBlocksInDiffOrderMetadata")
     data_same_order=$(echo $output | jq -r ".stats.numberOfBlocksInSameOrderData")
     data_diff_order=$(echo $output | jq -r ".stats.numberOfBlocksInDiffOrderData")
 
-    if [[ $meta_same_order < $old_meta_same_order ]]; then
+    if (( $meta_same_order < $old_meta_same_order )); then
       echo -n " ==> Okay"
     else
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    if [[ $meta_diff_order > $old_meta_diff_order ]]; then
+    if (( $meta_diff_order > $old_meta_diff_order )); then
       echo -n " ==> Okay"
     else
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    if [[ $data_same_order < $old_data_same_order ]]; then
+    if (( $data_same_order < $old_data_same_order )); then
       echo -n " ==> Okay"
     else
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    if [[ $data_diff_order > $old_data_diff_order ]]; then
+    if (( $data_diff_order > $old_data_diff_order )); then
       echo " ==> Okay"
     else
       echo " ==> NOT okay"
