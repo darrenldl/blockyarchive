@@ -181,8 +181,7 @@ pub fn sort_file(param : &Param)
             None
         };
 
-    let mut buffer       : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
-    let mut check_buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+    let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
     let mut reader = FileReader::new(&param.in_file,
                                      FileReaderParam { write    : false,
@@ -217,6 +216,8 @@ pub fn sort_file(param : &Param)
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
+        let read_pos = reader.cur_pos()?;
+
         let read_res = reader.read(sbx_block::slice_buf_mut(version,
                                                             &mut buffer))?;
 
@@ -229,6 +230,9 @@ pub fn sort_file(param : &Param)
 
         if block.is_meta() {
             if !meta_written {
+                let mut check_buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
+                    [0; SBX_LARGEST_BLOCK_SIZE];
+
                 let write_pos_s =
                     sbx_block::calc_meta_block_all_write_pos_s(version,
                                                                data_par_burst);
@@ -267,8 +271,6 @@ pub fn sort_file(param : &Param)
                                                      None,
                                                      data_par_burst);
 
-            // copy the value of current position in original container
-            let reader_cur_pos = reader.cur_pos()?;
 
             if let Some(ref mut writer) = writer {
                 writer.seek(SeekFrom::Start(write_pos))?;
@@ -276,18 +278,11 @@ pub fn sort_file(param : &Param)
                                                   &buffer))?;
             }
 
-            // read block in original container
-            reader.seek(SeekFrom::Start(write_pos))?;
-            reader.read(sbx_block::slice_buf_mut(version,
-                                                 &mut check_buffer))?;
-
-            match buffer.cmp(&check_buffer) {
-                Ordering::Equal => stats.lock().unwrap().data_blocks_same_order += 1,
-                _               => stats.lock().unwrap().data_blocks_diff_order += 1,
+            if read_pos == write_pos {
+                stats.lock().unwrap().data_blocks_same_order += 1;
+            } else {
+                stats.lock().unwrap().data_blocks_diff_order += 1;
             }
-
-            // restore the position of reader
-            reader.seek(SeekFrom::Start(reader_cur_pos))?;
         }
 
         if block.is_meta() {
