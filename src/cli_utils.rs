@@ -121,7 +121,7 @@ pub fn ref_to_byte_inc_arg<'a, 'b>() -> Arg<'a, 'b> {
         .value_name("REF-TO-BYTE-INC")
         .long("ref-to-inc")
         .takes_value(true)
-        .help("Last position to try to search for a reference block.")
+        .help("Last position (inclusive) to try to search for a reference block.")
 }
 
 pub fn ref_to_byte_exc_arg<'a, 'b>() -> Arg<'a, 'b> {
@@ -129,7 +129,7 @@ pub fn ref_to_byte_exc_arg<'a, 'b>() -> Arg<'a, 'b> {
         .value_name("REF-TO-BYTE-EXC")
         .long("ref-to-exc")
         .takes_value(true)
-        .help("Last position to try to search for a reference block.")
+        .help("Last position (exclusive) to try to search for a reference block.")
 }
 
 pub fn no_meta_arg<'a, 'b>() -> Arg<'a, 'b> {
