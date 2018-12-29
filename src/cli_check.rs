@@ -20,12 +20,7 @@ Specify this if you want blkar to report blank blocks as well."))
         .arg(verbose_arg()
              .help("Show reference block info, show individual check results"))
         .arg(from_byte_arg()
-             .help("Start from byte FROM-BYTE. The position is automatically rounded
-down to the closest multiple of (ref block size) bytes. If this
-option is not specified, defaults to the start of file. Negative
-values are rejected. If FROM-BYTE exceeds the largest possible
-position (file size - 1), then it will be treated as (file size - 1).
-The rounding procedure is applied after all auto-adjustments."))
+             .help(FROM_BYTE_ARG_HELP_MSG_REF_BLOCK))
         .arg(to_byte_inc_arg())
         .arg(to_byte_exc_arg())
         .arg(ref_from_byte_arg())
