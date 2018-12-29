@@ -138,7 +138,13 @@ pub fn ref_from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
         .value_name("REF-FROM-BYTE")
         .long("ref-from")
         .takes_value(true)
-        .help("First position to try to search for a reference block.")
+        .help("First position to try to search for a reference block. The position
+is automatically rounded down to the closest multiple of 128 bytes.
+If this option is not specified, defaults to the start of file.
+Negative values are rejected. If FROM-BYTE exceeds the largest
+possible position (file size - 1), then it will be treated as
+(file size - 1). The rounding procedure is applied after all
+auto-adjustments.")
 }
 
 pub fn ref_to_byte_inc_arg<'a, 'b>() -> Arg<'a, 'b> {
