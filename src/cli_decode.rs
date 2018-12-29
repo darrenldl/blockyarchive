@@ -32,6 +32,8 @@ times to update it gradually."))
         .arg(pr_verbosity_level_arg())
         .arg(ref_from_byte_arg())
         .arg(ref_to_byte_arg())
+        .arg(from_byte_arg())
+        .arg(to_byte_arg())
         .arg(burst_arg()
              .help("Burst error resistance level used by the container.
 Use this if the level used by the container is above 1000,
