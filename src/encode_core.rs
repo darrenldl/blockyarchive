@@ -186,7 +186,7 @@ impl Param {
 }
 
 impl Stats {
-    pub fn new(param : &Param, file_size : Option<u64>) -> Stats {
+    pub fn new(param : &Param, required_len : Option<u64>) -> Stats {
         use file_utils::from_orig_file_size::calc_data_chunk_count;
         Stats {
             uid                     : param.uid,
@@ -196,9 +196,9 @@ impl Stats {
             data_blocks_written     : 0,
             data_par_blocks_written : 0,
             data_padding_bytes      : 0,
-            total_data_blocks       : match file_size {
-                Some(file_size) => calc_data_chunk_count(param.version, file_size) as u32,
-                None            => 0,
+            total_data_blocks       : match required_len {
+                Some(len) => calc_data_chunk_count(param.version, len) as u32,
+                None      => 0,
             },
             in_file_size            : 0,
             out_file_size           : 0,
@@ -411,8 +411,23 @@ pub fn encode_file(param : &Param)
         }
     }
 
+    // calulate length to read and position to seek to
+    let (required_len, seek_to) = match file_size {
+        Some(file_size) => {
+            let RequiredLenAndSeekTo { required_len, seek_to } =
+                misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
+                                                                              param.to_pos,
+                                                                              true,
+                                                                              0,
+                                                                              file_size,
+                                                                              None);
+            (Some(required_len), Some(seek_to))
+        },
+        None            => (None, None),
+    };
+
     // setup stats
-    let stats = Arc::new(Mutex::new(Stats::new(param, file_size)));
+    let stats = Arc::new(Mutex::new(Stats::new(param, required_len)));
 
     // setup reporter
     let reporter = ProgressReporter::new(&stats,
@@ -444,21 +459,6 @@ pub fn encode_file(param : &Param)
     let mut block = Block::new(param.version,
                                &param.uid,
                                BlockType::Data);
-
-    // calulate length to read and position to seek to
-    let (required_len, seek_to) = match file_size {
-        Some(file_size) => {
-            let RequiredLenAndSeekTo { required_len, seek_to } =
-                misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
-                                                                              param.to_pos,
-                                                                              true,
-                                                                              0,
-                                                                              file_size,
-                                                                              None);
-            (Some(required_len), Some(seek_to))
-        },
-        None            => (None, None),
-    };
 
     // seek to calculated position
     if let Some(seek_to) = seek_to {
