@@ -34,8 +34,8 @@ use block_utils::RefBlockChoice;
 
 pub struct Param {
     ref_block_choice   : RefBlockChoice,
-    ref_scan_from_pos  : Option<u64>,
-    ref_scan_to_pos    : Option<u64>,
+    ref_block_from_pos : Option<u64>,
+    ref_block_to_pos   : Option<u64>,
     multi_pass         : bool,
     json_printer       : Arc<JSONPrinter>,
     in_file            : String,
@@ -47,8 +47,8 @@ pub struct Param {
 
 impl Param {
     pub fn new(ref_block_choice   : RefBlockChoice,
-               ref_scan_from_pos  : Option<u64>,
-               ref_scan_to_pos    : Option<u64>,
+               ref_block_from_pos : Option<u64>,
+               ref_block_to_pos   : Option<u64>,
                multi_pass         : bool,
                json_printer       : &Arc<JSONPrinter>,
                in_file            : &str,
@@ -58,8 +58,8 @@ impl Param {
                burst              : Option<usize>) -> Param {
         Param {
             ref_block_choice,
-            ref_scan_from_pos,
-            ref_scan_to_pos,
+            ref_block_from_pos,
+            ref_block_to_pos,
             multi_pass,
             json_printer       : Arc::clone(json_printer),
             in_file            : String::from(in_file),

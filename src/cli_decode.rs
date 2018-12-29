@@ -30,6 +30,8 @@ provided and is not a directory, then it is used directly."))
 times to update it gradually."))
         .arg(no_meta_arg())
         .arg(pr_verbosity_level_arg())
+        .arg(ref_from_byte_arg())
+        .arg(ref_to_byte_arg())
         .arg(burst_arg()
              .help("Burst error resistance level used by the container.
 Use this if the level used by the container is above 1000,
@@ -89,7 +91,12 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let in_file = get_in_file!(matches, json_printer);
 
+    let ref_from_pos = get_ref_from_pos!(matches, json_printer);
+    let ref_to_pos   = get_ref_to_pos!(matches, json_printer);
+
     let param = Param::new(get_ref_block_choice!(matches),
+                           ref_from_pos,
+                           ref_to_pos,
                            matches.is_present("force"),
                            matches.is_present("multi_pass"),
                            &json_printer,

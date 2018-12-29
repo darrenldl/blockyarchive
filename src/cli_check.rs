@@ -21,6 +21,8 @@ Specify this if you want blkar to report blank blocks as well."))
              .help("Show reference block info, show individual check results"))
         .arg(from_byte_arg())
         .arg(to_byte_arg())
+        .arg(ref_from_byte_arg())
+        .arg(ref_to_byte_arg())
         .arg(json_arg())
 }
 
@@ -32,7 +34,13 @@ pub fn check<'a>(matches : &ArgMatches<'a>) -> i32 {
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
     let in_file  = get_in_file!(matches, json_printer);
+
+    let ref_from_pos = get_ref_from_pos!(matches, json_printer);
+    let ref_to_pos   = get_ref_to_pos!(matches, json_printer);
+
     let param = Param::new(get_ref_block_choice!(matches),
+                           ref_from_pos,
+                           ref_to_pos,
                            matches.is_present("report_blank"),
                            &json_printer,
                            in_file,

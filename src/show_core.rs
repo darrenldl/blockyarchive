@@ -131,6 +131,8 @@ pub fn show_file(param : &Param)
 
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&param.in_file,
+                                             None,
+                                             None,
                                              RefBlockChoice::MustBe(BlockType::Meta),
                                              param.pr_verbosity_level,
                                              param.json_printer.json_enabled(),

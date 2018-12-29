@@ -13,12 +13,22 @@ macro_rules! get_ref_block {
     (
         $param:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
     ) => {{
+        get_ref_block!($param,
+                       $param.ref_block_from_pos,
+                       $param.ref_block_to_pos,
+                       $json_printer,
+                       $ref_block_choice,
+                       $stop_flag)
+    }};
+    (
+        $param:expr, $ref_block_from_pos:expr, $ref_block_to_pos:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
+    ) => {{
         use std::sync::atomic::Ordering;
 
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&$param.in_file,
-                                             $param.ref_scan_from_pos,
-                                             $param.ref_scan_to_pos,
+                                             $ref_block_from_pos,
+                                             $ref_block_to_pos,
                                              $ref_block_choice,
                                              $param.pr_verbosity_level,
                                              $param.json_printer.json_enabled(),

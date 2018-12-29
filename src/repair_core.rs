@@ -229,6 +229,8 @@ pub fn repair_file(param : &Param)
     let json_printer = &param.json_printer;
 
     let (ref_block_pos, mut ref_block) = get_ref_block!(param,
+                                                        None,
+                                                        None,
                                                         json_printer,
                                                         RefBlockChoice::MustBe(BlockType::Meta),
                                                         ctrlc_stop_flag);
