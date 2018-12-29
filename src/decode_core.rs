@@ -279,12 +279,13 @@ impl HashStats {
 impl Stats {
     pub fn new(ref_block    : &Block,
                write_to     : WriteTo,
+               required_len : u64,
                in_file_size : u64,
                json_printer : &Arc<JSONPrinter>) -> Stats {
         use file_utils::from_container_size::calc_total_block_count;
         let total_blocks =
             calc_total_block_count(ref_block.get_version(),
-                                   in_file_size);
+                                   required_len);
         let blocks_decode_failed =
             match write_to {
                 WriteTo::File   => DecodeFailStats::Total(0),
@@ -583,12 +584,13 @@ pub fn decode(param           : &Param,
                                                                       false,
                                                                       0,
                                                                       in_file_size,
-                                                                      None);
+                                                                      Some(ver_to_block_size(version) as u64));
 
     match param.out_file {
         Some(_) => { // output to file
             stats = Arc::new(Mutex::new(Stats::new(&ref_block,
                                                    WriteTo::File,
+                                                   required_len,
                                                    in_file_size,
                                                    &param.json_printer)));
 
@@ -665,8 +667,24 @@ pub fn decode(param           : &Param,
                 }
             }
 
+            fn read_enough_blocks(stats : &Arc<Mutex<Stats>>) -> bool {
+                let stats = stats.lock().unwrap();
+                let blocks_decode_failed = match stats.blocks_decode_failed {
+                    DecodeFailStats::Breakdown(ref x) =>
+                        x.meta_blocks_decode_failed +
+                        x.data_blocks_decode_failed +
+                        x.parity_blocks_decode_failed,
+                    DecodeFailStats::Total(x)         => x,
+                };
+
+                (stats.meta_blocks_decoded +
+                 stats.data_blocks_decoded +
+                 blocks_decode_failed) == stats.total_blocks
+            }
+
             stats = Arc::new(Mutex::new(Stats::new(&ref_block,
                                                    WriteTo::Stdout,
+                                                   required_len,
                                                    in_file_size,
                                                    &param.json_printer)));
 
@@ -709,6 +727,14 @@ pub fn decode(param           : &Param,
                                                                        seq_num,
                                                                        None,
                                                                        data_par_burst);
+
+                        // stop if we've read enough number of blocks in the supplied range
+                        if read_enough_blocks(&stats) { break; }
+
+                        // make sure we only read in the supplied range
+                        if ! (seek_to <= pos && pos <= seek_to + required_len) {
+                            continue;
+                        }
 
                         reader.seek(SeekFrom::Start(pos))?;
 
