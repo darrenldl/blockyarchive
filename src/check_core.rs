@@ -3,6 +3,9 @@ use std::fmt;
 use file_utils;
 use misc_utils;
 use progress_report::*;
+use std::io::SeekFrom;
+
+use misc_utils::RequiredLenAndSeekTo;
 
 use json_printer::{JSONPrinter,
                    BracketType};
@@ -35,6 +38,8 @@ pub struct Param {
     ref_block_to_pos   : Option<u64>,
     report_blank       : bool,
     json_printer       : Arc<JSONPrinter>,
+    from_pos           : Option<u64>,
+    to_pos             : Option<u64>,
     in_file            : String,
     verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
@@ -46,6 +51,8 @@ impl Param {
                ref_block_to_pos   : Option<u64>,
                report_blank       : bool,
                json_printer       : &Arc<JSONPrinter>,
+               from_pos           : Option<u64>,
+               to_pos             : Option<u64>,
                in_file            : &str,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel) -> Param {
@@ -55,6 +62,8 @@ impl Param {
             ref_block_to_pos,
             report_blank,
             json_printer : Arc::clone(json_printer),
+            from_pos,
+            to_pos,
             in_file  : String::from(in_file),
             verbose,
             pr_verbosity_level,
@@ -167,7 +176,21 @@ pub fn check_file(param : &Param)
     let mut block_pos       : u64;
     let mut bytes_processed : u64 = 0;
 
+    let version = ref_block.get_version();
+
+    // calulate length to read and position to seek to
+    let RequiredLenAndSeekTo { required_len, seek_to } =
+        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
+                                                                      param.to_pos,
+                                                                      false,
+                                                                      0,
+                                                                      file_size,
+                                                                      Some(ver_to_block_size(version) as u64));
+
     reporter.start();
+
+    // seek to calculated position
+    reader.seek(SeekFrom::Start(seek_to))?;
 
     if param.verbose {
         json_printer.print_open_bracket(Some("blocks failed"), BracketType::Square);
@@ -183,6 +206,9 @@ pub fn check_file(param : &Param)
         bytes_processed += read_res.len_read as u64;
 
         break_if_eof_seen!(read_res);
+
+        break_if_reached_required_len!(bytes_processed,
+                                       required_len);
 
         match block.sync_from_buffer(&buffer, None) {
             Ok(_)  => match block.block_type() {

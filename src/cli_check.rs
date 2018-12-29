@@ -35,6 +35,9 @@ pub fn check<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let in_file  = get_in_file!(matches, json_printer);
 
+    let from_pos = get_from_pos!(matches, json_printer);
+    let to_pos   = get_to_pos!(matches, json_printer);
+
     let ref_from_pos = get_ref_from_pos!(matches, json_printer);
     let ref_to_pos   = get_ref_to_pos!(matches, json_printer);
 
@@ -43,6 +46,8 @@ pub fn check<'a>(matches : &ArgMatches<'a>) -> i32 {
                            ref_to_pos,
                            matches.is_present("report_blank"),
                            &json_printer,
+                           from_pos,
+                           to_pos,
                            in_file,
                            matches.is_present("verbose"),
                            pr_verbosity_level);
