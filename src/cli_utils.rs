@@ -88,9 +88,19 @@ pub fn from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
         .takes_value(true)
 }
 
-pub fn to_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
-    Arg::with_name("to_pos")
-        .value_name("TO-BYTE")
+pub fn to_byte_inc_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("to_pos_inc")
+        .value_name("TO-BYTE-INC")
+        .long("to")
+        .takes_value(true)
+        .help("Last position to try to decode a block. If not specified, defaults
+to the end of file. Negative values are treated as 0. If TO-BYTE is
+smaller than FROM-BYTE, then it will be treated as FROM-BYTE.")
+}
+
+pub fn to_byte_exc_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("to_pos_exc")
+        .value_name("TO-BYTE-EXC")
         .long("to")
         .takes_value(true)
         .help("Last position to try to decode a block. If not specified, defaults
@@ -106,10 +116,18 @@ pub fn ref_from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
         .help("First position to try to search for a reference block.")
 }
 
-pub fn ref_to_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
-    Arg::with_name("ref_to_pos")
-        .value_name("REF-TO-BYTE")
-        .long("ref-to")
+pub fn ref_to_byte_inc_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("ref_to_pos_inc")
+        .value_name("REF-TO-BYTE-INC")
+        .long("ref-to-inc")
+        .takes_value(true)
+        .help("Last position to try to search for a reference block.")
+}
+
+pub fn ref_to_byte_exc_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("ref_to_pos_exc")
+        .value_name("REF-TO-BYTE-EXC")
+        .long("ref-to-exc")
         .takes_value(true)
         .help("Last position to try to search for a reference block.")
 }
