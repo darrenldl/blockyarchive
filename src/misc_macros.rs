@@ -17,6 +17,8 @@ macro_rules! get_ref_block {
 
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&$param.in_file,
+                                             $param.ref_scan_from_pos,
+                                             $param.ref_scan_to_pos,
                                              $ref_block_choice,
                                              $param.pr_verbosity_level,
                                              $param.json_printer.json_enabled(),

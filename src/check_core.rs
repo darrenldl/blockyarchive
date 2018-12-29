@@ -31,6 +31,8 @@ use cli_utils::report_ref_block_info;
 
 pub struct Param {
     ref_block_choice   : RefBlockChoice,
+    ref_scan_from_pos  : Option<u64>,
+    ref_scan_to_pos    : Option<u64>,
     report_blank       : bool,
     json_printer       : Arc<JSONPrinter>,
     in_file            : String,
@@ -40,6 +42,8 @@ pub struct Param {
 
 impl Param {
     pub fn new(ref_block_choice   : RefBlockChoice,
+               ref_scan_from_pos  : Option<u64>,
+               ref_scan_to_pos    : Option<u64>,
                report_blank       : bool,
                json_printer       : &Arc<JSONPrinter>,
                in_file            : &str,
@@ -47,6 +51,8 @@ impl Param {
                pr_verbosity_level : PRVerbosityLevel) -> Param {
         Param {
             ref_block_choice,
+            ref_scan_from_pos,
+            ref_scan_to_pos,
             report_blank,
             json_printer : Arc::clone(json_printer),
             in_file  : String::from(in_file),

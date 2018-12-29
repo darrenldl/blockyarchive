@@ -114,12 +114,22 @@ pub fn read_block_lazily(block  : &mut Block,
 }
 
 pub fn get_ref_block(in_file            : &str,
+                     from_pos           : Option<u64>,
+                     to_pos             : Option<u64>,
                      ref_block_choice   : RefBlockChoice,
                      pr_verbosity_level : PRVerbosityLevel,
                      json_enabled       : bool,
                      stop_flag          : &Arc<AtomicBool>)
                      -> Result<Option<(u64, Block)>, Error> {
     let file_size = file_utils::get_file_size(in_file)?;
+
+    let RequiredLenAndSeekTo { required_len, seek_to } =
+        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(from_pos,
+                                                                      to_pos,
+                                                                      false,
+                                                                      0,
+                                                                      file_size,
+                                                                      None);
 
     let stats = Arc::new(Mutex::new(ScanStats::new(file_size)));
 
@@ -141,6 +151,8 @@ pub fn get_ref_block(in_file            : &str,
                                      FileReaderParam { write    : false,
                                                        buffered : true   })?;
 
+    reader.seek(SeekFrom::Start(seek_to))?;
+
     reporter.start();
 
     let mut block_pos       : u64;
@@ -148,6 +160,9 @@ pub fn get_ref_block(in_file            : &str,
 
     loop {
         break_if_atomic_bool!(stop_flag);
+
+        break_if_reached_required_len!(bytes_processed,
+                                       required_len);
 
         let lazy_read_res = read_block_lazily(&mut block,
                                               &mut buffer,
