@@ -7,6 +7,12 @@ use std::path::PathBuf;
 
 use smallvec::SmallVec;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum RangeEnd<T> {
+    Inc(T),
+    Exc(T),
+}
+
 #[derive(Debug, PartialEq)]
 pub enum HexError {
     InvalidHexString,
@@ -106,7 +112,7 @@ pub struct RequiredLenAndSeekTo {
 
 pub fn calc_required_len_and_seek_to_from_byte_range_inc
     (from_byte         : Option<u64>,
-     to_byte_inc       : Option<u64>,
+     to_byte           : Option<RangeEnd<u64>>,
      force_misalign    : bool,
      bytes_so_far      : u64,
      last_possible_pos : u64,
@@ -128,9 +134,14 @@ pub fn calc_required_len_and_seek_to_from_byte_range_inc
     };
     let to_byte = match to_byte_inc {
         None    => last_possible_pos,
-        Some(n) => u64::ensure_at_most(u64::ensure_at_least(n,
-                                                            from_byte),
-                                       last_possible_pos)
+        Some(n) => match n {
+            Inc(n) => u64::ensure_at_most(u64::ensure_at_least(n,
+                                                               from_byte),
+                                          last_possible_pos),
+            Exc(n) => u64::ensure_at_most(u64::ensure_at_least(n - 1,
+                                                               from_byte)
+                                          last_possible_pos),
+        }
     };
     // bytes_so_far only affects seek_to
     let seek_to = u64::ensure_at_most(align(from_byte + bytes_so_far),

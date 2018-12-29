@@ -29,6 +29,8 @@ use progress_report::*;
 
 use general_error::Error;
 
+use misc_utils::RangeEnd;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum RefBlockChoice {
     Any,
@@ -120,7 +122,7 @@ pub fn read_block_lazily(block  : &mut Block,
 
 pub fn get_ref_block(in_file            : &str,
                      from_pos           : Option<u64>,
-                     to_pos             : Option<u64>,
+                     to_pos             : Option<RangeEnd<u64>>,
                      ref_block_choice   : RefBlockChoice,
                      pr_verbosity_level : PRVerbosityLevel,
                      json_enabled       : bool,
