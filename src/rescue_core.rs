@@ -92,14 +92,14 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(file_size    : u64,
+    pub fn new(required_len : u64,
                json_printer : &Arc<JSONPrinter>)
                -> Result<Stats, Error> {
         let stats = Stats {
             meta_or_par_blocks_processed : 0,
             data_or_par_blocks_processed : 0,
             bytes_processed              : 0,
-            total_bytes                  : file_size,
+            total_bytes                  : required_len,
             start_time                   : 0.,
             end_time                     : 0.,
             json_printer                 : Arc::clone(json_printer),
@@ -217,7 +217,17 @@ pub fn rescue_from_file(param : &Param)
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
-    let stats = Arc::new(Mutex::new(Stats::new(file_size,
+
+    // calulate length to read and position to seek to
+    let RequiredLenAndSeekTo { required_len, seek_to } =
+        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
+                                                                      param.to_pos,
+                                                                      param.force_misalign,
+                                                                      stats.lock().unwrap().bytes_processed,
+                                                                      file_size,
+                                                                      None);
+
+    let stats = Arc::new(Mutex::new(Stats::new(required_len,
                                                &param.json_printer)?));
 
     let mut reader = FileReader::new(&param.in_file,
@@ -243,15 +253,6 @@ pub fn rescue_from_file(param : &Param)
 
     // read from log file if it exists
     log_handler.read_from_file()?;
-
-    // calulate length to read and position to seek to
-    let RequiredLenAndSeekTo { required_len, seek_to } =
-        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
-                                                                      param.to_pos,
-                                                                      param.force_misalign,
-                                                                      stats.lock().unwrap().bytes_processed,
-                                                                      file_size,
-                                                                      None);
 
     // seek to calculated position
     reader.seek(SeekFrom::Start(seek_to))?;
