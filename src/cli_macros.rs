@@ -97,12 +97,12 @@ macro_rules! get_to_pos {
             (Some(x), None   ) =>
                 match u64::from_str(x) {
                     Ok(x)  => Some(RangeEnd::Inc(x)),
-                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid to position")
+                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid to inc position")
                 },
             (None,    Some(x)) =>
                 match u64::from_str(x) {
                     Ok(x)  => Some(RangeEnd::Exc(x)),
-                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid to position")
+                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid to exc position")
                 },
             (Some(_), Some(_)) =>
                 exit_with_msg!(usr $json_enabled => "Cannot specify both --to-inc and --to-exc"),
@@ -138,12 +138,12 @@ macro_rules! get_ref_to_pos {
             (Some(x), None   ) =>
                 match u64::from_str(x) {
                     Ok(x)  => Some(RangeEnd::Inc(x)),
-                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid ref to position")
+                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid ref to inc position")
                 },
             (None,    Some(x)) =>
                 match u64::from_str(x) {
                     Ok(x)  => Some(RangeEnd::Exc(x)),
-                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid ref to position")
+                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid ref to exc position")
                 },
             (Some(_), Some(_)) =>
                 exit_with_msg!(usr $json_enabled => "Cannot specify both --ref-to-inc and --ref-to-exc"),
