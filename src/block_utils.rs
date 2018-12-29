@@ -136,7 +136,7 @@ pub fn get_ref_block(in_file            : &str,
                                                                       file_size,
                                                                       None);
 
-    let stats = Arc::new(Mutex::new(ScanStats::new(file_size)));
+    let stats = Arc::new(Mutex::new(ScanStats::new(required_len)));
 
     let reporter = ProgressReporter::new(&stats,
                                          "Reference block scanning progress",
