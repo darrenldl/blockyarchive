@@ -117,12 +117,18 @@ quickcheck! {
                                                         force_misalign    : bool,
                                                         bytes_so_far      : u64,
                                                         last_possible_pos : u64) -> bool {
+        let to_byte = match to_byte_inc {
+            None    => None,
+            Some(x) => Some(RangeEnd::Inc(x)),
+        };
+
         let RequiredLenAndSeekTo { required_len, seek_to } =
             calc_required_len_and_seek_to_from_byte_range_inc(from_byte,
-                                                              to_byte_inc,
+                                                              to_byte,
                                                               force_misalign,
                                                               bytes_so_far,
-                                                              last_possible_pos);
+                                                              last_possible_pos,
+                                                              None);
 
         let from_byte = match from_byte   {
             None => 0,
