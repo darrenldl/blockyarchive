@@ -105,6 +105,12 @@ values are rejected. If FROM-BYTE exceeds the largest possible
 position (file size - 1), then it will be treated as (file size - 1).
 The rounding procedure is applied after all auto-adjustments.";
 
+pub const FROM_BYTE_ARG_HELP_MSG_RAW_UNALIGNED : &str =
+    "Start from byte FROM-BYTE. If this option is not specified,
+defaults to the start of the file. Negative values are rejected. If
+FROM-BYTE exceeds the largest possible position (file size - 1). then
+it will be treated as (file size - 1).";
+
 pub fn to_byte_inc_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("to_pos_inc")
         .value_name("TO-BYTE-INC")
