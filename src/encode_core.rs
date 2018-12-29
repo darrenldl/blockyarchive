@@ -485,6 +485,11 @@ pub fn encode_file(param : &Param)
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
+        if let Some(required_len) = required_len {
+            break_if_reached_required_len!(bytes_processed,
+                                           required_len);
+        }
+
         // read data in
         let read_res =
             reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data))?;
@@ -492,11 +497,6 @@ pub fn encode_file(param : &Param)
         bytes_processed += read_res.len_read as u64;
 
         if read_res.len_read == 0 { break; }
-
-        if let Some(required_len) = required_len {
-            break_if_reached_required_len!(bytes_processed,
-                                           required_len);
-        }
 
         let mut data_blocks_written     = 0;
         let mut data_par_blocks_written = 0;

@@ -723,13 +723,13 @@ pub fn decode(param           : &Param,
                     while seq_num <= SBX_LAST_SEQ_NUM {
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
+                        // stop if we've read enough number of blocks in the supplied range
+                        if read_enough_blocks(&stats) { break; }
+
                         let pos = sbx_block::calc_data_block_write_pos(ref_block.get_version(),
                                                                        seq_num,
                                                                        None,
                                                                        data_par_burst);
-
-                        // stop if we've read enough number of blocks in the supplied range
-                        if read_enough_blocks(&stats) { break; }
 
                         // make sure we only read in the supplied range
                         if ! (seek_to <= pos && pos <= seek_to + required_len) {
@@ -801,6 +801,9 @@ pub fn decode(param           : &Param,
                     while seq_num <= SBX_LAST_SEQ_NUM {
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
+                        break_if_reached_required_len!(bytes_processed,
+                                                       required_len);
+
                         // read at reference block block size
                         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                                             &mut buffer))?;
@@ -808,9 +811,6 @@ pub fn decode(param           : &Param,
                         bytes_processed += read_res.len_read as u64;
 
                         break_if_eof_seen!(read_res);
-
-                        break_if_reached_required_len!(bytes_processed,
-                                                       required_len);
 
                         let block_okay =
                             match block.sync_from_buffer(&buffer, Some(&pred)) {

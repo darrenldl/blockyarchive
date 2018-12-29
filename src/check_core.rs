@@ -199,6 +199,9 @@ pub fn check_file(param : &Param)
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
+        break_if_reached_required_len!(bytes_processed,
+                                       required_len);
+
         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                             &mut buffer))?;
 
@@ -206,9 +209,6 @@ pub fn check_file(param : &Param)
         bytes_processed += read_res.len_read as u64;
 
         break_if_eof_seen!(read_res);
-
-        break_if_reached_required_len!(bytes_processed,
-                                       required_len);
 
         match block.sync_from_buffer(&buffer, None) {
             Ok(_)  => match block.block_type() {
