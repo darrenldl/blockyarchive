@@ -107,7 +107,7 @@ pub fn ref_from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
 }
 
 pub fn ref_to_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
-    Arg::with_name("to_from_pos")
+    Arg::with_name("ref_to_pos")
         .value_name("REF-TO-BYTE")
         .long("to-from")
         .takes_value(true)

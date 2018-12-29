@@ -1,8 +1,11 @@
 use std::sync::{Arc, Mutex};
 use std::fmt;
 use file_utils;
+use misc_utils;
 use std::io::SeekFrom;
 use std::cmp::Ordering;
+
+use misc_utils::RequiredLenAndSeekTo;
 
 use progress_report::*;
 
@@ -38,6 +41,8 @@ pub struct Param {
     ref_block_to_pos   : Option<u64>,
     multi_pass         : bool,
     json_printer       : Arc<JSONPrinter>,
+    from_pos           : Option<u64>,
+    to_pos             : Option<u64>,
     in_file            : String,
     out_file           : Option<String>,
     verbose            : bool,
@@ -51,6 +56,8 @@ impl Param {
                ref_block_to_pos   : Option<u64>,
                multi_pass         : bool,
                json_printer       : &Arc<JSONPrinter>,
+               from_pos           : Option<u64>,
+               to_pos             : Option<u64>,
                in_file            : &str,
                out_file           : Option<&str>,
                verbose            : bool,
@@ -62,6 +69,8 @@ impl Param {
             ref_block_to_pos,
             multi_pass,
             json_printer       : Arc::clone(json_printer),
+            from_pos,
+            to_pos,
             in_file            : String::from(in_file),
             out_file           : match out_file {
                 Some(x) => Some(String::from(x)),
@@ -217,7 +226,21 @@ pub fn sort_file(param : &Param)
 
     let pred = block_pred_same_ver_uid!(ref_block);
 
+    // calulate length to read and position to seek to
+    let RequiredLenAndSeekTo { required_len, seek_to } =
+        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
+                                                                      param.to_pos,
+                                                                      false,
+                                                                      0,
+                                                                      file_size,
+                                                                      Some(ver_to_block_size(version) as u64));
+
+    // seek to calculated position
+    reader.seek(SeekFrom::Start(seek_to))?;
+
     reporter.start();
+
+    let mut bytes_processed : u64 = 0;
 
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
@@ -227,7 +250,12 @@ pub fn sort_file(param : &Param)
         let read_res = reader.read(sbx_block::slice_buf_mut(version,
                                                             &mut buffer))?;
 
+        bytes_processed += read_res.len_read as u64;
+
         break_if_eof_seen!(read_res);
+
+        break_if_reached_required_len!(bytes_processed,
+                                       required_len);
 
         if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
             stats.lock().unwrap().blocks_decode_failed += 1;

@@ -489,9 +489,9 @@ pub fn encode_file(param : &Param)
         let read_res =
             reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data))?;
 
-        if read_res.len_read == 0 { break; }
-
         bytes_processed += read_res.len_read as u64;
+
+        if read_res.len_read == 0 { break; }
 
         if let Some(required_len) = required_len {
             break_if_reached_required_len!(bytes_processed,
