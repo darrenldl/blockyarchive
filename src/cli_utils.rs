@@ -109,7 +109,7 @@ pub fn ref_from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
 pub fn ref_to_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("ref_to_pos")
         .value_name("REF-TO-BYTE")
-        .long("to-from")
+        .long("ref-to")
         .takes_value(true)
         .help("Last position to try to search for a reference block.")
 }
