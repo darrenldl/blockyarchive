@@ -6,6 +6,8 @@ use time_utils;
 use misc_utils;
 use std::io::SeekFrom;
 
+use misc_utils::RequiredLenAndSeekTo;
+
 use json_printer::{JSONPrinter,
                    BracketType};
 
@@ -142,6 +144,8 @@ pub struct Param {
     meta_enabled       : bool,
     json_printer       : Arc<JSONPrinter>,
     hash_type          : multihash::HashType,
+    from_pos           : Option<u64>,
+    to_pos             : Option<u64>,
     in_file            : Option<String>,
     out_file           : String,
     pr_verbosity_level : PRVerbosityLevel,
@@ -154,6 +158,8 @@ impl Param {
                meta_enabled       : bool,
                json_printer       : &Arc<JSONPrinter>,
                hash_type          : multihash::HashType,
+               from_pos           : Option<u64>,
+               to_pos             : Option<u64>,
                in_file            : Option<&str>,
                out_file           : &str,
                pr_verbosity_level : PRVerbosityLevel) -> Param {
@@ -165,6 +171,8 @@ impl Param {
             meta_enabled   : ver_forces_meta_enabled(version) || meta_enabled,
             json_printer   : Arc::clone(json_printer),
             hash_type,
+            from_pos,
+            to_pos,
             in_file        : match in_file {
                 None    => None,
                 Some(f) => Some(String::from(f)),
@@ -435,6 +443,29 @@ pub fn encode_file(param : &Param)
                                &param.uid,
                                BlockType::Data);
 
+    // calulate length to read and position to seek to
+    let (required_len, seek_to) = match file_size {
+        Some(file_size) => {
+            let RequiredLenAndSeekTo { required_len, seek_to } =
+                misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
+                                                                              param.to_pos,
+                                                                              true,
+                                                                              0,
+                                                                              file_size,
+                                                                              None);
+            (Some(required_len), Some(seek_to))
+        },
+        None            => (None, None),
+    };
+
+    // seek to calculated position
+    if let Some(seek_to) = seek_to {
+        match reader.seek(SeekFrom::Start(seek_to)) {
+            None    => {},
+            Some(x) => { x?; },
+        }
+    }
+
     reporter.start();
 
     if param.meta_enabled { // write dummy metadata block
@@ -449,6 +480,8 @@ pub fn encode_file(param : &Param)
                           true)?;
     }
 
+    let mut bytes_processed : u64 = 0;
+
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
@@ -457,6 +490,13 @@ pub fn encode_file(param : &Param)
             reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data))?;
 
         if read_res.len_read == 0 { break; }
+
+        bytes_processed += read_res.len_read as u64;
+
+        if let Some(required_len) = required_len {
+            break_if_reached_required_len!(bytes_processed,
+                                           required_len);
+        }
 
         let mut data_blocks_written     = 0;
         let mut data_par_blocks_written = 0;

@@ -55,6 +55,8 @@ This means this option has no effect for version 17, 18, 19."))
 Uid must be exactly 6 bytes (12 hex digits) in length."))
         .arg(rs_data_arg())
         .arg(rs_parity_arg())
+        .arg(from_byte_arg())
+        .arg(to_byte_arg())
         .arg(burst_arg()
             .help("Burst error resistance level. Note that blkar only guesses up to
 1000 in repair, show, and sort mode. If you use level above 1000,
@@ -134,6 +136,9 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
     let meta_enabled = get_meta_enabled!(matches);
+
+    let from_pos = get_from_pos!(matches, json_printer);
+    let to_pos   = get_to_pos!(matches, json_printer);
 
     if matches.is_present("info_only") {
         json_printer.print_open_bracket(Some("stats"), BracketType::Curly);
@@ -222,6 +227,8 @@ pub fn encode<'a>(matches : &ArgMatches<'a>) -> i32 {
                                meta_enabled,
                                &json_printer,
                                hash_type,
+                               from_pos,
+                               to_pos,
                                in_file,
                                &out,
                                pr_verbosity_level);
