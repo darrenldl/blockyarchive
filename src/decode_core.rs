@@ -5,6 +5,8 @@ use file_utils;
 use misc_utils;
 use std::io::SeekFrom;
 
+use misc_utils::RequiredLenAndSeekTo;
+
 use json_printer::{JSONPrinter,
                    BracketType};
 
@@ -219,6 +221,8 @@ pub struct Param {
     force_write        : bool,
     multi_pass         : bool,
     json_printer       : Arc<JSONPrinter>,
+    from_pos           : Option<u64>,
+    to_pos             : Option<u64>,
     in_file            : String,
     out_file           : Option<String>,
     verbose            : bool,
@@ -233,6 +237,8 @@ impl Param {
                force_write        : bool,
                multi_pass         : bool,
                json_printer       : &Arc<JSONPrinter>,
+               from_pos           : Option<u64>,
+               to_pos             : Option<u64>,
                in_file            : &str,
                out_file           : Option<&str>,
                verbose            : bool,
@@ -245,6 +251,8 @@ impl Param {
             force_write,
             multi_pass,
             json_printer : Arc::clone(json_printer),
+            from_pos,
+            to_pos,
             in_file  : String::from(in_file),
             out_file : match out_file {
                 None    => None,
@@ -568,6 +576,15 @@ pub fn decode(param           : &Param,
 
     let pred = block_pred_same_ver_uid!(ref_block);
 
+    // calulate length to read and position to seek to
+    let RequiredLenAndSeekTo { required_len, seek_to } =
+        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
+                                                                      param.to_pos,
+                                                                      false,
+                                                                      0,
+                                                                      in_file_size,
+                                                                      None);
+
     match param.out_file {
         Some(_) => { // output to file
             stats = Arc::new(Mutex::new(Stats::new(&ref_block,
@@ -581,14 +598,24 @@ pub fn decode(param           : &Param,
                                              param.pr_verbosity_level,
                                              param.json_printer.json_enabled());
 
+            // seek to calculated position
+            reader.seek(SeekFrom::Start(seek_to))?;
+
             reporter.start();
+
+            let mut bytes_processed : u64 = 0;
 
             loop {
                 break_if_atomic_bool!(ctrlc_stop_flag);
 
+                break_if_reached_required_len!(bytes_processed,
+                                               required_len);
+
                 // read at reference block block size
                 let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                                     &mut buffer))?;
+
+                bytes_processed += read_res.len_read as u64;
 
                 break_if_eof_seen!(read_res);
 
@@ -742,6 +769,8 @@ pub fn decode(param           : &Param,
                     }
                 },
                 None                        => { // do sequential read
+                    let mut bytes_processed : u64 = 0;
+
                     let mut seq_num = 0;
                     while seq_num <= SBX_LAST_SEQ_NUM {
                         break_if_atomic_bool!(ctrlc_stop_flag);
@@ -750,7 +779,12 @@ pub fn decode(param           : &Param,
                         let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
                                                                             &mut buffer))?;
 
+                        bytes_processed += read_res.len_read as u64;
+
                         break_if_eof_seen!(read_res);
+
+                        break_if_reached_required_len!(bytes_processed,
+                                                       required_len);
 
                         let block_okay =
                             match block.sync_from_buffer(&buffer, Some(&pred)) {
@@ -976,6 +1010,8 @@ pub fn decode_file(param : &Param)
                            param.force_write,
                            param.multi_pass,
                            &param.json_printer,
+                           param.from_pos,
+                           param.to_pos,
                            &param.in_file,
                            out_file_path,
                            param.verbose,

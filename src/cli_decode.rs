@@ -91,6 +91,9 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let in_file = get_in_file!(matches, json_printer);
 
+    let from_pos = get_from_pos!(matches, json_printer);
+    let to_pos   = get_to_pos!(matches, json_printer);
+
     let ref_from_pos = get_ref_from_pos!(matches, json_printer);
     let ref_to_pos   = get_ref_to_pos!(matches, json_printer);
 
@@ -100,6 +103,8 @@ pub fn decode<'a>(matches : &ArgMatches<'a>) -> i32 {
                            matches.is_present("force"),
                            matches.is_present("multi_pass"),
                            &json_printer,
+                           from_pos,
+                           to_pos,
                            in_file,
                            out,
                            matches.is_present("verbose"),

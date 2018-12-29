@@ -73,6 +73,8 @@ macro_rules! get_from_pos {
     (
         $matches:expr, $json_enabled:expr
     ) => {{
+        use std::str::FromStr;
+
         match $matches.value_of("from_pos") {
             None    => None,
             Some(x) => match u64::from_str(x) {
@@ -87,6 +89,8 @@ macro_rules! get_to_pos {
     (
         $matches:expr, $json_enabled:expr
     ) => {{
+        use std::str::FromStr;
+
         match $matches.value_of("to_pos") {
             None    => None,
             Some(x) => match u64::from_str(x) {

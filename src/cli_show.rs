@@ -1,7 +1,6 @@
 use show_core::Param;
 use show_core;
 use sbx_specs::SBX_FILE_UID_LEN;
-use std::str::FromStr;
 
 use json_printer::BracketType;
 

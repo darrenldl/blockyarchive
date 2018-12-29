@@ -1,7 +1,6 @@
 use rescue_core::Param;
 use rescue_core;
 use sbx_specs::SBX_FILE_UID_LEN;
-use std::str::FromStr;
 
 use sbx_block::BlockType;
 use json_printer::BracketType;
