@@ -91,7 +91,7 @@ pub fn from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
 pub fn to_byte_inc_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("to_pos_inc")
         .value_name("TO-BYTE-INC")
-        .long("to")
+        .long("to-inc")
         .takes_value(true)
         .help("Last position to try to decode a block. If not specified, defaults
 to the end of file. Negative values are treated as 0. If TO-BYTE is
@@ -101,7 +101,7 @@ smaller than FROM-BYTE, then it will be treated as FROM-BYTE.")
 pub fn to_byte_exc_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("to_pos_exc")
         .value_name("TO-BYTE-EXC")
-        .long("to")
+        .long("to-exc")
         .takes_value(true)
         .help("Last position to try to decode a block. If not specified, defaults
 to the end of file. Negative values are treated as 0. If TO-BYTE is
