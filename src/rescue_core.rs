@@ -30,6 +30,8 @@ use block_utils;
 
 use integer_utils::IntegerUtils;
 
+use misc_utils::RangeEnd;
+
 use json_printer::{JSONPrinter,
                    BracketType};
 
@@ -38,7 +40,7 @@ pub struct Param {
     out_dir            : String,
     log_file           : Option<String>,
     from_pos           : Option<u64>,
-    to_pos             : Option<u64>,
+    to_pos             : Option<RangeEnd<u64>>,
     force_misalign     : bool,
     json_printer       : Arc<JSONPrinter>,
     only_pick_block    : Option<BlockType>,
@@ -51,7 +53,7 @@ impl Param {
                out_dir            : &str,
                log_file           : Option<&str>,
                from_pos           : Option<u64>,
-               to_pos             : Option<u64>,
+               to_pos             : Option<RangeEnd<u64>>,
                force_misalign     : bool,
                json_printer       : &Arc<JSONPrinter>,
                only_pick_block    : Option<BlockType>,

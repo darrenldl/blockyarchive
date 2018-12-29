@@ -20,9 +20,11 @@ Specify this if you want blkar to report blank blocks as well."))
         .arg(verbose_arg()
              .help("Show reference block info, show individual check results"))
         .arg(from_byte_arg())
-        .arg(to_byte_arg())
+        .arg(to_byte_inc_arg())
+        .arg(to_byte_exc_arg())
         .arg(ref_from_byte_arg())
-        .arg(ref_to_byte_arg())
+        .arg(ref_to_byte_inc_arg())
+        .arg(ref_to_byte_exc_arg())
         .arg(json_arg())
 }
 

@@ -33,6 +33,8 @@ use block_utils;
 use block_utils::RefBlockChoice;
 use sbx_block::BlockType;
 
+use misc_utils::RangeEnd;
+
 use json_printer::JSONPrinter;
 
 #[derive(Clone, Debug)]
@@ -86,7 +88,7 @@ pub struct Param {
     force_misalign      : bool,
     json_printer        : Arc<JSONPrinter>,
     from_pos            : Option<u64>,
-    to_pos              : Option<u64>,
+    to_pos              : Option<RangeEnd<u64>>,
     in_file             : String,
     only_pick_uid       : Option<[u8; SBX_FILE_UID_LEN]>,
     pr_verbosity_level  : PRVerbosityLevel
@@ -98,7 +100,7 @@ impl Param {
                force_misalign      : bool,
                json_printer        : &Arc<JSONPrinter>,
                from_pos            : Option<u64>,
-               to_pos              : Option<u64>,
+               to_pos              : Option<RangeEnd<u64>>,
                in_file             : &str,
                only_pick_uid       : Option<&[u8; SBX_FILE_UID_LEN]>,
                pr_verbosity_level  : PRVerbosityLevel) -> Param {

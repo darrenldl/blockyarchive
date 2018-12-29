@@ -27,9 +27,11 @@ times to update it gradually."))
         .arg(dry_run_arg()
              .help("Only do sorting in memory, does not output the sorted container."))
         .arg(ref_from_byte_arg())
-        .arg(ref_to_byte_arg())
+        .arg(ref_to_byte_inc_arg())
+        .arg(ref_to_byte_exc_arg())
         .arg(from_byte_arg())
-        .arg(to_byte_arg())
+        .arg(to_byte_inc_arg())
+        .arg(to_byte_exc_arg())
         .arg(burst_arg()
              .help("Burst error resistance level to use for the output container.
 Defaults to guessing the level (guesses up to 1000) used by the

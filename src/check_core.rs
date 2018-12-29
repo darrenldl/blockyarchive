@@ -29,17 +29,18 @@ use time_utils;
 use block_utils;
 
 use block_utils::RefBlockChoice;
+use misc_utils::RangeEnd;
 
 use cli_utils::report_ref_block_info;
 
 pub struct Param {
     ref_block_choice   : RefBlockChoice,
     ref_block_from_pos : Option<u64>,
-    ref_block_to_pos   : Option<u64>,
+    ref_block_to_pos   : Option<RangeEnd<u64>>,
     report_blank       : bool,
     json_printer       : Arc<JSONPrinter>,
     from_pos           : Option<u64>,
-    to_pos             : Option<u64>,
+    to_pos             : Option<RangeEnd<u64>>,
     in_file            : String,
     verbose            : bool,
     pr_verbosity_level : PRVerbosityLevel,
@@ -48,11 +49,11 @@ pub struct Param {
 impl Param {
     pub fn new(ref_block_choice   : RefBlockChoice,
                ref_block_from_pos : Option<u64>,
-               ref_block_to_pos   : Option<u64>,
+               ref_block_to_pos   : Option<RangeEnd<u64>>,
                report_blank       : bool,
                json_printer       : &Arc<JSONPrinter>,
                from_pos           : Option<u64>,
-               to_pos             : Option<u64>,
+               to_pos             : Option<RangeEnd<u64>>,
                in_file            : &str,
                verbose            : bool,
                pr_verbosity_level : PRVerbosityLevel) -> Param {

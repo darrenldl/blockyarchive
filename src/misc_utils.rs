@@ -132,15 +132,15 @@ pub fn calc_required_len_and_seek_to_from_byte_range_inc
         Some(n) => align(u64::ensure_at_most(n,
                                              last_possible_pos))
     };
-    let to_byte = match to_byte_inc {
+    let to_byte = match to_byte {
         None    => last_possible_pos,
         Some(n) => match n {
-            Inc(n) => u64::ensure_at_most(u64::ensure_at_least(n,
-                                                               from_byte),
-                                          last_possible_pos),
-            Exc(n) => u64::ensure_at_most(u64::ensure_at_least(n - 1,
-                                                               from_byte)
-                                          last_possible_pos),
+            RangeEnd::Inc(n) => u64::ensure_at_most(u64::ensure_at_least(n,
+                                                                         from_byte),
+                                                    last_possible_pos),
+            RangeEnd::Exc(n) => u64::ensure_at_most(u64::ensure_at_least(n - 1,
+                                                                         from_byte),
+                                                    last_possible_pos),
         }
     };
     // bytes_so_far only affects seek_to

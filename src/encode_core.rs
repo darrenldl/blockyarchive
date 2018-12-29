@@ -45,6 +45,8 @@ use sbx_specs::{ver_to_usize,
                 ver_uses_rs,
                 ver_to_max_data_file_size};
 
+use misc_utils::RangeEnd;
+
 #[derive(Clone, Debug)]
 pub struct Stats {
     uid                         : [u8; SBX_FILE_UID_LEN],
@@ -145,7 +147,7 @@ pub struct Param {
     json_printer       : Arc<JSONPrinter>,
     hash_type          : multihash::HashType,
     from_pos           : Option<u64>,
-    to_pos             : Option<u64>,
+    to_pos             : Option<RangeEnd<u64>>,
     in_file            : Option<String>,
     out_file           : String,
     pr_verbosity_level : PRVerbosityLevel,
@@ -159,7 +161,7 @@ impl Param {
                json_printer       : &Arc<JSONPrinter>,
                hash_type          : multihash::HashType,
                from_pos           : Option<u64>,
-               to_pos             : Option<u64>,
+               to_pos             : Option<RangeEnd<u64>>,
                in_file            : Option<&str>,
                out_file           : &str,
                pr_verbosity_level : PRVerbosityLevel) -> Param {

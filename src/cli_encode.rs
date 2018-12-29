@@ -56,7 +56,8 @@ Uid must be exactly 6 bytes (12 hex digits) in length."))
         .arg(rs_data_arg())
         .arg(rs_parity_arg())
         .arg(from_byte_arg())
-        .arg(to_byte_arg())
+        .arg(to_byte_inc_arg())
+        .arg(to_byte_exc_arg())
         .arg(burst_arg()
             .help("Burst error resistance level. Note that blkar only guesses up to
 1000 in repair, show, and sort mode. If you use level above 1000,

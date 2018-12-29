@@ -25,7 +25,8 @@ specified, defaults to the start of file. Negative values are rejected.
 If FROM-BYTE exceeds the largest possible position (file size - 1),
 then it will be treated as (file size - 1). The rounding procedure
 is applied after all auto-adjustments."))
-        .arg(to_byte_arg())
+        .arg(to_byte_inc_arg())
+        .arg(to_byte_exc_arg())
         .arg(guess_burst_arg())
         .arg(json_arg())
 }

@@ -22,6 +22,8 @@ use file_writer::{FileWriter,
 use writer::{Writer,
              WriterType};
 
+use misc_utils::RangeEnd;
+
 use multihash;
 use multihash::*;
 
@@ -217,12 +219,12 @@ impl fmt::Display for Stats {
 pub struct Param {
     ref_block_choice   : RefBlockChoice,
     ref_block_from_pos : Option<u64>,
-    ref_block_to_pos   : Option<u64>,
+    ref_block_to_pos   : Option<RangeEnd<u64>>,
     force_write        : bool,
     multi_pass         : bool,
     json_printer       : Arc<JSONPrinter>,
     from_pos           : Option<u64>,
-    to_pos             : Option<u64>,
+    to_pos             : Option<RangeEnd<u64>>,
     in_file            : String,
     out_file           : Option<String>,
     verbose            : bool,
@@ -233,12 +235,12 @@ pub struct Param {
 impl Param {
     pub fn new(ref_block_choice   : RefBlockChoice,
                ref_block_from_pos : Option<u64>,
-               ref_block_to_pos   : Option<u64>,
+               ref_block_to_pos   : Option<RangeEnd<u64>>,
                force_write        : bool,
                multi_pass         : bool,
                json_printer       : &Arc<JSONPrinter>,
                from_pos           : Option<u64>,
-               to_pos             : Option<u64>,
+               to_pos             : Option<RangeEnd<u64>>,
                in_file            : &str,
                out_file           : Option<&str>,
                verbose            : bool,
