@@ -189,7 +189,7 @@ pub fn show_file(param : &Param)
         misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
                                                                       param.to_pos,
                                                                       param.force_misalign,
-                                                                      stats.lock().unwrap().bytes_processed,
+                                                                      0,
                                                                       file_size,
                                                                       None);
 

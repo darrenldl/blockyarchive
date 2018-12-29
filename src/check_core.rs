@@ -153,6 +153,8 @@ pub fn check_file(param : &Param)
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
 
+    let version = ref_block.get_version();
+
     // calulate length to read and position to seek to
     let RequiredLenAndSeekTo { required_len, seek_to } =
         misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
@@ -186,8 +188,6 @@ pub fn check_file(param : &Param)
 
     let mut block_pos       : u64;
     let mut bytes_processed : u64 = 0;
-
-    let version = ref_block.get_version();
 
     reporter.start();
 
