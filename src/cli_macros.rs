@@ -97,6 +97,38 @@ macro_rules! get_to_pos {
     }}
 }
 
+macro_rules! get_ref_from_pos {
+    (
+        $matches:expr, $json_enabled:expr
+    ) => {{
+        use std::str::FromStr;
+
+        match $matches.value_of("ref_from_pos") {
+            None    => None,
+            Some(x) => match u64::from_str(x) {
+                Ok(x)  => Some(x),
+                Err(_) => exit_with_msg!(usr $json_enabled => "Invalid ref from position")
+            }
+        }
+    }}
+}
+
+macro_rules! get_ref_to_pos {
+    (
+        $matches:expr, $json_enabled:expr
+    ) => {{
+        use std::str::FromStr;
+
+        match $matches.value_of("ref_to_pos") {
+            None    => None,
+            Some(x) => match u64::from_str(x) {
+                Ok(x)  => Some(x),
+                Err(_) => exit_with_msg!(usr $json_enabled => "Invalid ref to position")
+            }
+        }
+    }}
+}
+
 macro_rules! get_in_file {
     (
         $matches:expr, $json_enabled:expr

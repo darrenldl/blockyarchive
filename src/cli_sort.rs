@@ -26,6 +26,8 @@ times to update it gradually."))
         .arg(pr_verbosity_level_arg())
         .arg(dry_run_arg()
              .help("Only do sorting in memory, does not output the sorted container."))
+        .arg(ref_from_byte_arg())
+        .arg(ref_to_byte_arg())
         .arg(burst_arg()
              .help("Burst error resistance level to use for the output container.
 Defaults to guessing the level (guesses up to 1000) used by the
@@ -76,7 +78,12 @@ pub fn sort<'a>(matches : &ArgMatches<'a>) -> i32 {
             Some(&out)
         };
 
+    let ref_from_pos = get_ref_from_pos!(matches, json_printer);
+    let ref_to_pos   = get_ref_to_pos!(matches, json_printer);
+
     let param = Param::new(get_ref_block_choice!(matches),
+                           ref_from_pos,
+                           ref_to_pos,
                            multi_pass,
                            &json_printer,
                            in_file,

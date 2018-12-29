@@ -98,6 +98,22 @@ to the end of file. Negative values are treated as 0. If TO-BYTE is
 smaller than FROM-BYTE, then it will be treated as FROM-BYTE.")
 }
 
+pub fn ref_from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("ref_from_pos")
+        .value_name("REF-FROM-BYTE")
+        .long("ref-from")
+        .takes_value(true)
+        .help("First position to try to search for a reference block.")
+}
+
+pub fn ref_to_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("to_from_pos")
+        .value_name("REF-TO-BYTE")
+        .long("to-from")
+        .takes_value(true)
+        .help("Last position to try to search for a reference block.")
+}
+
 pub fn no_meta_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("no_meta")
         .long("no-meta")
