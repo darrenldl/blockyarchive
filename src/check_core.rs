@@ -86,12 +86,12 @@ pub struct Stats {
 
 impl Stats {
     pub fn new(ref_block    : &Block,
-               file_size    : u64,
+               required_len : u64,
                json_printer : &Arc<JSONPrinter>) -> Stats {
         use file_utils::from_container_size::calc_total_block_count;
         let total_blocks =
             calc_total_block_count(ref_block.get_version(),
-                                   file_size);
+                                   required_len);
         Stats {
             version                    : ref_block.get_version(),
             blocks_decode_failed       : 0,
@@ -152,8 +152,18 @@ pub fn check_file(param : &Param)
     let (_, ref_block) = get_ref_block!(param, json_printer, ctrlc_stop_flag);
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
+
+    // calulate length to read and position to seek to
+    let RequiredLenAndSeekTo { required_len, seek_to } =
+        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
+                                                                      param.to_pos,
+                                                                      false,
+                                                                      0,
+                                                                      file_size,
+                                                                      Some(ver_to_block_size(version) as u64));
+
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block,
-                                               file_size,
+                                               required_len,
                                                &param.json_printer)));
 
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
@@ -178,15 +188,6 @@ pub fn check_file(param : &Param)
     let mut bytes_processed : u64 = 0;
 
     let version = ref_block.get_version();
-
-    // calulate length to read and position to seek to
-    let RequiredLenAndSeekTo { required_len, seek_to } =
-        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
-                                                                      param.to_pos,
-                                                                      false,
-                                                                      0,
-                                                                      file_size,
-                                                                      Some(ver_to_block_size(version) as u64));
 
     reporter.start();
 
