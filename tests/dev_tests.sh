@@ -111,22 +111,21 @@ test_fail_count=0
 tests_failed=""
 
 for t in ${tests[@]}; do
+  t_exit_code=$(cat $t/exit_code)
+
   if (( $t_exit_code != 0 )); then
-    t_log=$(cat $t/log)
-    t_stderr_log=$(cat $t/stderr_log)
     echo "========================================"
     echo "Log of $t :"
     echo ""
-    echo -e $t_log
+    cat $t/log
     echo ""
     echo "Stderr log of $t :"
-    echo -e $t_stderr_log
+    cat $t/stderr_log
   fi
 
-  t_exit_code=$(cat $t/exit_code)
   if (( $t_exit_code != 0 )); then
     test_fail_count=$[$test_fail_count + 1]
-    tests_failed=$tests_failed"\n    "$t
+    tests_failed=$tests_failed"    "$t"\n"
   fi
 done
 echo "========================================"
