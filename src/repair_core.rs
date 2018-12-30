@@ -161,8 +161,10 @@ fn update_rs_codec_and_stats(version     : Version,
                              block       : &mut Block,
                              cur_seq_num : u32,
                              rs_codec    : &mut RSRepairer,
-                             stats       : &mut Stats)
+                             stats       : &Arc<Mutex<Stats>>)
                              -> RSCodecState {
+    let mut stats = stats.lock().unwrap();
+
     let block_size = ver_to_block_size(version);
 
     if read_res.len_read < block_size {   // read an incomplete block
@@ -191,10 +193,12 @@ fn update_rs_codec_and_stats(version     : Version,
 fn repair_blocks_and_update_stats_using_repair_stats(param       : &Param,
                                                      cur_seq_num : u32,
                                                      rs_codec    : &mut RSRepairer,
-                                                     stats       : &mut Stats,
+                                                     stats       : &Arc<Mutex<Stats>>,
                                                      reader      : &mut FileReader,
                                                      reporter    : &ProgressReporter<Stats>)
                                                      -> Result<(), Error> {
+    let mut stats = stats.lock().unwrap();
+
     let (repair_stats, repaired_blocks) =
         rs_codec.repair_with_block_sync(cur_seq_num);
 
@@ -358,11 +362,9 @@ pub fn repair_file(param : &Param)
     // repair data blocks
     let mut seq_num = 1;
     while seq_num <= SBX_LAST_SEQ_NUM {
-        let mut stats = stats.lock().unwrap();
-
         break_if_atomic_bool!(ctrlc_stop_flag);
 
-        if stats.units_so_far() >= total_block_count { break; }
+        if stats.lock().unwrap().units_so_far() >= total_block_count { break; }
 
         let pos = sbx_block::calc_data_block_write_pos(version,
                                                        seq_num,
@@ -380,14 +382,14 @@ pub fn repair_file(param : &Param)
                                       &mut block,
                                       seq_num,
                                       &mut rs_codec,
-                                      &mut stats);
+                                      &stats);
 
         match codec_state {
             RSCodecState::Ready => {
                 repair_blocks_and_update_stats_using_repair_stats(&param,
                                                                   seq_num,
                                                                   &mut rs_codec,
-                                                                  &mut stats,
+                                                                  &stats,
                                                                   &mut reader,
                                                                   &reporter)?;
             },
