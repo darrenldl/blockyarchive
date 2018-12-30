@@ -65,21 +65,38 @@ tests=(
   "repair_truncated_tests_decode_stdout"
 )
 
-for t in ${tests[@]}; do
-  echo "Starting $t"
+test_count=${#tests[@]}
 
-  rm -rf $t/
-  mkdir $t/
-  cd $t
-  ./../gen_dummy.sh
-  ./../$t.sh > log 2> stderr_log &
-  cd ..
+simul_test_count=5
+
+i=0
+while (( $i < $test_count )); do
+  if (( $test_count - $i >= $simul_test_count )); then
+    tests_to_run=$simul_test_count
+  else
+    tests_to_run=$test_count - $i
+  fi
+
+  echo "Running $tests_to_run tests in parallel"
+  while (( $i < $tests_to_run )); do
+    t=${tests[$i]}
+    echo "Starting $t"
+
+    rm -rf $t/
+    mkdir $t/
+    cd $t
+    ./../gen_dummy.sh
+    ./../$t.sh > log 2> stderr_log &
+    cd ..
+
+    i=$[i+1]
+  done
+
+  echo ""
+
+  echo "Waiting for tests to finish"
+  wait
 done
-
-echo ""
-
-echo "Waiting for tests to finish"
-wait
 
 # go through all exit codes
 test_fail_count=0
