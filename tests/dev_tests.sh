@@ -100,8 +100,6 @@ while (( $i < $test_count )); do
     i=$[i+1]
   done
 
-  echo ""
-
   echo "Waiting for tests to finish"
   echo ""
 
