@@ -117,8 +117,8 @@ pub fn to_byte_inc_arg<'a, 'b>() -> Arg<'a, 'b> {
         .long("to-inc")
         .takes_value(true)
         .help("Last position (inclusive) to try to decode a block. If not specified,
-defaults to the end of file. Negative values are treated as 0. If
-TO-BYTE is smaller than FROM-BYTE, then it will be treated as
+defaults to the end of file. Negative values are rejected. If TO-BYTE
+is smaller than FROM-BYTE, then it will be treated as
 FROM-BYTE.")
 }
 
@@ -128,8 +128,8 @@ pub fn to_byte_exc_arg<'a, 'b>() -> Arg<'a, 'b> {
         .long("to-exc")
         .takes_value(true)
         .help("Last position (exclusive) to try to decode a block. If not specified,
-defaults to the end of file. Negative values are treated as 0. If
-TO-BYTE is smaller than FROM-BYTE, then it will be treated as
+defaults to the end of file. Negative values are rejected. If TO-BYTE
+is smaller than FROM-BYTE, then it will be treated as
 FROM-BYTE.")
 }
 
@@ -154,7 +154,7 @@ pub fn ref_to_byte_inc_arg<'a, 'b>() -> Arg<'a, 'b> {
         .takes_value(true)
         .help("Last position (inclusive) to try to search for a reference block.
 If not specified, defaults to the end of file. Negative values are
-treated as 0.")
+rejected.")
 }
 
 pub fn ref_to_byte_exc_arg<'a, 'b>() -> Arg<'a, 'b> {
@@ -164,7 +164,7 @@ pub fn ref_to_byte_exc_arg<'a, 'b>() -> Arg<'a, 'b> {
         .takes_value(true)
         .help("Last position (exclusive) to try to search for a reference block.
 If not specified, defaults to the end of file. Negative values are
-treated as 0.")
+rejected.")
 }
 
 pub fn no_meta_arg<'a, 'b>() -> Arg<'a, 'b> {
