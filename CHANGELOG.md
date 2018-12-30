@@ -15,14 +15,20 @@
 - Added `--dry-run` flag to sort mode
 
   - Combined with the improved stats tracking allows checking if the container is sorted or not
+
 - Repalced `--to` with `--to-inc` and `--to-exc`
+
   - This affects `rescue` and `show` mode
+
 - Added `--from`, `--to-inc` and `--to-exc` to the following modes
+
   - check
   - decode
   - encode
   - sort
+
 - Added `--ref-from` and `--ref-to` to the following modes
+
   - check
   - decode
   - sort
