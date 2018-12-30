@@ -72,7 +72,7 @@ for t in ${tests[@]}; do
   mkdir $t/
   cd $t
   ./../gen_dummy.sh
-  ./../$t.sh > log &
+  ./../$t.sh > log 2> stderr_log &
   cd ..
 done
 
@@ -87,10 +87,14 @@ tests_failed=""
 
 for t in ${tests[@]}; do
   t_log=$(cat $t/log)
+  t_stderr_log=$(cat $t/stderr_log)
   echo "========================================"
   echo "Log of $t :"
   echo ""
   echo $t_log
+  echo ""
+  echo "Stderr log of $t :"
+  echo $t_stderr_log
 
   t_exit_code=$(cat $t/exit_code)
   if (( $t_exit_code != 0 )); then
