@@ -137,7 +137,7 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
         let runner_shutdown_barrier = Arc::clone(&shutdown_barrier);
         let runner_active_flag      = Arc::clone(&active_flag);
         thread::spawn(move || {
-            // waiting to be kickstarted
+            // wait to be kickstarted
             runner_start_barrier.wait();
 
             // print at least once so the header is at top
