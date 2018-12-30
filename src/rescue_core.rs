@@ -219,7 +219,7 @@ pub fn rescue_from_file(param : &Param)
     let file_size = file_utils::get_file_size(&param.in_file)?;
 
     // calulate length to read and position to seek to
-    let RequiredLenAndSeekTo { required_len, seek_to } =
+    let RequiredLenAndSeekTo { required_len, .. } =
         misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
                                                                       param.to_pos,
                                                                       param.force_misalign,
@@ -253,6 +253,14 @@ pub fn rescue_from_file(param : &Param)
 
     // read from log file if it exists
     log_handler.read_from_file()?;
+
+    let RequiredLenAndSeekTo { seek_to, .. } =
+        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
+                                                                      param.to_pos,
+                                                                      param.force_misalign,
+                                                                      stats.lock().unwrap().bytes_processed,
+                                                                      file_size,
+                                                                      None);
 
     // seek to calculated position
     reader.seek(SeekFrom::Start(seek_to))?;
