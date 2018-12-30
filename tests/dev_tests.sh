@@ -108,7 +108,7 @@ done
 
 # go through all exit codes
 test_fail_count=0
-tests_failed=""
+tests_failed=()
 
 for t in ${tests[@]}; do
   t_exit_code=$(cat $t/exit_code)
@@ -125,7 +125,7 @@ for t in ${tests[@]}; do
 
   if (( $t_exit_code != 0 )); then
     test_fail_count=$[$test_fail_count + 1]
-    tests_failed=$tests_failed"    "$t"\n"
+    tests_failed+=("$t")
   fi
 done
 echo "========================================"
@@ -138,7 +138,9 @@ else
     echo "$test_fail_count tests failed"
     echo ""
     echo "List of tests failed :"
-    echo -e $tests_failed
+    for t in ${tests_failed[@]}; do
+      echo "    "$t
+    done
     exit_code=1
 fi
 

@@ -56,7 +56,7 @@ done
 # Decode all of them
 for ver in ${VERSIONS[*]}; do
   echo -n "Decoding version $ver container"
-  output=$(./blkar decode --json --verbose dummy$ver.sbx - 2>&1 > dummy$ver)
+  output=$(./../blkar decode --json --verbose dummy$ver.sbx - 2>&1 > dummy$ver)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1

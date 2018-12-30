@@ -41,6 +41,9 @@ cat dummy_empty2.sbx >> dummy_empty_disk
 
 echo "Rescuing from dummy disk"
 
+rm -rf rescued_data &>/dev/null
+mkdir rescued_data &>/dev/null
+
 echo -n "Checking that blkar only decodes first block"
 rm rescued_data/DEADBEEF* &>/dev/null
 output=$(./../blkar rescue --json dummy_empty_disk rescued_data --from 0 --to-inc 511)
