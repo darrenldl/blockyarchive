@@ -69,6 +69,10 @@ test_count=${#tests[@]}
 
 simul_test_count=5
 
+start_date=$(date "+%Y-%m-%d_%H%m")
+start_time=$(date "+s")
+echo "Test start :" $start_date
+
 i=0
 while (( $i < $test_count )); do
   if (( $test_count - $i >= $simul_test_count )); then
@@ -81,7 +85,7 @@ while (( $i < $test_count )); do
 
   for (( c=0; c < $tests_to_run; c++ )); do
     t=${tests[$i]}
-    echo "Starting $t"
+    echo "    Starting $t"
 
     rm -rf $t/
     mkdir $t/
@@ -96,6 +100,8 @@ while (( $i < $test_count )); do
   echo ""
 
   echo "Waiting for tests to finish"
+  echo ""
+
   wait
 done
 
@@ -133,3 +139,9 @@ else
     echo -e $tests_failed_names
     exit 1
 fi
+
+end_date=$(date "+%Y-%m-%d_%H%m")
+end_time=$(date "+s")
+echo "Test end :" $end_date
+
+echo "Time elapsed :" $[(end_time - start_time) / 60] "minutes"
