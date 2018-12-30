@@ -249,10 +249,11 @@ pub fn rescue_from_file(param : &Param)
     let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
         [0; SBX_LARGEST_BLOCK_SIZE];
 
-    reporter.start();
-
     // read from log file if it exists
     log_handler.read_from_file()?;
+
+    log_handler.start();
+    reporter.start();
 
     let RequiredLenAndSeekTo { seek_to, .. } =
         misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
@@ -315,13 +316,12 @@ pub fn rescue_from_file(param : &Param)
         // use the original bytes which are still in the buffer
         writer.write(sbx_block::slice_buf(block.get_version(), &buffer))?;
 
-        // update log file
-        log_handler.write_to_file(false)?;
+        // check if there's any error in log handling
+        log_handler.pop_error()?;
     }
 
     reporter.stop();
-
-    log_handler.write_to_file(true)?;
+    log_handler.stop();
 
     let stats = stats.lock().unwrap().clone();
 
