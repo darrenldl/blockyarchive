@@ -7,7 +7,7 @@ touch dummy_empty1
 touch dummy_empty2
 
 echo -n "Encoding 1st file"
-output=$(./blkar encode --json -f dummy_empty1 --uid DEADBEEF0001)
+output=$(./../blkar encode --json -f dummy_empty1 --uid DEADBEEF0001)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
@@ -20,7 +20,7 @@ else
 fi
 
 echo -n "Encoding 2nd file"
-output=$(./blkar encode --json -f dummy_empty2 --uid DEADBEEF0002)
+output=$(./../blkar encode --json -f dummy_empty2 --uid DEADBEEF0002)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
@@ -38,7 +38,7 @@ cat dummy_empty1.sbx >> dummy_empty_disk
 cat dummy_empty2.sbx >> dummy_empty_disk
 
 echo -n "Checking that blkar only shows first block"
-output=$(./blkar show --json --show-all dummy_empty_disk --from 0 --to-inc 511)
+output=$(./../blkar show --json --show-all dummy_empty_disk --from 0 --to-inc 511)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -57,7 +57,7 @@ else
 fi
 
 echo -n "Checking that blkar only shows second block"
-output=$(./blkar show --json --show-all dummy_empty_disk --from 512 --to-inc 512)
+output=$(./../blkar show --json --show-all dummy_empty_disk --from 512 --to-inc 512)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
@@ -76,7 +76,7 @@ else
 fi
 
 echo -n "Checking that blkar shows both blocks"
-output=$(./blkar show --json --show-all dummy_empty_disk)
+output=$(./../blkar show --json --show-all dummy_empty_disk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
     echo " ==> Invalid JSON"
     exit_code=1

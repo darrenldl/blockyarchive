@@ -4,22 +4,22 @@
 
 truncate -s 100M dummy
 
-./blkar_release encode --sbx-version 19 --rs-data 10 --rs-parity 2 dummy -f
+./../blkar_release encode --sbx-version 19 --rs-data 10 --rs-parity 2 dummy -f
 
-./blkar_release decode dummy
+./../blkar_release decode dummy
 
 echo ""
 
-./blkar_release show dummy
+./../blkar_release show dummy
 
 echo ""
 
 mkdir rescued_data &>/dev/null
 
-./blkar_release rescue dummy rescued_data
+./../blkar_release rescue dummy rescued_data
 
 echo ""
 
-./blkar_release rescue dummy . log
+./../blkar_release rescue dummy . log
 
 rm log

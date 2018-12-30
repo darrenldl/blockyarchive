@@ -11,7 +11,7 @@ corrupt() {
 # Encode in all 6 versions
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver"
-  output=$(./blkar encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
+  output=$(./../blkar encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
                    --rs-data 10 --rs-parity 2)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
@@ -65,7 +65,7 @@ for ver in ${VERSIONS[*]}; do
   rm -f dummy$ver
   for i in 1 2 3 4 5 6; do
     echo -n "    pass $i"
-    output=$(./blkar decode --json --verbose --multi-pass dummy$ver.$i.sbx dummy$ver)
+    output=$(./../blkar decode --json --verbose --multi-pass dummy$ver.$i.sbx dummy$ver)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1

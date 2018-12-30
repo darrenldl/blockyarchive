@@ -32,7 +32,7 @@ for ver in ${VERSIONS[*]}; do
 
     echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards, burst = $burst"
     output=$(cat dummy | \
-               ./blkar encode --json --sbx-version $ver -f - $container_name \
+               ./../blkar encode --json --sbx-version $ver -f - $container_name \
                        --hash sha1 \
                        --rs-data $data_shards --rs-parity $parity_shards \
                        --burst $burst)
@@ -61,7 +61,7 @@ for ver in ${VERSIONS[*]}; do
     done
 
     echo -n "Repairing without --burst"
-    output=$(./blkar repair --json --verbose $container_name)
+    output=$(./../blkar repair --json --verbose $container_name)
     # blkar may error out as guessing burst error level may fail entirely,
     # so only check for values if it didn't error out
     if [[ $(echo $output | jq -r ".error") == null ]]; then
@@ -82,7 +82,7 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     echo -n "Repairing with --burst"
-    output=$(./blkar repair --json --verbose --burst $burst $container_name)
+    output=$(./../blkar repair --json --verbose --burst $burst $container_name)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -103,7 +103,7 @@ for ver in ${VERSIONS[*]}; do
     output_name=dummy_$data_shards\_$parity_shards
 
     echo -n "Decoding"
-    output=$(./blkar decode --json -f $container_name $output_name)
+    output=$(./../blkar decode --json -f $container_name $output_name)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
