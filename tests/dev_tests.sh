@@ -86,6 +86,8 @@ while (( $i < $test_count )); do
 
   echo "Running $tests_to_run tests in parallel"
 
+  j=$i
+
   for (( c=0; c < $tests_to_run; c++ )); do
     t=${tests[$i]}
     echo "    Starting $t"
@@ -101,6 +103,22 @@ while (( $i < $test_count )); do
   done
 
   echo "Waiting for tests to finish"
+  echo "Cleaning up files"
+
+  for (( c=0; c < $tests_to_run; c++ )); do
+    t=${tests[$j]}
+
+    cd $t
+    find . -type f \
+         -not -name "exit_code" \
+         -not -name "log" \
+         -not -name "stderr_log" \
+         -delete
+    cd ..
+
+    j=$[j+1]
+  done
+
   echo ""
 
   wait
