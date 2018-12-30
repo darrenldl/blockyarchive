@@ -152,9 +152,12 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
                 thread::sleep(Duration::from_millis(300));
 
                 if runner_active_flag.load(Ordering::SeqCst) {
-                    print_progress::<T>(&mut runner_context.lock().unwrap(),
-                                        &mut runner_stats.lock().unwrap(),
-                                        false);
+                    match (runner_context.try_lock(), runner_stats.try_lock()) {
+                        (Ok(ref mut c), Ok(ref mut s)) => {
+                            print_progress::<T>(c, s, false);
+                        },
+                        _                              => {},
+                    }
                 }
             }
 
