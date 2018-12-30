@@ -69,7 +69,7 @@ test_count=${#tests[@]}
 
 simul_test_count=5
 
-start_date=$(date "+%Y-%m-%d_%H:%M")
+start_date=$(date "+%Y-%m-%d %H:%M")
 start_time=$(date "+%s")
 
 echo ""
@@ -144,7 +144,7 @@ else
     exit_code=1
 fi
 
-end_date=$(date "+%Y-%m-%d_%H:%M")
+end_date=$(date "+%Y-%m-%d %H:%M")
 end_time=$(date "+%s")
 echo ""
 echo "Test end :" $end_date
