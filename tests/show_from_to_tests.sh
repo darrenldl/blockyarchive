@@ -38,7 +38,7 @@ cat dummy_empty1.sbx >> dummy_empty_disk
 cat dummy_empty2.sbx >> dummy_empty_disk
 
 echo -n "Checking that blkar only shows first block"
-output=$(./blkar show --json --show-all dummy_empty_disk --from 0 --to 511)
+output=$(./blkar show --json --show-all dummy_empty_disk --from 0 --to-inc 511)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -57,7 +57,7 @@ else
 fi
 
 echo -n "Checking that blkar only shows second block"
-output=$(./blkar show --json --show-all dummy_empty_disk --from 512 --to 512)
+output=$(./blkar show --json --show-all dummy_empty_disk --from 512 --to-inc 512)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
