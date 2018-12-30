@@ -258,16 +258,18 @@ pub fn rescue_from_file(param : &Param)
     reader.seek(SeekFrom::Start(seek_to))?;
 
     loop {
+        let mut stats = stats.lock().unwrap();
+
         break_if_atomic_bool!(ctrlc_stop_flag);
 
-        break_if_reached_required_len!(stats.lock().unwrap().bytes_processed,
+        break_if_reached_required_len!(stats.bytes_processed,
                                        required_len);
 
         let lazy_read_res = block_utils::read_block_lazily(&mut block,
                                                            &mut buffer,
                                                            &mut reader)?;
 
-        stats.lock().unwrap().bytes_processed += lazy_read_res.len_read as u64;
+        stats.bytes_processed += lazy_read_res.len_read as u64;
 
         break_if_eof_seen!(lazy_read_res);
 
@@ -276,10 +278,10 @@ pub fn rescue_from_file(param : &Param)
         // update stats
         match block.block_type() {
             BlockType::Meta => {
-                stats.lock().unwrap().meta_or_par_blocks_processed += 1;
+                stats.meta_or_par_blocks_processed += 1;
             },
             BlockType::Data => {
-                stats.lock().unwrap().data_or_par_blocks_processed += 1;
+                stats.data_or_par_blocks_processed += 1;
             }
         }
 
