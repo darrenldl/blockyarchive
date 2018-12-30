@@ -70,7 +70,7 @@ test_count=${#tests[@]}
 simul_test_count=5
 
 start_date=$(date "+%Y-%m-%d_%H%M")
-start_time=$(date "+s")
+start_time=$(date "+%s")
 
 echo ""
 echo "Test start :" $start_date
@@ -111,15 +111,17 @@ test_fail_count=0
 tests_failed=""
 
 for t in ${tests[@]}; do
-  t_log=$(cat $t/log)
-  t_stderr_log=$(cat $t/stderr_log)
-  echo "========================================"
-  echo "Log of $t :"
-  echo ""
-  echo $t_log
-  echo ""
-  echo "Stderr log of $t :"
-  echo $t_stderr_log
+  if (( $t_exit_code != 0 )); then
+    t_log=$(cat $t/log)
+    t_stderr_log=$(cat $t/stderr_log)
+    echo "========================================"
+    echo "Log of $t :"
+    echo ""
+    echo -e $t_log
+    echo ""
+    echo "Stderr log of $t :"
+    echo -e $t_stderr_log
+  fi
 
   t_exit_code=$(cat $t/exit_code)
   if (( $t_exit_code != 0 )); then
@@ -129,7 +131,7 @@ for t in ${tests[@]}; do
 done
 echo "========================================"
 
-if [[ $test_failed == 0 ]]; then
+if [[ $test_fail_count == 0 ]]; then
     echo "All tests passed"
     exit_code=0
 else
@@ -137,12 +139,12 @@ else
     echo "$test_fail_count tests failed"
     echo ""
     echo "List of tests failed :"
-    echo -e $tests_failed_names
+    echo -e $tests_failed
     exit_code=1
 fi
 
 end_date=$(date "+%Y-%m-%d_%H%M")
-end_time=$(date "+s")
+end_time=$(date "+%s")
 echo ""
 echo "Test end :" $end_date
 
