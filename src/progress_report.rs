@@ -140,10 +140,13 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             // wait to be kickstarted
             runner_start_barrier.wait();
 
-            // print at least once so the header is at top
-            print_progress::<T>(&mut runner_context.lock().unwrap(),
-                                &mut runner_stats.lock().unwrap(),
-                                false);
+            loop {
+                // print at least once so the header is at top
+                match (runner_context.try_lock(), runner_stats.try_lock()) {
+                    (Ok(ref mut c), Ok(ref mut s)) => { print_progress::<T>(c, s, false); break; },
+                    _                              => {},
+                }
+            }
 
             // let start() know progress text has been printed
             runner_start_barrier.wait();
@@ -153,17 +156,18 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
 
                 if runner_active_flag.load(Ordering::SeqCst) {
                     match (runner_context.try_lock(), runner_stats.try_lock()) {
-                        (Ok(ref mut c), Ok(ref mut s)) => {
-                            print_progress::<T>(c, s, false);
-                        },
+                        (Ok(ref mut c), Ok(ref mut s)) => print_progress::<T>(c, s, false),
                         _                              => {},
                     }
                 }
             }
 
-            print_progress::<T>(&mut runner_context.lock().unwrap(),
-                                &mut runner_stats.lock().unwrap(),
-                                true);
+            loop {
+                match (runner_context.try_lock(), runner_stats.try_lock()) {
+                    (Ok(ref mut c), Ok(ref mut s)) => { print_progress::<T>(c, s, true); break; },
+                    _                              => {},
+                }
+            }
 
             runner_shutdown_barrier.wait();
         });
@@ -191,7 +195,9 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
     }
 
     pub fn pause(&self) {
-        if self.active_flag.swap(false, Ordering::SeqCst) {
+        if self.start_flag.load(Ordering::SeqCst)
+            && !self.shutdown_flag.load(Ordering::SeqCst)
+            && self.active_flag.swap(false, Ordering::SeqCst) {
             let verbosity_settings : VerbositySettings =
                 self.context.lock().unwrap().verbosity_settings;
 
