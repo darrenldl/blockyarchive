@@ -103,6 +103,9 @@ while (( $i < $test_count )); do
   done
 
   echo "Waiting for tests to finish"
+
+  wait
+
   echo "Cleaning up files"
 
   for (( c=0; c < $tests_to_run; c++ )); do
@@ -120,8 +123,6 @@ while (( $i < $test_count )); do
   done
 
   echo ""
-
-  wait
 done
 
 # go through all exit codes
