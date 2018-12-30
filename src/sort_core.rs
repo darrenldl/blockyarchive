@@ -245,6 +245,8 @@ pub fn sort_file(param : &Param)
     let mut bytes_processed : u64 = 0;
 
     loop {
+        let mut stats = stats.lock().unwrap();
+
         break_if_atomic_bool!(ctrlc_stop_flag);
 
         break_if_reached_required_len!(bytes_processed,
@@ -260,7 +262,7 @@ pub fn sort_file(param : &Param)
         break_if_eof_seen!(read_res);
 
         if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
-            stats.lock().unwrap().blocks_decode_failed += 1;
+            stats.blocks_decode_failed += 1;
             continue;
         }
 
@@ -290,8 +292,8 @@ pub fn sort_file(param : &Param)
                                                          &mut check_buffer))?;
 
                     match buffer.cmp(&check_buffer) {
-                        Ordering::Equal => stats.lock().unwrap().meta_blocks_same_order += 1,
-                        _               => stats.lock().unwrap().meta_blocks_diff_order += 1,
+                        Ordering::Equal => stats.meta_blocks_same_order += 1,
+                        _               => stats.meta_blocks_diff_order += 1,
                     }
                 }
 
@@ -315,16 +317,16 @@ pub fn sort_file(param : &Param)
             }
 
             if read_pos == write_pos {
-                stats.lock().unwrap().data_blocks_same_order += 1;
+                stats.data_blocks_same_order += 1;
             } else {
-                stats.lock().unwrap().data_blocks_diff_order += 1;
+                stats.data_blocks_diff_order += 1;
             }
         }
 
         if block.is_meta() {
-            stats.lock().unwrap().meta_blocks_decoded += 1;
+            stats.meta_blocks_decoded += 1;
         } else {
-            stats.lock().unwrap().data_or_par_blocks_decoded += 1;
+            stats.data_or_par_blocks_decoded += 1;
         }
     }
 
