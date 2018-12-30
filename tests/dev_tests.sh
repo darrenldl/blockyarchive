@@ -74,11 +74,12 @@ while (( $i < $test_count )); do
   if (( $test_count - $i >= $simul_test_count )); then
     tests_to_run=$simul_test_count
   else
-    tests_to_run=$test_count - $i
+    tests_to_run=$[test_count - i]
   fi
 
   echo "Running $tests_to_run tests in parallel"
-  while (( $i < $tests_to_run )); do
+
+  for (( c=0; c < $tests_to_run; c++ )); do
     t=${tests[$i]}
     echo "Starting $t"
 
