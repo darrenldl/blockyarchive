@@ -485,6 +485,8 @@ pub fn encode_file(param : &Param)
     let mut bytes_processed : u64 = 0;
 
     loop {
+        let mut stats = stats.lock().unwrap();
+
         break_if_atomic_bool!(ctrlc_stop_flag);
 
         if let Some(required_len) = required_len {
@@ -503,7 +505,7 @@ pub fn encode_file(param : &Param)
         let mut data_blocks_written     = 0;
         let mut data_par_blocks_written = 0;
 
-        stats.lock().unwrap().data_padding_bytes +=
+        stats.data_padding_bytes +=
             sbx_block::write_padding(param.version, read_res.len_read, &mut data);
 
         // start encoding
@@ -536,13 +538,15 @@ pub fn encode_file(param : &Param)
         }
 
         // update stats
-        stats.lock().unwrap().data_blocks_written     += data_blocks_written;
-        stats.lock().unwrap().data_par_blocks_written += data_par_blocks_written;
+        stats.data_blocks_written     += data_blocks_written;
+        stats.data_par_blocks_written += data_par_blocks_written;
     }
 
     if let Some(ref mut rs_codec) = rs_codec {
         // fill remaining slots with padding if required
         if rs_codec.active() {
+            let mut stats = stats.lock().unwrap();
+
             let slots_to_fill = rs_codec.unfilled_slot_count();
             for i in 0..slots_to_fill {
                 // write padding
@@ -551,8 +555,8 @@ pub fn encode_file(param : &Param)
                                  &mut padding,
                                  &mut writer)?;
 
-                stats.lock().unwrap().data_blocks_written += 1;
-                stats.lock().unwrap().data_padding_bytes  += ver_to_data_size(param.version);
+                stats.data_blocks_written += 1;
+                stats.data_padding_bytes  += ver_to_data_size(param.version);
 
                 if let Some(parity_to_use) =
                     rs_codec.encode_no_block_sync(&padding)
@@ -566,7 +570,7 @@ pub fn encode_file(param : &Param)
                                          p,
                                          &mut writer)?;
 
-                        stats.lock().unwrap().data_par_blocks_written += 1;
+                        stats.data_par_blocks_written += 1;
                     }
                 }
             }
