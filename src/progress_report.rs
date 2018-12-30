@@ -177,7 +177,6 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
 
     pub fn start(&self) {
         if !self.start_flag.swap(true, Ordering::SeqCst) {
-
             self.stats.lock().unwrap().set_start_time();
 
             // first wait to kick start
