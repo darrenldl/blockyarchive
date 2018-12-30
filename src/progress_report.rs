@@ -140,13 +140,10 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             // wait to be kickstarted
             runner_start_barrier.wait();
 
-            loop {
-                // print at least once so the header is at top
-                match (runner_context.try_lock(), runner_stats.try_lock()) {
-                    (Ok(ref mut c), Ok(ref mut s)) => { print_progress::<T>(c, s, false); break; },
-                    _                              => {},
-                }
-            }
+            // print at least once so the header is at top
+            print_progress::<T>(&mut runner_context.lock().unwrap(),
+                                &mut runner_stats.lock().unwrap(),
+                                false);
 
             // let start() know progress text has been printed
             runner_start_barrier.wait();
@@ -155,19 +152,15 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
                 thread::sleep(Duration::from_millis(300));
 
                 if runner_active_flag.load(Ordering::SeqCst) {
-                    match (runner_context.try_lock(), runner_stats.try_lock()) {
-                        (Ok(ref mut c), Ok(ref mut s)) => print_progress::<T>(c, s, false),
-                        _                              => {},
-                    }
+                    print_progress::<T>(&mut runner_context.lock().unwrap(),
+                                        &mut runner_stats.lock().unwrap(),
+                                        false);
                 }
             }
 
-            loop {
-                match (runner_context.try_lock(), runner_stats.try_lock()) {
-                    (Ok(ref mut c), Ok(ref mut s)) => { print_progress::<T>(c, s, true); break; },
-                    _                              => {},
-                }
-            }
+            print_progress::<T>(&mut runner_context.lock().unwrap(),
+                                &mut runner_stats.lock().unwrap(),
+                                true);
 
             runner_shutdown_barrier.wait();
         });
