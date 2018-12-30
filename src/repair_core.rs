@@ -161,26 +161,26 @@ fn update_rs_codec_and_stats(version     : Version,
                              block       : &mut Block,
                              cur_seq_num : u32,
                              rs_codec    : &mut RSRepairer,
-                             stats       : &Arc<Mutex<Stats>>)
+                             stats       : &mut Stats)
                              -> RSCodecState {
     let block_size = ver_to_block_size(version);
 
     if read_res.len_read < block_size {   // read an incomplete block
-        stats.lock().unwrap().blocks_decode_failed += 1;
+        stats.blocks_decode_failed += 1;
         rs_codec.mark_missing()
     } else if let Err(_) = block.sync_from_buffer(rs_codec.get_block_buffer(),
                                                   Some(pred)) {
-        stats.lock().unwrap().blocks_decode_failed += 1;
+        stats.blocks_decode_failed += 1;
         rs_codec.mark_missing()
     } else {
         if block.get_seq_num() != cur_seq_num {
-            stats.lock().unwrap().blocks_decode_failed += 1;
+            stats.blocks_decode_failed += 1;
             rs_codec.mark_missing()
         } else {
             if block.is_meta() {
-                stats.lock().unwrap().meta_blocks_decoded += 1;
+                stats.meta_blocks_decoded += 1;
             } else {
-                stats.lock().unwrap().data_or_par_blocks_decoded += 1;
+                stats.data_or_par_blocks_decoded += 1;
             }
 
             rs_codec.mark_present()
@@ -191,7 +191,7 @@ fn update_rs_codec_and_stats(version     : Version,
 fn repair_blocks_and_update_stats_using_repair_stats(param       : &Param,
                                                      cur_seq_num : u32,
                                                      rs_codec    : &mut RSRepairer,
-                                                     stats       : &Arc<Mutex<Stats>>,
+                                                     stats       : &mut Stats,
                                                      reader      : &mut FileReader,
                                                      reporter    : &ProgressReporter<Stats>)
                                                      -> Result<(), Error> {
@@ -199,10 +199,10 @@ fn repair_blocks_and_update_stats_using_repair_stats(param       : &Param,
         rs_codec.repair_with_block_sync(cur_seq_num);
 
     if repair_stats.successful {
-        stats.lock().unwrap().data_or_par_blocks_repaired +=
+        stats.data_or_par_blocks_repaired +=
             repair_stats.missing_count as u64;
     } else {
-        stats.lock().unwrap().data_or_par_blocks_repair_failed +=
+        stats.data_or_par_blocks_repair_failed +=
             repair_stats.missing_count as u64;
     }
 
@@ -301,6 +301,8 @@ pub fn repair_file(param : &Param)
     json_printer.print_open_bracket(Some("metadata repairs"), BracketType::Square);
     // replace metadata blocks with reference block if broken
     {
+        let mut stats = stats.lock().unwrap();
+
         let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
             [0; SBX_LARGEST_BLOCK_SIZE];
 
@@ -315,7 +317,7 @@ pub fn repair_file(param : &Param)
             reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
             match block.sync_from_buffer(&buffer, Some(&pred)) {
                 Ok(()) => {
-                    stats.lock().unwrap().meta_blocks_decoded += 1;
+                    stats.meta_blocks_decoded += 1;
                 },
                 Err(_) => {
                     if json_printer.json_enabled() {
@@ -332,7 +334,7 @@ pub fn repair_file(param : &Param)
                                   "Replaced invalid metadata block at {} (0x{:X}) with reference block", p, p;);
                     }
 
-                    stats.lock().unwrap().blocks_decode_failed += 1;
+                    stats.blocks_decode_failed += 1;
 
                     reader.seek(SeekFrom::Start(p))?;
 
@@ -341,7 +343,7 @@ pub fn repair_file(param : &Param)
                         reader.write(sbx_block::slice_buf(version, &buffer))?;
                     }
 
-                    stats.lock().unwrap().meta_blocks_repaired += 1;
+                    stats.meta_blocks_repaired += 1;
                 }
             }
         }
@@ -356,9 +358,11 @@ pub fn repair_file(param : &Param)
     // repair data blocks
     let mut seq_num = 1;
     while seq_num <= SBX_LAST_SEQ_NUM {
+        let mut stats = stats.lock().unwrap();
+
         break_if_atomic_bool!(ctrlc_stop_flag);
 
-        if stats.lock().unwrap().units_so_far() >= total_block_count { break; }
+        if stats.units_so_far() >= total_block_count { break; }
 
         let pos = sbx_block::calc_data_block_write_pos(version,
                                                        seq_num,
@@ -376,14 +380,14 @@ pub fn repair_file(param : &Param)
                                       &mut block,
                                       seq_num,
                                       &mut rs_codec,
-                                      &stats);
+                                      &mut stats);
 
         match codec_state {
             RSCodecState::Ready => {
                 repair_blocks_and_update_stats_using_repair_stats(&param,
                                                                   seq_num,
                                                                   &mut rs_codec,
-                                                                  &stats,
+                                                                  &mut stats,
                                                                   &mut reader,
                                                                   &reporter)?;
             },
