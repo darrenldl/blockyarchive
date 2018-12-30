@@ -199,6 +199,8 @@ pub fn check_file(param : &Param)
     }
 
     loop {
+        let mut stats = stats.lock().unwrap();
+
         break_if_atomic_bool!(ctrlc_stop_flag);
 
         break_if_reached_required_len!(bytes_processed,
@@ -215,10 +217,10 @@ pub fn check_file(param : &Param)
         match block.sync_from_buffer(&buffer, None) {
             Ok(_)  => match block.block_type() {
                 BlockType::Meta => {
-                    stats.lock().unwrap().meta_or_par_blocks_decoded += 1;
+                    stats.meta_or_par_blocks_decoded += 1;
                 },
                 BlockType::Data => {
-                    stats.lock().unwrap().data_or_par_blocks_decoded += 1;
+                    stats.data_or_par_blocks_decoded += 1;
                 }
             },
             Err(_) => {
@@ -246,7 +248,7 @@ pub fn check_file(param : &Param)
                                   block_pos;);
                     }
 
-                    stats.lock().unwrap().blocks_decode_failed += 1;
+                    stats.blocks_decode_failed += 1;
                 }
             }
         }
