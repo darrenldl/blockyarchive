@@ -66,35 +66,48 @@ tests=(
 )
 
 for t in ${tests[@]}; do
-  echo "========================================"
   echo "Starting $t"
-  echo "========================================"
-  echo ""
 
   rm -rf $t/
   mkdir $t/
-  # cp $t.sh $t/
   cd $t
   ./../gen_dummy.sh
   ./../$t.sh > log &
   cd ..
 done
 
+echo ""
+
+echo "Waiting for tests to finish"
 wait
 
 # go through all exit codes
-exit_code=0
+test_fail_count=0
+tests_failed=""
 
-exit
+for t in ${tests[@]}; do
+  t_log=$(cat $t/log)
+  echo "========================================"
+  echo "Log of $t :"
+  echo ""
+  echo $t_log
 
-wait
+  t_exit_code=$(cat $t/exit_code)
+  if (( $t_exit_code != 0 )); then
+    test_fail_count=$[$test_fail_count + 1]
+    tests_failed=$tests_failed"\n    "$t
+  fi
+done
+echo "========================================"
 
 if [[ $test_failed == 0 ]]; then
     echo "All tests passed"
     exit 0
 else
-    echo "$test_failed tests failed"
-    echo "List of tests failed"
-    echo -e $test_failed_names
+  echo
+    echo "$test_fail_count tests failed"
+    echo ""
+    echo "List of tests failed :"
+    echo -e $tests_failed_names
     exit 1
 fi
