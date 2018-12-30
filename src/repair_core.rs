@@ -197,19 +197,15 @@ fn repair_blocks_and_update_stats_using_repair_stats(param       : &Param,
                                                      reader      : &mut FileReader,
                                                      reporter    : &ProgressReporter<Stats>)
                                                      -> Result<(), Error> {
-    {
-        let mut stats = stats.lock().unwrap();
+    let (repair_stats, repaired_blocks) =
+        rs_codec.repair_with_block_sync(cur_seq_num);
 
-        let (repair_stats, repaired_blocks) =
-            rs_codec.repair_with_block_sync(cur_seq_num);
-
-        if repair_stats.successful {
-            stats.data_or_par_blocks_repaired +=
-                repair_stats.missing_count as u64;
-        } else {
-            stats.data_or_par_blocks_repair_failed +=
-                repair_stats.missing_count as u64;
-        }
+    if repair_stats.successful {
+        stats.lock().unwrap().data_or_par_blocks_repaired +=
+            repair_stats.missing_count as u64;
+    } else {
+        stats.lock().unwrap().data_or_par_blocks_repair_failed +=
+            repair_stats.missing_count as u64;
     }
 
     if repair_stats.missing_count > 0 {
