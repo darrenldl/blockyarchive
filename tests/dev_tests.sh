@@ -69,9 +69,12 @@ test_count=${#tests[@]}
 
 simul_test_count=5
 
-start_date=$(date "+%Y-%m-%d_%H%m")
+start_date=$(date "+%Y-%m-%d_%H%M")
 start_time=$(date "+s")
+
+echo ""
 echo "Test start :" $start_date
+echo ""
 
 i=0
 while (( $i < $test_count )); do
@@ -140,8 +143,9 @@ else
     exit_code=1
 fi
 
-end_date=$(date "+%Y-%m-%d_%H%m")
+end_date=$(date "+%Y-%m-%d_%H%M")
 end_time=$(date "+s")
+echo ""
 echo "Test end :" $end_date
 
 echo "Time elapsed :" $[(end_time - start_time) / 60] "minutes"
