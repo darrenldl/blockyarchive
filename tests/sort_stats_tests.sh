@@ -206,4 +206,4 @@ for ver in 17 18 19; do
   done
 done
 
-exit $exit_code
+echo $exit_code > exit_code

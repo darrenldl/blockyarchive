@@ -75,4 +75,4 @@ for ver in ${VERSIONS[*]}; do
   fi
 done
 
-exit $exit_code
+echo $exit_code > exit

@@ -113,4 +113,4 @@ for ver in ${VERSIONS[*]}; do
     done
 done
 
-exit $exit_code
+echo $exit_code > exit_code

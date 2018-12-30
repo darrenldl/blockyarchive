@@ -111,4 +111,4 @@ else
   exit_code=1
 fi
 
-exit $exit_code
+echo $exit_code > exit_code

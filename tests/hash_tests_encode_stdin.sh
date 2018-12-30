@@ -90,4 +90,4 @@ for h in ${HASHES[*]}; do
   fi
 done
 
-exit $exit_code
+echo $exit_code > exit_code
