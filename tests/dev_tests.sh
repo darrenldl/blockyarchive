@@ -130,14 +130,14 @@ echo "========================================"
 
 if [[ $test_failed == 0 ]]; then
     echo "All tests passed"
-    exit 0
+    exit_code=0
 else
   echo
     echo "$test_fail_count tests failed"
     echo ""
     echo "List of tests failed :"
     echo -e $tests_failed_names
-    exit 1
+    exit_code=1
 fi
 
 end_date=$(date "+%Y-%m-%d_%H%m")
@@ -145,3 +145,5 @@ end_time=$(date "+s")
 echo "Test end :" $end_date
 
 echo "Time elapsed :" $[(end_time - start_time) / 60] "minutes"
+
+exit $exit_code
