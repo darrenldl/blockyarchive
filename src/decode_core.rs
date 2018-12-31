@@ -58,9 +58,9 @@ pub enum WriteTo {
 
 #[derive(Clone, Debug)]
 pub struct DecodeFailsBreakdown {
-    pub meta_blocks_decode_failed : u64,
-    pub data_blocks_decode_failed : u64,
-    pub par_blocks_decode_failed  : u64,
+    pub meta_blocks_decode_failed   : u64,
+    pub data_blocks_decode_failed   : u64,
+    pub parity_blocks_decode_failed : u64,
 }
 
 #[derive(Clone, Debug)]
@@ -71,20 +71,20 @@ pub enum DecodeFailStats {
 
 #[derive(Clone, Debug)]
 pub struct Stats {
-    uid                      : [u8; SBX_FILE_UID_LEN],
-    version                  : Version,
-    pub meta_blocks_decoded  : u64,
-    pub data_blocks_decoded  : u64,
-    pub par_blocks_decoded   : u64,
-    pub blocks_decode_failed : DecodeFailStats,
-    pub in_file_size         : u64,
-    pub out_file_size        : u64,
-    total_blocks             : u64,
-    start_time               : f64,
-    end_time                 : f64,
-    pub recorded_hash        : Option<multihash::HashBytes>,
-    pub computed_hash        : Option<multihash::HashBytes>,
-    json_printer             : Arc<JSONPrinter>,
+    uid                       : [u8; SBX_FILE_UID_LEN],
+    version                   : Version,
+    pub meta_blocks_decoded   : u64,
+    pub data_blocks_decoded   : u64,
+    pub parity_blocks_decoded : u64,
+    pub blocks_decode_failed  : DecodeFailStats,
+    pub in_file_size          : u64,
+    pub out_file_size         : u64,
+    total_blocks              : u64,
+    start_time                : f64,
+    end_time                  : f64,
+    pub recorded_hash         : Option<multihash::HashBytes>,
+    pub computed_hash         : Option<multihash::HashBytes>,
+    json_printer              : Arc<JSONPrinter>,
 }
 
 struct HashStats {
@@ -118,11 +118,11 @@ impl fmt::Display for Stats {
                               padding,
                               misc_utils::bytes_to_upper_hex_string(&self.uid))?;
             write_maybe_json!(f, json_printer, "SBX version                            {}: {}", padding, ver_to_usize(self.version))?;
-            write_maybe_json!(f, json_printer, "Block size used in decoding            {}: {}", padding, block_size               => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks processed             {}: {}", padding, self.units_so_far()      => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata)    {}: {}", padding, self.meta_blocks_decoded => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (data)        {}: {}", padding, self.data_blocks_decoded => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (parity)      {}: {}", padding, self.par_blocks_decoded  => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Block size used in decoding            {}: {}", padding, block_size                 => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks processed             {}: {}", padding, self.units_so_far()        => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata)    {}: {}", padding, self.meta_blocks_decoded   => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (data)        {}: {}", padding, self.data_blocks_decoded   => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (parity)      {}: {}", padding, self.parity_blocks_decoded => skip_quotes)?;
             match self.blocks_decode_failed {
                 DecodeFailStats::Total(x)         => {
                     write_maybe_json!(f, json_printer, "Number of blocks failed to decode      : {}", x   => skip_quotes)?
@@ -130,11 +130,11 @@ impl fmt::Display for Stats {
                 DecodeFailStats::Breakdown(ref x) => {
                     write_maybe_json!(f, json_printer, "Number of blocks failed to decode (metadata)    : {}", x.meta_blocks_decode_failed => skip_quotes)?;
                     write_maybe_json!(f, json_printer, "Number of blocks failed to decode (data)        : {}", x.data_blocks_decode_failed => skip_quotes)?;
-                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (parity)      : {}", x.par_blocks_decode_failed  => skip_quotes)?;
+                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (parity)      : {}", x.parity_blocks_decode_failed  => skip_quotes)?;
                 },
             };
-            write_maybe_json!(f, json_printer, "File size                              {}: {}", padding, self.out_file_size       => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "SBX container size                     {}: {}", padding, self.in_file_size        => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "File size                              {}: {}", padding, self.out_file_size         => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "SBX container size                     {}: {}", padding, self.in_file_size          => skip_quotes)?;
             write_maybe_json!(f, json_printer, "Time elapsed                           {}: {:02}:{:02}:{:02}", padding, hour, minute, second)?;
             write_maybe_json!(f, json_printer, "Recorded hash                          {}: {}", padding, match *recorded_hash {
                 None        => null_if_json_else!(json_printer, "N/A").to_string(),
@@ -293,26 +293,26 @@ impl Stats {
                 WriteTo::File   => DecodeFailStats::Total(0),
                 WriteTo::Stdout =>
                     DecodeFailStats::Breakdown(DecodeFailsBreakdown {
-                        meta_blocks_decode_failed : 0,
-                        data_blocks_decode_failed : 0,
-                        par_blocks_decode_failed  : 0,
+                        meta_blocks_decode_failed   : 0,
+                        data_blocks_decode_failed   : 0,
+                        parity_blocks_decode_failed : 0,
                     })
             };
         Stats {
-            uid                  : ref_block.get_uid(),
-            version              : ref_block.get_version(),
+            uid                   : ref_block.get_uid(),
+            version               : ref_block.get_version(),
             blocks_decode_failed,
-            meta_blocks_decoded  : 0,
-            data_blocks_decoded  : 0,
-            par_blocks_decoded   : 0,
+            meta_blocks_decoded   : 0,
+            data_blocks_decoded   : 0,
+            parity_blocks_decoded : 0,
             in_file_size,
-            out_file_size        : 0,
+            out_file_size         : 0,
             total_blocks,
-            start_time           : 0.,
-            end_time             : 0.,
-            recorded_hash        : None,
-            computed_hash        : None,
-            json_printer         : Arc::clone(json_printer),
+            start_time            : 0.,
+            end_time              : 0.,
+            recorded_hash         : None,
+            computed_hash         : None,
+            json_printer          : Arc::clone(json_printer),
         }
     }
 
@@ -341,10 +341,10 @@ impl Stats {
         }
     }
 
-    pub fn incre_par_blocks_failed(&mut self) {
+    pub fn incre_parity_blocks_failed(&mut self) {
         match self.blocks_decode_failed {
             DecodeFailStats::Breakdown(ref mut x) => {
-                x.par_blocks_decode_failed += 1;
+                x.parity_blocks_decode_failed += 1;
             },
             DecodeFailStats::Total(_)             => panic!(),
         }
@@ -371,9 +371,9 @@ impl Stats {
         }
     }
 
-    pub fn par_blocks_failed(&self) -> u64 {
+    pub fn parity_blocks_failed(&self) -> u64 {
         match self.blocks_decode_failed {
-            DecodeFailStats::Breakdown(ref x) => x.par_blocks_decode_failed,
+            DecodeFailStats::Breakdown(ref x) => x.parity_blocks_decode_failed,
             DecodeFailStats::Total(_)         => panic!(),
         }
     }
@@ -400,11 +400,11 @@ impl ProgressReport for Stats {
             DecodeFailStats::Breakdown(ref x) =>
                 x.meta_blocks_decode_failed +
                 x.data_blocks_decode_failed +
-                x.par_blocks_decode_failed
+                x.parity_blocks_decode_failed
         };
         (self.meta_blocks_decoded
          + self.data_blocks_decoded
-         + self.par_blocks_decoded
+         + self.parity_blocks_decoded
          + blocks_decode_failed) as u64
     }
 
@@ -636,7 +636,7 @@ pub fn decode(param           : &Param,
                     match data_par_shards {
                         Some((data, par)) => {
                             if block.is_parity(data, par) {
-                                stats.par_blocks_decoded += 1;
+                                stats.parity_blocks_decoded += 1;
                             } else {
                                 stats.data_blocks_decoded += 1;
                             }
@@ -675,7 +675,7 @@ pub fn decode(param           : &Param,
                     DecodeFailStats::Breakdown(ref x) =>
                         x.meta_blocks_decode_failed +
                         x.data_blocks_decode_failed +
-                        x.par_blocks_decode_failed,
+                        x.parity_blocks_decode_failed,
                     DecodeFailStats::Total(x)         => x,
                 };
 
@@ -750,7 +750,7 @@ pub fn decode(param           : &Param,
                             if        sbx_block::seq_num_is_meta(seq_num) {
                                 stats.incre_meta_blocks_failed();
                             } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
-                                stats.incre_par_blocks_failed();
+                                stats.incre_parity_blocks_failed();
                             } else {
                                 stats.incre_data_blocks_failed();
                             }
@@ -760,7 +760,7 @@ pub fn decode(param           : &Param,
                                     if block.is_meta() { // do nothing if block is meta
                                         stats.meta_blocks_decoded += 1;
                                     } else if block.is_parity(data, parity) {
-                                        stats.par_blocks_decoded += 1;
+                                        stats.parity_blocks_decoded += 1;
                                     } else {
                                         stats.data_blocks_decoded += 1;
 
@@ -779,7 +779,7 @@ pub fn decode(param           : &Param,
                                     if        sbx_block::seq_num_is_meta(seq_num) {
                                         stats.incre_meta_blocks_failed();
                                     } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
-                                        stats.incre_par_blocks_failed();
+                                        stats.incre_parity_blocks_failed();
                                     } else {
                                         stats.incre_data_blocks_failed();
 
