@@ -49,33 +49,33 @@ use misc_utils::RangeEnd;
 
 #[derive(Clone, Debug)]
 pub struct Stats {
-    uid                         : [u8; SBX_FILE_UID_LEN],
-    version                     : Version,
-    hash_bytes                  : Option<multihash::HashBytes>,
-    pub meta_blocks_written     : u32,
-    pub data_blocks_written     : u32,
-    pub data_par_blocks_written : u32,
-    pub data_padding_bytes      : usize,
-    pub in_file_size            : u64,
-    pub out_file_size           : u64,
-    total_data_blocks           : u32,
-    start_time                  : f64,
-    end_time                    : f64,
-    json_printer                : Arc<JSONPrinter>,
+    uid                       : [u8; SBX_FILE_UID_LEN],
+    version                   : Version,
+    hash_bytes                : Option<multihash::HashBytes>,
+    pub meta_blocks_written   : u32,
+    pub data_blocks_written   : u32,
+    pub parity_blocks_written : u32,
+    pub data_padding_bytes    : usize,
+    pub in_file_size          : u64,
+    pub out_file_size         : u64,
+    total_data_blocks         : u32,
+    start_time                : f64,
+    end_time                  : f64,
+    json_printer              : Arc<JSONPrinter>,
 }
 
 impl fmt::Display for Stats {
     fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
-        let rs_enabled              = ver_uses_rs(self.version);
-        let block_size              = ver_to_block_size(self.version);
-        let data_size               = ver_to_data_size(self.version);
-        let meta_blocks_written     = self.meta_blocks_written;
-        let data_blocks_written     = self.data_blocks_written;
-        let data_par_blocks_written = self.data_par_blocks_written;
-        let blocks_written          =
+        let rs_enabled            = ver_uses_rs(self.version);
+        let block_size            = ver_to_block_size(self.version);
+        let data_size             = ver_to_data_size(self.version);
+        let meta_blocks_written   = self.meta_blocks_written;
+        let data_blocks_written   = self.data_blocks_written;
+        let parity_blocks_written = self.parity_blocks_written;
+        let blocks_written        =
             meta_blocks_written
             + data_blocks_written
-            + data_par_blocks_written;
+            + parity_blocks_written;
         let data_bytes_encoded      = self.data_bytes_encoded();
             // self.data_blocks_written as u64
             // * data_size as u64
@@ -94,15 +94,15 @@ impl fmt::Display for Stats {
                               misc_utils::bytes_to_upper_hex_string(&self.uid))?;
             write_maybe_json!(f, json_printer, "SBX version                            : {}",
                               ver_to_usize(self.version))?;
-            write_maybe_json!(f, json_printer, "Block size used in encoding            : {}", block_size              => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Data  size used in encoding            : {}", data_size               => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks written               : {}", blocks_written          => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks written (metadata)    : {}", meta_blocks_written     => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks written (data)        : {}", data_blocks_written     => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks written (parity)      : {}", data_par_blocks_written => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Amount of data encoded (bytes)         : {}", data_bytes_encoded      => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "File size                              : {}", in_file_size            => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "SBX container size                     : {}", out_file_size           => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Block size used in encoding            : {}", block_size            => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Data  size used in encoding            : {}", data_size             => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written               : {}", blocks_written        => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written (metadata)    : {}", meta_blocks_written   => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written (data)        : {}", data_blocks_written   => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks written (parity)      : {}", parity_blocks_written => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Amount of data encoded (bytes)         : {}", data_bytes_encoded    => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "File size                              : {}", in_file_size          => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "SBX container size                     : {}", out_file_size         => skip_quotes)?;
             write_maybe_json!(f, json_printer, "Hash                                   : {}", match self.hash_bytes {
                 None        => "N/A".to_string(),
                 Some(ref h) => format!("{} - {}",
@@ -189,22 +189,22 @@ impl Stats {
     pub fn new(param : &Param, required_len : Option<u64>) -> Stats {
         use file_utils::from_orig_file_size::calc_data_chunk_count;
         Stats {
-            uid                     : param.uid,
-            version                 : param.version,
-            hash_bytes              : None,
-            meta_blocks_written     : 0,
-            data_blocks_written     : 0,
-            data_par_blocks_written : 0,
-            data_padding_bytes      : 0,
-            total_data_blocks       : match required_len {
+            uid                   : param.uid,
+            version               : param.version,
+            hash_bytes            : None,
+            meta_blocks_written   : 0,
+            data_blocks_written   : 0,
+            parity_blocks_written : 0,
+            data_padding_bytes    : 0,
+            total_data_blocks     : match required_len {
                 Some(len) => calc_data_chunk_count(param.version, len) as u32,
                 None      => 0,
             },
-            in_file_size            : 0,
-            out_file_size           : 0,
-            start_time              : 0.,
-            end_time                : 0.,
-            json_printer            : Arc::clone(&param.json_printer),
+            in_file_size          : 0,
+            out_file_size         : 0,
+            start_time            : 0.,
+            end_time              : 0.,
+            json_printer          : Arc::clone(&param.json_printer),
         }
     }
 
@@ -503,7 +503,7 @@ pub fn encode_file(param : &Param)
         if read_res.len_read == 0 { break; }
 
         let mut data_blocks_written     = 0;
-        let mut data_par_blocks_written = 0;
+        let mut parity_blocks_written = 0;
 
         stats.data_padding_bytes +=
             sbx_block::write_padding(param.version, read_res.len_read, &mut data);
@@ -532,14 +532,14 @@ pub fn encode_file(param : &Param)
                                      p,
                                      &mut writer)?;
 
-                    data_par_blocks_written += 1;
+                    parity_blocks_written += 1;
                 }
             }
         }
 
         // update stats
-        stats.data_blocks_written     += data_blocks_written;
-        stats.data_par_blocks_written += data_par_blocks_written;
+        stats.data_blocks_written   += data_blocks_written;
+        stats.parity_blocks_written += parity_blocks_written;
     }
 
     if let Some(ref mut rs_codec) = rs_codec {
@@ -570,7 +570,7 @@ pub fn encode_file(param : &Param)
                                          p,
                                          &mut writer)?;
 
-                        stats.data_par_blocks_written += 1;
+                        stats.parity_blocks_written += 1;
                     }
                 }
             }
