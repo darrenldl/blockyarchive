@@ -371,7 +371,7 @@ impl Stats {
         }
     }
 
-    pub fn parity_blocks_failed(&self) -> u64 {
+    pub fn par_blocks_failed(&self) -> u64 {
         match self.blocks_decode_failed {
             DecodeFailStats::Breakdown(ref x) => x.par_blocks_decode_failed,
             DecodeFailStats::Total(_)         => panic!(),
