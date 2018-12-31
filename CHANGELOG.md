@@ -32,6 +32,8 @@
   - check
   - decode
   - sort
+- Updated decode mode stats output
+  - This results in potentially incompatible JSON output
 
 ## 2.2.0
 
