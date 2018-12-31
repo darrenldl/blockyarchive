@@ -70,6 +70,10 @@ rm out_test/* &>/dev/null
 
 rm sort_*.sbx.* &>/dev/null
 
+rm exit_code
+
+rm blkar
+
 for t in ${tests[@]}; do
   rm -rf $t
 done
