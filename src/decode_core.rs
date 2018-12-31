@@ -121,16 +121,16 @@ impl fmt::Display for Stats {
             write_maybe_json!(f, json_printer, "Block size used in decoding            {}: {}", padding, block_size                    => skip_quotes)?;
             write_maybe_json!(f, json_printer, "Number of blocks processed             {}: {}", padding, self.units_so_far()           => skip_quotes)?;
             write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata)    {}: {}", padding, self.meta_blocks_decoded      => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (data only)   {}: {}", padding, self.data_blocks_decoded      => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (data parity) {}: {}", padding, self.parity_blocks_decoded    => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (data)        {}: {}", padding, self.data_blocks_decoded      => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks decoded (parity)      {}: {}", padding, self.parity_blocks_decoded    => skip_quotes)?;
             match self.blocks_decode_failed {
                 DecodeFailStats::Total(x)         => {
                     write_maybe_json!(f, json_printer, "Number of blocks failed to decode      : {}", x   => skip_quotes)?
                 },
                 DecodeFailStats::Breakdown(ref x) => {
                     write_maybe_json!(f, json_printer, "Number of blocks failed to decode (metadata)    : {}", x.meta_blocks_decode_failed   => skip_quotes)?;
-                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (data only)   : {}", x.data_blocks_decode_failed   => skip_quotes)?;
-                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (data parity) : {}", x.parity_blocks_decode_failed => skip_quotes)?;
+                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (data)        : {}", x.data_blocks_decode_failed   => skip_quotes)?;
+                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (parity)      : {}", x.parity_blocks_decode_failed => skip_quotes)?;
                 },
             };
             write_maybe_json!(f, json_printer, "File size                              {}: {}", padding, self.out_file_size            => skip_quotes)?;
