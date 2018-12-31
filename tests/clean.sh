@@ -54,25 +54,25 @@ tests=(
   "repair_truncated_tests_decode_stdout"
 )
 
-rm dummy* &>/dev/null
+rm -f dummy*
 
-rm *.sbx &>/dev/null
+rm -f  *.sbx
 
-rm rescued_data/* &>/dev/null
+rm -f rescued_data/*
 
-rm rescued_data2/* &>/dev/null
+rm -f rescued_data2/*
 
-rm rescue_log &>/dev/null
+rm -f rescue_log
 
-rm filler* &>/dev/null
+rm -f filler*
 
-rm out_test/* &>/dev/null
+rm -f out_test/*
 
-rm sort_*.sbx.* &>/dev/null
+rm -f sort_*.sbx.*
 
-rm exit_code
+rm -f exit_code
 
-rm blkar
+rm -f ../blkar
 
 for t in ${tests[@]}; do
   rm -rf $t
