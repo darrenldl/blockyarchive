@@ -74,6 +74,10 @@ rm -f exit_code
 
 rm -f ../blkar
 
+rm -f data_chunk
+
+rm -f data_chunk_orig
+
 for t in ${tests[@]}; do
   rm -rf $t
 done
