@@ -19,7 +19,7 @@ else
     exit_code=1
 fi
 
-echo "Decoding dummy disk"
+echo "Decoding"
 
 echo "Collecting base statistics"
 output=$(./../blkar decode --json -f dummy.sbx)
