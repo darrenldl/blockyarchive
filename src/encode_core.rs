@@ -474,7 +474,7 @@ pub fn encode_file(param : &Param)
         write_meta_blocks(param,
                           &stats,
                           &metadata,
-                          file_size,
+                          required_len,
                           None,
                           &mut block,
                           &mut data,
@@ -579,11 +579,6 @@ pub fn encode_file(param : &Param)
 
     let data_bytes_encoded = stats.lock().unwrap().data_bytes_encoded();
 
-    let file_size = match file_size {
-        Some(s) => s,
-        None    => data_bytes_encoded,
-    };
-
     if param.meta_enabled {
         let hash_bytes = hash_ctx.finish_into_hash_bytes();
 
@@ -591,7 +586,7 @@ pub fn encode_file(param : &Param)
         write_meta_blocks(param,
                           &stats,
                           &metadata,
-                          Some(file_size),
+                          Some(data_bytes_encoded),
                           Some(hash_bytes.clone()),
                           &mut block,
                           &mut data,
