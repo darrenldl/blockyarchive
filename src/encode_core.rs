@@ -577,7 +577,10 @@ pub fn encode_file(param : &Param)
         }
     }
 
-    let data_bytes_encoded = stats.lock().unwrap().data_bytes_encoded();
+    let data_bytes_encoded = match required_len {
+        Some(x) => x,
+        None    => stats.lock().unwrap().data_bytes_encoded(),
+    };
 
     if param.meta_enabled {
         let hash_bytes = hash_ctx.finish_into_hash_bytes();
