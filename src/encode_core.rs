@@ -231,7 +231,7 @@ fn pack_metadata(block         : &mut Block,
                  param         : &Param,
                  stats         : &Stats,
                  file_metadata : &Option<fs::Metadata>,
-                 required_len  : Option<u64>,
+                 file_size     : Option<u64>,
                  hash          : Option<multihash::HashBytes>) {
     block.set_seq_num(0);
 
@@ -248,7 +248,7 @@ fn pack_metadata(block         : &mut Block,
         let file_name = file_utils::get_file_name_part_of_path(&param.out_file);
         meta.push(Metadata::SNM(file_name)); }
     { // add file size
-        match required_len {
+        match file_size {
             Some(f) => meta.push(Metadata::FSZ(f)),
             None    => {},
         } }
@@ -283,7 +283,7 @@ fn pack_metadata(block         : &mut Block,
 fn write_meta_blocks(param         : &Param,
                      stats         : &Arc<Mutex<Stats>>,
                      file_metadata : &Option<fs::Metadata>,
-                     required_len  : Option<u64>,
+                     file_size     : Option<u64>,
                      hash          : Option<multihash::HashBytes>,
                      block         : &mut Block,
                      buffer        : &mut [u8],
@@ -295,7 +295,7 @@ fn write_meta_blocks(param         : &Param,
                   param,
                   &stats.lock().unwrap(),
                   file_metadata,
-                  required_len,
+                  file_size,
                   hash);
 
     match block.sync_to_buffer(None, buffer) {
@@ -599,7 +599,7 @@ pub fn encode_file(param : &Param)
 
     reporter.stop();
 
-    stats.lock().unwrap().in_file_size  = file_size;
+    stats.lock().unwrap().in_file_size  = data_bytes_encoded;
     stats.lock().unwrap().out_file_size = writer.get_file_size()?;
 
     let stats = stats.lock().unwrap().clone();
