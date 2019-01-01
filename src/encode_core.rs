@@ -231,7 +231,7 @@ fn pack_metadata(block         : &mut Block,
                  param         : &Param,
                  stats         : &Stats,
                  file_metadata : &Option<fs::Metadata>,
-                 file_size     : Option<u64>,
+                 required_len  : Option<u64>,
                  hash          : Option<multihash::HashBytes>) {
     block.set_seq_num(0);
 
@@ -248,7 +248,7 @@ fn pack_metadata(block         : &mut Block,
         let file_name = file_utils::get_file_name_part_of_path(&param.out_file);
         meta.push(Metadata::SNM(file_name)); }
     { // add file size
-        match file_size {
+        match required_len {
             Some(f) => meta.push(Metadata::FSZ(f)),
             None    => {},
         } }
@@ -283,7 +283,7 @@ fn pack_metadata(block         : &mut Block,
 fn write_meta_blocks(param         : &Param,
                      stats         : &Arc<Mutex<Stats>>,
                      file_metadata : &Option<fs::Metadata>,
-                     file_size     : Option<u64>,
+                     required_len  : Option<u64>,
                      hash          : Option<multihash::HashBytes>,
                      block         : &mut Block,
                      buffer        : &mut [u8],
@@ -295,7 +295,7 @@ fn write_meta_blocks(param         : &Param,
                   param,
                   &stats.lock().unwrap(),
                   file_metadata,
-                  file_size,
+                  required_len,
                   hash);
 
     match block.sync_to_buffer(None, buffer) {
@@ -395,22 +395,6 @@ pub fn encode_file(param : &Param)
         None    => None,
     };
 
-    { // check if in file size exceeds maximum
-        match file_size {
-            None            => {},
-            Some(file_size) => {
-                let max_in_file_size = ver_to_max_data_file_size(param.version);
-
-                if file_size > max_in_file_size {
-                    return Err(Error::with_message(&format!("File size of \"{}\" exceeds the maximum supported file size, size : {}, max : {}",
-                                                            param.in_file.as_ref().unwrap(),
-                                                            file_size,
-                                                            max_in_file_size)));
-                }
-            }
-        }
-    }
-
     // calulate length to read and position to seek to
     let (required_len, seek_to) = match file_size {
         Some(file_size) => {
@@ -425,6 +409,22 @@ pub fn encode_file(param : &Param)
         },
         None            => (None, None),
     };
+
+    { // check if required length exceeds maximum
+        match required_len {
+            None               => {},
+            Some(required_len) => {
+                let max_in_file_size = ver_to_max_data_file_size(param.version);
+
+                if required_len > max_in_file_size {
+                    return Err(Error::with_message(&format!("Encoding range specified for \"{}\" exceeds the maximum supported file size, size to be encoded: {}, max : {}",
+                                                            param.in_file.as_ref().unwrap(),
+                                                            required_len,
+                                                            max_in_file_size)));
+                }
+            }
+        }
+    }
 
     // setup stats
     let stats = Arc::new(Mutex::new(Stats::new(param, required_len)));
