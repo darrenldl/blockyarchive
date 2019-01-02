@@ -59,6 +59,11 @@ pub enum WriteTo {
     Stdout,
 }
 
+pub enum ReadPattern {
+    Sequential(Option<(usize, usize, usize)>),
+    BurstResistant(usize, usize, usize),
+}
+
 #[derive(Clone, Debug)]
 pub struct DecodeFailsBreakdown {
     pub meta_blocks_decode_failed   : u64,
@@ -720,77 +725,79 @@ pub fn decode(param           : &Param,
                 None                 => None,
             };
 
+            let read_pattern = match data_par_burst {
+                Some((data, parity, burst)) => match (param.from_pos, param.to_pos) {
+                    (None, None) => ReadPattern::BurstResistant(data, parity, burst),
+                    _            => ReadPattern::Sequential(Some((data, parity, burst))),
+                },
+                None                        => ReadPattern::Sequential(None),
+            };
+
             reporter.start();
 
-            match data_par_burst {
-                Some((data, parity, _)) => { // do burst resistant pattern read
+            match read_pattern {
+                ReadPattern::BurstResistant(data, parity, _) => {
                     let mut seq_num = 1;
                     while seq_num <= SBX_LAST_SEQ_NUM {
                         let mut stats = stats.lock().unwrap();
 
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
-                        // stop if we've read enough number of blocks in the supplied range
-                        if read_enough_blocks(&mut stats) { break; }
-
                         let pos = sbx_block::calc_data_block_write_pos(ref_block.get_version(),
                                                                        seq_num,
                                                                        None,
                                                                        data_par_burst);
 
-                        // make sure we only read in the supplied range
-                        if seek_to <= pos && pos <= seek_to + required_len {
-                            reader.seek(SeekFrom::Start(pos))?;
+                        reader.seek(SeekFrom::Start(pos))?;
 
-                            // read at reference block block size
-                            let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
-                                                                                &mut buffer))?;
+                        // read at reference block block size
+                        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+                                                                            &mut buffer))?;
 
-                            if read_res.eof_seen {
-                                if        sbx_block::seq_num_is_meta(seq_num) {
-                                    stats.incre_meta_blocks_failed();
-                                } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
-                                    stats.incre_parity_blocks_failed();
-                                } else {
-                                    stats.incre_data_blocks_failed();
-                                }
+                        if read_res.eof_seen {
+                            if        sbx_block::seq_num_is_meta(seq_num) {
+                                stats.incre_meta_blocks_failed();
+                            } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
+                                stats.incre_parity_blocks_failed();
                             } else {
-                                match block.sync_from_buffer(&buffer, Some(&pred)) {
-                                    Ok(_) if block.get_seq_num() == seq_num => {
-                                        if block.is_meta() { // do nothing if block is meta
-                                            stats.meta_blocks_decoded += 1;
-                                        } else if block.is_parity(data, parity) {
-                                            stats.parity_blocks_decoded += 1;
-                                        } else {
-                                            stats.data_blocks_decoded += 1;
+                                stats.incre_data_blocks_failed();
+                            }
+                        } else {
+                            match block.sync_from_buffer(&buffer, Some(&pred)) {
+                                Ok(_) if block.get_seq_num() == seq_num => {
+                                    if block.is_meta() { // do nothing if block is meta
+                                        stats.meta_blocks_decoded += 1;
+                                    } else if block.is_parity(data, parity) {
+                                        stats.parity_blocks_decoded += 1;
+                                    } else {
+                                        stats.data_blocks_decoded += 1;
 
-                                            // write data chunk
-                                            write_data_only_block(data_par_shards,
-                                                                  is_last_data_block(&stats, total_data_chunk_count),
-                                                                  data_size_of_last_data_block,
-                                                                  &ref_block,
-                                                                  &block,
-                                                                  &mut writer,
-                                                                  &mut hash_ctx,
-                                                                  &buffer)?;
-                                        }
-                                    },
-                                    _                                       => {
-                                        if        sbx_block::seq_num_is_meta(seq_num) {
-                                            stats.incre_meta_blocks_failed();
-                                        } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
-                                            stats.incre_parity_blocks_failed();
-                                        } else {
-                                            stats.incre_data_blocks_failed();
-
-                                            write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
+                                        // write data chunk
+                                        write_data_only_block(data_par_shards,
+                                                              is_last_data_block(&stats, total_data_chunk_count),
                                                               data_size_of_last_data_block,
                                                               &ref_block,
+                                                              &block,
                                                               &mut writer,
-                                                              &mut hash_ctx)?;
-                                        }
-                                    },
-                                }
+                                                              &mut hash_ctx,
+                                                              &buffer)?;
+                                    }
+                                },
+                                _                                       => {
+                                    if        sbx_block::seq_num_is_meta(seq_num) {
+                                        stats.incre_meta_blocks_failed();
+                                    } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
+                                        stats.incre_parity_blocks_failed();
+                                    } else {
+                                        stats.incre_data_blocks_failed();
+
+                                        write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
+                                                          data_size_of_last_data_block,
+                                                          &ref_block,
+                                                          &mut writer,
+                                                          &mut hash_ctx)?;
+                                    }
+                                },
                             }
                         }
 
@@ -799,7 +806,15 @@ pub fn decode(param           : &Param,
                         seq_num += 1;
                     }
                 },
-                None                        => { // do sequential read
+                ReadPattern::Sequential(data_par_burst) => {
+                    fn is_parity(seq_num        : u32,
+                                 data_par_burst : Option<(usize, usize, usize)>) -> bool {
+                        match data_par_burst {
+                            Some((data, parity, _)) => sbx_block::seq_num_is_parity(seq_num, data, parity),
+                            None                    => false,
+                        }
+                    }
+
                     let mut bytes_processed : u64 = 0;
 
                     // seek to calculated position
@@ -839,6 +854,8 @@ pub fn decode(param           : &Param,
                         if block_okay {
                             if block.is_meta() { // do nothing if block is meta
                                 stats.meta_blocks_decoded += 1;
+                            } else if is_parity(seq_num, data_par_burst) {
+                                stats.parity_blocks_decoded += 1;
                             } else {
                                 stats.data_blocks_decoded += 1;
 
@@ -855,6 +872,8 @@ pub fn decode(param           : &Param,
                         } else {
                             if sbx_block::seq_num_is_meta(seq_num) {
                                 stats.incre_meta_blocks_failed();
+                            } else if is_parity(seq_num, data_par_burst) {
+                                stats.incre_parity_blocks_failed();
                             } else {
                                 stats.incre_data_blocks_failed();
 
@@ -870,7 +889,7 @@ pub fn decode(param           : &Param,
 
                         seq_num += 1;
                     }
-                }
+                },
             }
 
             if let Some(ctx) = hash_ctx {
