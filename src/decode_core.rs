@@ -33,6 +33,8 @@ use cli_utils::report_ref_block_info;
 use general_error::Error;
 use sbx_specs::Version;
 
+use integer_utils::IntegerUtils;
+
 use sbx_block::Block;
 use sbx_block;
 use sbx_specs::{ver_to_block_size,
@@ -802,7 +804,11 @@ pub fn decode(param           : &Param,
                 None                        => { // do sequential read
                     let mut bytes_processed : u64 = 0;
 
-                    let mut seq_num = 0;
+                    // seek to calculated position
+                    reader.seek(SeekFrom::Start(seek_to))?;
+
+                    let mut seq_num = u64::ensure_at_most(seek_to / ver_to_block_size(version) as u64,
+                                                          SBX_LAST_SEQ_NUM as u64) as u32;
                     while seq_num <= SBX_LAST_SEQ_NUM {
                         let mut stats = stats.lock().unwrap();
 
