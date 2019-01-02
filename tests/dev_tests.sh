@@ -63,6 +63,10 @@ tests=(
   "repair_truncated_tests"
   "repair_truncated_tests_encode_stdin"
   "repair_truncated_tests_decode_stdout"
+  "check_from_to_tests.sh"
+  "decode_from_to_tests_corruption_based.sh"
+  "decode_from_to_tests.sh"
+  # "decode_from_to_tests_decode_stdout.sh"
 )
 
 test_count=${#tests[@]}
