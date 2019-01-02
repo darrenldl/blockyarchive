@@ -896,7 +896,8 @@ pub fn decode(param           : &Param,
 
                             if chunks_outputted > 0 {
                                 let out_file_size =
-                                    (chunks_outputted - 1) * data_size + size_of_last_data_chunk;
+                                    (blocks_skipped + chunks_outputted - 1) * data_size
+                                    + size_of_last_data_chunk;
 
                                 if let Some(r) = writer.set_len(out_file_size) {
                                     r?;
