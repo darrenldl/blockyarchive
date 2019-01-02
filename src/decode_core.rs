@@ -879,11 +879,31 @@ pub fn decode(param           : &Param,
     // truncate file possibly
     if ref_block.is_meta() {
         match ref_block.get_FSZ().unwrap() {
-            None    => {},
-            Some(x) => {
+            None         => {},
+            Some(f_size) => {
                 match (param.from_pos, param.to_pos) {
-                    (None, None) => if let Some(r) = writer.set_len(x) { r?; },
-                    _            => {},
+                    (None, None) => if let Some(r) = writer.set_len(f_size) { r?; },
+                    _            => {
+                        // truncate only the last data chunk if possible
+                        if let Some(Ok(out_len)) = writer.get_file_size() {
+                            let data_size  = ver_to_data_size(version)  as u64;
+                            let block_size = ver_to_block_size(version) as u64;
+
+                            let size_of_last_data_chunk = f_size % data_size;
+
+                            let blocks_skipped   = seek_to / block_size;
+                            let chunks_outputted = out_len / data_size;
+
+                            if chunks_outputted > 0 {
+                                let out_file_size =
+                                    (chunks_outputted - 1) * data_size + size_of_last_data_chunk;
+
+                                if let Some(r) = writer.set_len(out_file_size) {
+                                    r?;
+                                }
+                            }
+                        }
+                    },
                 }
             }
         }
