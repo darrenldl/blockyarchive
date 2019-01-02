@@ -66,6 +66,7 @@ tests=(
   "check_from_to_tests.sh"
   "decode_from_to_tests_corruption_based.sh"
   "decode_from_to_tests.sh"
+  "decode_from_to_tests_decode_stdout"
 )
 
 test_count=${#tests[@]}
@@ -119,13 +120,16 @@ while (( $i < $test_count )); do
     if [[ "$t" != "" ]]; then
       cd $t
 
-      find . -type f \
-        -not -name "exit_code" \
-        -not -name "log" \
-        -not -name "stderr_log" \
-        -delete
+      if [[ $? == 0 ]]; then
 
-      cd ..
+        find . -type f \
+             -not -name "exit_code" \
+             -not -name "log" \
+             -not -name "stderr_log" \
+             -delete
+
+        cd ..
+      fi
     fi
 
     j=$[j+1]
