@@ -879,25 +879,36 @@ pub fn decode(param           : &Param,
     // truncate file possibly
     if ref_block.is_meta() {
         match ref_block.get_FSZ().unwrap() {
-            None         => {},
-            Some(f_size) => {
+            None                   => {},
+            Some(stored_file_size) => {
                 match (param.from_pos, param.to_pos) {
-                    (None, None) => if let Some(r) = writer.set_len(f_size) { r?; },
+                    (None, None) => if let Some(r) = writer.set_len(stored_file_size) { r?; },
                     _            => {
                         // truncate only the last data chunk if possible
-                        if let Some(Ok(out_len)) = writer.get_file_size() {
+                        if let Some(Ok(output_file_len)) = writer.get_file_size() {
+                            let container_size = reader.get_file_size()?;
+
                             let data_size  = ver_to_data_size(version)  as u64;
                             let block_size = ver_to_block_size(version) as u64;
 
-                            let size_of_last_data_chunk = f_size % data_size;
+                            let size_of_last_data_chunk = match stored_file_size % data_size {
+                                0 => data_size,
+                                x => x,
+                            };
 
                             let blocks_skipped   = seek_to / block_size;
-                            let chunks_outputted = out_len / data_size;
+                            let blocks_processed = stats.lock().unwrap().units_so_far();
 
-                            if chunks_outputted > 0 {
+                            let total_blocks =
+                                file_utils::from_container_size::calc_total_block_count(version,
+                                                                                        container_size);
+
+                            if blocks_processed > 0 && blocks_skipped + blocks_processed == total_blocks {
+                                let chunks_outputted =
+                                    file_utils::from_orig_file_size::calc_data_chunk_count(version,
+                                                                                           output_file_len);
                                 let out_file_size =
-                                    (blocks_skipped + chunks_outputted - 1) * data_size
-                                    + size_of_last_data_chunk;
+                                    (chunks_outputted - 1) * data_size + size_of_last_data_chunk;
 
                                 if let Some(r) = writer.set_len(out_file_size) {
                                     r?;
