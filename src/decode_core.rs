@@ -22,7 +22,8 @@ use file_writer::{FileWriter,
 use writer::{Writer,
              WriterType};
 
-use misc_utils::RangeEnd;
+use misc_utils::{RangeEnd,
+                 PositionOrLength};
 
 use multihash;
 use multihash::*;
@@ -581,12 +582,12 @@ pub fn decode(param           : &Param,
 
     // calulate length to read and position to seek to
     let RequiredLenAndSeekTo { required_len, seek_to } =
-        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
-                                                                      param.to_pos,
-                                                                      false,
-                                                                      0,
-                                                                      in_file_size,
-                                                                      Some(ver_to_block_size(version) as u64));
+        misc_utils::calc_required_len_and_seek_to_from_byte_range(param.from_pos,
+                                                                  param.to_pos,
+                                                                  false,
+                                                                  0,
+                                                                  PositionOrLength::Len(in_file_size),
+                                                                  Some(ver_to_block_size(version) as u64));
 
     match param.out_file {
         Some(_) => { // output to file

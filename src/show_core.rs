@@ -33,7 +33,8 @@ use block_utils;
 use block_utils::RefBlockChoice;
 use sbx_block::BlockType;
 
-use misc_utils::RangeEnd;
+use misc_utils::{RangeEnd,
+                 PositionOrLength};
 
 use json_printer::JSONPrinter;
 
@@ -186,12 +187,12 @@ pub fn show_file(param : &Param)
 
     // calulate length to read and position to seek to
     let RequiredLenAndSeekTo { required_len, seek_to } =
-        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
-                                                                      param.to_pos,
-                                                                      param.force_misalign,
-                                                                      0,
-                                                                      file_size,
-                                                                      None);
+        misc_utils::calc_required_len_and_seek_to_from_byte_range(param.from_pos,
+                                                                  param.to_pos,
+                                                                  param.force_misalign,
+                                                                  0,
+                                                                  PositionOrLength::Len(file_size),
+                                                                  None);
 
     // seek to calculated position
     reader.seek(SeekFrom::Start(seek_to))?;

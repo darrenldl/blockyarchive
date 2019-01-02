@@ -29,7 +29,8 @@ use time_utils;
 use block_utils;
 
 use block_utils::RefBlockChoice;
-use misc_utils::RangeEnd;
+use misc_utils::{RangeEnd,
+                 PositionOrLength};
 
 use cli_utils::report_ref_block_info;
 
@@ -157,12 +158,12 @@ pub fn check_file(param : &Param)
 
     // calulate length to read and position to seek to
     let RequiredLenAndSeekTo { required_len, seek_to } =
-        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
-                                                                      param.to_pos,
-                                                                      false,
-                                                                      0,
-                                                                      file_size,
-                                                                      Some(ver_to_block_size(version) as u64));
+        misc_utils::calc_required_len_and_seek_to_from_byte_range(param.from_pos,
+                                                                  param.to_pos,
+                                                                  false,
+                                                                  0,
+                                                                  PositionOrLength::Len(file_size),
+                                                                  Some(ver_to_block_size(version) as u64));
 
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block,
                                                required_len,

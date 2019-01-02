@@ -45,7 +45,8 @@ use sbx_specs::{ver_to_usize,
                 ver_uses_rs,
                 ver_to_max_data_file_size};
 
-use misc_utils::RangeEnd;
+use misc_utils::{RangeEnd,
+                 PositionOrLength};
 
 #[derive(Clone, Debug)]
 pub struct Stats {
@@ -399,12 +400,12 @@ pub fn encode_file(param : &Param)
     let (required_len, seek_to) = match file_size {
         Some(file_size) => {
             let RequiredLenAndSeekTo { required_len, seek_to } =
-                misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
-                                                                              param.to_pos,
-                                                                              true,
-                                                                              0,
-                                                                              file_size,
-                                                                              None);
+                misc_utils::calc_required_len_and_seek_to_from_byte_range(param.from_pos,
+                                                                          param.to_pos,
+                                                                          true,
+                                                                          0,
+                                                                          PositionOrLength::Len(file_size),
+                                                                          None);
             (Some(required_len), Some(seek_to))
         },
         None            => (None, None),

@@ -12,6 +12,12 @@ pub enum RangeEnd<T> {
     Exc(T),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PositionOrLength<T> {
+    Pos(T),
+    Len(T),
+}
+
 #[derive(Debug, PartialEq)]
 pub enum HexError {
     InvalidHexString,
@@ -109,14 +115,19 @@ pub struct RequiredLenAndSeekTo {
     pub seek_to      : u64,
 }
 
-pub fn calc_required_len_and_seek_to_from_byte_range_inc
-    (from_byte         : Option<u64>,
-     to_byte           : Option<RangeEnd<u64>>,
-     force_misalign    : bool,
-     bytes_so_far      : u64,
-     last_possible_pos : u64,
-     multiple_of       : Option<u64>) -> RequiredLenAndSeekTo
+pub fn calc_required_len_and_seek_to_from_byte_range
+    (from_byte                : Option<u64>,
+     to_byte                  : Option<RangeEnd<u64>>,
+     force_misalign           : bool,
+     bytes_so_far             : u64,
+     last_possible_pos_or_len : PositionOrLength<u64>,
+     multiple_of              : Option<u64>) -> RequiredLenAndSeekTo
 {
+    let last_possible_pos = match last_possible_pos_or_len {
+        PositionOrLength::Pos(x) => x,
+        PositionOrLength::Len(x) => x - 1,
+    };
+
     let multiple_of = match multiple_of {
         Some(x) => x,
         None    => SBX_SCAN_BLOCK_SIZE as u64,
@@ -131,7 +142,7 @@ pub fn calc_required_len_and_seek_to_from_byte_range_inc
         Some(n) => align(u64::ensure_at_most(n,
                                              last_possible_pos))
     };
-    let to_byte = match to_byte {
+    let to_byte_inc = match to_byte {
         None    => last_possible_pos,
         Some(n) => match n {
             RangeEnd::Inc(n) => u64::ensure_at_most(u64::ensure_at_least(n,
@@ -145,8 +156,8 @@ pub fn calc_required_len_and_seek_to_from_byte_range_inc
     // bytes_so_far only affects seek_to
     let seek_to = u64::ensure_at_most(align(from_byte + bytes_so_far),
                                       last_possible_pos);
-    RequiredLenAndSeekTo { required_len : to_byte - from_byte + 1,
-                           seek_to                                 }
+    RequiredLenAndSeekTo { required_len : to_byte_inc - from_byte + 1,
+                           seek_to                                     }
 }
 
 pub fn make_path(path_parts : &[&str]) -> String {

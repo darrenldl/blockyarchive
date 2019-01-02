@@ -29,7 +29,8 @@ use progress_report::*;
 
 use general_error::Error;
 
-use misc_utils::RangeEnd;
+use misc_utils::{RangeEnd,
+                 PositionOrLength};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum RefBlockChoice {
@@ -131,12 +132,12 @@ pub fn get_ref_block(in_file            : &str,
     let file_size = file_utils::get_file_size(in_file)?;
 
     let RequiredLenAndSeekTo { required_len, seek_to } =
-        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(from_pos,
-                                                                      to_pos,
-                                                                      false,
-                                                                      0,
-                                                                      file_size,
-                                                                      None);
+        misc_utils::calc_required_len_and_seek_to_from_byte_range(from_pos,
+                                                                  to_pos,
+                                                                  false,
+                                                                  0,
+                                                                  PositionOrLength::Len(file_size),
+                                                                  None);
 
     let stats = Arc::new(Mutex::new(ScanStats::new(required_len)));
 

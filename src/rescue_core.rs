@@ -30,7 +30,8 @@ use block_utils;
 
 use integer_utils::IntegerUtils;
 
-use misc_utils::RangeEnd;
+use misc_utils::{RangeEnd,
+                 PositionOrLength};
 
 use json_printer::{JSONPrinter,
                    BracketType};
@@ -220,12 +221,12 @@ pub fn rescue_from_file(param : &Param)
 
     // calulate length to read and position to seek to
     let RequiredLenAndSeekTo { required_len, .. } =
-        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
-                                                                      param.to_pos,
-                                                                      param.force_misalign,
-                                                                      0,
-                                                                      file_size,
-                                                                      None);
+        misc_utils::calc_required_len_and_seek_to_from_byte_range(param.from_pos,
+                                                                  param.to_pos,
+                                                                  param.force_misalign,
+                                                                  0,
+                                                                  PositionOrLength::Len(file_size),
+                                                                  None);
 
     let stats = Arc::new(Mutex::new(Stats::new(required_len,
                                                &param.json_printer)?));
@@ -256,12 +257,12 @@ pub fn rescue_from_file(param : &Param)
     reporter.start();
 
     let RequiredLenAndSeekTo { seek_to, .. } =
-        misc_utils::calc_required_len_and_seek_to_from_byte_range_inc(param.from_pos,
-                                                                      param.to_pos,
-                                                                      param.force_misalign,
-                                                                      stats.lock().unwrap().bytes_processed,
-                                                                      file_size,
-                                                                      None);
+        misc_utils::calc_required_len_and_seek_to_from_byte_range(param.from_pos,
+                                                                  param.to_pos,
+                                                                  param.force_misalign,
+                                                                  stats.lock().unwrap().bytes_processed,
+                                                                  PositionOrLength::Len(file_size),
+                                                                  None);
 
     // seek to calculated position
     reader.seek(SeekFrom::Start(seek_to))?;
