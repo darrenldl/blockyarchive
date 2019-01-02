@@ -820,9 +820,13 @@ pub fn decode(param           : &Param,
                     // seek to calculated position
                     reader.seek(SeekFrom::Start(seek_to))?;
 
-                    let mut seq_num = u64::ensure_at_most(seek_to / ver_to_block_size(version) as u64,
-                                                          SBX_LAST_SEQ_NUM as u64) as u32;
-                    while seq_num <= SBX_LAST_SEQ_NUM {
+                    let mut block_index = u64::ensure_at_most(seek_to / ver_to_block_size(version) as u64,
+                                                              SBX_LAST_SEQ_NUM as u64);
+                    loop {
+                        let seq_num = sbx_block::calc_seq_num_at_index(block_index,
+                                                                       Some(true),
+                                                                       data_par_burst);
+
                         let mut stats = stats.lock().unwrap();
 
                         break_if_atomic_bool!(ctrlc_stop_flag);
@@ -841,12 +845,13 @@ pub fn decode(param           : &Param,
                         let block_okay =
                             match block.sync_from_buffer(&buffer, Some(&pred)) {
                                 Ok(_)  => {
-                                    // fix seq num for the case of no metadata block
-                                    if block.get_seq_num() == 1 && seq_num == 0 {
-                                        seq_num = 1;
+                                    match data_par_burst {
+                                        Some(_) => block.get_seq_num() == seq_num,
+                                        None    =>
+                                        // fix seq num for the case of no metadata block
+                                            block.get_seq_num() == seq_num
+                                            || block.get_seq_num() == seq_num + 1,
                                     }
-
-                                    block.get_seq_num() == seq_num
                                 },
                                 Err(_) => false,
                             };
@@ -887,7 +892,7 @@ pub fn decode(param           : &Param,
 
                         if is_last_data_block(&stats, total_data_chunk_count) { break; }
 
-                        seq_num += 1;
+                        block_index += 1;
                     }
                 },
             }
