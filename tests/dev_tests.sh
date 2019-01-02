@@ -66,7 +66,6 @@ tests=(
   "check_from_to_tests.sh"
   "decode_from_to_tests_corruption_based.sh"
   "decode_from_to_tests.sh"
-  # "decode_from_to_tests_decode_stdout.sh"
 )
 
 test_count=${#tests[@]}
