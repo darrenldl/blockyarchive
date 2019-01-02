@@ -881,8 +881,9 @@ pub fn decode(param           : &Param,
         match ref_block.get_FSZ().unwrap() {
             None    => {},
             Some(x) => {
-                if let Some(r) = writer.set_len(x) {
-                    r?;
+                match (param.from_pos, param.to_pos) {
+                    (None, None) => if let Some(r) = writer.set_len(x) { r?; },
+                    _            => {},
                 }
             }
         }
