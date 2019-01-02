@@ -93,16 +93,18 @@ while (( $i < $test_count )); do
 
   for (( c=0; c < $tests_to_run; c++ )); do
     t=${tests[$i]}
-    echo "    Starting $t"
+    if [[ "$t" != "" ]]; then
+      echo "    Starting $t"
 
-    rm -rf $t/
-    mkdir $t/
-    cd $t
-    ./../gen_dummy.sh
-    ./../$t.sh > log 2> stderr_log &
-    cd ..
+      rm -rf $t/
+      mkdir $t/
+      cd $t
+      ./../gen_dummy.sh
+      ./../$t.sh > log 2> stderr_log &
+      cd ..
 
-    i=$[i+1]
+      i=$[i+1]
+    fi
   done
 
   echo "Waiting for tests to finish"
@@ -114,13 +116,17 @@ while (( $i < $test_count )); do
   for (( c=0; c < $tests_to_run; c++ )); do
     t=${tests[$j]}
 
-    cd $t
-    find . -type f \
-         -not -name "exit_code" \
-         -not -name "log" \
-         -not -name "stderr_log" \
-         -delete
-    cd ..
+    if [[ "$t" != "" ]]; then
+      cd $t
+
+      find . -type f \
+        -not -name "exit_code" \
+        -not -name "log" \
+        -not -name "stderr_log" \
+        -delete
+
+      cd ..
+    fi
 
     j=$[j+1]
   done
