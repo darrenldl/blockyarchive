@@ -141,8 +141,8 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
             runner_start_barrier.wait();
 
             // print at least once so the header is at top
-            print_progress::<T>(&mut runner_context.lock().unwrap(),
-                                &mut runner_stats.lock().unwrap(),
+            print_progress::<T>(&runner_context,
+                                &runner_stats,
                                 false);
 
             // let start() know progress text has been printed
@@ -152,14 +152,14 @@ impl<T : 'static + ProgressReport + Send> ProgressReporter<T> {
                 thread::sleep(Duration::from_millis(300));
 
                 if runner_active_flag.load(Ordering::SeqCst) {
-                    print_progress::<T>(&mut runner_context.lock().unwrap(),
-                                        &mut runner_stats.lock().unwrap(),
+                    print_progress::<T>(&runner_context,
+                                        &runner_stats,
                                         false);
                 }
             }
 
-            print_progress::<T>(&mut runner_context.lock().unwrap(),
-                                &mut runner_stats.lock().unwrap(),
+            print_progress::<T>(&runner_context,
+                                &runner_stats,
                                 true);
 
             runner_shutdown_barrier.wait();
@@ -257,11 +257,23 @@ pub trait ProgressReport {
     }
 }
 
-pub fn print_progress<T>(context        : &mut Context,
-                         stats          : &mut T,
+pub fn print_progress<T>(context        : &Arc<Mutex<Context>>,
+                         stats          : &Arc<Mutex<T>>,
                          pretend_finish : bool)
-    where T : ProgressReport
+where T : ProgressReport
 {
+    // lock stats first, then lock context to prevent deadlock
+    //
+    // stats may be locked outside of progress report,
+    // and pause() contends with progress reporting thread in locking the context
+    //
+    // by locking stats first, this avoids progress reporting thread locking up context
+    // before it is ready, so pause() can still go through with locking context while
+    // progress reporting thread waits for stats to be released
+
+    let mut stats   = stats.lock().unwrap();
+    let mut context = context.lock().unwrap();
+
     use std::cmp::max;
 
     let verbose_while_active = context.verbosity_settings.verbose_while_active;
@@ -280,7 +292,7 @@ pub fn print_progress<T>(context        : &mut Context,
     {
         if context.verbosity_settings.json_enabled {
             let message =
-                make_message(context,
+                make_message(&context,
                              stats.get_start_time(),
                              stats.get_end_time(),
                              units_so_far,
@@ -299,14 +311,14 @@ pub fn print_progress<T>(context        : &mut Context,
 
             let message =
                 if progress_complete {
-                    make_message(context,
+                    make_message(&context,
                                  stats.get_start_time(),
                                  stats.get_end_time(),
                                  units_so_far,
                                  total_units,
                                  &context.finish_print_elements)
                 } else {
-                    make_message(context,
+                    make_message(&context,
                                  stats.get_start_time(),
                                  stats.get_end_time(),
                                  units_so_far,
