@@ -739,60 +739,58 @@ pub fn decode(param           : &Param,
                                                                        data_par_burst);
 
                         // make sure we only read in the supplied range
-                        if ! (seek_to <= pos && pos <= seek_to + required_len) {
-                            continue;
-                        }
+                        if seek_to <= pos && pos <= seek_to + required_len {
+                            reader.seek(SeekFrom::Start(pos))?;
 
-                        reader.seek(SeekFrom::Start(pos))?;
+                            // read at reference block block size
+                            let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
+                                                                                &mut buffer))?;
 
-                        // read at reference block block size
-                        let read_res = reader.read(sbx_block::slice_buf_mut(ref_block.get_version(),
-                                                                            &mut buffer))?;
-
-                        if read_res.eof_seen {
-                            if        sbx_block::seq_num_is_meta(seq_num) {
-                                stats.incre_meta_blocks_failed();
-                            } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
-                                stats.incre_parity_blocks_failed();
+                            if read_res.eof_seen {
+                                if        sbx_block::seq_num_is_meta(seq_num) {
+                                    stats.incre_meta_blocks_failed();
+                                } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
+                                    stats.incre_parity_blocks_failed();
+                                } else {
+                                    stats.incre_data_blocks_failed();
+                                }
                             } else {
-                                stats.incre_data_blocks_failed();
-                            }
-                        } else {
-                            match block.sync_from_buffer(&buffer, Some(&pred)) {
-                                Ok(_) if block.get_seq_num() == seq_num => {
-                                    if block.is_meta() { // do nothing if block is meta
-                                        stats.meta_blocks_decoded += 1;
-                                    } else if block.is_parity(data, parity) {
-                                        stats.parity_blocks_decoded += 1;
-                                    } else {
-                                        stats.data_blocks_decoded += 1;
+                                match block.sync_from_buffer(&buffer, Some(&pred)) {
+                                    Ok(_) if block.get_seq_num() == seq_num => {
+                                        if block.is_meta() { // do nothing if block is meta
+                                            stats.meta_blocks_decoded += 1;
+                                        } else if block.is_parity(data, parity) {
+                                            stats.parity_blocks_decoded += 1;
+                                        } else {
+                                            stats.data_blocks_decoded += 1;
 
-                                        // write data chunk
-                                        write_data_only_block(data_par_shards,
-                                                              is_last_data_block(&stats, total_data_chunk_count),
+                                            // write data chunk
+                                            write_data_only_block(data_par_shards,
+                                                                  is_last_data_block(&stats, total_data_chunk_count),
+                                                                  data_size_of_last_data_block,
+                                                                  &ref_block,
+                                                                  &block,
+                                                                  &mut writer,
+                                                                  &mut hash_ctx,
+                                                                  &buffer)?;
+                                        }
+                                    },
+                                    _                                       => {
+                                        if        sbx_block::seq_num_is_meta(seq_num) {
+                                            stats.incre_meta_blocks_failed();
+                                        } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
+                                            stats.incre_parity_blocks_failed();
+                                        } else {
+                                            stats.incre_data_blocks_failed();
+
+                                            write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
                                                               data_size_of_last_data_block,
                                                               &ref_block,
-                                                              &block,
                                                               &mut writer,
-                                                              &mut hash_ctx,
-                                                              &buffer)?;
-                                    }
-                                },
-                                _                                       => {
-                                    if        sbx_block::seq_num_is_meta(seq_num) {
-                                        stats.incre_meta_blocks_failed();
-                                    } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
-                                        stats.incre_parity_blocks_failed();
-                                    } else {
-                                        stats.incre_data_blocks_failed();
-
-                                        write_blank_chunk(is_last_data_block(&stats, total_data_chunk_count),
-                                                          data_size_of_last_data_block,
-                                                          &ref_block,
-                                                          &mut writer,
-                                                          &mut hash_ctx)?;
-                                    }
-                                },
+                                                              &mut hash_ctx)?;
+                                        }
+                                    },
+                                }
                             }
                         }
 
