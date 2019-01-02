@@ -52,9 +52,9 @@ tests=(
   "repair_truncated_tests"
   "repair_truncated_tests_encode_stdin"
   "repair_truncated_tests_decode_stdout"
-  "check_from_to_tests.sh"
-  "decode_from_to_tests_corruption_based.sh"
-  "decode_from_to_tests.sh"
+  "check_from_to_tests"
+  "decode_from_to_tests_corruption_based"
+  "decode_from_to_tests"
   "decode_from_to_tests_decode_stdout"
 )
 
@@ -81,6 +81,8 @@ rm -f ../blkar
 rm -f data_chunk
 
 rm -f data_chunk_orig
+
+exit
 
 for t in ${tests[@]}; do
   if [[ "$t" != "" ]]; then
