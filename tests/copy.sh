@@ -7,4 +7,5 @@ cargo build
 
 echo "Copying blkar binary over"
 cp target/debug/blkar ./tests/blkar
-cd tests
+cp target/debug/blkar ./blkar
+
