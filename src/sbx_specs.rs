@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-
 pub const SBX_LARGEST_BLOCK_SIZE   : usize = 4096;
 
 pub const SBX_FIRST_DATA_SEQ_NUM   : u32   = 1;

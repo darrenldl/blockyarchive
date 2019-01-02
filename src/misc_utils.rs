@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-
 use sbx_specs::{SBX_SCAN_BLOCK_SIZE};
 use integer_utils::IntegerUtils;
 

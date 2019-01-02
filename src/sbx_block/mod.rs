@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-
 mod header;
 mod metadata;
 mod crc;
