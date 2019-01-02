@@ -30,11 +30,6 @@ for (( i=0; i < 10; i++ )); do
   fi
 
   echo -n "Checking if output data chunk matches the original file portion"
-  if [[ $(echo $output | jq -r ".error") != "null" ]]; then
-    echo " ==> Invalid JSON"
-    exit_code=1
-  fi
-  rm -f data_chunk_orig
   dd if=dummy of=data_chunk_orig bs=1 count=$[to - from] skip=$from 2>/dev/null
   cmp data_chunk data_chunk_orig
   if [[ $? == 0 ]]; then
