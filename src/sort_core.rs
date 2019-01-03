@@ -90,12 +90,15 @@ impl Param {
 pub struct Stats {
     version                        : Version,
     pub meta_blocks_decoded        : u64,
-    pub data_or_par_blocks_decoded : u64,
+    pub data_blocks_decoded        : u64,
+    pub parity_blocks_decoded      : u64,
     pub blocks_decode_failed       : u64,
     pub meta_blocks_same_order     : u64,
     pub meta_blocks_diff_order     : u64,
     pub data_blocks_same_order     : u64,
     pub data_blocks_diff_order     : u64,
+    pub parity_blocks_same_order   : u64,
+    pub parity_blocks_diff_order   : u64,
     total_blocks                   : u64,
     start_time                     : f64,
     end_time                       : f64,
@@ -114,12 +117,15 @@ impl Stats {
             version                    : ref_block.get_version(),
             blocks_decode_failed       : 0,
             meta_blocks_decoded        : 0,
-            data_or_par_blocks_decoded : 0,
+            data_blocks_decoded        : 0,
+            parity_blocks_decoded      : 0,
             total_blocks,
             meta_blocks_same_order     : 0,
             meta_blocks_diff_order     : 0,
             data_blocks_same_order     : 0,
             data_blocks_diff_order     : 0,
+            parity_blocks_same_order   : 0,
+            parity_blocks_diff_order   : 0,
             start_time                 : 0.,
             end_time                   : 0.,
             json_printer               : Arc::clone(json_printer),
@@ -134,7 +140,8 @@ impl ProgressReport for Stats {
 
     fn units_so_far(&self)       -> u64      {
         (self.meta_blocks_decoded
-         + self.data_or_par_blocks_decoded
+         + self.data_blocks_decoded
+         + self.parity_blocks_decoded
          + self.blocks_decode_failed) as u64
     }
 
@@ -155,12 +162,18 @@ impl fmt::Display for Stats {
         write_maybe_json!(f, json_printer, "Block size used in checking               : {}", block_size                      => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks processed                : {}", self.units_so_far()             => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks sorted (metadata)        : {}", self.meta_blocks_decoded        => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks sorted (data)            : {}", self.data_or_par_blocks_decoded => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks sorted (data)            : {}", self.data_blocks_decoded        => skip_quotes)?;
+        if ver_uses_rs(self.version) {
+            write_maybe_json!(f, json_printer, "Number of blocks sorted (parity)          : {}", self.parity_blocks_decoded        => skip_quotes)?;
+        }
         write_maybe_json!(f, json_printer, "Number of blocks in same order (metadata) : {}", self.meta_blocks_same_order     => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks in diff order (metadata) : {}", self.meta_blocks_diff_order     => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks in same order (data)     : {}", self.data_blocks_same_order     => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks in diff order (data)     : {}", self.data_blocks_diff_order     => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks sorted (data)            : {}", self.data_or_par_blocks_decoded => skip_quotes)?;
+        if ver_uses_rs(self.version) {
+            write_maybe_json!(f, json_printer, "Number of blocks in same order (parity)   : {}", self.parity_blocks_same_order     => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks in diff order (parity)   : {}", self.parity_blocks_diff_order     => skip_quotes)?;
+        }
         write_maybe_json!(f, json_printer, "Number of blocks failed to sort           : {}", self.blocks_decode_failed       => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Time elapsed                              : {:02}:{:02}:{:02}", hour, minute, second)?;
 
@@ -317,16 +330,26 @@ pub fn sort_file(param : &Param)
             }
 
             if read_pos == write_pos {
-                stats.data_blocks_same_order += 1;
+                if block.is_parity_w_data_par_burst(data_par_burst) {
+                    stats.parity_blocks_same_order += 1;
+                } else {
+                    stats.data_blocks_same_order   += 1;
+                }
             } else {
-                stats.data_blocks_diff_order += 1;
+                if block.is_parity_w_data_par_burst(data_par_burst) {
+                    stats.parity_blocks_diff_order += 1;
+                } else {
+                    stats.data_blocks_diff_order   += 1;
+                }
             }
         }
 
         if block.is_meta() {
             stats.meta_blocks_decoded += 1;
+        } else if block.is_parity_w_data_par_burst(data_par_burst) {
+            stats.parity_blocks_decoded += 1;
         } else {
-            stats.data_or_par_blocks_decoded += 1;
+            stats.data_blocks_decoded += 1;
         }
     }
 

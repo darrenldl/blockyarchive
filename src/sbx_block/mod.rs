@@ -209,6 +209,16 @@ pub fn seq_num_is_parity(seq_num       : u32,
     }
 }
 
+pub fn seq_num_is_parity_w_data_par_burst(seq_num        : u32,
+                                          data_par_burst : Option<(usize, usize, usize)>)
+                                          -> bool
+{
+    match data_par_burst {
+        Some((data, parity, _)) => seq_num_is_parity(seq_num, data, parity),
+        None                    => false,
+    }
+}
+
 pub fn calc_meta_block_dup_write_pos_s(version        : Version,
                                        data_par_burst : Option<(usize, usize, usize)>)
                                        -> SmallVec<[u64; 32]> {
@@ -619,6 +629,15 @@ impl Block {
             && seq_num_is_parity(self.get_seq_num(),
                                  data_shards,
                                  parity_shards)
+    }
+
+    pub fn is_parity_w_data_par_burst(&self,
+                                      data_par_burst : Option<(usize, usize, usize)>)
+                                      -> bool
+    {
+        ver_uses_rs(self.header.version)
+            && seq_num_is_parity_w_data_par_burst(self.get_seq_num(),
+                                                  data_par_burst)
     }
 
     pub fn get_meta_ref_by_id(&self,

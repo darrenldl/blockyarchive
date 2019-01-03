@@ -823,14 +823,6 @@ pub fn decode(param           : &Param,
                     }
                 },
                 ReadPattern::Sequential(data_par_burst) => {
-                    fn is_parity(seq_num        : u32,
-                                 data_par_burst : Option<(usize, usize, usize)>) -> bool {
-                        match data_par_burst {
-                            Some((data, parity, _)) => sbx_block::seq_num_is_parity(seq_num, data, parity),
-                            None                    => false,
-                        }
-                    }
-
                     let mut bytes_processed : u64 = 0;
 
                     // seek to calculated position
@@ -875,7 +867,7 @@ pub fn decode(param           : &Param,
                         if block_okay {
                             if block.is_meta() { // do nothing if block is meta
                                 stats.meta_blocks_decoded += 1;
-                            } else if is_parity(seq_num, data_par_burst) {
+                            } else if sbx_block::seq_num_is_parity_w_data_par_burst(seq_num, data_par_burst) {
                                 stats.parity_blocks_decoded += 1;
                             } else {
                                 stats.data_blocks_decoded += 1;
@@ -893,7 +885,7 @@ pub fn decode(param           : &Param,
                         } else {
                             if sbx_block::seq_num_is_meta(seq_num) {
                                 stats.incre_meta_blocks_failed();
-                            } else if is_parity(seq_num, data_par_burst) {
+                            } else if sbx_block::seq_num_is_parity_w_data_par_burst(seq_num, data_par_burst) {
                                 stats.incre_parity_blocks_failed();
                             } else {
                                 stats.incre_data_blocks_failed();
