@@ -61,7 +61,7 @@ pub enum WriteTo {
 
 pub enum ReadPattern {
     Sequential(Option<(usize, usize, usize)>),
-    BurstResistant(usize, usize, usize),
+    BurstErrorResistant(usize, usize, usize),
 }
 
 #[derive(Clone, Debug)]
@@ -727,7 +727,7 @@ pub fn decode(param           : &Param,
 
             let read_pattern = match data_par_burst {
                 Some((data, parity, burst)) => match (param.from_pos, param.to_pos) {
-                    (None, None) => ReadPattern::BurstResistant(data, parity, burst),
+                    (None, None) => ReadPattern::BurstErrorResistant(data, parity, burst),
                     _            => ReadPattern::Sequential(Some((data, parity, burst))),
                 },
                 None                        => ReadPattern::Sequential(None),
@@ -736,7 +736,21 @@ pub fn decode(param           : &Param,
             reporter.start();
 
             match read_pattern {
-                ReadPattern::BurstResistant(data, parity, _) => {
+                ReadPattern::BurstErrorResistant(data, parity, _) => {
+                    // go through metadata blocks first
+                    for &p in sbx_block::calc_meta_block_all_write_pos_s(version,
+                                                                         data_par_burst).iter() {
+                        break_if_atomic_bool!(ctrlc_stop_flag);
+
+                        reader.seek(SeekFrom::Start(p))?;
+                        reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
+                        match block.sync_from_buffer(&buffer, Some(&pred)) {
+                            Ok(()) => stats.meta_blocks_decoded += 1,
+                            Err(_) => stats.incre_meta_blocks_failed(),
+                        }
+                    }
+
+                    // go through data and parity blocks in burst error resistant pattern
                     let mut seq_num = 1;
                     while seq_num <= SBX_LAST_SEQ_NUM {
                         let mut stats = stats.lock().unwrap();
@@ -756,7 +770,7 @@ pub fn decode(param           : &Param,
 
                         if read_res.eof_seen {
                             if        sbx_block::seq_num_is_meta(seq_num) {
-                                stats.incre_meta_blocks_failed();
+                                unreachable!();
                             } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
                                 stats.incre_parity_blocks_failed();
                             } else {
@@ -766,7 +780,7 @@ pub fn decode(param           : &Param,
                             match block.sync_from_buffer(&buffer, Some(&pred)) {
                                 Ok(_) if block.get_seq_num() == seq_num => {
                                     if block.is_meta() { // do nothing if block is meta
-                                        stats.meta_blocks_decoded += 1;
+                                        unreachable!();
                                     } else if block.is_parity(data, parity) {
                                         stats.parity_blocks_decoded += 1;
                                     } else {
@@ -785,7 +799,7 @@ pub fn decode(param           : &Param,
                                 },
                                 _                                       => {
                                     if        sbx_block::seq_num_is_meta(seq_num) {
-                                        stats.incre_meta_blocks_failed();
+                                        unreachable!();
                                     } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
                                         stats.incre_parity_blocks_failed();
                                     } else {
