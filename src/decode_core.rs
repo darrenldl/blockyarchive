@@ -752,7 +752,7 @@ pub fn decode(param           : &Param,
                         }
                     }
 
-                    // go through data and parity blocks in burst error resistant pattern
+                    // go through data and parity blocks
                     let mut seq_num = 1;
                     while seq_num <= SBX_LAST_SEQ_NUM {
                         let mut stats = stats.lock().unwrap();
