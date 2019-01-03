@@ -344,7 +344,7 @@ pub fn sort_file(param : &Param)
             }
         }
 
-        if block.is_meta() {
+        if        block.is_meta() {
             stats.meta_blocks_decoded += 1;
         } else if block.is_parity_w_data_par_burst(data_par_burst) {
             stats.parity_blocks_decoded += 1;
