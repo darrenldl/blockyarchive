@@ -740,6 +740,8 @@ pub fn decode(param           : &Param,
                     // go through metadata blocks first
                     for &p in sbx_block::calc_meta_block_all_write_pos_s(version,
                                                                          data_par_burst).iter() {
+                        let mut stats = stats.lock().unwrap();
+
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
                         reader.seek(SeekFrom::Start(p))?;
