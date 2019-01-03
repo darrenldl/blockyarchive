@@ -67,6 +67,7 @@ tests=(
   "decode_from_to_tests_corruption_based"
   "decode_from_to_tests"
   "decode_from_to_tests_decode_stdout"
+  "encode_from_to_tests"
 )
 
 test_count=${#tests[@]}
@@ -121,7 +122,6 @@ while (( $i < $test_count )); do
       cd $t
 
       if [[ $? == 0 ]]; then
-
         find . -type f \
              -not -name "exit_code" \
              -not -name "log" \
