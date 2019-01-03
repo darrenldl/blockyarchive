@@ -178,7 +178,9 @@ else
   exit_code=1
 fi
 
-echo "Testing version 1"
+echo ""
+
+echo "Testing version 17"
 echo "Encoding"
 output=$(./../blkar encode --json -f dummy --sbx-version 17 --rs-data 3 --rs-parity 2)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
