@@ -58,6 +58,7 @@ tests=(
   "decode_from_to_tests_decode_stdout"
   "encode_from_to_tests"
   "decode_blanks"
+  "decode_blanks_decode_stdout"
 )
 
 rm -f dummy*
