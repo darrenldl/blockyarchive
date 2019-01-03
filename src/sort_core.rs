@@ -310,7 +310,6 @@ pub fn sort_file(param : &Param)
                                                      None,
                                                      data_par_burst);
 
-
             if let Some(ref mut writer) = writer {
                 writer.seek(SeekFrom::Start(write_pos))?;
                 writer.write(sbx_block::slice_buf(version,
