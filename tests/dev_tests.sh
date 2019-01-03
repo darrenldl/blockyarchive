@@ -70,6 +70,7 @@ tests=(
   "encode_from_to_tests"
   "decode_blanks"
   "decode_blanks_decode_stdout"
+  "sort_from_to_tests"
 )
 
 test_count=${#tests[@]}
