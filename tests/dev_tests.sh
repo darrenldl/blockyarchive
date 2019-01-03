@@ -82,6 +82,9 @@ echo ""
 echo "Test start :" $start_date
 echo ""
 
+echo "Starting $test_count tests"
+echo ""
+
 i=0
 while (( $i < $test_count )); do
   if (( $test_count - $i >= $simul_test_count )); then
