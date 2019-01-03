@@ -737,7 +737,7 @@ pub fn decode(param           : &Param,
 
             match read_pattern {
                 ReadPattern::BurstErrorResistant(data, parity, _) => {
-                    // go through metadata blocks first
+                    // go through metadata blocks
                     for &p in sbx_block::calc_meta_block_all_write_pos_s(version,
                                                                          data_par_burst).iter() {
                         let mut stats = stats.lock().unwrap();
