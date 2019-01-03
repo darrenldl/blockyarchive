@@ -68,6 +68,7 @@ tests=(
   "decode_from_to_tests"
   "decode_from_to_tests_decode_stdout"
   "encode_from_to_tests"
+  "decode_blanks"
 )
 
 test_count=${#tests[@]}
