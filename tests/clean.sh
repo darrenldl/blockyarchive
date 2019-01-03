@@ -84,8 +84,6 @@ rm -f data_chunk
 
 rm -f data_chunk_orig
 
-exit
-
 for t in ${tests[@]}; do
   if [[ "$t" != "" ]]; then
     rm -rf $t
