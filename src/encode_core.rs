@@ -534,11 +534,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     // seek to calculated position
     if let Some(seek_to) = seek_to {
-        match reader.seek(SeekFrom::Start(seek_to)) {
-            None => {}
-            Some(x) => {
-                x?;
-            }
+        if let Some(r) = reader.seek(SeekFrom::Start(seek_to)) {
+            r?;
         }
     }
 
