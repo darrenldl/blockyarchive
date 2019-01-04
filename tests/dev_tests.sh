@@ -169,7 +169,7 @@ done
 echo "========================================"
 
 if [[ $test_fail_count == 0 ]]; then
-    echo "All tests passed"
+    echo "All $test_count tests passed"
     exit_code=0
 else
   echo
