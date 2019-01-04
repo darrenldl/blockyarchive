@@ -290,14 +290,14 @@ macro_rules! ask_if_wish_to_continue {
 
         stdout().flush().unwrap();
 
-        let mut ans : [u8; 1] = [0; 1];
+        let mut ans: [u8; 1] = [0; 1];
 
         let _ = stdin().read(&mut ans).unwrap();
 
-        if ans != *b"y"  {
+        if ans != *b"y" {
             return 0;
         }
-    }}
+    }};
 }
 
 macro_rules! get_burst_opt {
@@ -355,11 +355,13 @@ macro_rules! get_uid {
         $matches:expr, $buf:expr, $json_printer:expr
     ) => {{
         match $matches.value_of("uid") {
-            None      => None ,
-            Some(uid) => { parse_uid!($buf, uid, $json_printer);
-                           Some(&$buf) }
+            None => None,
+            Some(uid) => {
+                parse_uid!($buf, uid, $json_printer);
+                Some(&$buf)
+            }
         }
-    }}
+    }};
 }
 
 macro_rules! get_ref_block_choice {
@@ -374,7 +376,7 @@ macro_rules! get_ref_block_choice {
         } else {
             Prefer(BlockType::Meta)
         }
-    }}
+    }};
 }
 
 macro_rules! get_meta_enabled {
@@ -382,7 +384,7 @@ macro_rules! get_meta_enabled {
         $matches:expr
     ) => {{
         !$matches.is_present("no_meta")
-    }}
+    }};
 }
 
 macro_rules! get_json_enabled {
@@ -390,7 +392,7 @@ macro_rules! get_json_enabled {
         $matches:expr
     ) => {{
         $matches.is_present("json")
-    }}
+    }};
 }
 
 macro_rules! get_json_printer {
@@ -398,11 +400,14 @@ macro_rules! get_json_printer {
         $matches:expr
     ) => {{
         use json_printer::JSONPrinter;
-        use std::sync::Arc;
         use output_channel::OutputChannel;
+        use std::sync::Arc;
 
-        Arc::new(JSONPrinter::new($matches.is_present("json"), OutputChannel::Stdout))
-    }}
+        Arc::new(JSONPrinter::new(
+            $matches.is_present("json"),
+            OutputChannel::Stdout,
+        ))
+    }};
 }
 
 #[macro_export]

@@ -1,26 +1,23 @@
 #![allow(dead_code)]
-mod header;
-mod metadata;
 mod crc;
-mod tests;
+mod header;
 mod header_tests;
+mod metadata;
 mod metadata_tests;
+mod tests;
 
 use self::header::Header;
-pub use self::metadata::Metadata;
-pub use self::metadata::MetadataID;
 pub use self::metadata::make_distribution_string;
 pub use self::metadata::make_too_much_meta_err_string;
+pub use self::metadata::Metadata;
+pub use self::metadata::MetadataID;
 use smallvec::SmallVec;
 
-use sbx_specs::{Version,
-                SBX_HEADER_SIZE,
-                SBX_FILE_UID_LEN,
-                SBX_FIRST_DATA_SEQ_NUM,
-                ver_to_block_size,
-                ver_to_data_size,
-                ver_uses_rs};
 use self::crc::*;
+use sbx_specs::{
+    ver_to_block_size, ver_to_data_size, ver_uses_rs, Version, SBX_FILE_UID_LEN,
+    SBX_FIRST_DATA_SEQ_NUM, SBX_HEADER_SIZE,
+};
 
 use multihash;
 
@@ -44,15 +41,16 @@ macro_rules! check_ver_consistent_with_opt {
         $version:expr, $val:expr
     ) => {{
         match $val {
-            None    => assert!(! ver_uses_rs($version)),
-            Some(_) => assert!(  ver_uses_rs($version)),
+            None => assert!(!ver_uses_rs($version)),
+            Some(_) => assert!(ver_uses_rs($version)),
         }
-    }}
+    }};
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BlockType {
-    Data, Meta
+    Data,
+    Meta,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -69,13 +67,13 @@ pub enum Error {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Data {
     Data,
-    Meta(Vec<Metadata>)
+    Meta(Vec<Metadata>),
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Block {
-    header      : Header,
-    data        : Data,
+    header: Header,
+    data: Data,
 }
 
 macro_rules! slice_buf {
@@ -108,7 +106,7 @@ macro_rules! slice_buf {
         data_mut => $self:ident, $buf:ident
     ) => {
         &mut $buf[SBX_HEADER_SIZE..block_size!($self)]
-    }
+    };
 }
 
 macro_rules! check_buffer {
@@ -119,7 +117,7 @@ macro_rules! check_buffer {
             panic!("Insufficient buffer size");
             //return Err(Error::InsufficientBufferSize);
         }
-    }
+    };
 }
 
 macro_rules! block_size {
@@ -127,7 +125,7 @@ macro_rules! block_size {
         $self:ident
     ) => {
         ver_to_block_size($self.header.version)
-    }
+    };
 }
 
 /*macro_rules! data_size {
@@ -138,11 +136,9 @@ macro_rules! block_size {
     }
 }*/
 
-pub fn write_padding(version : Version,
-                     skip    : usize,
-                     buffer  : &mut [u8]) -> usize {
+pub fn write_padding(version: Version, skip: usize, buffer: &mut [u8]) -> usize {
     let block_size = ver_to_block_size(version);
-    let start      = SBX_HEADER_SIZE + skip;
+    let start = SBX_HEADER_SIZE + skip;
 
     for i in start..block_size {
         buffer[i] = 0x1A;
@@ -151,77 +147,73 @@ pub fn write_padding(version : Version,
     block_size - start
 }
 
-pub fn slice_buf(version : Version,
-                 buffer  : & [u8]) -> & [u8] {
+pub fn slice_buf(version: Version, buffer: &[u8]) -> &[u8] {
     &buffer[..ver_to_block_size(version)]
 }
 
-pub fn slice_buf_mut(version : Version,
-                     buffer  : &mut [u8]) -> &mut [u8] {
+pub fn slice_buf_mut(version: Version, buffer: &mut [u8]) -> &mut [u8] {
     &mut buffer[..ver_to_block_size(version)]
 }
 
-pub fn slice_header_buf(buffer  : &[u8]) -> &[u8] {
+pub fn slice_header_buf(buffer: &[u8]) -> &[u8] {
     &buffer[..SBX_HEADER_SIZE]
 }
 
-pub fn slice_header_buf_mut(buffer  : &mut [u8]) -> &mut [u8] {
+pub fn slice_header_buf_mut(buffer: &mut [u8]) -> &mut [u8] {
     &mut buffer[..SBX_HEADER_SIZE]
 }
 
-pub fn slice_data_buf(version : Version,
-                      buffer  : &[u8]) -> &[u8] {
+pub fn slice_data_buf(version: Version, buffer: &[u8]) -> &[u8] {
     &buffer[SBX_HEADER_SIZE..ver_to_block_size(version)]
 }
 
-pub fn slice_data_buf_mut(version : Version,
-                          buffer  : &mut [u8]) -> &mut [u8] {
+pub fn slice_data_buf_mut(version: Version, buffer: &mut [u8]) -> &mut [u8] {
     &mut buffer[SBX_HEADER_SIZE..ver_to_block_size(version)]
 }
 
-pub fn check_if_buffer_valid(buffer : &[u8]) -> bool {
-    let mut block = Block::new(Version::V1,
-                               b"\x00\x00\x00\x00\x00\x00",
-                               BlockType::Data);
+pub fn check_if_buffer_valid(buffer: &[u8]) -> bool {
+    let mut block = Block::new(Version::V1, b"\x00\x00\x00\x00\x00\x00", BlockType::Data);
 
     match block.sync_from_buffer(buffer, None) {
-        Ok(()) => {},
-        Err(_) => { return false; }
+        Ok(()) => {}
+        Err(_) => {
+            return false;
+        }
     }
 
     block.verify_crc(buffer).unwrap()
 }
 
-pub fn seq_num_is_meta(seq_num : u32) -> bool {
+pub fn seq_num_is_meta(seq_num: u32) -> bool {
     seq_num == 0
 }
 
-pub fn seq_num_is_parity(seq_num       : u32,
-                         data_shards   : usize,
-                         parity_shards : usize) -> bool {
-    if        seq_num == 0 {
+pub fn seq_num_is_parity(seq_num: u32, data_shards: usize, parity_shards: usize) -> bool {
+    if seq_num == 0 {
         false // this is metadata block
-    } else {  // data sets
-        let index        = seq_num - SBX_FIRST_DATA_SEQ_NUM as u32;
+    } else {
+        // data sets
+        let index = seq_num - SBX_FIRST_DATA_SEQ_NUM as u32;
         let index_in_set = index % (data_shards + parity_shards) as u32;
 
         (data_shards as u32 <= index_in_set)
     }
 }
 
-pub fn seq_num_is_parity_w_data_par_burst(seq_num        : u32,
-                                          data_par_burst : Option<(usize, usize, usize)>)
-                                          -> bool
-{
+pub fn seq_num_is_parity_w_data_par_burst(
+    seq_num: u32,
+    data_par_burst: Option<(usize, usize, usize)>,
+) -> bool {
     match data_par_burst {
         Some((data, parity, _)) => seq_num_is_parity(seq_num, data, parity),
-        None                    => false,
+        None => false,
     }
 }
 
-pub fn calc_meta_block_dup_write_pos_s(version        : Version,
-                                       data_par_burst : Option<(usize, usize, usize)>)
-                                       -> SmallVec<[u64; 32]> {
+pub fn calc_meta_block_dup_write_pos_s(
+    version: Version,
+    data_par_burst: Option<(usize, usize, usize)>,
+) -> SmallVec<[u64; 32]> {
     check_ver_consistent_with_opt!(version, data_par_burst);
 
     let block_size = ver_to_block_size(version) as u64;
@@ -235,30 +227,28 @@ pub fn calc_meta_block_dup_write_pos_s(version        : Version,
     res
 }
 
-pub fn calc_meta_block_dup_write_indices(data_par_burst : Option<(usize, usize, usize)>)
-                                         -> SmallVec<[u64; 32]> {
+pub fn calc_meta_block_dup_write_indices(
+    data_par_burst: Option<(usize, usize, usize)>,
+) -> SmallVec<[u64; 32]> {
     match data_par_burst {
         Some((_, parity, burst)) => {
-            let mut res : SmallVec<[u64; 32]> =
-                SmallVec::with_capacity(1 + parity);
+            let mut res: SmallVec<[u64; 32]> = SmallVec::with_capacity(1 + parity);
 
             for i in 1..1 + parity as u64 {
                 res.push(i * (1 + burst) as u64);
             }
 
             res
-        },
-        None => {
-            SmallVec::new()
         }
+        None => SmallVec::new(),
     }
 }
 
-pub fn calc_meta_block_all_write_pos_s(version        : Version,
-                                       data_par_burst : Option<(usize, usize, usize)>)
-                                       -> SmallVec<[u64; 32]> {
-    let mut res = calc_meta_block_dup_write_pos_s(version,
-                                                  data_par_burst);
+pub fn calc_meta_block_all_write_pos_s(
+    version: Version,
+    data_par_burst: Option<(usize, usize, usize)>,
+) -> SmallVec<[u64; 32]> {
+    let mut res = calc_meta_block_dup_write_pos_s(version, data_par_burst);
 
     res.push(0);
 
@@ -267,8 +257,9 @@ pub fn calc_meta_block_all_write_pos_s(version        : Version,
     res
 }
 
-pub fn calc_meta_block_all_write_indices(data_par_burst : Option<(usize, usize, usize)>)
-                                   -> SmallVec<[u64; 32]> {
+pub fn calc_meta_block_all_write_indices(
+    data_par_burst: Option<(usize, usize, usize)>,
+) -> SmallVec<[u64; 32]> {
     let mut res = calc_meta_block_dup_write_indices(data_par_burst);
 
     res.push(0);
@@ -278,24 +269,24 @@ pub fn calc_meta_block_all_write_indices(data_par_burst : Option<(usize, usize, 
     res
 }
 
-pub fn calc_data_block_write_pos(version        : Version,
-                                 seq_num        : u32,
-                                 meta_enabled   : Option<bool>,
-                                 data_par_burst : Option<(usize, usize, usize)>)
-                                 -> u64 {
+pub fn calc_data_block_write_pos(
+    version: Version,
+    seq_num: u32,
+    meta_enabled: Option<bool>,
+    data_par_burst: Option<(usize, usize, usize)>,
+) -> u64 {
     check_ver_consistent_with_opt!(version, data_par_burst);
 
     let block_size = ver_to_block_size(version) as u64;
 
-    calc_data_block_write_index(seq_num,
-                                meta_enabled,
-                                data_par_burst) * block_size
+    calc_data_block_write_index(seq_num, meta_enabled, data_par_burst) * block_size
 }
 
-pub fn calc_data_block_write_index(seq_num        : u32,
-                                   meta_enabled   : Option<bool>,
-                                   data_par_burst : Option<(usize, usize, usize)>)
-                                   -> u64 {
+pub fn calc_data_block_write_index(
+    seq_num: u32,
+    meta_enabled: Option<bool>,
+    data_par_burst: Option<(usize, usize, usize)>,
+) -> u64 {
     // the following transforms seq num to data index
     // then do the transformation based on data index
     assert!(seq_num >= SBX_FIRST_DATA_SEQ_NUM);
@@ -304,12 +295,15 @@ pub fn calc_data_block_write_index(seq_num        : u32,
     let index = (seq_num - SBX_FIRST_DATA_SEQ_NUM) as u64;
 
     match data_par_burst {
-        None                        => {
+        None => {
             let meta_enabled = meta_enabled.unwrap_or(true);
 
-            if meta_enabled { SBX_FIRST_DATA_SEQ_NUM as u64 + index }
-            else            { index }
-        },
+            if meta_enabled {
+                SBX_FIRST_DATA_SEQ_NUM as u64 + index
+            } else {
+                index
+            }
+        }
         Some((data, parity, burst)) => {
             shadow_to_avoid_use!(meta_enabled);
 
@@ -319,9 +313,9 @@ pub fn calc_data_block_write_index(seq_num        : u32,
                 return meta_block_count + index;
             }
 
-            let data_shards          = data   as u64;
-            let parity_shards        = parity as u64;
-            let burst_err_resistance = burst  as u64;
+            let data_shards = data as u64;
+            let parity_shards = parity as u64;
+            let burst_err_resistance = burst as u64;
 
             let super_block_set_size = (data_shards + parity_shards) * burst_err_resistance;
 
@@ -340,17 +334,17 @@ pub fn calc_data_block_write_index(seq_num        : u32,
 
             // calculate the index of the start of super block set with
             // respect to the data index
-            let super_block_set_index    = index / super_block_set_size;
+            let super_block_set_index = index / super_block_set_size;
             // calculate index of current seq num inside the current super block set
             let index_in_super_block_set = index % super_block_set_size;
 
             // calculate the index of the start of sub A block set inside
             // the current super block set
-            let sub_a_block_set_index    = index_in_super_block_set / sub_a_block_set_size;
+            let sub_a_block_set_index = index_in_super_block_set / sub_a_block_set_size;
             // calculate index of current seq num inside the current sub A block set
             let index_in_sub_a_block_set = index_in_super_block_set % sub_a_block_set_size;
 
-            let sub_b_block_set_index    = index_in_sub_a_block_set;
+            let sub_b_block_set_index = index_in_sub_a_block_set;
             let index_in_sub_b_block_set = sub_a_block_set_index;
 
             let new_index_in_super_block_set =
@@ -361,17 +355,17 @@ pub fn calc_data_block_write_index(seq_num        : u32,
             //
             // calculate the number of metadata blocks before the current
             // seq num in the interleaving scheme
-            let meta_block_count =
-                if super_block_set_index == 0 { // first super block set
-                    // one metadata block at front of first (1 + N) sub B blocks
-                    if sub_b_block_set_index < 1 + parity_shards {
-                        1 + sub_b_block_set_index
-                    } else {
-                        1 + parity_shards
-                    }
+            let meta_block_count = if super_block_set_index == 0 {
+                // first super block set
+                // one metadata block at front of first (1 + N) sub B blocks
+                if sub_b_block_set_index < 1 + parity_shards {
+                    1 + sub_b_block_set_index
                 } else {
                     1 + parity_shards
-                };
+                }
+            } else {
+                1 + parity_shards
+            };
 
             // finally calculate the index in interleaving data index arrangement
             let new_index =
@@ -389,26 +383,20 @@ pub fn calc_data_block_write_index(seq_num        : u32,
     }
 }
 
-pub fn calc_data_chunk_write_index(seq_num  : u32,
-                                   data_par : Option<(usize, usize)>)
-                                   -> Option<u64> {
+pub fn calc_data_chunk_write_index(seq_num: u32, data_par: Option<(usize, usize)>) -> Option<u64> {
     if seq_num < SBX_FIRST_DATA_SEQ_NUM {
         None
     } else {
         let index = (seq_num - SBX_FIRST_DATA_SEQ_NUM) as u64;
 
         match data_par {
-            None                 => {
-                Some(index)
-            },
+            None => Some(index),
             Some((data, parity)) => {
                 if seq_num_is_parity(seq_num, data, parity) {
                     None
                 } else {
-                    let block_set_index    =
-                        index / (data + parity) as u64;
-                    let index_in_block_set =
-                        index % (data + parity) as u64;
+                    let block_set_index = index / (data + parity) as u64;
+                    let index_in_block_set = index % (data + parity) as u64;
 
                     Some(block_set_index * data as u64 + index_in_block_set)
                 }
@@ -417,31 +405,36 @@ pub fn calc_data_chunk_write_index(seq_num  : u32,
     }
 }
 
-pub fn calc_data_chunk_write_pos(version  : Version,
-                                 seq_num  : u32,
-                                 data_par : Option<(usize, usize)>)
-                                 -> Option<u64> {
+pub fn calc_data_chunk_write_pos(
+    version: Version,
+    seq_num: u32,
+    data_par: Option<(usize, usize)>,
+) -> Option<u64> {
     check_ver_consistent_with_opt!(version, data_par);
 
     let data_size = ver_to_data_size(version);
 
     match calc_data_chunk_write_index(seq_num, data_par) {
-        None    => None,
-        Some(x) => Some(x as u64 * data_size as u64)
+        None => None,
+        Some(x) => Some(x as u64 * data_size as u64),
     }
 }
 
-pub fn calc_seq_num_at_index(index          : u64,
-                             meta_enabled   : Option<bool>,
-                             data_par_burst : Option<(usize, usize, usize)>)
-                             -> u32 {
+pub fn calc_seq_num_at_index(
+    index: u64,
+    meta_enabled: Option<bool>,
+    data_par_burst: Option<(usize, usize, usize)>,
+) -> u32 {
     match data_par_burst {
-        None                        => {
+        None => {
             let meta_enabled = meta_enabled.unwrap_or(true);
 
-            if meta_enabled { index as u32 }
-            else            { SBX_FIRST_DATA_SEQ_NUM + index as u32 }
-        },
+            if meta_enabled {
+                index as u32
+            } else {
+                SBX_FIRST_DATA_SEQ_NUM + index as u32
+            }
+        }
         Some((data, parity, burst)) => {
             shadow_to_avoid_use!(meta_enabled);
 
@@ -457,9 +450,9 @@ pub fn calc_seq_num_at_index(index          : u64,
                 }
             }
 
-            let data_shards          = data   as u64;
-            let parity_shards        = parity as u64;
-            let burst_err_resistance = burst  as u64;
+            let data_shards = data as u64;
+            let parity_shards = parity as u64;
+            let burst_err_resistance = burst as u64;
 
             // handle metadata seq nums first
             // M = data shards
@@ -493,13 +486,13 @@ pub fn calc_seq_num_at_index(index          : u64,
             let index_without_meta = index - meta_block_count;
 
             // reverse the transformation done in `calc_data_block_write_index`
-            let super_block_set_index    = index_without_meta / super_block_set_size;
+            let super_block_set_index = index_without_meta / super_block_set_size;
             let index_in_super_block_set = index_without_meta % super_block_set_size;
 
-            let sub_b_block_set_index    = index_in_super_block_set / sub_b_block_set_size;
+            let sub_b_block_set_index = index_in_super_block_set / sub_b_block_set_size;
             let index_in_sub_b_block_set = index_in_super_block_set % sub_b_block_set_size;
 
-            let sub_a_block_set_index    = index_in_sub_b_block_set;
+            let sub_a_block_set_index = index_in_sub_b_block_set;
             let index_in_sub_a_block_set = sub_b_block_set_index;
 
             let old_index_in_super_block_set =
@@ -519,23 +512,20 @@ pub fn calc_seq_num_at_index(index          : u64,
 }
 
 impl Block {
-    pub fn new(version    : Version,
-               uid        : &[u8; SBX_FILE_UID_LEN],
-               block_type : BlockType)
-               -> Block {
+    pub fn new(version: Version, uid: &[u8; SBX_FILE_UID_LEN], block_type: BlockType) -> Block {
         match block_type {
             BlockType::Data => {
                 let seq_num = SBX_FIRST_DATA_SEQ_NUM as u32;
                 Block {
-                    header : Header::new(version, uid.clone(), seq_num),
-                    data   : Data::Data,
+                    header: Header::new(version, uid.clone(), seq_num),
+                    data: Data::Data,
                 }
-            },
+            }
             BlockType::Meta => {
                 let seq_num = 0 as u32;
                 Block {
-                    header : Header::new(version, uid.clone(), seq_num),
-                    data   : Data::Meta(Vec::with_capacity(10)),
+                    header: Header::new(version, uid.clone(), seq_num),
+                    data: Data::Meta(Vec::with_capacity(10)),
                 }
             }
         }
@@ -545,8 +535,8 @@ impl Block {
         let version = Version::V1;
         let seq_num = SBX_FIRST_DATA_SEQ_NUM as u32;
         Block {
-            header : Header::new(version, [0; 6], seq_num),
-            data   : Data::Data,
+            header: Header::new(version, [0; 6], seq_num),
+            data: Data::Data,
         }
     }
 
@@ -554,8 +544,7 @@ impl Block {
         self.header.version
     }
 
-    pub fn set_version(&mut self,
-                       version : Version) {
+    pub fn set_version(&mut self, version: Version) {
         self.header.version = version;
     }
 
@@ -563,8 +552,7 @@ impl Block {
         self.header.uid
     }
 
-    pub fn set_uid(&mut self,
-                   uid : [u8; SBX_FILE_UID_LEN]) {
+    pub fn set_uid(&mut self, uid: [u8; SBX_FILE_UID_LEN]) {
         self.header.uid = uid;
     }
 
@@ -576,19 +564,20 @@ impl Block {
         self.header.seq_num
     }
 
-    pub fn set_seq_num(&mut self,
-                       seq_num : u32) {
+    pub fn set_seq_num(&mut self, seq_num: u32) {
         self.header.seq_num = seq_num;
 
         self.switch_block_type_to_match_header();
     }
 
-    pub fn add_seq_num(&mut self,
-                       val : u32)
-                       -> Result<(), Error> {
+    pub fn add_seq_num(&mut self, val: u32) -> Result<(), Error> {
         match self.header.seq_num.checked_add(val) {
-            None    => { return Err(Error::SeqNumOverflow); },
-            Some(x) => { self.header.seq_num = x; }
+            None => {
+                return Err(Error::SeqNumOverflow);
+            }
+            Some(x) => {
+                self.header.seq_num = x;
+            }
         }
 
         self.switch_block_type_to_match_header();
@@ -596,69 +585,58 @@ impl Block {
         Ok(())
     }
 
-    pub fn add1_seq_num(&mut self)
-                        -> Result<(), Error> {
+    pub fn add1_seq_num(&mut self) -> Result<(), Error> {
         self.add_seq_num(1)
     }
 
     pub fn block_type(&self) -> BlockType {
         match self.data {
-            Data::Data    => BlockType::Data,
-            Data::Meta(_) => BlockType::Meta
+            Data::Data => BlockType::Data,
+            Data::Meta(_) => BlockType::Meta,
         }
     }
 
     pub fn is_meta(&self) -> bool {
         match self.block_type() {
             BlockType::Data => false,
-            BlockType::Meta => true
+            BlockType::Meta => true,
         }
     }
 
     pub fn is_data(&self) -> bool {
         match self.block_type() {
             BlockType::Data => true,
-            BlockType::Meta => false
+            BlockType::Meta => false,
         }
     }
 
-    pub fn is_parity(&self,
-                     data_shards   : usize,
-                     parity_shards : usize) -> bool {
+    pub fn is_parity(&self, data_shards: usize, parity_shards: usize) -> bool {
         ver_uses_rs(self.header.version)
-            && seq_num_is_parity(self.get_seq_num(),
-                                 data_shards,
-                                 parity_shards)
+            && seq_num_is_parity(self.get_seq_num(), data_shards, parity_shards)
     }
 
-    pub fn is_parity_w_data_par_burst(&self,
-                                      data_par_burst : Option<(usize, usize, usize)>)
-                                      -> bool
-    {
+    pub fn is_parity_w_data_par_burst(
+        &self,
+        data_par_burst: Option<(usize, usize, usize)>,
+    ) -> bool {
         ver_uses_rs(self.header.version)
-            && seq_num_is_parity_w_data_par_burst(self.get_seq_num(),
-                                                  data_par_burst)
+            && seq_num_is_parity_w_data_par_burst(self.get_seq_num(), data_par_burst)
     }
 
-    pub fn get_meta_ref_by_id(&self,
-                              id : MetadataID)
-                              -> Result<Option<&Metadata>, Error> {
+    pub fn get_meta_ref_by_id(&self, id: MetadataID) -> Result<Option<&Metadata>, Error> {
         match self.data {
-            Data::Data           => Err(Error::IncorrectBlockType),
-            Data::Meta(ref meta) => {
-                Ok(metadata::get_meta_ref_by_id(id, meta))
-            }
+            Data::Data => Err(Error::IncorrectBlockType),
+            Data::Meta(ref meta) => Ok(metadata::get_meta_ref_by_id(id, meta)),
         }
     }
 
-    pub fn get_meta_ref_mut_by_id(&mut self,
-                                  id : MetadataID)
-                                  -> Result<Option<&mut Metadata>, Error> {
+    pub fn get_meta_ref_mut_by_id(
+        &mut self,
+        id: MetadataID,
+    ) -> Result<Option<&mut Metadata>, Error> {
         match self.data {
-            Data::Data               => Err(Error::IncorrectBlockType),
-            Data::Meta(ref mut meta) => {
-                Ok(metadata::get_meta_ref_mut_by_id(id, meta))
-            }
+            Data::Data => Err(Error::IncorrectBlockType),
+            Data::Meta(ref mut meta) => Ok(metadata::get_meta_ref_mut_by_id(id, meta)),
         }
     }
 
@@ -673,19 +651,19 @@ impl Block {
 
     pub fn meta(&self) -> Result<&Vec<Metadata>, Error> {
         match self.data {
-            Data::Data           => Err(Error::IncorrectBlockType),
-            Data::Meta(ref meta) => Ok(meta)
+            Data::Data => Err(Error::IncorrectBlockType),
+            Data::Meta(ref meta) => Ok(meta),
         }
     }
 
     pub fn meta_mut(&mut self) -> Result<&mut Vec<Metadata>, Error> {
         match self.data {
-            Data::Data               => Err(Error::IncorrectBlockType),
-            Data::Meta(ref mut meta) => Ok(meta)
+            Data::Data => Err(Error::IncorrectBlockType),
+            Data::Meta(ref mut meta) => Ok(meta),
         }
     }
 
-    pub fn calc_crc(&self, buffer : &[u8]) -> u16 {
+    pub fn calc_crc(&self, buffer: &[u8]) -> u16 {
         check_buffer!(self, buffer);
 
         let crc = self.header.calc_crc();
@@ -693,8 +671,7 @@ impl Block {
         crc_ccitt_generic(crc, slice_buf!(data => self, buffer))
     }
 
-    pub fn update_crc(&mut self,
-                      buffer : &[u8]) {
+    pub fn update_crc(&mut self, buffer: &[u8]) {
         self.header.crc = self.calc_crc(buffer);
     }
 
@@ -702,27 +679,33 @@ impl Block {
         self.header.header_type() == self.block_type()
     }
 
-    pub fn sync_to_buffer(&mut self,
-                          update_crc : Option<bool>,
-                          buffer     : &mut [u8])
-                          -> Result<(), Error> {
+    pub fn sync_to_buffer(
+        &mut self,
+        update_crc: Option<bool>,
+        buffer: &mut [u8],
+    ) -> Result<(), Error> {
         check_buffer!(self, buffer);
 
         let update_crc = update_crc.unwrap_or(true);
 
         match self.data {
             Data::Meta(ref meta) => {
-                if self.get_seq_num() == 0 {  // not a metadata parity block
+                if self.get_seq_num() == 0 {
+                    // not a metadata parity block
                     // transform metadata to bytes
                     metadata::to_bytes(meta, slice_buf!(data_mut => self, buffer))?;
                 }
-            },
+            }
             Data::Data => {}
         }
 
         match self.block_type() {
-            BlockType::Data => if update_crc { self.update_crc(buffer) },
-            BlockType::Meta =>                 self.update_crc(buffer)
+            BlockType::Data => {
+                if update_crc {
+                    self.update_crc(buffer)
+                }
+            }
+            BlockType::Meta => self.update_crc(buffer),
         }
 
         self.header.to_bytes(slice_buf!(header_mut => self, buffer));
@@ -746,9 +729,7 @@ impl Block {
         }
     }
 
-    pub fn sync_from_buffer_header_only(&mut self,
-                                        buffer : &[u8])
-                                        -> Result<(), Error> {
+    pub fn sync_from_buffer_header_only(&mut self, buffer: &[u8]) -> Result<(), Error> {
         self.header.from_bytes(slice_buf!(header => self, buffer))?;
 
         self.switch_block_type_to_match_header();
@@ -756,11 +737,11 @@ impl Block {
         Ok(())
     }
 
-    pub fn sync_from_buffer(&mut self,
-                            buffer : &[u8],
-                            pred   : Option<&Fn(&Block) -> bool>)
-                            -> Result<(), Error>
-    {
+    pub fn sync_from_buffer(
+        &mut self,
+        buffer: &[u8],
+        pred: Option<&Fn(&Block) -> bool>,
+    ) -> Result<(), Error> {
         self.sync_from_buffer_header_only(buffer)?;
 
         check_buffer!(self, buffer);
@@ -777,26 +758,27 @@ impl Block {
                         meta.push(r);
                     }
                 }
-            },
+            }
             Data::Data => {}
         }
 
         match pred {
-            Some(pred) =>
-                if pred(&self) { Ok(()) } else { Err(Error::FailedPred) },
-            None       => Ok(())
+            Some(pred) => {
+                if pred(&self) {
+                    Ok(())
+                } else {
+                    Err(Error::FailedPred)
+                }
+            }
+            None => Ok(()),
         }
     }
 
-    pub fn verify_crc(&self,
-                      buffer : &[u8])
-                      -> Result<bool, Error> {
+    pub fn verify_crc(&self, buffer: &[u8]) -> Result<bool, Error> {
         Ok(self.header.crc == self.calc_crc(buffer))
     }
 
-    pub fn enforce_crc(&self,
-                       buffer : &[u8])
-                       -> Result<(), Error> {
+    pub fn enforce_crc(&self, buffer: &[u8]) -> Result<(), Error> {
         if self.verify_crc(buffer)? {
             Ok(())
         } else {

@@ -1,8 +1,8 @@
 use file_error;
-use stdin_error;
-use stdout_error;
 use log;
 use std::fmt;
+use stdin_error;
+use stdout_error;
 
 #[derive(Clone)]
 pub enum ErrorKind {
@@ -10,37 +10,35 @@ pub enum ErrorKind {
     StdinError(stdin_error::StdinError),
     StdoutError(stdout_error::StdoutError),
     LogError(log::LogError),
-    MessageOnly(String)
+    MessageOnly(String),
 }
 
 #[derive(Clone)]
 pub struct Error {
-    pub kind : ErrorKind
+    pub kind: ErrorKind,
 }
 
 impl Error {
-    pub fn new(kind : ErrorKind) -> Error {
-        Error {
-            kind
-        }
+    pub fn new(kind: ErrorKind) -> Error {
+        Error { kind }
     }
 
-    pub fn with_message(msg : &str) -> Error {
+    pub fn with_message(msg: &str) -> Error {
         Error {
-            kind : ErrorKind::MessageOnly(String::from(msg))
+            kind: ErrorKind::MessageOnly(String::from(msg)),
         }
     }
 }
 
 impl fmt::Display for Error {
-    fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorKind::*;
         match self.kind {
-            FileError(ref e)    => write!(f, "File error : {}", e),
-            StdinError(ref e)   => write!(f, "Stdin error : {}", e),
-            StdoutError(ref e)  => write!(f, "Stdout error : {}", e),
-            LogError(ref e)     => write!(f, "Log error : {}", e),
-            MessageOnly(ref e)  => write!(f, "Error : {}", e),
+            FileError(ref e) => write!(f, "File error : {}", e),
+            StdinError(ref e) => write!(f, "Stdin error : {}", e),
+            StdoutError(ref e) => write!(f, "Stdout error : {}", e),
+            LogError(ref e) => write!(f, "Log error : {}", e),
+            MessageOnly(ref e) => write!(f, "Error : {}", e),
         }
     }
 }

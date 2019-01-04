@@ -41,9 +41,9 @@ fn test_ver_uses_rs() {
     assert!(!ver_uses_rs(Version::V1));
     assert!(!ver_uses_rs(Version::V2));
     assert!(!ver_uses_rs(Version::V3));
-    assert!( ver_uses_rs(Version::V17));
-    assert!( ver_uses_rs(Version::V18));
-    assert!( ver_uses_rs(Version::V19));
+    assert!(ver_uses_rs(Version::V17));
+    assert!(ver_uses_rs(Version::V18));
+    assert!(ver_uses_rs(Version::V19));
 }
 
 #[test]
@@ -51,7 +51,7 @@ fn test_ver_forces_meta_enabled() {
     assert!(!ver_forces_meta_enabled(Version::V1));
     assert!(!ver_forces_meta_enabled(Version::V2));
     assert!(!ver_forces_meta_enabled(Version::V3));
-    assert!( ver_forces_meta_enabled(Version::V17));
-    assert!( ver_forces_meta_enabled(Version::V18));
-    assert!( ver_forces_meta_enabled(Version::V19));
+    assert!(ver_forces_meta_enabled(Version::V17));
+    assert!(ver_forces_meta_enabled(Version::V18));
+    assert!(ver_forces_meta_enabled(Version::V19));
 }

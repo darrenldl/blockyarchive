@@ -2,10 +2,8 @@ macro_rules! skip_quote_for_term {
     (
         $val:expr
     ) => {{
-        $val == "null"
-            || $val == "true"
-            || $val == "false"
-    }}
+        $val == "null" || $val == "true" || $val == "false"
+    }};
 }
 
 macro_rules! write_json_field {
@@ -21,7 +19,12 @@ macro_rules! write_json_field {
         if $skip_quotes || skip_quote_for_term!($val) {
             writeln!($f, "\"{}\": {}", to_camelcase($key), escape_quotes(&$val))
         } else {
-            writeln!($f, "\"{}\": \"{}\"", to_camelcase($key), escape_quotes(&$val))
+            writeln!(
+                $f,
+                "\"{}\": \"{}\"",
+                to_camelcase($key),
+                escape_quotes(&$val)
+            )
         }
     }};
 }
@@ -106,5 +109,5 @@ macro_rules! null_if_json_else {
         } else {
             $val
         }
-    }}
+    }};
 }

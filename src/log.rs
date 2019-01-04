@@ -1,8 +1,6 @@
 #![allow(dead_code)]
-use file_reader::{FileReader,
-                  FileReaderParam};
-use file_writer::{FileWriter,
-                  FileWriterParam};
+use file_reader::{FileReader, FileReaderParam};
+use file_writer::{FileWriter, FileWriterParam};
 use general_error::Error;
 use std::fmt;
 
@@ -17,18 +15,18 @@ use std::sync::Mutex;
 
 use std::thread;
 
-const LOG_MAX_SIZE : usize = 1024;
+const LOG_MAX_SIZE: usize = 1024;
 
-const LOG_WRITE_INTERVAL_IN_MILLISEC : u64 = 1000;
+const LOG_WRITE_INTERVAL_IN_MILLISEC: u64 = 1000;
 
-pub struct LogHandler<T : 'static + Log + Send> {
-    start_barrier    : Arc<Barrier>,
-    start_flag       : Arc<AtomicBool>,
-    shutdown_flag    : Arc<AtomicBool>,
-    shutdown_barrier : Arc<Barrier>,
-    log_file         : Option<String>,
-    stats            : Arc<Mutex<T>>,
-    error            : Arc<Mutex<Option<Error>>>,
+pub struct LogHandler<T: 'static + Log + Send> {
+    start_barrier: Arc<Barrier>,
+    start_flag: Arc<AtomicBool>,
+    shutdown_flag: Arc<AtomicBool>,
+    shutdown_barrier: Arc<Barrier>,
+    log_file: Option<String>,
+    stats: Arc<Mutex<T>>,
+    error: Arc<Mutex<Option<Error>>>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -38,12 +36,12 @@ pub enum ErrorKind {
 
 #[derive(Clone)]
 pub struct LogError {
-    kind : ErrorKind,
-    path : String,
+    kind: ErrorKind,
+    path: String,
 }
 
 impl fmt::Display for LogError {
-    fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::ErrorKind::*;
         match self.kind {
             ParseError => write!(f, "failed to parse log file \"{}\"", self.path),
@@ -52,15 +50,15 @@ impl fmt::Display for LogError {
 }
 
 impl LogError {
-    pub fn new(kind : ErrorKind, path : &str) -> LogError {
+    pub fn new(kind: ErrorKind, path: &str) -> LogError {
         LogError {
             kind,
-            path : String::from(path),
+            path: String::from(path),
         }
     }
 }
 
-pub fn to_err(e : LogError) -> super::Error {
+pub fn to_err(e: LogError) -> super::Error {
     use super::{Error, ErrorKind};
     Error::new(ErrorKind::LogError(e))
 }
@@ -70,25 +68,33 @@ pub trait Log {
 
     fn deserialize(&mut self, &[u8]) -> Result<(), ()>;
 
-    fn read_from_file(&mut self, log_file : &str) -> Result<(), Error> {
-        let mut reader = FileReader::new(log_file,
-                                         FileReaderParam { write    : false,
-                                                           buffered : false  })?;
-        let mut buffer : [u8; LOG_MAX_SIZE] = [0; LOG_MAX_SIZE];
+    fn read_from_file(&mut self, log_file: &str) -> Result<(), Error> {
+        let mut reader = FileReader::new(
+            log_file,
+            FileReaderParam {
+                write: false,
+                buffered: false,
+            },
+        )?;
+        let mut buffer: [u8; LOG_MAX_SIZE] = [0; LOG_MAX_SIZE];
         let _len_read = reader.read(&mut buffer)?;
 
         match self.deserialize(&buffer) {
-            Ok(())  => Ok(()),
+            Ok(()) => Ok(()),
             Err(()) => Err(to_err(LogError::new(ErrorKind::ParseError, log_file))),
         }
     }
 
-    fn write_to_file(&self, log_file : &str) -> Result<(), Error> {
-        let mut writer = FileWriter::new(log_file,
-                                         FileWriterParam { read     : false,
-                                                           append   : false,
-                                                           truncate : true,
-                                                           buffered : false  })?;
+    fn write_to_file(&self, log_file: &str) -> Result<(), Error> {
+        let mut writer = FileWriter::new(
+            log_file,
+            FileWriterParam {
+                read: false,
+                append: false,
+                truncate: true,
+                buffered: false,
+            },
+        )?;
         let output = self.serialize();
 
         writer.write(output.as_bytes())?;
@@ -97,25 +103,24 @@ pub trait Log {
     }
 }
 
-impl<T : 'static + Log + Send> LogHandler<T> {
-    pub fn new(log_file : Option<&str>,
-               stats    : &Arc<Mutex<T>>) -> LogHandler<T> {
+impl<T: 'static + Log + Send> LogHandler<T> {
+    pub fn new(log_file: Option<&str>, stats: &Arc<Mutex<T>>) -> LogHandler<T> {
         let log_file = match log_file {
-            None         => None,
+            None => None,
             Some(ref lg) => Some(lg.to_string()),
         };
-        let stats                   = Arc::clone(stats);
-        let error                   = Arc::new(Mutex::new(None));
-        let start_barrier           = Arc::new(Barrier::new(2));
-        let start_flag              = Arc::new(AtomicBool::new(false));
-        let shutdown_flag           = Arc::new(AtomicBool::new(false));
-        let shutdown_barrier        = Arc::new(Barrier::new(2));
-        let runner_start_barrier    = Arc::clone(&start_barrier);
-        let runner_shutdown_flag    = Arc::clone(&shutdown_flag);
+        let stats = Arc::clone(stats);
+        let error = Arc::new(Mutex::new(None));
+        let start_barrier = Arc::new(Barrier::new(2));
+        let start_flag = Arc::new(AtomicBool::new(false));
+        let shutdown_flag = Arc::new(AtomicBool::new(false));
+        let shutdown_barrier = Arc::new(Barrier::new(2));
+        let runner_start_barrier = Arc::clone(&start_barrier);
+        let runner_shutdown_flag = Arc::clone(&shutdown_flag);
         let runner_shutdown_barrier = Arc::clone(&shutdown_barrier);
-        let runner_log_file         = log_file.clone();
-        let runner_stats            = Arc::clone(&stats);
-        let runner_error            = Arc::clone(&error);
+        let runner_log_file = log_file.clone();
+        let runner_stats = Arc::clone(&stats);
+        let runner_error = Arc::clone(&error);
         thread::spawn(move || {
             loop {
                 // wait to be kickstarted
@@ -124,9 +129,8 @@ impl<T : 'static + Log + Send> LogHandler<T> {
                 while !runner_shutdown_flag.load(Ordering::SeqCst) {
                     thread::sleep(Duration::from_millis(LOG_WRITE_INTERVAL_IN_MILLISEC));
 
-                    match Self::write_to_file(&runner_log_file,
-                                              &runner_stats.lock().unwrap()) {
-                        Ok(()) => {},
+                    match Self::write_to_file(&runner_log_file, &runner_stats.lock().unwrap()) {
+                        Ok(()) => {}
                         Err(e) => *runner_error.lock().unwrap() = Some(e),
                     }
                 }
@@ -152,23 +156,20 @@ impl<T : 'static + Log + Send> LogHandler<T> {
     }
 
     pub fn stop(&self) {
-        if self.start_flag.load(Ordering::SeqCst)
-            && !self.shutdown_flag.load(Ordering::SeqCst)
-        {
+        if self.start_flag.load(Ordering::SeqCst) && !self.shutdown_flag.load(Ordering::SeqCst) {
             self.shutdown_flag.store(true, Ordering::SeqCst);
 
             self.shutdown_barrier.wait();
         }
     }
 
-    pub fn pop_error(&self) -> Result<(), Error>{
+    pub fn pop_error(&self) -> Result<(), Error> {
         let mut error = self.error.lock().unwrap();
 
-        let res =
-            match *error {
-                None        => Ok(()),
-                Some(ref e) => Err(e.clone()),
-            };
+        let res = match *error {
+            None => Ok(()),
+            Some(ref e) => Err(e.clone()),
+        };
 
         *error = None;
 
@@ -176,11 +177,11 @@ impl<T : 'static + Log + Send> LogHandler<T> {
     }
 
     pub fn read_from_file(&self) -> Result<(), Error> {
-        use super::ErrorKind;
         use super::file_error;
+        use super::ErrorKind;
 
         match self.log_file {
-            None         => Ok(()),
+            None => Ok(()),
             Some(ref lg) => {
                 let res = self.stats.lock().unwrap().read_from_file(lg);
 
@@ -196,9 +197,9 @@ impl<T : 'static + Log + Send> LogHandler<T> {
         }
     }
 
-    fn write_to_file(log_file : &Option<String>, stats : &T) -> Result<(), Error> {
+    fn write_to_file(log_file: &Option<String>, stats: &T) -> Result<(), Error> {
         match log_file {
-            &None        => {},
+            &None => {}
             &Some(ref x) => stats.write_to_file(x)?,
         }
 
@@ -206,7 +207,7 @@ impl<T : 'static + Log + Send> LogHandler<T> {
     }
 }
 
-impl<T : 'static + Log + Send> Drop for LogHandler<T> {
+impl<T: 'static + Log + Send> Drop for LogHandler<T> {
     fn drop(&mut self) {
         self.stop();
     }

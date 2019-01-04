@@ -1,5 +1,5 @@
-use smallvec::SmallVec;
 use json_utils::split_key_val_pair;
+use smallvec::SmallVec;
 
 use std::sync::Mutex;
 
@@ -17,14 +17,14 @@ pub enum BracketType {
 
 #[derive(Clone, Debug)]
 struct JSONContext {
-    first_item   : bool,
-    bracket_type : BracketType,
+    first_item: bool,
+    bracket_type: BracketType,
 }
 
 impl JSONContext {
-    pub fn new(bracket_type : BracketType) -> JSONContext {
+    pub fn new(bracket_type: BracketType) -> JSONContext {
         JSONContext {
-            first_item   : true,
+            first_item: true,
             bracket_type,
         }
     }
@@ -32,24 +32,22 @@ impl JSONContext {
 
 #[derive(Debug)]
 pub struct JSONPrinter {
-    json_enabled   : bool,
-    output_channel : OutputChannel,
-    contexts       : Mutex<SmallVec<[JSONContext; 8]>>
+    json_enabled: bool,
+    output_channel: OutputChannel,
+    contexts: Mutex<SmallVec<[JSONContext; 8]>>,
 }
 
 impl Clone for JSONPrinter {
     fn clone(&self) -> Self {
         JSONPrinter {
-            json_enabled   : self.json_enabled,
-            output_channel : self.output_channel,
-            contexts       : Mutex::new(self.contexts.lock().unwrap().clone())
+            json_enabled: self.json_enabled,
+            output_channel: self.output_channel,
+            contexts: Mutex::new(self.contexts.lock().unwrap().clone()),
         }
     }
 }
 
-fn write_comma_if_not_first(f       : &mut fmt::Formatter,
-                            context : &mut JSONContext)
-                            -> fmt::Result {
+fn write_comma_if_not_first(f: &mut fmt::Formatter, context: &mut JSONContext) -> fmt::Result {
     if !context.first_item {
         write!(f, ",")?;
     }
@@ -58,26 +56,26 @@ fn write_comma_if_not_first(f       : &mut fmt::Formatter,
     Ok(())
 }
 
-fn bracket_type_to_str_open(bracket_type : BracketType) -> &'static str {
+fn bracket_type_to_str_open(bracket_type: BracketType) -> &'static str {
     match bracket_type {
-        BracketType::Curly  => "{",
+        BracketType::Curly => "{",
         BracketType::Square => "[",
     }
 }
 
-fn bracket_type_to_str_close(bracket_type : BracketType) -> &'static str {
+fn bracket_type_to_str_close(bracket_type: BracketType) -> &'static str {
     match bracket_type {
-        BracketType::Curly  => "}",
+        BracketType::Curly => "}",
         BracketType::Square => "]",
     }
 }
 
 impl JSONPrinter {
-    pub fn new(json_enabled : bool, output_channel : OutputChannel) -> JSONPrinter {
+    pub fn new(json_enabled: bool, output_channel: OutputChannel) -> JSONPrinter {
         JSONPrinter {
             json_enabled,
             output_channel,
-            contexts     : Mutex::new(SmallVec::new()),
+            contexts: Mutex::new(SmallVec::new()),
         }
     }
 
@@ -89,7 +87,7 @@ impl JSONPrinter {
         self.output_channel
     }
 
-    pub fn set_output_channel(&mut self, output_channel : OutputChannel) {
+    pub fn set_output_channel(&mut self, output_channel: OutputChannel) {
         self.output_channel = output_channel
     }
 
@@ -97,81 +95,92 @@ impl JSONPrinter {
         self.contexts.lock().unwrap().last().unwrap().first_item
     }
 
-    fn print_comma_if_not_first(&self, context : &mut JSONContext) {
+    fn print_comma_if_not_first(&self, context: &mut JSONContext) {
         if !context.first_item {
             print_at_output_channel!(self.output_channel => ",");
         }
         context.first_item = false;
     }
 
-    pub fn print_open_bracket(&self,
-                              name         : Option<&str>,
-                              bracket_type : BracketType) {
-        if !self.json_enabled { return; }
+    pub fn print_open_bracket(&self, name: Option<&str>, bracket_type: BracketType) {
+        if !self.json_enabled {
+            return;
+        }
 
         match self.contexts.lock().unwrap().last_mut() {
-            None    => {},
-            Some(x) => self.print_comma_if_not_first(x)
+            None => {}
+            Some(x) => self.print_comma_if_not_first(x),
         }
 
         match name {
-            None    => {},
-            Some(n) => print_at_output_channel!(self.output_channel => "\"{}\": ", to_camelcase(n))
+            None => {}
+            Some(n) => print_at_output_channel!(self.output_channel => "\"{}\": ", to_camelcase(n)),
         }
 
         println_at_output_channel!(self.output_channel => "{}", bracket_type_to_str_open(bracket_type));
 
-        self.contexts.lock().unwrap().push(JSONContext::new(bracket_type));
+        self.contexts
+            .lock()
+            .unwrap()
+            .push(JSONContext::new(bracket_type));
     }
 
-    pub fn write_open_bracket(&self,
-                              f            : &mut fmt::Formatter,
-                              name         : Option<&str>,
-                              bracket_type : BracketType) -> fmt::Result {
-        if !self.json_enabled { return Ok(()); }
+    pub fn write_open_bracket(
+        &self,
+        f: &mut fmt::Formatter,
+        name: Option<&str>,
+        bracket_type: BracketType,
+    ) -> fmt::Result {
+        if !self.json_enabled {
+            return Ok(());
+        }
 
         match self.contexts.lock().unwrap().last_mut() {
-            None    => {},
-            Some(x) => write_comma_if_not_first(f, x)?
+            None => {}
+            Some(x) => write_comma_if_not_first(f, x)?,
         }
 
         match name {
-            None    => {},
-            Some(n) => write!(f, "\"{}\": ", to_camelcase(n))?
+            None => {}
+            Some(n) => write!(f, "\"{}\": ", to_camelcase(n))?,
         }
 
         writeln!(f, "{}", bracket_type_to_str_open(bracket_type))?;
 
-        self.contexts.lock().unwrap().push(JSONContext::new(bracket_type));
+        self.contexts
+            .lock()
+            .unwrap()
+            .push(JSONContext::new(bracket_type));
 
         Ok(())
     }
 
     pub fn print_close_bracket(&self) {
-        if !self.json_enabled { return; }
+        if !self.json_enabled {
+            return;
+        }
 
         let context = self.contexts.lock().unwrap().pop().unwrap();
 
         println_at_output_channel!(self.output_channel => "{}", bracket_type_to_str_close(context.bracket_type));
     }
 
-    pub fn write_close_bracket(&self,
-                               f : &mut fmt::Formatter) -> fmt::Result {
-        if !self.json_enabled { return Ok(()); }
+    pub fn write_close_bracket(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if !self.json_enabled {
+            return Ok(());
+        }
 
         let context = self.contexts.lock().unwrap().pop().unwrap();
 
         writeln!(f, "{}", bracket_type_to_str_close(context.bracket_type))
     }
 
-    pub fn print_maybe_json(&self,
-                            skip_quotes : bool,
-                            msg         : &str) {
+    pub fn print_maybe_json(&self, skip_quotes: bool, msg: &str) {
         if self.json_enabled {
             let mut contexts = self.contexts.lock().unwrap();
-            let context  = contexts.last_mut().unwrap();
+            let context = contexts.last_mut().unwrap();
 
-            let (l, r) : (&str, &str) = split_key_val_pair(&msg);
+            let (l, r): (&str, &str) = split_key_val_pair(&msg);
 
             print_json_field!(self.output_channel => l, r, skip_quotes, context.first_item);
 
@@ -181,15 +190,17 @@ impl JSONPrinter {
         }
     }
 
-    pub fn write_maybe_json(&self,
-                            f           : &mut fmt::Formatter,
-                            skip_quotes : bool,
-                            msg         : &str) -> fmt::Result {
+    pub fn write_maybe_json(
+        &self,
+        f: &mut fmt::Formatter,
+        skip_quotes: bool,
+        msg: &str,
+    ) -> fmt::Result {
         if self.json_enabled {
             let mut contexts = self.contexts.lock().unwrap();
-            let context  = contexts.last_mut().unwrap();
+            let context = contexts.last_mut().unwrap();
 
-            let (l, r) : (&str, &str) = split_key_val_pair(&msg);
+            let (l, r): (&str, &str) = split_key_val_pair(&msg);
 
             write_json_field!(f, l, r, skip_quotes, context.first_item)?;
 

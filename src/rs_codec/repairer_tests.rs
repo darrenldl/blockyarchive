@@ -1,12 +1,11 @@
 #![cfg(test)]
-use super::*;
 use super::repairer::*;
+use super::*;
+use reed_solomon_erasure::ReedSolomon;
 use sbx_block;
 use sbx_block::Block;
 use sbx_block::BlockType;
-use sbx_specs::{Version,
-                SBX_LARGEST_BLOCK_SIZE};
-use reed_solomon_erasure::ReedSolomon;
+use sbx_specs::{Version, SBX_LARGEST_BLOCK_SIZE};
 
 use json_printer::JSONPrinter;
 use std::sync::Arc;
@@ -29,7 +28,7 @@ macro_rules! make_random_block_buffers {
         }
 
         buffer
-    }}
+    }};
 }
 
 #[test]
@@ -70,14 +69,13 @@ fn test_repairer_repair_properly_simple_cases() {
                 assert_eq!(13 - i, repairer.unfilled_slot_count());
                 assert_eq!(13, repairer.total_slot_count());
 
-                let codec_state =
-                    if i == 0 || i == 5 || i == 11 {
-                        fill_random_bytes(repairer.get_block_buffer());
-                        repairer.mark_missing()
-                    } else {
-                        repairer.get_block_buffer().copy_from_slice(b);
-                        repairer.mark_present()
-                    };
+                let codec_state = if i == 0 || i == 5 || i == 11 {
+                    fill_random_bytes(repairer.get_block_buffer());
+                    repairer.mark_missing()
+                } else {
+                    repairer.get_block_buffer().copy_from_slice(b);
+                    repairer.mark_present()
+                };
 
                 assert_eq!(13 - i - 1, repairer.unfilled_slot_count());
                 assert_eq!(13, repairer.total_slot_count());
@@ -99,18 +97,18 @@ fn test_repairer_repair_properly_simple_cases() {
         assert!(stats.successful);
         assert_eq!(1, stats.start_seq_num);
         assert_eq!(false, stats.present[0]);
-        assert_eq!(true,  stats.present[1]);
-        assert_eq!(true,  stats.present[2]);
-        assert_eq!(true,  stats.present[3]);
-        assert_eq!(true,  stats.present[4]);
+        assert_eq!(true, stats.present[1]);
+        assert_eq!(true, stats.present[2]);
+        assert_eq!(true, stats.present[3]);
+        assert_eq!(true, stats.present[4]);
         assert_eq!(false, stats.present[5]);
-        assert_eq!(true,  stats.present[6]);
-        assert_eq!(true,  stats.present[7]);
-        assert_eq!(true,  stats.present[8]);
-        assert_eq!(true,  stats.present[9]);
-        assert_eq!(true,  stats.present[10]);
+        assert_eq!(true, stats.present[6]);
+        assert_eq!(true, stats.present[7]);
+        assert_eq!(true, stats.present[8]);
+        assert_eq!(true, stats.present[9]);
+        assert_eq!(true, stats.present[10]);
         assert_eq!(false, stats.present[11]);
-        assert_eq!(true,  stats.present[12]);
+        assert_eq!(true, stats.present[12]);
 
         assert_eq!(13, stats.present.len());
         assert_eq!(3, stats.missing_count);
@@ -119,10 +117,8 @@ fn test_repairer_repair_properly_simple_cases() {
         assert_eq!(3, blocks.len());
 
         {
-            let pos = sbx_block::calc_data_block_write_pos(Version::V17,
-                                                           1 + 0,
-                                                           None,
-                                                           Some((10, 3, 0)));
+            let pos =
+                sbx_block::calc_data_block_write_pos(Version::V17, 1 + 0, None, Some((10, 3, 0)));
             assert_eq!(pos, blocks[0].0);
             let mut block = Block::dummy();
 
@@ -132,10 +128,8 @@ fn test_repairer_repair_properly_simple_cases() {
             assert_eq!(Version::V17, block.get_version());
         }
         {
-            let pos = sbx_block::calc_data_block_write_pos(Version::V17,
-                                                           1 + 5,
-                                                           None,
-                                                           Some((10, 3, 0)));
+            let pos =
+                sbx_block::calc_data_block_write_pos(Version::V17, 1 + 5, None, Some((10, 3, 0)));
             assert_eq!(pos, blocks[1].0);
             let mut block = Block::dummy();
 
@@ -145,10 +139,8 @@ fn test_repairer_repair_properly_simple_cases() {
             assert_eq!(Version::V17, block.get_version());
         }
         {
-            let pos = sbx_block::calc_data_block_write_pos(Version::V17,
-                                                           1 + 11,
-                                                           None,
-                                                           Some((10, 3, 0)));
+            let pos =
+                sbx_block::calc_data_block_write_pos(Version::V17, 1 + 11, None, Some((10, 3, 0)));
             assert_eq!(pos, blocks[2].0);
             let mut block = Block::dummy();
 
@@ -173,12 +165,11 @@ fn test_repairer_repair_properly_simple_cases() {
                 assert_eq!(13, repairer.total_slot_count());
 
                 repairer.get_block_buffer().copy_from_slice(b);
-                let codec_state =
-                    if i == 0 || i == 2 || i == 3 || i == 12 {
-                        repairer.mark_missing()
-                    } else {
-                        repairer.mark_present()
-                    };
+                let codec_state = if i == 0 || i == 2 || i == 3 || i == 12 {
+                    repairer.mark_missing()
+                } else {
+                    repairer.mark_present()
+                };
 
                 assert_eq!(13 - i - 1, repairer.unfilled_slot_count());
                 assert_eq!(13, repairer.total_slot_count());
@@ -200,17 +191,17 @@ fn test_repairer_repair_properly_simple_cases() {
         assert!(!stats.successful);
         assert_eq!(1, stats.start_seq_num);
         assert_eq!(false, stats.present[0]);
-        assert_eq!(true,  stats.present[1]);
+        assert_eq!(true, stats.present[1]);
         assert_eq!(false, stats.present[2]);
         assert_eq!(false, stats.present[3]);
-        assert_eq!(true,  stats.present[4]);
-        assert_eq!(true,  stats.present[5]);
-        assert_eq!(true,  stats.present[6]);
-        assert_eq!(true,  stats.present[7]);
-        assert_eq!(true,  stats.present[8]);
-        assert_eq!(true,  stats.present[9]);
-        assert_eq!(true,  stats.present[10]);
-        assert_eq!(true,  stats.present[11]);
+        assert_eq!(true, stats.present[4]);
+        assert_eq!(true, stats.present[5]);
+        assert_eq!(true, stats.present[6]);
+        assert_eq!(true, stats.present[7]);
+        assert_eq!(true, stats.present[8]);
+        assert_eq!(true, stats.present[9]);
+        assert_eq!(true, stats.present[10]);
+        assert_eq!(true, stats.present[11]);
         assert_eq!(false, stats.present[12]);
 
         assert_eq!(13, stats.present.len());

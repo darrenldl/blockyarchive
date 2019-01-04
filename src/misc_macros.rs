@@ -4,9 +4,9 @@ macro_rules! unwrap_or {
     ) => {{
         match $val {
             Some(x) => x,
-            None    => $or
+            None => $or,
         }
-    }}
+    }};
 }
 
 macro_rules! get_ref_block {
@@ -367,7 +367,7 @@ macro_rules! break_if_atomic_bool {
         if $atomic_bool.load(Ordering::SeqCst) {
             break;
         }
-    }}
+    }};
 }
 
 macro_rules! break_if_reached_required_len {
@@ -377,7 +377,7 @@ macro_rules! break_if_reached_required_len {
         if $bytes_processed >= $required_len {
             break;
         }
-    }}
+    }};
 }
 
 macro_rules! shadow_to_avoid_use {
@@ -386,5 +386,5 @@ macro_rules! shadow_to_avoid_use {
     ) => {
         #[allow(unused_variables)]
         let $var = ();
-    }
+    };
 }

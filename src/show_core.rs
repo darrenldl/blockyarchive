@@ -1,8 +1,8 @@
-use std::sync::{Arc, Mutex};
-use std::fmt;
 use file_utils;
 use misc_utils;
 use misc_utils::RequiredLenAndSeekTo;
+use std::fmt;
+use std::sync::{Arc, Mutex};
 
 use cli_utils::report_ref_block_info;
 use cli_utils::setup_ctrlc_handler;
@@ -15,65 +15,70 @@ use progress_report::*;
 
 use sbx_specs::SBX_FILE_UID_LEN;
 
-use file_reader::{FileReader,
-                  FileReaderParam};
+use file_reader::{FileReader, FileReaderParam};
 
 use multihash::*;
 
 use general_error::Error;
 
 use sbx_block::Block;
-use sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use sbx_specs::ver_to_usize;
 use sbx_specs::ver_uses_rs;
+use sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 
-use time_utils;
 use block_utils;
+use time_utils;
 
 use block_utils::RefBlockChoice;
 use sbx_block::BlockType;
 
-use misc_utils::{RangeEnd,
-                 PositionOrLength};
+use misc_utils::{PositionOrLength, RangeEnd};
 
 use json_printer::JSONPrinter;
 
 #[derive(Clone, Debug)]
 pub struct Stats {
-    pub bytes_processed : u64,
-    pub total_bytes     : u64,
-    meta_block_count    : u64,
-    start_time          : f64,
-    end_time            : f64,
-    json_printer        : Arc<JSONPrinter>,
+    pub bytes_processed: u64,
+    pub total_bytes: u64,
+    meta_block_count: u64,
+    start_time: f64,
+    end_time: f64,
+    json_printer: Arc<JSONPrinter>,
 }
 
 impl Stats {
-    pub fn new(file_size    : u64,
-               json_printer : &Arc<JSONPrinter>) -> Stats {
+    pub fn new(file_size: u64, json_printer: &Arc<JSONPrinter>) -> Stats {
         Stats {
-            bytes_processed   : 0,
-            total_bytes       : file_size,
-            meta_block_count  : 0,
-            start_time        : 0.,
-            end_time          : 0.,
-            json_printer      : Arc::clone(json_printer),
+            bytes_processed: 0,
+            total_bytes: file_size,
+            meta_block_count: 0,
+            start_time: 0.,
+            end_time: 0.,
+            json_printer: Arc::clone(json_printer),
         }
     }
 }
 
 impl ProgressReport for Stats {
-    fn start_time_mut(&mut self) -> &mut f64 { &mut self.start_time }
+    fn start_time_mut(&mut self) -> &mut f64 {
+        &mut self.start_time
+    }
 
-    fn end_time_mut(&mut self)   -> &mut f64 { &mut self.end_time }
+    fn end_time_mut(&mut self) -> &mut f64 {
+        &mut self.end_time
+    }
 
-    fn units_so_far(&self)       -> u64      { self.bytes_processed }
+    fn units_so_far(&self) -> u64 {
+        self.bytes_processed
+    }
 
-    fn total_units(&self)        -> u64      { self.total_bytes }
+    fn total_units(&self) -> u64 {
+        self.total_bytes
+    }
 }
 
 impl fmt::Display for Stats {
-    fn fmt(&self, f : &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.meta_block_count == 0 {
             write_if!(not_json => f, self.json_printer => "No metadata blocks found";)
         } else {
@@ -84,46 +89,47 @@ impl fmt::Display for Stats {
 
 #[derive(Clone, Debug)]
 pub struct Param {
-    show_all            : bool,
-    guess_burst         : bool,
-    force_misalign      : bool,
-    json_printer        : Arc<JSONPrinter>,
-    from_pos            : Option<u64>,
-    to_pos              : Option<RangeEnd<u64>>,
-    in_file             : String,
-    only_pick_uid       : Option<[u8; SBX_FILE_UID_LEN]>,
-    pr_verbosity_level  : PRVerbosityLevel
+    show_all: bool,
+    guess_burst: bool,
+    force_misalign: bool,
+    json_printer: Arc<JSONPrinter>,
+    from_pos: Option<u64>,
+    to_pos: Option<RangeEnd<u64>>,
+    in_file: String,
+    only_pick_uid: Option<[u8; SBX_FILE_UID_LEN]>,
+    pr_verbosity_level: PRVerbosityLevel,
 }
 
 impl Param {
-    pub fn new(show_all            : bool,
-               guess_burst         : bool,
-               force_misalign      : bool,
-               json_printer        : &Arc<JSONPrinter>,
-               from_pos            : Option<u64>,
-               to_pos              : Option<RangeEnd<u64>>,
-               in_file             : &str,
-               only_pick_uid       : Option<&[u8; SBX_FILE_UID_LEN]>,
-               pr_verbosity_level  : PRVerbosityLevel) -> Param {
+    pub fn new(
+        show_all: bool,
+        guess_burst: bool,
+        force_misalign: bool,
+        json_printer: &Arc<JSONPrinter>,
+        from_pos: Option<u64>,
+        to_pos: Option<RangeEnd<u64>>,
+        in_file: &str,
+        only_pick_uid: Option<&[u8; SBX_FILE_UID_LEN]>,
+        pr_verbosity_level: PRVerbosityLevel,
+    ) -> Param {
         Param {
             show_all,
             guess_burst,
             force_misalign,
-            json_printer : Arc::clone(json_printer),
+            json_printer: Arc::clone(json_printer),
             from_pos,
             to_pos,
-            in_file : String::from(in_file),
-            only_pick_uid : match only_pick_uid {
-                None    => None,
-                Some(x) => Some(x.clone())
+            in_file: String::from(in_file),
+            only_pick_uid: match only_pick_uid {
+                None => None,
+                Some(x) => Some(x.clone()),
             },
             pr_verbosity_level,
         }
     }
 }
 
-pub fn show_file(param : &Param)
-                 -> Result<Stats, Error> {
+pub fn show_file(param: &Param) -> Result<Stats, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
     let json_printer = &param.json_printer;
@@ -132,29 +138,41 @@ pub fn show_file(param : &Param)
         print_if!(not_json => json_printer => "Guessing burst error resistance level";);
         print_if!(not_json => json_printer => "";);
 
-        let (ref_block_pos, ref_block) =
-            match block_utils::get_ref_block(&param.in_file,
-                                             None,
-                                             None,
-                                             RefBlockChoice::MustBe(BlockType::Meta),
-                                             param.pr_verbosity_level,
-                                             param.json_printer.json_enabled(),
-                                             &ctrlc_stop_flag)? {
-                None => { return Err(Error::with_message("Failed to find reference block")); },
-                Some(x) => x,
-            };
+        let (ref_block_pos, ref_block) = match block_utils::get_ref_block(
+            &param.in_file,
+            None,
+            None,
+            RefBlockChoice::MustBe(BlockType::Meta),
+            param.pr_verbosity_level,
+            param.json_printer.json_enabled(),
+            &ctrlc_stop_flag,
+        )? {
+            None => {
+                return Err(Error::with_message("Failed to find reference block"));
+            }
+            Some(x) => x,
+        };
 
         report_ref_block_info(json_printer, ref_block_pos, &ref_block);
 
         print_if!(not_json => json_printer => "";);
 
         if ver_uses_rs(ref_block.get_version()) {
-            match block_utils::guess_burst_err_resistance_level(&param.in_file,
-                                                                ref_block_pos,
-                                                                &ref_block) {
-                Err(e)      => { return Err(Error::with_message(&format!("Error encountered when guessing : {}", e))) },
-                Ok(None)    => print_if!(not_json => json_printer => "Failed to guess level";),
-                Ok(Some(x)) => print_maybe_json!(json_printer, "Best guess for burst error resistance level : {}", x => skip_quotes),
+            match block_utils::guess_burst_err_resistance_level(
+                &param.in_file,
+                ref_block_pos,
+                &ref_block,
+            ) {
+                Err(e) => {
+                    return Err(Error::with_message(&format!(
+                        "Error encountered when guessing : {}",
+                        e
+                    )))
+                }
+                Ok(None) => print_if!(not_json => json_printer => "Failed to guess level";),
+                Ok(Some(x)) => {
+                    print_maybe_json!(json_printer, "Best guess for burst error resistance level : {}", x => skip_quotes)
+                }
             }
         } else {
             print_if!(not_json => json_printer => "Reference block version does not use Reed-Solomon erasure code";);
@@ -168,67 +186,76 @@ pub fn show_file(param : &Param)
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
 
-    let stats = Arc::new(Mutex::new(Stats::new(file_size,
-                                               &param.json_printer)));
+    let stats = Arc::new(Mutex::new(Stats::new(file_size, &param.json_printer)));
 
-    let reporter = ProgressReporter::new(&stats,
-                                         "Metadata block scanning progress",
-                                         "bytes",
-                                         param.pr_verbosity_level,
-                                         param.json_printer.json_enabled());
+    let reporter = ProgressReporter::new(
+        &stats,
+        "Metadata block scanning progress",
+        "bytes",
+        param.pr_verbosity_level,
+        param.json_printer.json_enabled(),
+    );
 
     let mut block = Block::dummy();
-    let mut buffer : [u8; SBX_LARGEST_BLOCK_SIZE] =
-        [0; SBX_LARGEST_BLOCK_SIZE];
+    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
-    let mut reader = FileReader::new(&param.in_file,
-                                     FileReaderParam { write    : false,
-                                                       buffered : true   })?;
+    let mut reader = FileReader::new(
+        &param.in_file,
+        FileReaderParam {
+            write: false,
+            buffered: true,
+        },
+    )?;
 
     // calulate length to read and position to seek to
-    let RequiredLenAndSeekTo { required_len, seek_to } =
-        misc_utils::calc_required_len_and_seek_to_from_byte_range(param.from_pos,
-                                                                  param.to_pos,
-                                                                  param.force_misalign,
-                                                                  0,
-                                                                  PositionOrLength::Len(file_size),
-                                                                  None);
+    let RequiredLenAndSeekTo {
+        required_len,
+        seek_to,
+    } = misc_utils::calc_required_len_and_seek_to_from_byte_range(
+        param.from_pos,
+        param.to_pos,
+        param.force_misalign,
+        0,
+        PositionOrLength::Len(file_size),
+        None,
+    );
 
     // seek to calculated position
     reader.seek(SeekFrom::Start(seek_to))?;
 
     reporter.start();
 
-    let mut meta_block_count : u64 = 0;
+    let mut meta_block_count: u64 = 0;
 
-    let mut block_pos       : u64;
-    let mut bytes_processed : u64 = 0;
+    let mut block_pos: u64;
+    let mut bytes_processed: u64 = 0;
 
     json_printer.print_open_bracket(Some("blocks"), BracketType::Square);
 
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
-        break_if_reached_required_len!(bytes_processed,
-                                       required_len);
+        break_if_reached_required_len!(bytes_processed, required_len);
 
-        let lazy_read_res = block_utils::read_block_lazily(&mut block,
-                                                           &mut buffer,
-                                                           &mut reader)?;
+        let lazy_read_res = block_utils::read_block_lazily(&mut block, &mut buffer, &mut reader)?;
 
-        block_pos        = bytes_processed;
+        block_pos = bytes_processed;
         bytes_processed += lazy_read_res.len_read as u64;
 
         stats.lock().unwrap().bytes_processed = bytes_processed;
 
         break_if_eof_seen!(lazy_read_res);
 
-        if !lazy_read_res.usable { continue; }
+        if !lazy_read_res.usable {
+            continue;
+        }
 
         if block.is_meta() {
             // check if block has the required UID
             if let Some(x) = param.only_pick_uid {
-                if block.get_uid() != x { continue; }
+                if block.get_uid() != x {
+                    continue;
+                }
             }
 
             reporter.pause();
@@ -253,20 +280,34 @@ pub fn show_file(param : &Param)
 
             print_if!(not_json => json_printer =>     "";);
 
-            print_maybe_json!(json_printer,           "File UID               : {}",
-                              misc_utils::bytes_to_upper_hex_string(&block.get_uid()));
-            print_maybe_json!(json_printer,           "File name              : {}",
-                              block.get_FNM().unwrap().unwrap_or("N/A".to_string()));
-            print_maybe_json!(json_printer,           "SBX container name     : {}",
-                              block.get_SNM().unwrap().unwrap_or("N/A".to_string()));
-            print_maybe_json!(json_printer,           "SBX container version  : {}",
-                              if ver_uses_rs(block.get_version()) && !json_printer.json_enabled() {
-                                  format!("{} (0x{:X})",
-                                          ver_to_usize(block.get_version()),
-                                          ver_to_usize(block.get_version()))
-                              } else {
-                                  ver_to_usize(block.get_version()).to_string()
-                              });
+            print_maybe_json!(
+                json_printer,
+                "File UID               : {}",
+                misc_utils::bytes_to_upper_hex_string(&block.get_uid())
+            );
+            print_maybe_json!(
+                json_printer,
+                "File name              : {}",
+                block.get_FNM().unwrap().unwrap_or("N/A".to_string())
+            );
+            print_maybe_json!(
+                json_printer,
+                "SBX container name     : {}",
+                block.get_SNM().unwrap().unwrap_or("N/A".to_string())
+            );
+            print_maybe_json!(
+                json_printer,
+                "SBX container version  : {}",
+                if ver_uses_rs(block.get_version()) && !json_printer.json_enabled() {
+                    format!(
+                        "{} (0x{:X})",
+                        ver_to_usize(block.get_version()),
+                        ver_to_usize(block.get_version())
+                    )
+                } else {
+                    ver_to_usize(block.get_version()).to_string()
+                }
+            );
             print_maybe_json!(json_printer,           "RS data shard count    : {}",
                               if ver_uses_rs(block.get_version()) {
                                   match block.get_RSD().unwrap() {
@@ -289,28 +330,46 @@ pub fn show_file(param : &Param)
                 None    => null_if_json_else!(json_printer, "N/A").to_string(),
                 Some(x) => x.to_string()
             }                                                                      => skip_quotes);
-            print_maybe_json!(json_printer,           "File modification time : {}", match block.get_FDT().unwrap() {
-                None    => null_if_json_else!(json_printer, "N/A").to_string(),
-                Some(x) => match (time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::UTC),
-                                  time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::Local)) {
-                    (Some(u), Some(l)) => format!("{} (UTC)  {} (Local)", u, l),
-                    _                  => "Invalid recorded date time".to_string(),
+            print_maybe_json!(
+                json_printer,
+                "File modification time : {}",
+                match block.get_FDT().unwrap() {
+                    None => null_if_json_else!(json_printer, "N/A").to_string(),
+                    Some(x) => match (
+                        time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::UTC),
+                        time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::Local)
+                    ) {
+                        (Some(u), Some(l)) => format!("{} (UTC)  {} (Local)", u, l),
+                        _ => "Invalid recorded date time".to_string(),
+                    },
                 }
-            });
-            print_maybe_json!(json_printer,           "SBX encoding time      : {}", match block.get_SDT().unwrap() {
-                None    => null_if_json_else!(json_printer, "N/A").to_string(),
-                Some(x) => match (time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::UTC),
-                                  time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::Local)) {
-                    (Some(u), Some(l)) => format!("{} (UTC)  {} (Local)", u, l),
-                    _                  => "Invalid recorded date time".to_string(),
+            );
+            print_maybe_json!(
+                json_printer,
+                "SBX encoding time      : {}",
+                match block.get_SDT().unwrap() {
+                    None => null_if_json_else!(json_printer, "N/A").to_string(),
+                    Some(x) => match (
+                        time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::UTC),
+                        time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::Local)
+                    ) {
+                        (Some(u), Some(l)) => format!("{} (UTC)  {} (Local)", u, l),
+                        _ => "Invalid recorded date time".to_string(),
+                    },
                 }
-            });
-            print_maybe_json!(json_printer,           "Hash                   : {}", match block.get_HSH().unwrap() {
-                None    => null_if_json_else!(json_printer, "N/A").to_string(),
-                Some(h) => format!("{} - {}",
-                                   hash_type_to_string(h.0),
-                                   misc_utils::bytes_to_lower_hex_string(&h.1))
-            });
+            );
+            print_maybe_json!(
+                json_printer,
+                "Hash                   : {}",
+                match block.get_HSH().unwrap() {
+                    None => null_if_json_else!(json_printer, "N/A").to_string(),
+                    Some(h) => format!(
+                        "{} - {}",
+                        hash_type_to_string(h.0),
+                        misc_utils::bytes_to_lower_hex_string(&h.1)
+                    ),
+                }
+            );
 
             meta_block_count += 1;
 
@@ -318,7 +377,9 @@ pub fn show_file(param : &Param)
 
             json_printer.print_close_bracket();
 
-            if !param.show_all { break; }
+            if !param.show_all {
+                break;
+            }
         }
     }
 
