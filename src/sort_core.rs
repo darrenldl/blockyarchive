@@ -316,7 +316,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                     }
 
                     // read block in original container
-                    reader.seek(SeekFrom::Start(p))?;
+                    reader.seek(SeekFrom::Start(p + seek_to))?;
                     reader.read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
 
                     match buffer.cmp(&check_buffer) {
