@@ -146,6 +146,7 @@ pub fn get_ref_block(
     in_file: &str,
     from_pos: Option<u64>,
     to_pos: Option<RangeEnd<u64>>,
+    force_misalign: bool,
     ref_block_choice: RefBlockChoice,
     pr_verbosity_level: PRVerbosityLevel,
     json_enabled: bool,
@@ -159,7 +160,7 @@ pub fn get_ref_block(
     } = misc_utils::calc_required_len_and_seek_to_from_byte_range(
         from_pos,
         to_pos,
-        false,
+        force_misalign,
         0,
         PositionOrLength::Len(file_size),
         None,

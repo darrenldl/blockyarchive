@@ -36,6 +36,7 @@ times to update it gradually.",
         .arg(from_byte_arg().help(FROM_BYTE_ARG_HELP_MSG_REF_BLOCK))
         .arg(to_byte_inc_arg())
         .arg(to_byte_exc_arg())
+        .arg(force_misalign_arg())
         .arg(burst_arg().help(
             "Burst error resistance level used by the container.
 Use this if the level used by the container is above 1000,
@@ -112,6 +113,7 @@ pub fn decode<'a>(matches: &ArgMatches<'a>) -> i32 {
         &json_printer,
         from_pos,
         to_pos,
+        matches.is_present("force_misalign"),
         in_file,
         out,
         matches.is_present("verbose"),

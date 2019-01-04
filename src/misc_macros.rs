@@ -21,7 +21,40 @@ macro_rules! get_ref_block {
                        $stop_flag)
     }};
     (
+        no_force_misalign => $param:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
+    ) => {{
+        get_ref_block!(no_force_misalign =>
+                       $param,
+                       $param.ref_block_from_pos,
+                       $param.ref_block_to_pos,
+                       $json_printer,
+                       $ref_block_choice,
+                       $stop_flag)
+    }};
+    (
         $param:expr, $ref_block_from_pos:expr, $ref_block_to_pos:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
+    ) => {{
+        get_ref_block!($param,
+                       $ref_block_from_pos,
+                       $ref_block_to_pos,
+                       $param.force_misalign,
+                       $json_printer,
+                       $ref_block_choice,
+                       $stop_flag)
+    }};
+    (
+        no_force_misalign => $param:expr, $ref_block_from_pos:expr, $ref_block_to_pos:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
+    ) => {{
+        get_ref_block!($param,
+                       $ref_block_from_pos,
+                       $ref_block_to_pos,
+                       false,
+                       $json_printer,
+                       $ref_block_choice,
+                       $stop_flag)
+    }};
+    (
+        $param:expr, $ref_block_from_pos:expr, $ref_block_to_pos:expr, $force_misalign:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
     ) => {{
         use std::sync::atomic::Ordering;
 
@@ -29,6 +62,7 @@ macro_rules! get_ref_block {
             match block_utils::get_ref_block(&$param.in_file,
                                              $ref_block_from_pos,
                                              $ref_block_to_pos,
+                                             $force_misalign,
                                              $ref_block_choice,
                                              $param.pr_verbosity_level,
                                              $param.json_printer.json_enabled(),

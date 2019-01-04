@@ -237,7 +237,7 @@ pub fn repair_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let json_printer = &param.json_printer;
 
-    let (ref_block_pos, mut ref_block) = get_ref_block!(
+    let (ref_block_pos, mut ref_block) = get_ref_block!( no_force_misalign =>
         param,
         None,
         None,

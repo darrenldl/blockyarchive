@@ -20,6 +20,7 @@ Specify this if you want blkar to report blank blocks as well.",
         .arg(from_byte_arg().help(FROM_BYTE_ARG_HELP_MSG_REF_BLOCK))
         .arg(to_byte_inc_arg())
         .arg(to_byte_exc_arg())
+        .arg(force_misalign_arg())
         .arg(ref_from_byte_arg())
         .arg(ref_to_byte_inc_arg())
         .arg(ref_to_byte_exc_arg())
@@ -49,6 +50,7 @@ pub fn check<'a>(matches: &ArgMatches<'a>) -> i32 {
         &json_printer,
         from_pos,
         to_pos,
+        matches.is_present("force_misalign"),
         in_file,
         matches.is_present("verbose"),
         pr_verbosity_level,

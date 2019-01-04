@@ -142,6 +142,7 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
             &param.in_file,
             None,
             None,
+            param.force_misalign,
             RefBlockChoice::MustBe(BlockType::Meta),
             param.pr_verbosity_level,
             param.json_printer.json_enabled(),

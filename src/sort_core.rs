@@ -40,6 +40,7 @@ pub struct Param {
     json_printer: Arc<JSONPrinter>,
     from_pos: Option<u64>,
     to_pos: Option<RangeEnd<u64>>,
+    force_misalign: bool,
     in_file: String,
     out_file: Option<String>,
     verbose: bool,
@@ -56,6 +57,7 @@ impl Param {
         json_printer: &Arc<JSONPrinter>,
         from_pos: Option<u64>,
         to_pos: Option<RangeEnd<u64>>,
+        force_misalign: bool,
         in_file: &str,
         out_file: Option<&str>,
         verbose: bool,
@@ -70,6 +72,7 @@ impl Param {
             json_printer: Arc::clone(json_printer),
             from_pos,
             to_pos,
+            force_misalign,
             in_file: String::from(in_file),
             out_file: match out_file {
                 Some(x) => Some(String::from(x)),
