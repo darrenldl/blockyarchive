@@ -32,12 +32,21 @@
   - check
   - decode
   - sort
+- Added `--force-misalign` to the following modes
+  - check
+  - decode
+  - sort
+- Updated reference block scanning code to respect `--force-misalign`
 
 - Updated decode mode stats output
 
   - This results in potentially incompatible JSON output
+
 - Fixed `misc_utils::calc_required_len_and_seek_to_from_byte_range`
+
   - Sometimes off by one error occured
+- Ran `rustfmt` for code formatting
+- Ran `cargo fix --edition` to update to Rust 2018 edition
 
 ## 2.2.0
 
