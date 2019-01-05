@@ -1,8 +1,8 @@
 #![cfg(test)]
 
 use super::*;
-use rand_utils;
-use sbx_specs;
+use crate::rand_utils;
+use crate::sbx_specs;
 
 #[test]
 fn test_calc_rs_enabled_meta_write_indices() {

@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use time_utils::*;
+use crate::time_utils::*;
 
 quickcheck! {
     fn qc_seconds_to_hms_to_seconds(total_secs : i64) -> bool {
