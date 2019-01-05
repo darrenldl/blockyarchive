@@ -1,6 +1,6 @@
 use reed_solomon_erasure::ReedSolomon;
-use sbx_block;
-use sbx_specs::{ver_to_block_size, ver_uses_rs, Version, SBX_LARGEST_BLOCK_SIZE};
+use crate::sbx_block;
+use crate::sbx_specs::{ver_to_block_size, ver_uses_rs, Version, SBX_LARGEST_BLOCK_SIZE};
 use smallvec::SmallVec;
 
 pub struct RSEncoder {

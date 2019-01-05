@@ -1,32 +1,32 @@
-use file_utils;
-use misc_utils;
-use progress_report::*;
+use crate::file_utils;
+use crate::misc_utils;
+use crate::progress_report::*;
 use std::fmt;
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
 
-use misc_utils::RequiredLenAndSeekTo;
+use crate::misc_utils::RequiredLenAndSeekTo;
 
-use json_printer::{BracketType, JSONPrinter};
+use crate::json_printer::{BracketType, JSONPrinter};
 
-use cli_utils::setup_ctrlc_handler;
+use crate::cli_utils::setup_ctrlc_handler;
 
-use file_reader::{FileReader, FileReaderParam};
-use sbx_block::{Block, BlockType};
+use crate::file_reader::{FileReader, FileReaderParam};
+use crate::sbx_block::{Block, BlockType};
 
-use general_error::Error;
-use sbx_specs::Version;
+use crate::general_error::Error;
+use crate::sbx_specs::Version;
 
-use sbx_block;
-use sbx_specs::{ver_to_block_size, ver_to_usize, SBX_LARGEST_BLOCK_SIZE};
+use crate::sbx_block;
+use crate::sbx_specs::{ver_to_block_size, ver_to_usize, SBX_LARGEST_BLOCK_SIZE};
 
-use block_utils;
-use time_utils;
+use crate::block_utils;
+use crate::time_utils;
 
-use block_utils::RefBlockChoice;
-use misc_utils::{PositionOrLength, RangeEnd};
+use crate::block_utils::RefBlockChoice;
+use crate::misc_utils::{PositionOrLength, RangeEnd};
 
-use cli_utils::report_ref_block_info;
+use crate::cli_utils::report_ref_block_info;
 
 pub struct Param {
     ref_block_choice: RefBlockChoice,
@@ -86,7 +86,7 @@ pub struct Stats {
 
 impl Stats {
     pub fn new(ref_block: &Block, required_len: u64, json_printer: &Arc<JSONPrinter>) -> Stats {
-        use file_utils::from_container_size::calc_total_block_count;
+        use crate::file_utils::from_container_size::calc_total_block_count;
         let total_blocks = calc_total_block_count(ref_block.get_version(), required_len);
         Stats {
             version: ref_block.get_version(),

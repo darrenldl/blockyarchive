@@ -1,6 +1,6 @@
 #![allow(dead_code)]
-use misc_utils::f64_max;
-use misc_utils::to_camelcase;
+use crate::misc_utils::f64_max;
+use crate::misc_utils::to_camelcase;
 use std::io::stdout;
 use std::io::Write;
 use std::sync::atomic::AtomicBool;
@@ -10,7 +10,7 @@ use std::sync::Barrier;
 use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
-use time_utils;
+use crate::time_utils;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum PRVerbosityLevel {

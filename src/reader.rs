@@ -1,10 +1,10 @@
 #![allow(dead_code)]
-use file_reader::FileReader;
-use general_error::Error;
+use crate::file_reader::FileReader;
+use crate::general_error::Error;
 use std::fs::Metadata;
 use std::io::Read;
 use std::io::SeekFrom;
-use stdin_error::{to_err, StdinError};
+use crate::stdin_error::{to_err, StdinError};
 
 const READ_RETRIES: usize = 5;
 

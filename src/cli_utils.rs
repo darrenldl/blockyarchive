@@ -1,13 +1,13 @@
 #![allow(dead_code)]
 use clap::*;
 use ctrlc;
-use sbx_block;
+use crate::sbx_block;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use sbx_specs::ver_to_usize;
+use crate::sbx_specs::ver_to_usize;
 
-use json_printer::{BracketType, JSONPrinter};
+use crate::json_printer::{BracketType, JSONPrinter};
 
 pub fn in_file_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("in_file")

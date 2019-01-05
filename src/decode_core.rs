@@ -1,46 +1,46 @@
 #![allow(dead_code)]
-use file_utils;
-use misc_utils;
+use crate::file_utils;
+use crate::misc_utils;
 use std::fmt;
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
 
-use misc_utils::RequiredLenAndSeekTo;
+use crate::misc_utils::RequiredLenAndSeekTo;
 
-use json_printer::{BracketType, JSONPrinter};
+use crate::json_printer::{BracketType, JSONPrinter};
 
 use std::sync::atomic::AtomicBool;
 
-use cli_utils::setup_ctrlc_handler;
-use progress_report::*;
+use crate::cli_utils::setup_ctrlc_handler;
+use crate::progress_report::*;
 
-use file_reader::{FileReader, FileReaderParam};
-use file_writer::{FileWriter, FileWriterParam};
-use writer::{Writer, WriterType};
+use crate::file_reader::{FileReader, FileReaderParam};
+use crate::file_writer::{FileWriter, FileWriterParam};
+use crate::writer::{Writer, WriterType};
 
-use misc_utils::{PositionOrLength, RangeEnd};
+use crate::misc_utils::{PositionOrLength, RangeEnd};
 
-use multihash;
-use multihash::*;
+use crate::multihash;
+use crate::multihash::*;
 
-use cli_utils::report_ref_block_info;
+use crate::cli_utils::report_ref_block_info;
 
-use general_error::Error;
-use sbx_specs::Version;
+use crate::general_error::Error;
+use crate::sbx_specs::Version;
 
-use integer_utils::IntegerUtils;
+use crate::integer_utils::IntegerUtils;
 
-use sbx_block;
-use sbx_block::Block;
-use sbx_specs::{
+use crate::sbx_block;
+use crate::sbx_block::Block;
+use crate::sbx_specs::{
     ver_to_block_size, ver_to_data_size, ver_to_usize, ver_uses_rs, SBX_FILE_UID_LEN,
     SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM,
 };
 
-use block_utils;
-use time_utils;
+use crate::block_utils;
+use crate::time_utils;
 
-use block_utils::RefBlockChoice;
+use crate::block_utils::RefBlockChoice;
 
 const HASH_FILE_BLOCK_SIZE: usize = 4096;
 
@@ -365,7 +365,7 @@ impl Stats {
         in_file_size: u64,
         json_printer: &Arc<JSONPrinter>,
     ) -> Stats {
-        use file_utils::from_container_size::calc_total_block_count;
+        use crate::file_utils::from_container_size::calc_total_block_count;
         let total_blocks = calc_total_block_count(ref_block.get_version(), required_len);
         let blocks_decode_failed = match write_to {
             WriteTo::File => DecodeFailStats::Total(0),

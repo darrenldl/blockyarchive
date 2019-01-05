@@ -1,6 +1,6 @@
 #![allow(dead_code)]
-use integer_utils::IntegerUtils;
-use sbx_specs::SBX_SCAN_BLOCK_SIZE;
+use crate::integer_utils::IntegerUtils;
+use crate::sbx_specs::SBX_SCAN_BLOCK_SIZE;
 
 use std::path::PathBuf;
 

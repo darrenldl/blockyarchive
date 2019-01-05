@@ -1,22 +1,22 @@
-use encode_core;
-use encode_core::Param;
-use sbx_specs::{
+use crate::encode_core;
+use crate::encode_core::Param;
+use crate::sbx_specs::{
     ver_to_block_size, ver_to_data_size, ver_to_usize, ver_uses_rs, Version, SBX_FILE_UID_LEN,
 };
 use std::str::FromStr;
 use std::time::UNIX_EPOCH;
 
-use json_printer::BracketType;
+use crate::json_printer::BracketType;
 
-use multihash;
+use crate::multihash;
 
-use file_utils;
-use misc_utils;
-use rand_utils;
-use time_utils;
+use crate::file_utils;
+use crate::misc_utils;
+use crate::rand_utils;
+use crate::time_utils;
 
 use clap::*;
-use cli_utils::*;
+use crate::cli_utils::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("encode")

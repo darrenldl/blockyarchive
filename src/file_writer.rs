@@ -1,7 +1,7 @@
 #![allow(dead_code)]
-use file_error::to_err;
-use file_error::FileError;
-use general_error::Error;
+use crate::file_error::to_err;
+use crate::file_error::FileError;
+use crate::general_error::Error;
 use std::fs::File;
 use std::fs::Metadata;
 use std::fs::OpenOptions;

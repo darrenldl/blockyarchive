@@ -1,41 +1,41 @@
-use file_utils;
-use misc_utils;
+use crate::file_utils;
+use crate::misc_utils;
 use std::fmt;
 use std::fs;
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
-use time_utils;
+use crate::time_utils;
 
-use misc_utils::RequiredLenAndSeekTo;
+use crate::misc_utils::RequiredLenAndSeekTo;
 
-use json_printer::{BracketType, JSONPrinter};
+use crate::json_printer::{BracketType, JSONPrinter};
 
-use progress_report::*;
+use crate::progress_report::*;
 
-use cli_utils::setup_ctrlc_handler;
+use crate::cli_utils::setup_ctrlc_handler;
 use std::time::UNIX_EPOCH;
 
-use file_reader::{FileReader, FileReaderParam};
-use file_writer::{FileWriter, FileWriterParam};
-use reader::{Reader, ReaderType};
+use crate::file_reader::{FileReader, FileReaderParam};
+use crate::file_writer::{FileWriter, FileWriterParam};
+use crate::reader::{Reader, ReaderType};
 
-use multihash;
+use crate::multihash;
 
-use general_error::Error;
-use rs_codec::RSEncoder;
-use sbx_specs::Version;
+use crate::general_error::Error;
+use crate::rs_codec::RSEncoder;
+use crate::sbx_specs::Version;
 
-use sbx_block::{
+use crate::sbx_block::{
     calc_data_block_write_pos, make_too_much_meta_err_string, Block, BlockType, Metadata,
 };
 
-use sbx_block;
-use sbx_specs::{
+use crate::sbx_block;
+use crate::sbx_specs::{
     ver_forces_meta_enabled, ver_to_block_size, ver_to_data_size, ver_to_max_data_file_size,
     ver_to_usize, ver_uses_rs, SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE,
 };
 
-use misc_utils::{PositionOrLength, RangeEnd};
+use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 #[derive(Clone, Debug)]
 pub struct Stats {
@@ -221,7 +221,7 @@ impl Param {
 
 impl Stats {
     pub fn new(param: &Param, required_len: Option<u64>) -> Stats {
-        use file_utils::from_orig_file_size::calc_data_chunk_count;
+        use crate::file_utils::from_orig_file_size::calc_data_chunk_count;
         Stats {
             uid: param.uid,
             version: param.version,

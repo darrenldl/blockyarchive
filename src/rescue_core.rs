@@ -2,33 +2,33 @@ use std::fmt;
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
 
-use file_utils;
+use crate::file_utils;
 
-use misc_utils;
-use misc_utils::RequiredLenAndSeekTo;
+use crate::misc_utils;
+use crate::misc_utils::RequiredLenAndSeekTo;
 
-use log::*;
-use progress_report::*;
+use crate::log::*;
+use crate::progress_report::*;
 
-use cli_utils::setup_ctrlc_handler;
+use crate::cli_utils::setup_ctrlc_handler;
 
-use file_reader::{FileReader, FileReaderParam};
-use file_writer::{FileWriter, FileWriterParam};
+use crate::file_reader::{FileReader, FileReaderParam};
+use crate::file_writer::{FileWriter, FileWriterParam};
 
-use general_error::Error;
+use crate::general_error::Error;
 
-use sbx_specs::{SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE, SBX_SCAN_BLOCK_SIZE};
+use crate::sbx_specs::{SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE, SBX_SCAN_BLOCK_SIZE};
 
-use sbx_block;
-use sbx_block::{Block, BlockType};
+use crate::sbx_block;
+use crate::sbx_block::{Block, BlockType};
 
-use block_utils;
+use crate::block_utils;
 
-use integer_utils::IntegerUtils;
+use crate::integer_utils::IntegerUtils;
 
-use misc_utils::{PositionOrLength, RangeEnd};
+use crate::misc_utils::{PositionOrLength, RangeEnd};
 
-use json_printer::{BracketType, JSONPrinter};
+use crate::json_printer::{BracketType, JSONPrinter};
 
 pub struct Param {
     in_file: String,

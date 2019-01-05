@@ -1,4 +1,4 @@
-pub use crc_ccitt::crc_ccitt_generic;
+pub use crate::crc_ccitt::crc_ccitt_generic;
 
 use super::super::sbx_specs;
 use super::super::sbx_specs::Version;

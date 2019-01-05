@@ -36,7 +36,7 @@ macro_rules! exit_if_file {
     (
         exists $file:expr => $force_write:expr => $json_printer:expr => $($x:expr),*
     ) => {{
-        use file_utils;
+        use crate::file_utils;
         if file_utils::check_if_file_exists($file)
             && !$force_write
         {
@@ -46,7 +46,7 @@ macro_rules! exit_if_file {
     (
         not_exists $file:expr => $json_printer:expr => $($x:expr),*
     ) => {{
-        use file_utils;
+        use crate::file_utils;
         if !file_utils::check_if_file_exists($file) {
             exit_with_msg!(usr $json_printer => $($x),*);
         }
@@ -57,8 +57,8 @@ macro_rules! get_pr_verbosity_level {
     (
         $matches:expr, $json_enabled:expr
     ) => {{
-        use progress_report;
-        use progress_report::PRVerbosityLevel;
+        use crate::progress_report;
+        use crate::progress_report::PRVerbosityLevel;
         match $matches.value_of("pr_verbosity_level") {
             None    => if get_json_enabled!($matches) { PRVerbosityLevel::L0 } else { PRVerbosityLevel::L2 },
             Some(x) => match progress_report::string_to_verbosity_level(x) {
@@ -90,7 +90,7 @@ macro_rules! get_to_pos {
         $matches:expr, $json_enabled:expr
     ) => {{
         use std::str::FromStr;
-        use misc_utils::RangeEnd;
+        use crate::misc_utils::RangeEnd;
 
         match ($matches.value_of("to_pos_inc"), $matches.value_of("to_pos_exc")) {
             (None,    None   ) => None,
@@ -131,7 +131,7 @@ macro_rules! get_ref_to_pos {
         $matches:expr, $json_enabled:expr
     ) => {{
         use std::str::FromStr;
-        use misc_utils::RangeEnd;
+        use crate::misc_utils::RangeEnd;
 
         match ($matches.value_of("ref_to_pos_inc"), $matches.value_of("ref_to_pos_exc")) {
             (None,    None   ) => None,
@@ -164,7 +164,7 @@ macro_rules! get_in_file {
     (
         accept_stdin $matches:expr, $json_enabled:expr
     ) => {{
-        use file_utils;
+        use crate::file_utils;
         let in_file  = $matches.value_of("in_file").unwrap();
         if !file_utils::check_if_file_is_stdin(in_file) {
             exit_if_file!(not_exists in_file
@@ -179,7 +179,7 @@ macro_rules! get_version {
     (
         $matches:expr, $json_enabled:expr
     ) => {{
-        use sbx_specs::string_to_ver;
+        use crate::sbx_specs::string_to_ver;
         match $matches.value_of("sbx_version") {
             None    => Version::V1,
             Some(x) => match string_to_ver(&x) {
@@ -196,7 +196,7 @@ macro_rules! get_data_shards {
     (
         $matches:expr, $version:expr, $json_enabled:expr
     ) => {{
-        use sbx_specs::ver_to_usize;
+        use crate::sbx_specs::ver_to_usize;
 
         let ver_usize = ver_to_usize($version);
 
@@ -220,7 +220,7 @@ macro_rules! get_parity_shards {
     (
         $matches:expr, $version:expr, $json_enabled:expr
     ) => {{
-        use sbx_specs::ver_to_usize;
+        use crate::sbx_specs::ver_to_usize;
 
         let ver_usize = ver_to_usize($version);
 
@@ -324,9 +324,9 @@ macro_rules! parse_uid {
     (
         $buf:expr, $uid:expr, $json_printer:expr
     ) => {{
-        use misc_utils::HexError;
-        use misc_utils;
-        use sbx_specs::SBX_FILE_UID_LEN;
+        use crate::misc_utils::HexError;
+        use crate::misc_utils;
+        use crate::sbx_specs::SBX_FILE_UID_LEN;
 
         match misc_utils::hex_string_to_bytes($uid) {
             Ok(x) => {
@@ -368,8 +368,8 @@ macro_rules! get_ref_block_choice {
     (
         $matches:expr
     ) => {{
-        use block_utils::RefBlockChoice::*;
-        use sbx_block::BlockType;
+        use crate::block_utils::RefBlockChoice::*;
+        use crate::sbx_block::BlockType;
 
         if $matches.is_present("no_meta") {
             Any
@@ -399,8 +399,8 @@ macro_rules! get_json_printer {
     (
         $matches:expr
     ) => {{
-        use json_printer::JSONPrinter;
-        use output_channel::OutputChannel;
+        use crate::json_printer::JSONPrinter;
+        use crate::output_channel::OutputChannel;
         use std::sync::Arc;
 
         Arc::new(JSONPrinter::new(
@@ -415,7 +415,7 @@ macro_rules! print_at_output_channel {
     (
         $channel:expr => $($x:expr),*
     ) => {{
-        use output_channel::OutputChannel;
+        use crate::output_channel::OutputChannel;
 
         match $channel {
             OutputChannel::Stdout => print!($($x),*),
@@ -429,7 +429,7 @@ macro_rules! println_at_output_channel {
     (
         $channel:expr => $($x:expr),*
     ) => {{
-        use output_channel::OutputChannel;
+        use crate::output_channel::OutputChannel;
 
         match $channel {
             OutputChannel::Stdout => println!($($x),*),

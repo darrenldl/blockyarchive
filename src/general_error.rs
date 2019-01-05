@@ -1,8 +1,8 @@
-use file_error;
-use log;
+use crate::file_error;
+use crate::log;
 use std::fmt;
-use stdin_error;
-use stdout_error;
+use crate::stdin_error;
+use crate::stdout_error;
 
 #[derive(Clone)]
 pub enum ErrorKind {

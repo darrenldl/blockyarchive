@@ -1,7 +1,7 @@
 #![allow(dead_code)]
-use file_reader::{FileReader, FileReaderParam};
-use file_writer::{FileWriter, FileWriterParam};
-use general_error::Error;
+use crate::file_reader::{FileReader, FileReaderParam};
+use crate::file_writer::{FileWriter, FileWriterParam};
+use crate::general_error::Error;
 use std::fmt;
 
 use std::time::Duration;
@@ -66,7 +66,7 @@ pub fn to_err(e: LogError) -> super::Error {
 pub trait Log {
     fn serialize(&self) -> String;
 
-    fn deserialize(&mut self, &[u8]) -> Result<(), ()>;
+    fn deserialize(&mut self, _: &[u8]) -> Result<(), ()>;
 
     fn read_from_file(&mut self, log_file: &str) -> Result<(), Error> {
         let mut reader = FileReader::new(

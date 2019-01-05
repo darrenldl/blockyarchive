@@ -1,35 +1,35 @@
-use file_utils;
+use crate::file_utils;
 use std::fmt;
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
 
-use json_printer::{BracketType, JSONPrinter};
+use crate::json_printer::{BracketType, JSONPrinter};
 
-use cli_utils::setup_ctrlc_handler;
-use progress_report::*;
+use crate::cli_utils::setup_ctrlc_handler;
+use crate::progress_report::*;
 
-use file_reader::{FileReader, FileReaderParam};
+use crate::file_reader::{FileReader, FileReaderParam};
 
-use reader::ReadResult;
+use crate::reader::ReadResult;
 
-use general_error::Error;
-use sbx_specs::Version;
+use crate::general_error::Error;
+use crate::sbx_specs::Version;
 
-use sbx_block;
-use sbx_block::Block;
-use sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-use sbx_specs::{ver_to_block_size, ver_to_usize, ver_uses_rs, SBX_LAST_SEQ_NUM};
+use crate::sbx_block;
+use crate::sbx_block::Block;
+use crate::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
+use crate::sbx_specs::{ver_to_block_size, ver_to_usize, ver_uses_rs, SBX_LAST_SEQ_NUM};
 
-use cli_utils::report_ref_block_info;
+use crate::cli_utils::report_ref_block_info;
 
-use block_utils;
-use time_utils;
+use crate::block_utils;
+use crate::time_utils;
 
-use rs_codec::RSCodecState;
-use rs_codec::RSRepairer;
+use crate::rs_codec::RSCodecState;
+use crate::rs_codec::RSRepairer;
 
-use block_utils::RefBlockChoice;
-use sbx_block::BlockType;
+use crate::block_utils::RefBlockChoice;
+use crate::sbx_block::BlockType;
 
 #[derive(Clone, Debug)]
 pub struct Stats {
@@ -261,7 +261,7 @@ pub fn repair_file(param: &Param) -> Result<Option<Stats>, Error> {
     ));
 
     let total_block_count = {
-        use file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps;
+        use crate::file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps;
         match ref_block.get_FSZ().unwrap() {
             Some(x) => calc_total_block_count_exc_burst_gaps(version, None, data_par_burst, x),
             None => {

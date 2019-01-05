@@ -1,8 +1,8 @@
 use std;
 
 use super::Error;
-use multihash;
-use sbx_specs::{ver_to_data_size, Version};
+use crate::multihash;
+use crate::sbx_specs::{ver_to_data_size, Version};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Metadata {

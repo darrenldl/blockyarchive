@@ -1,10 +1,10 @@
 #![allow(dead_code)]
-use file_writer::FileWriter;
-use general_error::Error;
+use crate::file_writer::FileWriter;
+use crate::general_error::Error;
 use std::fs::Metadata;
 use std::io::SeekFrom;
 use std::io::Write;
-use stdout_error::{to_err, StdoutError};
+use crate::stdout_error::{to_err, StdoutError};
 
 pub enum WriterType {
     File(FileWriter),

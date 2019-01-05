@@ -1,13 +1,13 @@
 #![allow(dead_code)]
-use general_error::Error;
-use sbx_specs::{ver_to_block_size, ver_to_data_size, ver_uses_rs, Version};
+use crate::general_error::Error;
+use crate::sbx_specs::{ver_to_block_size, ver_to_data_size, ver_uses_rs, Version};
 use std::fs;
 
-use file_reader::{FileReader, FileReaderParam};
+use crate::file_reader::{FileReader, FileReaderParam};
 
 use std::path::Path;
 
-use sbx_block;
+use crate::sbx_block;
 
 pub fn get_file_metadata(file: &str) -> Result<fs::Metadata, Error> {
     let reader = FileReader::new(

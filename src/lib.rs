@@ -58,8 +58,8 @@ mod stdin_error;
 mod stdout_error;
 
 mod general_error;
-use general_error::Error;
-use general_error::ErrorKind;
+use crate::general_error::Error;
+use crate::general_error::ErrorKind;
 
 #[macro_use]
 mod json_macros;

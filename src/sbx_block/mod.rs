@@ -14,12 +14,12 @@ pub use self::metadata::MetadataID;
 use smallvec::SmallVec;
 
 use self::crc::*;
-use sbx_specs::{
+use crate::sbx_specs::{
     ver_to_block_size, ver_to_data_size, ver_uses_rs, Version, SBX_FILE_UID_LEN,
     SBX_FIRST_DATA_SEQ_NUM, SBX_HEADER_SIZE,
 };
 
-use multihash;
+use crate::multihash;
 
 macro_rules! make_meta_getter {
     (

@@ -161,7 +161,7 @@ macro_rules! return_if_not_ver_uses_rs {
     (
         $version:expr, $json_printer:expr
     ) => {{
-        use sbx_specs::*;
+        use crate::sbx_specs::*;
         if !ver_uses_rs($version) {
             print_if!(not_json => $json_printer => "Version {} does not use Reed-Solomon erasure code, exiting now", ver_to_usize($version););
             return Ok(None);

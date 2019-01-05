@@ -1,10 +1,10 @@
-use repair_core;
-use repair_core::Param;
+use crate::repair_core;
+use crate::repair_core::Param;
 
 use clap::*;
-use cli_utils::*;
+use crate::cli_utils::*;
 
-use json_printer::BracketType;
+use crate::json_printer::BracketType;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("repair")
