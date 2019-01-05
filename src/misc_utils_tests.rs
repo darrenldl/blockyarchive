@@ -136,7 +136,7 @@ quickcheck! {
                                                           to_byte,
                                                           force_misalign,
                                                           bytes_so_far,
-                                                          last_possible_pos,
+                                                          PositionOrLength::Pos(last_possible_pos),
                                                           None);
 
         let from_byte = match from_byte   {
