@@ -1,7 +1,7 @@
 #![cfg(test)]
 
-use file_utils::*;
-use sbx_specs::Version;
+use crate::file_utils::*;
+use crate::sbx_specs::Version;
 
 #[test]
 fn test_calc_meta_block_count_exc_burst_gaps_rs_disabled() {
@@ -31,9 +31,9 @@ quickcheck! {
 }
 
 mod from_orig_file_size {
-    use file_utils::from_orig_file_size::*;
-    use file_utils::*;
-    use sbx_specs::*;
+    use crate::file_utils::from_orig_file_size::*;
+    use crate::file_utils::*;
+    use crate::sbx_specs::*;
 
     quickcheck! {
         fn qc_calc_data_only_and_parity_block_count_exc_burst_gaps_rs_disabled(size : u64) -> bool {

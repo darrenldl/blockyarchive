@@ -132,12 +132,12 @@ quickcheck! {
         };
 
         let RequiredLenAndSeekTo { required_len, seek_to } =
-            calc_required_len_and_seek_to_from_byte_range_inc(from_byte,
-                                                              to_byte,
-                                                              force_misalign,
-                                                              bytes_so_far,
-                                                              last_possible_pos,
-                                                              None);
+            calc_required_len_and_seek_to_from_byte_range(from_byte,
+                                                          to_byte,
+                                                          force_misalign,
+                                                          bytes_so_far,
+                                                          last_possible_pos,
+                                                          None);
 
         let from_byte = match from_byte   {
             None => 0,
