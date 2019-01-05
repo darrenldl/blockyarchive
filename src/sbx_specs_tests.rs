@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use sbx_specs::*;
+use crate::sbx_specs::*;
 
 #[test]
 fn test_string_to_ver() {

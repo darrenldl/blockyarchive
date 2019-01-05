@@ -5,7 +5,7 @@ use super::metadata::Metadata;
 use super::metadata::MetadataID;
 use super::metadata::UncheckedMetadata;
 use super::metadata::*;
-use multihash;
+use crate::multihash;
 
 #[test]
 fn test_to_bytes_simple_cases() {

@@ -1,5 +1,5 @@
 #![cfg(test)]
-use integer_utils::IntegerUtils;
+use crate::integer_utils::IntegerUtils;
 
 #[test]
 fn test_round_down_to_multiple_simple_cases() {

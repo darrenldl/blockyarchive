@@ -1,11 +1,11 @@
 #![cfg(test)]
 
-use integer_utils::IntegerUtils;
-use misc_utils::*;
+use crate::integer_utils::IntegerUtils;
+use crate::misc_utils::*;
 
 mod hex_tests {
     use super::*;
-    use rand_utils;
+    use crate::rand_utils;
 
     #[test]
     fn hex_to_bytes_test_cases() {
