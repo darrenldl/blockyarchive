@@ -140,8 +140,8 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
 
         let (ref_block_pos, ref_block) = match block_utils::get_ref_block(
             &param.in_file,
-            None,
-            None,
+            param.from_pos,
+            param.to_pos,
             param.force_misalign,
             RefBlockChoice::MustBe(BlockType::Meta),
             param.pr_verbosity_level,
