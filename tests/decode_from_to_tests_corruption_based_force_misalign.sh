@@ -6,6 +6,8 @@ corrupt() {
   dd if=/dev/zero of=$2 bs=1 count=1 seek=$1 conv=notrunc &>/dev/null
 }
 
+offset=$[1 + RANDOM % 100]
+
 echo -n "Encoding"
 output=$(./../blkar encode --json -f dummy --uid DEADBEEF0001 --sbx-version 17 --rs-data 10 --rs-parity 2 --burst 10)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
@@ -19,10 +21,16 @@ else
     exit_code=1
 fi
 
+mv dummy.sbx dummy.sbx.tmp
+touch dummy.sbx
+truncate -s $offset dummy.sbx
+cat dummy.sbx.tmp >> dummy.sbx
+rm dummy.sbx.tmp
+
 echo "Decoding"
 
 echo "Collecting base statistics"
-output=$(./../blkar decode --json -f dummy.sbx)
+output=$(./../blkar decode --json -f --from $offset --force-misalign dummy.sbx)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -33,7 +41,7 @@ okay_data=$(echo $output | jq -r ".stats.numberOfBlocksDecodedData")
 failed_blocks=$(echo $output | jq -r ".stats.numberOfBlocksFailedToDecode")
 
 echo -n "Checking that blkar only decodes the first block"
-output=$(./../blkar decode --json -f dummy.sbx --from 0 --to-inc 511)
+output=$(./../blkar decode --json -f dummy.sbx --from $offset --to-inc $[offset + 511] --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -63,9 +71,9 @@ else
   exit_code=1
 fi
 
-corrupt 0 dummy.sbx
+corrupt $[offset + 0] dummy.sbx
 
-output=$(./../blkar decode --json -f dummy.sbx --from 0 --to-inc 511)
+output=$(./../blkar decode --json -f dummy.sbx --from $offset --to-inc $[offset + 511] --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -96,7 +104,7 @@ else
 fi
 
 echo -n "Checking that blkar only decodes the second block"
-output=$(./../blkar decode --json -f dummy.sbx --from 512 --to-inc 512)
+output=$(./../blkar decode --json -f dummy.sbx --from $[offset + 512] --to-inc $[offset + 512] --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -126,9 +134,9 @@ else
   exit_code=1
 fi
 
-corrupt 512 dummy.sbx
+corrupt $[offset + 512] dummy.sbx
 
-output=$(./../blkar decode --json -f dummy.sbx --from 512 --to-inc 512)
+output=$(./../blkar decode --json -f dummy.sbx --from $[offset + 512] --to-inc $[offset + 512] --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -159,7 +167,7 @@ else
 fi
 
 echo -n "Checking that blkar decodes both blocks"
-output=$(./../blkar decode --json -f dummy.sbx --from 0 --to-exc 1024)
+output=$(./../blkar decode --json -f dummy.sbx --from $offset --to-exc $[offset + 1024] --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -190,7 +198,7 @@ else
 fi
 
 echo -n "Checking that blkar decodes all blocks"
-output=$(./../blkar decode --json -f dummy.sbx)
+output=$(./../blkar decode --json -f dummy.sbx --from $offset --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
