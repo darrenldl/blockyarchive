@@ -18,7 +18,7 @@ use crate::sbx_specs::Version;
 use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-use crate::sbx_specs::{ver_to_block_size, ver_to_usize, ver_uses_rs, SBX_LAST_SEQ_NUM};
+use crate::sbx_specs::{ver_to_block_size, ver_to_usize, ver_uses_rs};
 
 use crate::cli_utils::report_ref_block_info;
 
