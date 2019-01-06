@@ -84,6 +84,7 @@ tests=(
   "sort_from_to_tests"
   "sort_from_to_tests_rounding"
   "sort_from_to_tests_force_misalign"
+  "check_ref_block_from_to_tests"
 )
 
 test_count=${#tests[@]}
