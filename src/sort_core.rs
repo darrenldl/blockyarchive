@@ -265,7 +265,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
     } = misc_utils::calc_required_len_and_seek_to_from_byte_range(
         param.from_pos,
         param.to_pos,
-        false,
+        param.force_misalign,
         0,
         PositionOrLength::Len(file_size),
         Some(ver_to_block_size(version) as u64),
