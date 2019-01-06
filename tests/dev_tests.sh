@@ -43,7 +43,6 @@ tests=(
   "rescue_pick_uid_tests"
   "rescue_pick_uid_tests_encode_stdin"
   "rescue_pick_uid_tests_decode_stdout"
-  "show_from_to_tests"
   "show_pick_uid_tests"
   "out_file_logic_tests"
   "corruption_tests"
@@ -78,6 +77,9 @@ tests=(
   "decode_from_to_tests_decode_stdout"
   "decode_from_to_tests_decode_stdout_rounding"
   "decode_from_to_tests_decode_stdout_force_misalign"
+  "show_from_to_tests"
+  "show_from_to_tests_rounding"
+  "show_from_to_tests_force_misalign"
 )
 
 test_count=${#tests[@]}
