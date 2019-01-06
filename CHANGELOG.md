@@ -47,6 +47,9 @@
   - Sometimes off by one error occured
 - Ran `rustfmt` for code formatting
 - Ran `cargo fix --edition` to update to Rust 2018 edition
+- Fixed potential integer overflow issues in decode and repair mode
+  - Previously, when output is stdout, block index and seq num counter in decode mode may be incremented even if already at max
+  - Previously, seq num counter in repair mode may be incremented even if already at max
 
 ## 2.2.0
 
