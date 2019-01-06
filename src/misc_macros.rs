@@ -11,10 +11,27 @@ macro_rules! unwrap_or {
 
 macro_rules! get_ref_block {
     (
+        $param:expr, $json_printer:expr, $stop_flag:expr
+    ) => {{
+        get_ref_block!($param, $json_printer, $param.ref_block_choice, $stop_flag)
+    }};
+    (
         $param:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
     ) => {{
+        use crate::sbx_specs::SBX_SCAN_BLOCK_SIZE;
+
+        let from_pos = match $param.ref_block_from_pos {
+            Some(x) => Some(x),
+            None => {
+                match $param.from_pos {
+                    Some(x) => Some(x % SBX_SCAN_BLOCK_SIZE as u64),
+                    None => None
+                }
+            },
+        };
+
         get_ref_block!($param,
-                       $param.ref_block_from_pos,
+                       from_pos,
                        $param.ref_block_to_pos,
                        $json_printer,
                        $ref_block_choice,
@@ -85,11 +102,6 @@ macro_rules! get_ref_block {
 
         (ref_block_pos, ref_block)
     }};
-    (
-        $param:expr, $json_printer:expr, $stop_flag:expr
-    ) => {{
-        get_ref_block!($param, $json_printer, $param.ref_block_choice, $stop_flag)
-    }}
 }
 
 macro_rules! print_block {
