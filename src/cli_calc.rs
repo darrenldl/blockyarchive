@@ -6,8 +6,8 @@ use crate::file_utils;
 
 use crate::json_printer::BracketType;
 
-use clap::*;
 use crate::cli_utils::*;
+use clap::*;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("calc")
         .about("Calculate and display detailed information given an encoding configuration")

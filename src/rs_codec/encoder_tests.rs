@@ -1,8 +1,8 @@
 #![cfg(test)]
 use super::encoder::*;
-use reed_solomon_erasure::ReedSolomon;
 use crate::sbx_block;
 use crate::sbx_specs::{Version, SBX_LARGEST_BLOCK_SIZE};
+use reed_solomon_erasure::ReedSolomon;
 
 use crate::rand_utils::fill_random_bytes;
 

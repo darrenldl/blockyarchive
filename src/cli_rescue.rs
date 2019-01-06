@@ -7,8 +7,8 @@ use crate::sbx_block::BlockType;
 
 use crate::file_utils;
 
-use clap::*;
 use crate::cli_utils::*;
+use clap::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("rescue")

@@ -3,8 +3,8 @@ use crate::decode_core::Param;
 
 use crate::json_printer::BracketType;
 
-use clap::*;
 use crate::cli_utils::*;
+use clap::*;
 
 use crate::file_utils;
 use crate::output_channel::OutputChannel;

@@ -15,8 +15,8 @@ use crate::misc_utils;
 use crate::rand_utils;
 use crate::time_utils;
 
-use clap::*;
 use crate::cli_utils::*;
+use clap::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("encode")

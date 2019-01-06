@@ -1,8 +1,8 @@
 use crate::check_core;
 use crate::check_core::Param;
 
-use clap::*;
 use crate::cli_utils::*;
+use clap::*;
 
 use crate::json_printer::BracketType;
 

@@ -4,8 +4,8 @@ use crate::file_utils;
 use crate::misc_utils;
 use crate::sort_core;
 
-use clap::*;
 use crate::cli_utils::*;
+use clap::*;
 
 use crate::json_printer::BracketType;
 

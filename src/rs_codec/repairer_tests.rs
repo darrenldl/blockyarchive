@@ -1,11 +1,11 @@
 #![cfg(test)]
 use super::repairer::*;
 use super::*;
-use reed_solomon_erasure::ReedSolomon;
 use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_block::BlockType;
 use crate::sbx_specs::{Version, SBX_LARGEST_BLOCK_SIZE};
+use reed_solomon_erasure::ReedSolomon;
 
 use crate::json_printer::JSONPrinter;
 use std::sync::Arc;

@@ -1,7 +1,7 @@
 #![allow(dead_code)]
+use crate::sbx_block;
 use clap::*;
 use ctrlc;
-use crate::sbx_block;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
