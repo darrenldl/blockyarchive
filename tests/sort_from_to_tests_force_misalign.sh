@@ -210,7 +210,7 @@ else
 fi
 
 echo -n "Checking output blocks"
-dd if=/dev/zero     of=data_chunk_orig bs=1 count=$[1024 + 512] skip=$offfset 2>/dev/null
+dd if=/dev/zero     of=data_chunk_orig bs=1 count=$[1024 + 512] skip=0 2>/dev/null
 dd if=dummy.sbx     of=data_chunk_orig bs=1 count=512        skip=$[offset + 1024] seek=1024 conv=notrunc 2>/dev/null
 cmp data_chunk data_chunk_orig
 if [[ $? == 0 ]]; then
@@ -276,7 +276,7 @@ else
 fi
 
 echo -n "Checking output blocks"
-dd if=/dev/zero of=data_chunk_orig bs=1 count=$[(11 + 123) * 512] skip=$offset 2>/dev/null
+dd if=/dev/zero of=data_chunk_orig bs=1 count=$[(11 + 123) * 512] skip=0 2>/dev/null
 dd if=dummy.sbx of=data_chunk_orig bs=1 count=$[512 * 123]        skip=$[offset + 12 * 512] seek=$[12 * 512] conv=notrunc 2>/dev/null
 cmp data_chunk data_chunk_orig
 if [[ $? == 0 ]]; then
@@ -542,7 +542,7 @@ else
 fi
 
 echo -n "Checking output blocks"
-dd if=/dev/zero of=data_chunk_orig bs=1 count=$[5*512] skip=$offset 2>/dev/null
+dd if=/dev/zero of=data_chunk_orig bs=1 count=$[5*512] skip=0 2>/dev/null
 dd if=dummy.sbx of=data_chunk_orig bs=1 count=512        skip=$[offset + 4*512] seek=$[4*512] conv=notrunc 2>/dev/null
 cmp data_chunk data_chunk_orig
 if [[ $? == 0 ]]; then
@@ -626,7 +626,7 @@ else
 fi
 
 echo -n "Checking output blocks"
-dd if=/dev/zero of=data_chunk_orig bs=1 count=$[220 * 512] skip=$offset 2>/dev/null
+dd if=/dev/zero of=data_chunk_orig bs=1 count=$[220 * 512] skip=0 2>/dev/null
 dd if=dummy.sbx of=data_chunk_orig bs=1 count=$[147 * 512]        skip=$[offset + 73 * 512] seek=$[73 * 512] conv=notrunc 2>/dev/null
 cmp data_chunk data_chunk_orig
 if [[ $? == 0 ]]; then
