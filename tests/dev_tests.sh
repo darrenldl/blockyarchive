@@ -38,8 +38,6 @@ tests=(
   "rescue_tests"
   "rescue_tests_encode_stdin"
   "rescue_tests_decode_stdout"
-  "rescue_from_to_tests"
-  "rescue_from_to_tests_encode_stdin"
   "rescue_pick_uid_tests"
   "rescue_pick_uid_tests_encode_stdin"
   "rescue_pick_uid_tests_decode_stdout"
@@ -80,6 +78,10 @@ tests=(
   "show_from_to_tests"
   "show_from_to_tests_rounding"
   "show_from_to_tests_force_misalign"
+  "rescue_from_to_tests"
+  "rescue_from_to_tests_encode_stdin"
+  "rescue_from_to_tests_rounding"
+  "rescue_from_to_tests_force_misalign"
 )
 
 test_count=${#tests[@]}
