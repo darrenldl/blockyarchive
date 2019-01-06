@@ -274,6 +274,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
     // seek to calculated position
     reader.seek(SeekFrom::Start(seek_to))?;
 
+    let read_offset = seek_to % ver_to_block_size(version) as u64;
+
     reporter.start();
 
     let mut bytes_processed: u64 = 0;
@@ -343,7 +345,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                 writer.write(sbx_block::slice_buf(version, &buffer))?;
             }
 
-            if read_pos + seek_to == write_pos {
+            if read_pos - read_offset == write_pos {
                 if block.is_parity_w_data_par_burst(data_par_burst) {
                     stats.parity_blocks_same_order += 1;
                 } else {
