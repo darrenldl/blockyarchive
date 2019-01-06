@@ -296,6 +296,12 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   exit_code=1
 fi
 
+mv dummy.sbx dummy.sbx.tmp
+touch dummy.sbx
+truncate -s $offset dummy.sbx
+cat dummy.sbx.tmp >> dummy.sbx
+rm dummy.sbx.tmp
+
 echo -n "Sorting"
 output=$(./../blkar sort --json -f dummy.sbx data_chunk --from $offset --to-exc 512 --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
