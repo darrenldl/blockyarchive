@@ -31,7 +31,6 @@ echo "Checking dummy disk"
 
 echo "Collecting base statistics"
 output=$(./../blkar check --json --from $offset --force-misalign dummy.sbx)
-echo $output | jq
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -41,7 +40,7 @@ okay_meta=$(echo $output | jq -r ".stats.numberOfBlocksPassedCheckMetadata")
 okay_data=$(echo $output | jq -r ".stats.numberOfBlocksPassedCheckData")
 
 echo -n "Checking that blkar only checks the first block"
-output=$(./../blkar check --json dummy.sbx --from 0 --to-inc 511)
+output=$(./../blkar check --json dummy.sbx --from $offset --to-inc $[offset + 511] --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -71,9 +70,9 @@ else
   exit_code=1
 fi
 
-corrupt 0 dummy.sbx
+corrupt $[offset + 0] dummy.sbx
 
-output=$(./../blkar check --json dummy.sbx --from 0 --to-inc 511 --force-misalign)
+output=$(./../blkar check --json dummy.sbx --from $offset --to-inc $[offset + 511] --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -104,7 +103,7 @@ else
 fi
 
 echo -n "Checking that blkar only checks the second block"
-output=$(./../blkar check --json dummy.sbx --from 512 --to-inc 512 --force-misalign)
+output=$(./../blkar check --json dummy.sbx --from $[offset + 512] --to-inc $[offset + 512] --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -134,9 +133,9 @@ else
   exit_code=1
 fi
 
-corrupt 512 dummy.sbx
+corrupt $[offset + 512] dummy.sbx
 
-output=$(./../blkar check --json dummy.sbx --from 512 --to-inc 512 --force-misalign)
+output=$(./../blkar check --json dummy.sbx --from $[offset + 512] --to-inc $[offset + 512] --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -167,7 +166,7 @@ else
 fi
 
 echo -n "Checking that blkar checks both blocks"
-output=$(./../blkar check --json dummy.sbx --from 0 --to-exc 1024)
+output=$(./../blkar check --json dummy.sbx --from $[offset + 0] --to-exc $[offset + 1024] --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -198,7 +197,7 @@ else
 fi
 
 echo -n "Checking that blkar checks all blocks"
-output=$(./../blkar check --json dummy.sbx)
+output=$(./../blkar check --json dummy.sbx --from $offset --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
