@@ -6,6 +6,8 @@ corrupt() {
   dd if=/dev/zero of=$2 bs=1 count=1 seek=$1 conv=notrunc &>/dev/null
 }
 
+offset=$[1 + RANDOM % 100]
+
 echo "Testing version 1"
 echo "Encoding"
 output=$(./../blkar encode --json -f dummy)
@@ -14,8 +16,14 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   exit_code=1
 fi
 
+mv dummy.sbx dummy.sbx.tmp
+touch dummy.sbx
+truncate -s $offset dummy.sbx
+cat dummy.sbx.tmp >> dummy.sbx
+rm dummy.sbx.tmp
+
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - --from 0 --to-exc 512 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.sbx - --from $offset --to-exc $[offset + 512] --force-misalign 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -62,7 +70,7 @@ else
 fi
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - --from 0 --to-exc 1024 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.sbx - --from $offset --to-exc $[offset + 1024] --force-misalign 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -109,7 +117,7 @@ else
 fi
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - --from 1024 --to-inc 1024 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.sbx - --from $[offset + 1024] --to-inc $[offset + 1024] --force-misalign 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -156,7 +164,7 @@ else
 fi
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - --from 6144 --to-exc 69120 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.sbx - --from $[offset + 6144] --to-exc $[offset + 69120] --force-misalign 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -212,8 +220,14 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   exit_code=1
 fi
 
+mv dummy.sbx dummy.sbx.tmp
+touch dummy.sbx
+truncate -s $offset dummy.sbx
+cat dummy.sbx.tmp >> dummy.sbx
+rm dummy.sbx.tmp
+
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - --from 0 --to-exc 512 --pv 0 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.sbx - --from $offset --to-exc $[offset + 512] --force-misalign 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -266,7 +280,7 @@ else
 fi
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - --from 0 --to-exc 2048 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.sbx - --from $offset --to-exc $[offset + 2048] --force-misalign 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -319,7 +333,7 @@ else
 fi
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - --from 2048 --to-inc 2048 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.sbx - --from $[offset + 2048] --to-inc $[offset + 2048] --force-misalign 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -372,7 +386,7 @@ else
 fi
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - --from 37376 --to-exc 112640 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.sbx - --from $[offset + 37376] --to-exc $[offset + 112640] --force-misalign 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
