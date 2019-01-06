@@ -32,10 +32,13 @@
   - check
   - decode
   - sort
+
 - Added `--force-misalign` to the following modes
+
   - check
   - decode
   - sort
+
 - Updated reference block scanning code to respect `--force-misalign`
 
 - Updated decode mode stats output
@@ -45,9 +48,13 @@
 - Fixed `misc_utils::calc_required_len_and_seek_to_from_byte_range`
 
   - Sometimes off by one error occured
+
 - Ran `rustfmt` for code formatting
+
 - Ran `cargo fix --edition` to update to Rust 2018 edition
+
 - Fixed potential integer overflow issues in decode and repair mode
+
   - Previously, when output is stdout, block index and seq num counter in decode mode may be incremented even if already at max
   - Previously, seq num counter in repair mode may be incremented even if already at max
 
