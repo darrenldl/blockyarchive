@@ -343,7 +343,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                 writer.write(sbx_block::slice_buf(version, &buffer))?;
             }
 
-            if read_pos == write_pos {
+            if read_pos + seek_to == write_pos {
                 if block.is_parity_w_data_par_burst(data_par_burst) {
                     stats.parity_blocks_same_order += 1;
                 } else {
