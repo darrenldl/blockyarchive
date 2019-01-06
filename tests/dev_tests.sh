@@ -62,7 +62,6 @@ tests=(
   "repair_truncated_tests_decode_stdout"
   "decode_blanks"
   "decode_blanks_decode_stdout"
-  "sort_from_to_tests"
   "check_from_to_tests"
   "check_from_to_rounding"
   "check_from_to_force_misalign"
@@ -82,6 +81,9 @@ tests=(
   "rescue_from_to_tests_encode_stdin"
   "rescue_from_to_tests_rounding"
   "rescue_from_to_tests_force_misalign"
+  "sort_from_to_tests"
+  "sort_from_to_tests_rounding"
+  "sort_from_to_tests_force_misalign"
 )
 
 test_count=${#tests[@]}
