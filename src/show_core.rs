@@ -161,6 +161,8 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
         if ver_uses_rs(ref_block.get_version()) {
             match block_utils::guess_burst_err_resistance_level(
                 &param.in_file,
+                param.from_pos,
+                param.force_misalign,
                 ref_block_pos,
                 &ref_block,
             ) {

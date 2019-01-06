@@ -198,7 +198,17 @@ macro_rules! return_if_ref_not_meta {
 
 macro_rules! get_burst_or_guess {
     (
+        no_offset => $param:expr, $ref_block_pos:expr, $ref_block:expr
+    ) => {{
+        get_burst_or_guess!($param, None, false, $ref_block_pos, $ref_block)
+    }};
+    (
         $param:expr, $ref_block_pos:expr, $ref_block:expr
+    ) => {{
+        get_burst_or_guess!($param, $param.from_pos, $param.force_misalign, $ref_block_pos, $ref_block)
+    }};
+    (
+        $param:expr, $from_pos:expr, $force_misalign:expr, $ref_block_pos:expr, $ref_block:expr
     ) => {{
         let burst = unwrap_or!($param.burst,
                                if ver_uses_rs($ref_block.get_version()) {
@@ -207,6 +217,8 @@ macro_rules! get_burst_or_guess {
                                                            "guess burst error resistance level");
 
                                    unwrap_or!(block_utils::guess_burst_err_resistance_level(&$param.in_file,
+                                                                                            $from_pos,
+                                                                                            $force_misalign,
                                                                                             $ref_block_pos,
                                                                                             &$ref_block)?,
                                               {

@@ -252,7 +252,7 @@ pub fn repair_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let block_size = ver_to_block_size(version);
 
-    let burst = get_burst_or_guess!(param, ref_block_pos, ref_block);
+    let burst = get_burst_or_guess!(no_offset => param, ref_block_pos, ref_block);
 
     let data_par_burst = Some((
         get_RSD_from_ref_block!(ref_block_pos, ref_block, "repair"),

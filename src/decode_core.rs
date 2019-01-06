@@ -590,6 +590,8 @@ pub fn decode(
                     Some(l) => Some((data, parity, l)),
                     None => match block_utils::guess_burst_err_resistance_level(
                         &param.in_file,
+                        param.from_pos,
+                        param.force_misalign,
                         ref_block_pos,
                         &ref_block,
                     ) {

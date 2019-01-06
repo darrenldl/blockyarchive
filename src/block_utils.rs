@@ -288,6 +288,8 @@ pub fn get_ref_block(
 
 pub fn guess_burst_err_resistance_level(
     in_file: &str,
+    from_pos: Option<u64>,
+    force_misalign: bool,
     ref_block_pos: u64,
     ref_block: &Block,
 ) -> Result<Option<usize>, Error> {
@@ -320,6 +322,14 @@ pub fn guess_burst_err_resistance_level(
         },
     )?;
 
+    let from_pos = from_pos.unwrap_or(0);
+
+    let read_offset = if force_misalign {
+        from_pos % SBX_SCAN_BLOCK_SIZE as u64
+    } else {
+        0
+    };
+
     const BLOCKS_TO_SAMPLE_BASE_NUM: usize = 1024;
 
     let blocks_to_sample = (1 + parity_shards) + SBX_MAX_BURST_ERR_RESISTANCE + 1;
@@ -333,6 +343,8 @@ pub fn guess_burst_err_resistance_level(
     let mut blocks_processed = 0;
 
     let pred = block_pred_same_ver_uid!(ref_block);
+
+    reader.seek(SeekFrom::Start(read_offset))?;
 
     // record first up to 1 + parity count + 1000 seq nums
     loop {

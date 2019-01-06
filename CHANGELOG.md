@@ -57,6 +57,7 @@
 
   - Previously, when output is stdout, block index and seq num counter in decode mode may be incremented even if already at max
   - Previously, seq num counter in repair mode may be incremented even if already at max
+- Updated burst error resistance level guessing code to respect --from and --force-misalign options
 
 ## 2.2.0
 
