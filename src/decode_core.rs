@@ -856,7 +856,7 @@ pub fn decode(
 
                     // go through data and parity blocks
                     let mut seq_num = 1;
-                    while seq_num <= SBX_LAST_SEQ_NUM {
+                    loop {
                         let mut stats = stats.lock().unwrap();
 
                         break_if_atomic_bool!(ctrlc_stop_flag);
@@ -932,7 +932,7 @@ pub fn decode(
                             break;
                         }
 
-                        seq_num += 1;
+                        incre_or_break_if_last!(seq_num => seq_num);
                     }
                 }
                 ReadPattern::Sequential(data_par_burst) => {
@@ -1032,7 +1032,7 @@ pub fn decode(
                             break;
                         }
 
-                        block_index += 1;
+                        incre_or_break_if_last!(block_index => block_index);
                     }
                 }
             }

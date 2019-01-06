@@ -422,3 +422,46 @@ macro_rules! shadow_to_avoid_use {
         let $var = ();
     };
 }
+
+macro_rules! break_if_last {
+    (
+        $cur:expr, $last:expr
+    ) => {{
+        if $cur == $last {
+            break;
+        }
+    }};
+    (
+        seq_num => $cur:expr
+    ) => {{
+        use crate::sbx_specs::SBX_LAST_SEQ_NUM;
+
+        break_if_last!($cur, SBX_LAST_SEQ_NUM);
+    }};
+    (
+        block_index => $cur:expr
+    ) => {{
+        break_if_last!($cur, std::u64::MAX);
+    }};
+}
+
+macro_rules! incre_or_break_if_last {
+    (
+        $cur:expr, $last:expr
+    ) => {{
+        break_if_last!($cur, $last);
+        $cur += 1;
+    }};
+    (
+        seq_num => $cur:expr
+    ) => {
+        break_if_last!(seq_num => $cur);
+        $cur += 1;
+    };
+    (
+        block_index => $cur:expr
+    ) => {
+        break_if_last!(block_index => $cur);
+        $cur += 1;
+    };
+}

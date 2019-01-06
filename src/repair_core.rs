@@ -372,7 +372,7 @@ pub fn repair_file(param: &Param) -> Result<Option<Stats>, Error> {
     json_printer.print_open_bracket(Some("data repairs"), BracketType::Square);
     // repair data blocks
     let mut seq_num = 1;
-    while seq_num <= SBX_LAST_SEQ_NUM {
+    loop {
         let mut stats = stats.lock().unwrap();
 
         break_if_atomic_bool!(ctrlc_stop_flag);
@@ -411,7 +411,7 @@ pub fn repair_file(param: &Param) -> Result<Option<Stats>, Error> {
             RSCodecState::NotReady => {}
         }
 
-        seq_num += 1;
+        incre_or_break_if_last!(seq_num => seq_num);
     }
     json_printer.print_close_bracket();
 
