@@ -21,9 +21,15 @@ else
     exit_code=1
 fi
 
+mv dummy.sbx dummy.sbx.tmp
+touch dummy.sbx
+truncate -s $offset dummy.sbx
+cat dummy.sbx.tmp >> dummy.sbx
+rm dummy.sbx.tmp
+
 echo -n "Checking dummy disk"
 
-output=$(./../blkar check --json dummy.sbx)
+output=$(./../blkar check --json --ref-from $offset --force-misalign dummy.sbx)
 if [[ $(echo $output | jq -r ".error") == "null" ]]; then
   echo -n " ==> Okay"
 else
@@ -31,9 +37,9 @@ else
   exit_code=1
 fi
 
-corrupt 0 dummy.sbx
+corrupt $offset dummy.sbx
 
-output=$(./../blkar check --json dummy.sbx --ref-to-inc 0)
+output=$(./../blkar check --json --ref-from $offset --ref-to-inc $offset --force-misalign dummy.sbx)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo -n " ==> Okay"
 else
@@ -41,7 +47,7 @@ else
   exit_code=1
 fi
 
-output=$(./../blkar check --json --ref-from 512 dummy.sbx)
+output=$(./../blkar check --json --ref-from $[offset + 512] --force-misalign dummy.sbx)
 if [[ $(echo $output | jq -r ".error") == "null" ]]; then
   echo " ==> Okay"
 else

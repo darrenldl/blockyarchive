@@ -23,7 +23,7 @@ fi
 
 echo -n "Checking dummy disk"
 
-output=$(./../blkar check --json dummy.sbx)
+output=$(./../blkar check --json --ref-from $offset dummy.sbx)
 if [[ $(echo $output | jq -r ".error") == "null" ]]; then
   echo -n " ==> Okay"
 else
@@ -33,7 +33,7 @@ fi
 
 corrupt 0 dummy.sbx
 
-output=$(./../blkar check --json dummy.sbx --ref-to-inc 0)
+output=$(./../blkar check --json --ref-from $offset --ref-to-inc $offset dummy.sbx)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo -n " ==> Okay"
 else
@@ -41,7 +41,7 @@ else
   exit_code=1
 fi
 
-output=$(./../blkar check --json --ref-from 512 dummy.sbx)
+output=$(./../blkar check --json --ref-from $[offset + 512] dummy.sbx)
 if [[ $(echo $output | jq -r ".error") == "null" ]]; then
   echo " ==> Okay"
 else
