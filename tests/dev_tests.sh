@@ -161,6 +161,8 @@ while (( $i < $test_count )); do
   done
 
   echo ""
+  echo "$[test_count - i] / $test_count tests remaining"
+  echo ""
 done
 
 # go through all exit codes
