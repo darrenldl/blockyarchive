@@ -27,9 +27,9 @@ truncate -s $offset dummy.sbx
 cat dummy.sbx.tmp >> dummy.sbx
 rm dummy.sbx.tmp
 
-echo -n "Decoding dummy disk"
+echo -n "Sorting dummy disk"
 
-output=$(./../blkar decode -f --json --ref-from $offset --force-misalign dummy.sbx)
+output=$(./../blkar sort -f --json --ref-from $offset --force-misalign dummy.sbx)
 if [[ $(echo $output | jq -r ".error") == "null" ]]; then
   echo -n " ==> Okay"
 else
@@ -39,7 +39,7 @@ fi
 
 corrupt $offset dummy.sbx
 
-output=$(./../blkar decode -f --json --ref-from $offset --ref-to-inc $offset --force-misalign dummy.sbx)
+output=$(./../blkar sort -f --json --ref-from $offset --ref-to-inc $offset --force-misalign dummy.sbx)
 if [[ $(echo $output | jq -r ".error") == "Error : Failed to find reference block" ]]; then
   echo -n " ==> Okay"
 else
@@ -47,7 +47,7 @@ else
   exit_code=1
 fi
 
-output=$(./../blkar decode -f --json --ref-from $[offset + 512] --force-misalign dummy.sbx)
+output=$(./../blkar sort -f --json --ref-from $[offset + 512] --force-misalign dummy.sbx)
 if [[ $(echo $output | jq -r ".error") == "null" ]]; then
   echo " ==> Okay"
 else

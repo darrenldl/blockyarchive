@@ -21,7 +21,7 @@ else
     exit_code=1
 fi
 
-echo -n "Checking dummy disk"
+echo -n "Decoding dummy disk"
 
 output=$(./../blkar decode -f --json --ref-from $offset dummy.sbx)
 if [[ $(echo $output | jq -r ".error") == "null" ]]; then

@@ -90,6 +90,9 @@ tests=(
   "decode_ref_from_to_tests"
   "decode_ref_from_to_tests_rounding"
   "decode_ref_from_to_tests_force_misalign"
+  "sort_ref_from_to_tests"
+  "sort_ref_from_to_tests_rounding"
+  "sort_ref_from_to_tests_force_misalign"
 )
 
 test_count=${#tests[@]}
