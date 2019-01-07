@@ -85,8 +85,11 @@ tests=(
   "sort_from_to_tests_rounding"
   "sort_from_to_tests_force_misalign"
   "check_ref_block_from_to_tests"
-  "check_ref_block_from_to_rounding"
-  "check_ref_block_from_to_force_misalign"
+  "check_ref_block_from_to_tests_rounding"
+  "check_ref_block_from_to_tests_force_misalign"
+  "decode_ref_block_from_to_tests"
+  "decode_ref_block_from_to_tests_rounding"
+  "decode_ref_block_from_to_tests_force_misalign"
 )
 
 test_count=${#tests[@]}
