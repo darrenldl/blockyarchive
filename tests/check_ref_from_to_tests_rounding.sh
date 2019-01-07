@@ -34,7 +34,7 @@ fi
 corrupt 0 dummy.sbx
 
 output=$(./../blkar check --json --ref-from $offset --ref-to-inc $offset dummy.sbx)
-if [[ $(echo $output | jq -r ".error") != "null" ]]; then
+if [[ $(echo $output | jq -r ".error") == "Error : Failed to find reference block" ]]; then
   echo -n " ==> Okay"
 else
   echo -n " ==> NOT okay"
