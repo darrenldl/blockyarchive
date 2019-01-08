@@ -282,6 +282,10 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let mut bytes_processed: u64 = 0;
 
+    let mut check_block = Block::dummy();
+
+    let mut check_buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
     loop {
         let mut stats = stats.lock().unwrap();
 
@@ -304,8 +308,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
         if block.is_meta() {
             if !meta_written {
-                let mut check_buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
-
                 let write_pos_s =
                     sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst);
 
@@ -342,9 +344,28 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                 data_par_burst,
             );
 
-            if let Some(ref mut writer) = writer {
-                writer.seek(SeekFrom::Start(write_pos))?;
-                writer.write(sbx_block::slice_buf(version, &buffer))?;
+            let do_write = match param.multi_pass {
+                None | Some(MultiPassType::OverwriteAll) => true,
+                Some(MultiPassType::SkipGood) => {
+                    // read block in original container
+                    reader.seek(SeekFrom::Start(write_pos))?;
+                    reader.read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
+
+                    // restore the position of reader
+                    reader.seek(SeekFrom::Start(read_pos))?;
+
+                    match check_block.sync_from_buffer(&check_buffer, Some(&pred)) {
+                        Ok(()) => check_block.get_seq_num() != block.get_seq_num(),
+                        Err(_) => true,
+                    }
+                }
+            };
+
+            if do_write {
+                if let Some(ref mut writer) = writer {
+                    writer.seek(SeekFrom::Start(write_pos))?;
+                    writer.write(sbx_block::slice_buf(version, &buffer))?;
+                }
             }
 
             if read_pos - read_offset == write_pos {
