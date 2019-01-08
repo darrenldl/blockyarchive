@@ -238,7 +238,7 @@ for ver in ${VERSIONS[*]}; do
     corrupt 15000 $container_name.1.2
 
     echo -n "Sorting container using 1st container"
-    output=$(./../blkar sort --json -f --burst $burst --multi-pass-no-skip $container_name.1.2 $container_name.1.1)
+    output=$(./../blkar sort --json -f --burst $burst --multi-pass $container_name.1.2 $container_name.1.1)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -251,7 +251,7 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     echo -n "Sorting container using 2nd container"
-    output=$(./../blkar sort --json -f --burst $burst --multi-pass-no-skip $container_name.2 $container_name.1.1)
+    output=$(./../blkar sort --json -f --burst $burst --multi-pass $container_name.2 $container_name.1.1)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
