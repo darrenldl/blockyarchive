@@ -27,7 +27,7 @@
   - encode
   - sort
 
-- Added `--ref-from` and `--ref-to` to the following modes
+- Added `--ref-from`, `--ref-to-inc` and `--ref-to-exc` to the following modes
 
   - check
   - decode
@@ -40,6 +40,8 @@
   - sort
 
 - Updated reference block scanning code to respect `--force-misalign`
+
+- Updated burst error resistance level guessing to respect `--force-misalign`
 
 - Updated decode mode stats output
 
