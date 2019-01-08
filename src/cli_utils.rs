@@ -60,11 +60,21 @@ pub fn force_arg<'a, 'b>() -> Arg<'a, 'b> {
 }
 
 pub fn multi_pass_arg<'a, 'b>() -> Arg<'a, 'b> {
-    Arg::with_name("multi_pass").long("multi-pass")
+    Arg::with_name("multi_pass").long("multi-pass").help(
+        "Disable truncation of OUT, and avoid writing if a good block
+already exists at the location. This allows writing to OUT multiple
+times to update it gradually.",
+    )
 }
 
 pub fn multi_pass_no_skip_arg<'a, 'b>() -> Arg<'a, 'b> {
-    Arg::with_name("multi_pass_no_skip").long("multi-pass-no-skip")
+    Arg::with_name("multi_pass_no_skip")
+        .long("multi-pass-no-skip")
+        .help(
+            "Disable truncation of OUT, write even if a good block exists at the
+location. This allows writing to OUT multiple times to update it
+gradually.",
+        )
 }
 
 pub fn only_pick_uid_arg<'a, 'b>() -> Arg<'a, 'b> {

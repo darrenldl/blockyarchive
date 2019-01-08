@@ -19,10 +19,8 @@ container is stored as OUT/INFILE.sorted (only the file part of INFILE is used).
 Ignored if --dry-run is supplied.",
         ))
         .arg(force_arg().help("Force overwrite even if OUTFILE exists"))
-        .arg(multi_pass_arg().help(
-            "Disable truncation of OUT. This allows writing to OUT multiple
-times to update it gradually.",
-        ))
+        .arg(multi_pass_arg())
+        .arg(multi_pass_no_skip_arg())
         .arg(pr_verbosity_level_arg())
         .arg(dry_run_arg().help("Only do sorting in memory, does not output the sorted container."))
         .arg(ref_from_byte_arg())

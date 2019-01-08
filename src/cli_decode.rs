@@ -24,10 +24,8 @@ if STOREDNAME is present (only the file part of STOREDNAME is used). If OUT is
 provided and is not a directory, then it is used directly.",
         ))
         .arg(force_arg().help("Force overwrite even if OUT exists"))
-        .arg(multi_pass_arg().help(
-            "Disable truncation of OUT. This allows writing to OUT multiple
-times to update it gradually.",
-        ))
+        .arg(multi_pass_arg())
+        .arg(multi_pass_no_skip_arg())
         .arg(no_meta_arg())
         .arg(pr_verbosity_level_arg())
         .arg(ref_from_byte_arg())
