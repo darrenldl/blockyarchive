@@ -30,6 +30,8 @@ use crate::sbx_specs::Version;
 
 use crate::integer_utils::IntegerUtils;
 
+use crate::misc_utils::MultiPassType;
+
 use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_specs::{
@@ -295,7 +297,7 @@ pub struct Param {
     ref_block_from_pos: Option<u64>,
     ref_block_to_pos: Option<RangeEnd<u64>>,
     force_write: bool,
-    multi_pass: bool,
+    multi_pass: Option<MultiPassType>,
     json_printer: Arc<JSONPrinter>,
     from_pos: Option<u64>,
     to_pos: Option<RangeEnd<u64>>,
@@ -313,7 +315,7 @@ impl Param {
         ref_block_from_pos: Option<u64>,
         ref_block_to_pos: Option<RangeEnd<u64>>,
         force_write: bool,
-        multi_pass: bool,
+        multi_pass: Option<MultiPassType>,
         json_printer: &Arc<JSONPrinter>,
         from_pos: Option<u64>,
         to_pos: Option<RangeEnd<u64>>,
@@ -631,7 +633,7 @@ pub fn decode(
             FileWriterParam {
                 read: false,
                 append: false,
-                truncate: !param.multi_pass,
+                truncate: param.multi_pass == None,
                 buffered: true,
             },
         )?)),
@@ -1199,7 +1201,7 @@ pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     // check if can write out
     if let Some(ref out_file_path) = out_file_path {
-        if !param.force_write && !param.multi_pass {
+        if !param.force_write && param.multi_pass == None {
             if file_utils::check_if_file_exists(out_file_path) {
                 return Err(Error::with_message(&format!(
                     "File \"{}\" already exists",

@@ -55,15 +55,16 @@ macro_rules! exit_if_file {
 
 macro_rules! get_pr_verbosity_level {
     (
-        $matches:expr, $json_enabled:expr
+        $matches:expr, $json_printer:expr
     ) => {{
         use crate::progress_report;
         use crate::progress_report::PRVerbosityLevel;
+
         match $matches.value_of("pr_verbosity_level") {
             None    => if get_json_enabled!($matches) { PRVerbosityLevel::L0 } else { PRVerbosityLevel::L2 },
             Some(x) => match progress_report::string_to_verbosity_level(x) {
                 Ok(x)  => x,
-                Err(_) => exit_with_msg!(usr $json_enabled => "Invalid progress report verbosity level")
+                Err(_) => exit_with_msg!(usr $json_printer => "Invalid progress report verbosity level")
             }
         }
     }}
@@ -436,4 +437,19 @@ macro_rules! println_at_output_channel {
             OutputChannel::Stderr => eprintln!($($x),*),
         }
     }}
+}
+
+macro_rules! get_multi_pass {
+    (
+        $matches:expr, $json_printer:expr
+    ) => {{
+        use crate::misc_utils::MultiPassType;
+
+        match ($matches.is_present("multi_pass"), $matches.is_present("multi_pass_no_skip")) {
+            (false, false) => None,
+            (true, false) => Some(MultiPassType::SkipGood),
+            (false, true) => Some(MultiPassType::OverwriteAll),
+            (true, true) => exit_with_msg!(usr $json_printer => "Cannot specify both --multi-pass and --multi-pass-no-skip"),
+        }
+    }};
 }

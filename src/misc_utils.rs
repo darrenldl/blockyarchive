@@ -24,6 +24,12 @@ pub enum HexError {
     InvalidLen,
 }
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum MultiPassType {
+    OverwriteAll,
+    SkipGood,
+}
+
 fn is_valid_hex_char(chr: u8) -> bool {
     (b'0' <= chr && chr <= b'9') || (b'A' <= chr && chr <= b'F') || (b'a' <= chr && chr <= b'f')
 }

@@ -60,13 +60,13 @@ pub fn sort<'a>(matches: &ArgMatches<'a>) -> i32 {
     };
 
     let force = matches.is_present("force");
-    let multi_pass = matches.is_present("multi_pass");
+    let multi_pass = get_multi_pass!(matches, json_printer);
     let dry_run = matches.is_present("dry_run");
 
     let burst = get_burst_opt!(matches, json_printer);
 
     exit_if_file!(exists &out
-                  => force || multi_pass || dry_run
+                  => force || multi_pass != None || dry_run
                   => json_printer
                   => "File \"{}\" already exists", out);
 

@@ -63,6 +63,10 @@ pub fn multi_pass_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("multi_pass").long("multi-pass")
 }
 
+pub fn multi_pass_no_skip_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("multi_pass_no_skip").long("multi-pass-no-skip")
+}
+
 pub fn only_pick_uid_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("uid")
         .value_name("UID-HEX")

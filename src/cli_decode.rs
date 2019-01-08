@@ -109,7 +109,7 @@ pub fn decode<'a>(matches: &ArgMatches<'a>) -> i32 {
         ref_from_pos,
         ref_to_pos,
         matches.is_present("force"),
-        matches.is_present("multi_pass"),
+        get_multi_pass!(matches, json_printer),
         &json_printer,
         from_pos,
         to_pos,

@@ -28,6 +28,8 @@ use crate::cli_utils::setup_ctrlc_handler;
 use crate::block_utils;
 use crate::time_utils;
 
+use crate::misc_utils::MultiPassType;
+
 use crate::block_utils::RefBlockChoice;
 
 use crate::misc_utils::{PositionOrLength, RangeEnd};
@@ -36,7 +38,7 @@ pub struct Param {
     ref_block_choice: RefBlockChoice,
     ref_block_from_pos: Option<u64>,
     ref_block_to_pos: Option<RangeEnd<u64>>,
-    multi_pass: bool,
+    multi_pass: Option<MultiPassType>,
     json_printer: Arc<JSONPrinter>,
     from_pos: Option<u64>,
     to_pos: Option<RangeEnd<u64>>,
@@ -53,7 +55,7 @@ impl Param {
         ref_block_choice: RefBlockChoice,
         ref_block_from_pos: Option<u64>,
         ref_block_to_pos: Option<RangeEnd<u64>>,
-        multi_pass: bool,
+        multi_pass: Option<MultiPassType>,
         json_printer: &Arc<JSONPrinter>,
         from_pos: Option<u64>,
         to_pos: Option<RangeEnd<u64>>,
@@ -237,7 +239,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
             FileWriterParam {
                 read: false,
                 append: false,
-                truncate: !param.multi_pass,
+                truncate: param.multi_pass == None,
                 buffered: true,
             },
         )?),
