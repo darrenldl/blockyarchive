@@ -347,16 +347,19 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
             let do_write = match param.multi_pass {
                 None | Some(MultiPassType::OverwriteAll) => true,
                 Some(MultiPassType::SkipGood) => {
-                    // read block in original container
-                    reader.seek(SeekFrom::Start(write_pos))?;
-                    reader.read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
+                    if let Some(ref mut writer) = writer {
+                        // read block in output container
+                        writer.seek(SeekFrom::Start(write_pos))?;
+                        writer.read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
 
-                    // restore the position of reader
-                    reader.seek(SeekFrom::Start(read_pos))?;
-
-                    match check_block.sync_from_buffer(&check_buffer, Some(&pred)) {
-                        Ok(()) => check_block.get_seq_num() != block.get_seq_num(),
-                        Err(_) => true,
+                        // if block at output position is a valid block and has same seq number
+                        // then don't overwrite
+                        match check_block.sync_from_buffer(&check_buffer, Some(&pred)) {
+                            Ok(()) => check_block.get_seq_num() != block.get_seq_num(),
+                            Err(_) => true,
+                        }
+                    } else {
+                        false
                     }
                 }
             };
