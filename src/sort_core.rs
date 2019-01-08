@@ -237,7 +237,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
         Some(ref f) => Some(FileWriter::new(
             f,
             FileWriterParam {
-                read: false,
+                read: param.multi_pass == Some(MultiPassType::SkipGood),
                 append: false,
                 truncate: param.multi_pass == None,
                 buffered: true,
