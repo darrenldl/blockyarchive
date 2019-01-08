@@ -4,7 +4,7 @@
 
   - In previous versions, if the stored file name contains a path, then the entire path would be used, which can lead to unexpected output locations
 
-- Added `--multi-pass` flag to decode and sort mode
+- Added `--multi-pass` and `--multi-pass-no-skip` flag to decode and sort mode
 
   - This disables truncation, and allows updating the file gradually across multiple runs
 
@@ -57,7 +57,8 @@
 
   - Previously, when output is stdout, block index and seq num counter in decode mode may be incremented even if already at max
   - Previously, seq num counter in repair mode may be incremented even if already at max
-- Updated burst error resistance level guessing code to respect --from and --force-misalign options
+
+- Updated burst error resistance level guessing code to respect `--from` and `--force-misalign` options
 
 ## 2.2.0
 
