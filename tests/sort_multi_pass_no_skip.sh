@@ -205,7 +205,7 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     output=$(./../blkar encode --json --sbx-version $ver -f dummy $container_name.2 \
-                        --uid DEADBEEF0001 \
+                        --uid DEADBEEF0002 \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
