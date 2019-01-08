@@ -16,7 +16,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .about("Decode SBX container")
         .arg(in_file_arg().help("SBX container to decode"))
         .arg(out_arg().help(
-            "Decoded file name. Supply - to use STDOUT as output. Use ./- for files named -.
+            "Decoded file name. Supply - to use stdout as output. Use ./- for files named -.
 If OUT is not provided, then the original file name stored in the SBX container
 (STOREDNAME) is used if present (only the file part of STOREDNAME is used). If
 OUT is provided and is a directory, then the output file is stored as OUT/STOREDNAME
@@ -24,8 +24,16 @@ if STOREDNAME is present (only the file part of STOREDNAME is used). If OUT is
 provided and is not a directory, then it is used directly.",
         ))
         .arg(force_arg().help("Force overwrite even if OUT exists"))
-        .arg(multi_pass_arg())
-        .arg(multi_pass_no_skip_arg())
+        .arg(multi_pass_arg().help(
+            "Disable truncation of OUT, and avoid writing if a good block
+already exists at the location. This allows writing to OUT multiple
+times to update it gradually. Ignored if output is stdout.",
+        ))
+        .arg(multi_pass_no_skip_arg().help(
+            "Disable truncation of OUT, write even if a good block exists at the
+location. This allows writing to OUT multiple times to update it
+gradually. Ignored if output is stdout.",
+        ))
         .arg(no_meta_arg())
         .arg(pr_verbosity_level_arg())
         .arg(ref_from_byte_arg())

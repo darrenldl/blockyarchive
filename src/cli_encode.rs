@@ -23,7 +23,7 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
         .about("Encode file")
         .arg(
             in_file_arg()
-                .help("File to encode. Supply - to use STDIN as input. Use ./- for files named -."),
+                .help("File to encode. Supply - to use stdin as input. Use ./- for files named -."),
         )
         .arg(out_arg().help(
             "SBX container name (defaults to INFILE.sbx). If OUT is a directory, then the
