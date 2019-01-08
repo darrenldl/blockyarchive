@@ -631,7 +631,7 @@ pub fn decode(
         Some(ref out_file) => Writer::new(WriterType::File(FileWriter::new(
             out_file,
             FileWriterParam {
-                read: false,
+                read: param.multi_pass == Some(MultiPassType::SkipGood),
                 append: false,
                 truncate: param.multi_pass == None,
                 buffered: true,
@@ -649,6 +649,8 @@ pub fn decode(
     let mut block = Block::dummy();
 
     let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
+    let mut check_buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
     // get hash possibly
     let recorded_hash = if ref_block.is_meta() {
@@ -762,10 +764,26 @@ pub fn decode(
                         block.get_seq_num(),
                         data_par_shards,
                     ) {
-                        writer.seek(SeekFrom::Start(write_pos as u64)).unwrap()?;
+                        let do_write = match param.multi_pass {
+                            None | Some(MultiPassType::OverwriteAll) => true,
+                            Some(MultiPassType::SkipGood) => {
+                                // only write if the position to write to does not already contain a non-blank chunk
+                                writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
+                                writer
+                                    .read(sbx_block::slice_data_buf_mut(version, &mut check_buffer))
+                                    .unwrap()?;
 
-                        writer
-                            .write(sbx_block::slice_data_buf(ref_block.get_version(), &buffer))?;
+                                misc_utils::buffer_is_blank(sbx_block::slice_data_buf(
+                                    version,
+                                    &check_buffer,
+                                ))
+                            }
+                        };
+
+                        if do_write {
+                            writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
+                            writer.write(sbx_block::slice_data_buf(version, &buffer))?;
+                        }
                     }
                 }
             }

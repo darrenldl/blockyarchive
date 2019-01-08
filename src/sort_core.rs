@@ -359,7 +359,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                             Err(_) => true,
                         }
                     } else {
-                        false
+                        // doesn't really matter what to put here, but let's pick default to true
+                        true
                     }
                 }
             };
