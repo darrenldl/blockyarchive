@@ -149,4 +149,197 @@ for ver in ${VERSIONS[*]}; do
     done
 done
 
+for ver in ${VERSIONS[*]}; do
+  for (( i=0; i < 3; i++ )); do
+    if   [[ $ver ==  1 ]]; then
+      block_size=496
+      data_shards=$((1 + RANDOM % 128))
+      parity_shards=$((1 + RANDOM % 128))
+    elif [[ $ver ==  2 ]]; then
+      block_size=128
+      data_shards=$((1 + RANDOM % 128))
+      parity_shards=$((1 + RANDOM % 128))
+    elif [[ $ver ==  3 ]]; then
+      block_size=4096
+      data_shards=$((1 + RANDOM % 128))
+      parity_shards=$((1 + RANDOM % 128))
+    elif [[ $ver == 17 ]]; then
+      block_size=496
+      data_shards=$((1 + RANDOM % 128))
+      parity_shards=$((1 + RANDOM % 128))
+    elif [[ $ver == 18 ]]; then
+      block_size=128
+      data_shards=$((1 + RANDOM % 128))
+      parity_shards=$((1 + RANDOM % 128))
+    else
+      block_size=4096
+      data_shards=$((1 + RANDOM % 128))
+      parity_shards=$((1 + RANDOM % 128))
+    fi
+
+    burst=$((RANDOM % 15))
+
+    container_name=sort_$data_shards\_$parity_shards\_$ver.sbx
+
+    echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
+    output=$(./../blkar encode --json --sbx-version $ver -f dummy $container_name.1 \
+                        --uid DEADBEEF0001 \
+                        --hash sha1 \
+                        --rs-data $data_shards --rs-parity $parity_shards)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo " ==> Invalid JSON"
+      exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.hash" | awk '{ print $1 }') == "SHA1" ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+
+    output=$(./../blkar encode --json --sbx-version $ver -f dummy $container_name.2 \
+                        --uid DEADBEEF0002 \
+                        --hash sha1 \
+                        --rs-data $data_shards --rs-parity $parity_shards)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo " ==> Invalid JSON"
+      exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.hash" | awk '{ print $1 }') == "SHA1" ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+
+    # Create corrupted copies
+    echo "Creating corrupted copies"
+    cp $container_name.1 $container_name.1.1
+    mv $container_name.1 $container_name.1.2
+
+    corrupt  5000 $container_name.1.1
+    corrupt 10000 $container_name.1.1
+    corrupt 15000 $container_name.1.1
+    corrupt 20000 $container_name.1.1
+
+    corrupt  5000 $container_name.1.2
+    corrupt 15000 $container_name.1.2
+
+    echo -n "Sorting container using 1st container"
+    output=$(./../blkar sort --json -f --burst $burst --multi-pass-no-skip $container_name.1.2 $container_name.1.1)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo " ==> Invalid JSON"
+      exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+
+    echo -n "Sorting container using 2nd container"
+    output=$(./../blkar sort --json -f --burst $burst --multi-pass-no-skip $container_name.2 $container_name.1.1)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo " ==> Invalid JSON"
+      exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+
+    echo -n "Checking sorted container burst error resistance level"
+    output=$(./../blkar show --json --guess-burst $container_name.1.1)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo " ==> Invalid JSON"
+      exit_code=1
+    fi
+    burst_shown=$(echo $output | jq -r ".bestGuessForBurstErrorResistanceLevel")
+    if [[ (($ver == "1" || $ver == "2" || $ver == "3") && ($burst_shown == "null"))
+              || (($ver == "17" || $ver == "18" || $ver == "19") && ($burst_shown == $burst)) ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+
+    output_name=dummy_$data_shards\_$parity_shards
+
+    echo -n "Decoding"
+    output=$(./../blkar decode --json -f $container_name.1.1 $output_name)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo " ==> Invalid JSON"
+      exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".stats.sbxVersion") == "$ver" ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+
+    echo -n "Checking container block source"
+    dd if=$container_name.1.1 of=chunk.1.1 skip=5000 bs=$block_size count=1 2>/dev/null
+    dd if=$container_name.2   of=chunk.2   skip=5000 bs=$block_size count=1 2>/dev/null
+    cmp chunk.1.1 chunk.2
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk.1.1 skip=10000 bs=$block_size count=1 2>/dev/null
+    dd if=$container_name.1.2 of=chunk.1.2 skip=10000 bs=$block_size count=1 2>/dev/null
+    cmp chunk.1.1 chunk.1.2
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk.1.1 skip=15000 bs=$block_size count=1 2>/dev/null
+    dd if=$container_name.2   of=chunk.2   skip=15000 bs=$block_size count=1 2>/dev/null
+    cmp chunk.1.1 chunk.2
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk.1.1 skip=20000 bs=$block_size count=1 2>/dev/null
+    dd if=$container_name.1.2 of=chunk.1.2 skip=20000 bs=$block_size count=1 2>/dev/null
+    cmp chunk.1.1 chunk.1.2
+    if [[ $? == 0 ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+
+    echo -n "Comparing decoded data to original"
+    cmp dummy $output_name
+    if [[ $? == 0 ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+  done
+done
+
 echo $exit_code > exit_code
