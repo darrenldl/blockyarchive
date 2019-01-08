@@ -10,6 +10,10 @@ corrupt() {
 
 file_size=$[1024 * 1024 * 10]
 
+rm -rf dummy_blank
+touch dummy_blank
+truncate -s $file_size dummy_blank
+
 for ver in ${VERSIONS[*]}; do
     for (( i=0; i < 3; i++ )); do
         if   [[ $ver ==  1 ]]; then
@@ -200,8 +204,8 @@ for ver in ${VERSIONS[*]}; do
       exit_code=1
     fi
 
-    output=$(./../blkar encode --json --sbx-version $ver -f dummy $container_name.2 \
-                        --uid DEADBEEF0002 \
+    output=$(./../blkar encode --json --sbx-version $ver -f dummy_blank $container_name.2 \
+                        --uid DEADBEEF0001 \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
@@ -235,7 +239,7 @@ for ver in ${VERSIONS[*]}; do
     corrupt $[4096 * 8] $container_name.1.2
 
     echo -n "Sorting container using 1st container"
-    output=$(./../blkar sort --json -f --burst $burst --multi-pass $container_name.1.2 $container_name.1.1)
+    output=$(./../blkar sort --json --burst $burst --multi-pass $container_name.1.2 $container_name.1.1)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -248,7 +252,7 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     echo -n "Sorting container using 2nd container"
-    output=$(./../blkar sort --json -f --burst $burst --multi-pass $container_name.2 $container_name.1.1)
+    output=$(./../blkar sort --json --burst $burst --multi-pass $container_name.2 $container_name.1.1)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -291,8 +295,9 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     echo -n "Checking container block source"
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 2] bs=$block_size count=1 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 2] bs=$block_size count=1 2>/dev/null
+    rm chunk_a chunk_b
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 2] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 2] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
@@ -300,8 +305,9 @@ for ver in ${VERSIONS[*]}; do
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 4] bs=$block_size count=1 2>/dev/null
-    dd if=$container_name.2   of=chunk_b skip=$[4096 * 4] bs=$block_size count=1 2>/dev/null
+    rm chunk_a chunk_b
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 4] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.2   of=chunk_b skip=$[4096 * 4] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
@@ -309,8 +315,9 @@ for ver in ${VERSIONS[*]}; do
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 6] bs=$block_size count=1 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 6] bs=$block_size count=1 2>/dev/null
+    rm chunk_a chunk_b
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 6] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 6] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
@@ -318,8 +325,9 @@ for ver in ${VERSIONS[*]}; do
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 8] bs=$block_size count=1 2>/dev/null
-    dd if=$container_name.2   of=chunk_b skip=$[4096 * 8] bs=$block_size count=1 2>/dev/null
+    rm chunk_a chunk_b
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 8] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.2   of=chunk_b skip=$[4096 * 8] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo " ==> Okay"
@@ -330,7 +338,7 @@ for ver in ${VERSIONS[*]}; do
 
     echo -n "Comparing decoded data to original"
     cmp dummy $output_name
-    if [[ $? == 0 ]]; then
+    if [[ $? != 0 ]]; then
       echo " ==> Okay"
     else
       echo " ==> NOT okay"
