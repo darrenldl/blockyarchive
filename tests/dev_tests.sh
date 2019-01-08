@@ -55,6 +55,7 @@ tests=(
   "sort_stats_tests"
   "sort_dry_run"
   "sort_multi_pass"
+  "sort_multi_pass_no_skip"
   "decode_multi_pass"
   "file_size_calc_tests"
   "repair_truncated_tests"
