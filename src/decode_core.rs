@@ -850,6 +850,7 @@ pub fn decode(
 
                         reader.seek(SeekFrom::Start(p + seek_to))?;
                         reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
+
                         match block.sync_from_buffer(&buffer, Some(&pred)) {
                             Ok(()) => stats.meta_blocks_decoded += 1,
                             Err(_) => stats.incre_meta_blocks_failed(),
