@@ -10,9 +10,6 @@ corrupt() {
 
 file_size=$[1024 * 1024 * 10]
 
-# generate test data
-dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null
-
 for ver in ${VERSIONS[*]}; do
     for (( i=0; i < 3; i++ )); do
         if   [[ $ver ==  1 ]]; then
@@ -152,7 +149,7 @@ done
 for ver in ${VERSIONS[*]}; do
   for (( i=0; i < 3; i++ )); do
     if   [[ $ver ==  1 ]]; then
-      block_size=496
+      block_size=512
       data_shards=$((1 + RANDOM % 128))
       parity_shards=$((1 + RANDOM % 128))
     elif [[ $ver ==  2 ]]; then
@@ -164,7 +161,7 @@ for ver in ${VERSIONS[*]}; do
       data_shards=$((1 + RANDOM % 128))
       parity_shards=$((1 + RANDOM % 128))
     elif [[ $ver == 17 ]]; then
-      block_size=496
+      block_size=512
       data_shards=$((1 + RANDOM % 128))
       parity_shards=$((1 + RANDOM % 128))
     elif [[ $ver == 18 ]]; then
@@ -229,13 +226,13 @@ for ver in ${VERSIONS[*]}; do
     cp $container_name.1 $container_name.1.1
     mv $container_name.1 $container_name.1.2
 
-    corrupt  5000 $container_name.1.1
-    corrupt 10000 $container_name.1.1
-    corrupt 15000 $container_name.1.1
-    corrupt 20000 $container_name.1.1
+    corrupt $[4096 * 2] $container_name.1.1
+    corrupt $[4096 * 4] $container_name.1.1
+    corrupt $[4096 * 6] $container_name.1.1
+    corrupt $[4096 * 8] $container_name.1.1
 
-    corrupt  5000 $container_name.1.2
-    corrupt 15000 $container_name.1.2
+    corrupt $[4096 * 4] $container_name.1.2
+    corrupt $[4096 * 8] $container_name.1.2
 
     echo -n "Sorting container using 1st container"
     output=$(./../blkar sort --json -f --burst $burst --multi-pass $container_name.1.2 $container_name.1.1)
@@ -294,36 +291,36 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     echo -n "Checking container block source"
-    dd if=$container_name.1.1 of=chunk.1.1 skip=5000 bs=$block_size count=1 2>/dev/null
-    dd if=$container_name.2   of=chunk.2   skip=5000 bs=$block_size count=1 2>/dev/null
-    cmp chunk.1.1 chunk.2
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 2] bs=$block_size count=1 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 2] bs=$block_size count=1 2>/dev/null
+    cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
     else
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk.1.1 skip=10000 bs=$block_size count=1 2>/dev/null
-    dd if=$container_name.1.2 of=chunk.1.2 skip=10000 bs=$block_size count=1 2>/dev/null
-    cmp chunk.1.1 chunk.1.2
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 4] bs=$block_size count=1 2>/dev/null
+    dd if=$container_name.2   of=chunk_b skip=$[4096 * 4] bs=$block_size count=1 2>/dev/null
+    cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
     else
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk.1.1 skip=15000 bs=$block_size count=1 2>/dev/null
-    dd if=$container_name.2   of=chunk.2   skip=15000 bs=$block_size count=1 2>/dev/null
-    cmp chunk.1.1 chunk.2
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 6] bs=$block_size count=1 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 6] bs=$block_size count=1 2>/dev/null
+    cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
     else
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk.1.1 skip=20000 bs=$block_size count=1 2>/dev/null
-    dd if=$container_name.1.2 of=chunk.1.2 skip=20000 bs=$block_size count=1 2>/dev/null
-    cmp chunk.1.1 chunk.1.2
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 8] bs=$block_size count=1 2>/dev/null
+    dd if=$container_name.2   of=chunk_b skip=$[4096 * 8] bs=$block_size count=1 2>/dev/null
+    cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo " ==> Okay"
     else
