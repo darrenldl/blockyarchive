@@ -236,7 +236,7 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     echo -n "Comparing decoded data to original"
-    cmp dummy $output_name.1.2 >/dev/null
+    cmp dummy $output_name.2 >/dev/null
     if [[ $? == 0 ]]; then
       echo " ==> Okay"
     else
