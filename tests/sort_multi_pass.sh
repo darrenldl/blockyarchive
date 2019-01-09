@@ -36,7 +36,8 @@ for ver in ${VERSIONS[*]}; do
             parity_shards=$((1 + RANDOM % 128))
         fi
 
-        burst=$((RANDOM % 15))
+        # burst=$((RANDOM % 15))
+        burst=0
 
         container_name=sort_$data_shards\_$parity_shards\_$ver.sbx
 
