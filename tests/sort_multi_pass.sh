@@ -36,8 +36,7 @@ for ver in ${VERSIONS[*]}; do
             parity_shards=$((1 + RANDOM % 128))
         fi
 
-        # burst=$((RANDOM % 15))
-        burst=0
+        burst=$((RANDOM % 15))
 
         container_name=sort_$data_shards\_$parity_shards\_$ver.sbx
 
@@ -179,7 +178,8 @@ for ver in ${VERSIONS[*]}; do
       parity_shards=$((1 + RANDOM % 128))
     fi
 
-    burst=$((RANDOM % 15))
+    # burst=$((RANDOM % 15))
+    burst=0
 
     container_name=sort_$data_shards\_$parity_shards\_$ver.sbx
 
@@ -226,21 +226,23 @@ for ver in ${VERSIONS[*]}; do
       exit_code=1
     fi
 
+    meta_count=$[parity_shards + 1]
+
     # Create corrupted copies
     echo "Creating corrupted copies"
     cp $container_name.1 $container_name.1.1
     mv $container_name.1 $container_name.1.2
 
     corrupt $[4096 *  1] $container_name.1.1
-    corrupt $[4096 * 10] $container_name.1.1
-    corrupt $[4096 * 20] $container_name.1.1
-    corrupt $[4096 * 30] $container_name.1.1
-    corrupt $[4096 * 40] $container_name.1.1
-    corrupt $[4096 * 50] $container_name.1.1
+    corrupt $[4096 * (10 + meta_count)] $container_name.1.1
+    corrupt $[4096 * (20 + meta_count)] $container_name.1.1
+    corrupt $[4096 * (30 + meta_count)] $container_name.1.1
+    corrupt $[4096 * (40 + meta_count)] $container_name.1.1
+    corrupt $[4096 * (50 + meta_count)] $container_name.1.1
 
-    corrupt $[4096 * 10] $container_name.1.2
-    corrupt $[4096 * 30] $container_name.1.2
-    corrupt $[4096 * 50] $container_name.1.2
+    corrupt $[4096 * (10 + meta_count)] $container_name.1.2
+    corrupt $[4096 * (30 + meta_count)] $container_name.1.2
+    corrupt $[4096 * (50 + meta_count)] $container_name.1.2
 
     echo -n "Sorting container using 1st container"
     output=$(./../blkar sort --json --burst $burst --multi-pass $container_name.1.2 $container_name.1.1)
@@ -313,8 +315,8 @@ for ver in ${VERSIONS[*]}; do
       echo " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 9] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 9] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (10 + meta_count - 1)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * (10 + meta_count - 1)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
@@ -322,8 +324,8 @@ for ver in ${VERSIONS[*]}; do
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 10] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.2   of=chunk_b skip=$[4096 * 10] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (10 + meta_count)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.2   of=chunk_b skip=$[4096 * (10 + meta_count)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
@@ -331,8 +333,8 @@ for ver in ${VERSIONS[*]}; do
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 15] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 15] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (10 + meta_count + 5)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * (10 + meta_count + 5)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo " ==> Okay"
@@ -340,8 +342,8 @@ for ver in ${VERSIONS[*]}; do
       echo " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 19] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 19] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (19 + meta_count)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * (19 + meta_count)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
@@ -349,8 +351,8 @@ for ver in ${VERSIONS[*]}; do
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 20] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 20] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (20 + meta_count)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * (20 + meta_count)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
@@ -358,8 +360,8 @@ for ver in ${VERSIONS[*]}; do
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 25] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 25] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (25 + meta_count)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * (25 + meta_count)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo " ==> Okay"
@@ -367,8 +369,8 @@ for ver in ${VERSIONS[*]}; do
       echo " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 29] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 29] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (29 + meta_count)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * (29 + meta_count)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
@@ -376,8 +378,8 @@ for ver in ${VERSIONS[*]}; do
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 30] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.2   of=chunk_b skip=$[4096 * 30] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (30 + meta_count)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.2   of=chunk_b skip=$[4096 * (30 + meta_count)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
@@ -385,8 +387,8 @@ for ver in ${VERSIONS[*]}; do
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 35] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 35] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (35 + meta_count)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * (35 + meta_count)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo " ==> Okay"
@@ -394,8 +396,8 @@ for ver in ${VERSIONS[*]}; do
       echo " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 39] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 39] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (39 + meta_count)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * (39 + meta_count)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
@@ -403,8 +405,8 @@ for ver in ${VERSIONS[*]}; do
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 40] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 40] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (40 + meta_count)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * (40 + meta_count)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
@@ -412,8 +414,8 @@ for ver in ${VERSIONS[*]}; do
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 45] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 45] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (45 + meta_count)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * (45 + meta_count)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo " ==> Okay"
@@ -421,8 +423,8 @@ for ver in ${VERSIONS[*]}; do
       echo " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 49] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 49] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (49 + meta_count)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * (49 + meta_count)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
@@ -430,8 +432,8 @@ for ver in ${VERSIONS[*]}; do
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 50] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.2   of=chunk_b skip=$[4096 * 50] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (50 + meta_count)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.2   of=chunk_b skip=$[4096 * (50 + meta_count)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo -n " ==> Okay"
@@ -439,8 +441,8 @@ for ver in ${VERSIONS[*]}; do
       echo -n " ==> NOT okay"
       exit_code=1
     fi
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 55] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 55] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * (55 + meta_count)] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * (55 + meta_count)] bs=1 count=$block_size 2>/dev/null
     cmp chunk_a chunk_b
     if [[ $? == 0 ]]; then
       echo " ==> Okay"
