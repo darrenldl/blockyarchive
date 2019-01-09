@@ -164,8 +164,8 @@ for ver in ${VERSIONS[*]}; do
       exit_code=1
     fi
 
-    output=$(./../blkar encode --json --sbx-version $ver -f dummy_blank $container_name.2 \
-                        --uid DEADBEEF0001 \
+    output=$(./../blkar encode --json --sbx-version $ver -f dummy $container_name.2 \
+                        --uid DEADBEEF0002 \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards \
                         --burst $burst)
