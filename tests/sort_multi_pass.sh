@@ -466,15 +466,6 @@ for ver in ${VERSIONS[*]}; do
       echo " ==> NOT okay"
       exit_code=1
     fi
-
-    echo -n "Comparing decoded data to original"
-    cmp dummy $output_name >/dev/null
-    if [[ $? != 0 ]]; then
-      echo " ==> Okay"
-    else
-      echo " ==> NOT okay"
-      exit_code=1
-    fi
   done
 done
 
