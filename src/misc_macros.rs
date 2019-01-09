@@ -205,7 +205,13 @@ macro_rules! get_burst_or_guess {
     (
         $param:expr, $ref_block_pos:expr, $ref_block:expr
     ) => {{
-        get_burst_or_guess!($param, $param.from_pos, $param.force_misalign, $ref_block_pos, $ref_block)
+        let from_pos =
+            match $param.guess_burst_from_pos {
+                Some(x) => Some(x),
+                None => $param.from_pos,
+            };
+
+        get_burst_or_guess!($param, from_pos, $param.force_misalign, $ref_block_pos, $ref_block)
     }};
     (
         $param:expr, $from_pos:expr, $force_misalign:expr, $ref_block_pos:expr, $ref_block:expr

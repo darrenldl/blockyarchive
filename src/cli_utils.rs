@@ -145,9 +145,25 @@ FROM-BYTE.",
         )
 }
 
+pub fn guess_burst_from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("guess_burst_from_pos")
+        .value_name("FROM-BYTE")
+        .long("guess-burst-from")
+        .takes_value(true)
+        .help(
+            "Position to start guessing burst error resistance level. The position
+is automatically rounded down to the closest multiple of (ref block size) bytes.
+If this option is not specified, defaults to the start of file.
+Negative values are rejected. If FROM-BYTE exceeds the largest
+possible position (file size - 1), then it will be treated as
+(file size - 1). The rounding procedure is applied after all
+auto-adjustments.",
+        )
+}
+
 pub fn ref_from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("ref_from_pos")
-        .value_name("REF-FROM-BYTE")
+        .value_name("FROM-BYTE")
         .long("ref-from")
         .takes_value(true)
         .help(
@@ -163,7 +179,7 @@ auto-adjustments.",
 
 pub fn ref_to_byte_inc_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("ref_to_pos_inc")
-        .value_name("REF-TO-BYTE-INC")
+        .value_name("TO-BYTE-INC")
         .long("ref-to-inc")
         .takes_value(true)
         .help(
@@ -175,7 +191,7 @@ rejected.",
 
 pub fn ref_to_byte_exc_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("ref_to_pos_exc")
-        .value_name("REF-TO-BYTE-EXC")
+        .value_name("TO-BYTE-EXC")
         .long("ref-to-exc")
         .takes_value(true)
         .help(

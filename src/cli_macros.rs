@@ -111,6 +111,22 @@ macro_rules! get_to_pos {
     }}
 }
 
+macro_rules! get_guess_burst_from_pos {
+    (
+        $matches:expr, $json_enabled:expr
+    ) => {{
+        use std::str::FromStr;
+
+        match $matches.value_of("guess_burst_from_pos") {
+            None    => None,
+            Some(x) => match u64::from_str(x) {
+                Ok(x)  => Some(x),
+                Err(_) => exit_with_msg!(usr $json_enabled => "Invalid guess burst from position")
+            }
+        }
+    }}
+}
+
 macro_rules! get_ref_from_pos {
     (
         $matches:expr, $json_enabled:expr

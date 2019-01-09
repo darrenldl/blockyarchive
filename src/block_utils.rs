@@ -16,6 +16,8 @@ use smallvec::SmallVec;
 
 use crate::sbx_block;
 
+use crate::integer_utils::IntegerUtils;
+
 use crate::sbx_specs::{
     ver_to_block_size, ver_to_usize, ver_uses_rs, SBX_LARGEST_BLOCK_SIZE,
     SBX_MAX_BURST_ERR_RESISTANCE, SBX_SCAN_BLOCK_SIZE,
@@ -322,12 +324,16 @@ pub fn guess_burst_err_resistance_level(
         },
     )?;
 
+    let version = ref_block.get_version();
+
+    let block_size = ver_to_block_size(version);
+
     let from_pos = from_pos.unwrap_or(0);
 
     let read_offset = if force_misalign {
-        from_pos % SBX_SCAN_BLOCK_SIZE as u64
+        from_pos
     } else {
-        0
+        u64::round_down_to_multiple(from_pos, block_size as u64)
     };
 
     const BLOCKS_TO_SAMPLE_BASE_NUM: usize = 1024;
