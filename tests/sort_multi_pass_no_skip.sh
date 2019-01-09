@@ -96,7 +96,7 @@ for ver in ${VERSIONS[*]}; do
         echo "Sorting container"
         for i in 1 2 3 4 5 6; do
           echo -n "    pass $i"
-          output=$(./../blkar sort --json -f --burst $burst --multi-pass $container_name.$i sorted_$container_name)
+          output=$(./../blkar sort --json -f --burst $burst --multi-pass-no-skip $container_name.$i sorted_$container_name)
           if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
