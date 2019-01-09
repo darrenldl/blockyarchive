@@ -196,6 +196,22 @@ macro_rules! return_if_ref_not_meta {
     }}
 }
 
+macro_rules! get_guess_burst_from_pos_from_param {
+    (
+        $param:expr
+    ) => {{
+        use crate::block_utils::GuessBurstFromPos;
+
+        match $param.guess_burst_from_pos {
+            Some(x) => Some(GuessBurstFromPos::NoShift(x)),
+            None => match $param.from_pos {
+                None => None,
+                Some(x) => Some(GuessBurstFromPos::ShiftToStart(x))
+            },
+        }
+    }};
+}
+
 macro_rules! get_burst_or_guess {
     (
         no_offset => $param:expr, $ref_block_pos:expr, $ref_block:expr
@@ -205,11 +221,7 @@ macro_rules! get_burst_or_guess {
     (
         $param:expr, $ref_block_pos:expr, $ref_block:expr
     ) => {{
-        let from_pos =
-            match $param.guess_burst_from_pos {
-                Some(x) => Some(x),
-                None => $param.from_pos,
-            };
+        let from_pos = get_guess_burst_from_pos_from_param!($param);
 
         get_burst_or_guess!($param, from_pos, $param.force_misalign, $ref_block_pos, $ref_block)
     }};

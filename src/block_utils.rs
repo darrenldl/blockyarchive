@@ -36,6 +36,12 @@ pub enum RefBlockChoice {
     MustBe(BlockType),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum GuessBurstFromPos {
+    ShiftToStart(u64),
+    NoShift(u64),
+}
+
 pub struct LazyReadResult {
     pub len_read: usize,
     pub usable: bool,
@@ -290,7 +296,7 @@ pub fn get_ref_block(
 
 pub fn guess_burst_err_resistance_level(
     in_file: &str,
-    from_pos: Option<u64>,
+    from_pos: Option<GuessBurstFromPos>,
     force_misalign: bool,
     ref_block_pos: u64,
     ref_block: &Block,
@@ -328,12 +334,10 @@ pub fn guess_burst_err_resistance_level(
 
     let block_size = ver_to_block_size(version);
 
-    let from_pos = from_pos.unwrap_or(0);
-
-    let read_offset = if force_misalign {
-        from_pos
-    } else {
-        u64::round_down_to_multiple(from_pos, block_size as u64)
+    let from_pos = match from_pos {
+        None => 0,
+        Some(GuessBurstFromPos::ShiftToStart(x)) => if force_misalign { x % SBX_SCAN_BLOCK_SIZE as u64 } else { 0 },
+        Some(GuessBurstFromPos::NoShift(x)) => if force_misalign { x } else { u64::round_down_to_multiple(x, block_size as u64) },
     };
 
     const BLOCKS_TO_SAMPLE_BASE_NUM: usize = 1024;
@@ -350,7 +354,7 @@ pub fn guess_burst_err_resistance_level(
 
     let pred = block_pred_same_ver_uid!(ref_block);
 
-    reader.seek(SeekFrom::Start(read_offset))?;
+    reader.seek(SeekFrom::Start(from_pos))?;
 
     // record first up to 1 + parity count + 1000 seq nums
     loop {

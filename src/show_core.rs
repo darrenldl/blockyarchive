@@ -91,6 +91,7 @@ impl fmt::Display for Stats {
 pub struct Param {
     show_all: bool,
     guess_burst: bool,
+    guess_burst_from_pos: Option<u64>,
     force_misalign: bool,
     json_printer: Arc<JSONPrinter>,
     from_pos: Option<u64>,
@@ -104,6 +105,7 @@ impl Param {
     pub fn new(
         show_all: bool,
         guess_burst: bool,
+        guess_burst_from_pos: Option<u64>,
         force_misalign: bool,
         json_printer: &Arc<JSONPrinter>,
         from_pos: Option<u64>,
@@ -115,6 +117,7 @@ impl Param {
         Param {
             show_all,
             guess_burst,
+            guess_burst_from_pos,
             force_misalign,
             json_printer: Arc::clone(json_printer),
             from_pos,
@@ -161,7 +164,7 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
         if ver_uses_rs(ref_block.get_version()) {
             match block_utils::guess_burst_err_resistance_level(
                 &param.in_file,
-                param.from_pos,
+                get_guess_burst_from_pos_from_param!(param),
                 param.force_misalign,
                 ref_block_pos,
                 &ref_block,

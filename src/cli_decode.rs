@@ -110,10 +110,13 @@ pub fn decode<'a>(matches: &ArgMatches<'a>) -> i32 {
     let ref_from_pos = get_ref_from_pos!(matches, json_printer);
     let ref_to_pos = get_ref_to_pos!(matches, json_printer);
 
+    let guess_burst_from_pos = get_guess_burst_from_pos!(matches, json_printer);
+
     let param = Param::new(
         get_ref_block_choice!(matches),
         ref_from_pos,
         ref_to_pos,
+        guess_burst_from_pos,
         matches.is_present("force"),
         get_multi_pass!(matches, json_printer),
         &json_printer,

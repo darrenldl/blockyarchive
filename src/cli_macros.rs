@@ -72,7 +72,7 @@ macro_rules! get_pr_verbosity_level {
 
 macro_rules! get_from_pos {
     (
-        $matches:expr, $json_enabled:expr
+        $matches:expr, $json_printer:expr
     ) => {{
         use std::str::FromStr;
 
@@ -80,7 +80,7 @@ macro_rules! get_from_pos {
             None    => None,
             Some(x) => match u64::from_str(x) {
                 Ok(x)  => Some(x),
-                Err(_) => exit_with_msg!(usr $json_enabled => "Invalid from position")
+                Err(_) => exit_with_msg!(usr $json_printer => "Invalid from position")
             }
         }
     }}
@@ -88,7 +88,7 @@ macro_rules! get_from_pos {
 
 macro_rules! get_to_pos {
     (
-        $matches:expr, $json_enabled:expr
+        $matches:expr, $json_printer:expr
     ) => {{
         use std::str::FromStr;
         use crate::misc_utils::RangeEnd;
@@ -98,22 +98,22 @@ macro_rules! get_to_pos {
             (Some(x), None   ) =>
                 match u64::from_str(x) {
                     Ok(x)  => Some(RangeEnd::Inc(x)),
-                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid to inc position")
+                    Err(_) => exit_with_msg!(usr $json_printer => "Invalid to inc position")
                 },
             (None,    Some(x)) =>
                 match u64::from_str(x) {
                     Ok(x)  => Some(RangeEnd::Exc(x)),
-                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid to exc position")
+                    Err(_) => exit_with_msg!(usr $json_printer => "Invalid to exc position")
                 },
             (Some(_), Some(_)) =>
-                exit_with_msg!(usr $json_enabled => "Cannot specify both --to-inc and --to-exc"),
+                exit_with_msg!(usr $json_printer => "Cannot specify both --to-inc and --to-exc"),
         }
     }}
 }
 
 macro_rules! get_guess_burst_from_pos {
     (
-        $matches:expr, $json_enabled:expr
+        $matches:expr, $json_printer:expr
     ) => {{
         use std::str::FromStr;
 
@@ -121,7 +121,7 @@ macro_rules! get_guess_burst_from_pos {
             None    => None,
             Some(x) => match u64::from_str(x) {
                 Ok(x)  => Some(x),
-                Err(_) => exit_with_msg!(usr $json_enabled => "Invalid guess burst from position")
+                Err(_) => exit_with_msg!(usr $json_printer => "Invalid guess burst from position")
             }
         }
     }}
@@ -129,7 +129,7 @@ macro_rules! get_guess_burst_from_pos {
 
 macro_rules! get_ref_from_pos {
     (
-        $matches:expr, $json_enabled:expr
+        $matches:expr, $json_printer:expr
     ) => {{
         use std::str::FromStr;
 
@@ -137,7 +137,7 @@ macro_rules! get_ref_from_pos {
             None    => None,
             Some(x) => match u64::from_str(x) {
                 Ok(x)  => Some(x),
-                Err(_) => exit_with_msg!(usr $json_enabled => "Invalid ref from position")
+                Err(_) => exit_with_msg!(usr $json_printer => "Invalid ref from position")
             }
         }
     }}
@@ -145,7 +145,7 @@ macro_rules! get_ref_from_pos {
 
 macro_rules! get_ref_to_pos {
     (
-        $matches:expr, $json_enabled:expr
+        $matches:expr, $json_printer:expr
     ) => {{
         use std::str::FromStr;
         use crate::misc_utils::RangeEnd;
@@ -155,37 +155,37 @@ macro_rules! get_ref_to_pos {
             (Some(x), None   ) =>
                 match u64::from_str(x) {
                     Ok(x)  => Some(RangeEnd::Inc(x)),
-                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid ref to inc position")
+                    Err(_) => exit_with_msg!(usr $json_printer => "Invalid ref to inc position")
                 },
             (None,    Some(x)) =>
                 match u64::from_str(x) {
                     Ok(x)  => Some(RangeEnd::Exc(x)),
-                    Err(_) => exit_with_msg!(usr $json_enabled => "Invalid ref to exc position")
+                    Err(_) => exit_with_msg!(usr $json_printer => "Invalid ref to exc position")
                 },
             (Some(_), Some(_)) =>
-                exit_with_msg!(usr $json_enabled => "Cannot specify both --ref-to-inc and --ref-to-exc"),
+                exit_with_msg!(usr $json_printer => "Cannot specify both --ref-to-inc and --ref-to-exc"),
         }
     }}
 }
 
 macro_rules! get_in_file {
     (
-        $matches:expr, $json_enabled:expr
+        $matches:expr, $json_printer:expr
     ) => {{
         let in_file  = $matches.value_of("in_file").unwrap();
         exit_if_file!(not_exists in_file
-                      => $json_enabled
+                      => $json_printer
                       => "File \"{}\" does not exist", in_file);
         in_file
     }};
     (
-        accept_stdin $matches:expr, $json_enabled:expr
+        accept_stdin $matches:expr, $json_printer:expr
     ) => {{
         use crate::file_utils;
         let in_file  = $matches.value_of("in_file").unwrap();
         if !file_utils::check_if_file_is_stdin(in_file) {
             exit_if_file!(not_exists in_file
-                          => $json_enabled
+                          => $json_printer
                           => "File \"{}\" does not exist", in_file);
         }
         in_file
@@ -194,7 +194,7 @@ macro_rules! get_in_file {
 
 macro_rules! get_version {
     (
-        $matches:expr, $json_enabled:expr
+        $matches:expr, $json_printer:expr
     ) => {{
         use crate::sbx_specs::string_to_ver;
         match $matches.value_of("sbx_version") {
@@ -202,7 +202,7 @@ macro_rules! get_version {
             Some(x) => match string_to_ver(&x) {
                 Ok(v)   => v,
                 Err(()) => {
-                    exit_with_msg!(usr $json_enabled => "Invalid SBX version");
+                    exit_with_msg!(usr $json_printer => "Invalid SBX version");
                 }
             }
         }
@@ -211,7 +211,7 @@ macro_rules! get_version {
 
 macro_rules! get_data_shards {
     (
-        $matches:expr, $version:expr, $json_enabled:expr
+        $matches:expr, $version:expr, $json_printer:expr
     ) => {{
         use crate::sbx_specs::ver_to_usize;
 
@@ -219,13 +219,13 @@ macro_rules! get_data_shards {
 
         match $matches.value_of("rs_data") {
             None    => {
-                exit_with_msg!(usr $json_enabled => "Reed-Solomon erasure code data shard count must be specified for version {}", ver_usize);
+                exit_with_msg!(usr $json_printer => "Reed-Solomon erasure code data shard count must be specified for version {}", ver_usize);
             },
             Some(x) => {
                 match usize::from_str(&x) {
                     Ok(x)  => x,
                     Err(_) => {
-                        exit_with_msg!(usr $json_enabled => "Failed to parse Reed-Solomon erasure code data shard count");
+                        exit_with_msg!(usr $json_printer => "Failed to parse Reed-Solomon erasure code data shard count");
                     }
                 }
             }
@@ -235,7 +235,7 @@ macro_rules! get_data_shards {
 
 macro_rules! get_parity_shards {
     (
-        $matches:expr, $version:expr, $json_enabled:expr
+        $matches:expr, $version:expr, $json_printer:expr
     ) => {{
         use crate::sbx_specs::ver_to_usize;
 
@@ -243,13 +243,13 @@ macro_rules! get_parity_shards {
 
         match $matches.value_of("rs_parity") {
             None    => {
-                exit_with_msg!(usr $json_enabled => "Reed-Solomon erasure code parity shard count must be specified for version {}", ver_usize);
+                exit_with_msg!(usr $json_printer => "Reed-Solomon erasure code parity shard count must be specified for version {}", ver_usize);
             },
             Some(x) => {
                 match usize::from_str(&x) {
                     Ok(x)  => x,
                     Err(_) => {
-                        exit_with_msg!(usr $json_enabled => "Failed to parse Reed-Solomon erasure code parity shard count");
+                        exit_with_msg!(usr $json_printer => "Failed to parse Reed-Solomon erasure code parity shard count");
                     }
                 }
             }
@@ -259,7 +259,7 @@ macro_rules! get_parity_shards {
 
 macro_rules! check_data_parity_shards {
     (
-        $data_shards:expr, $parity_shards:expr, $json_enabled:expr
+        $data_shards:expr, $parity_shards:expr, $json_printer:expr
     ) => {{
         use reed_solomon_erasure::ReedSolomon;
         use reed_solomon_erasure::Error;
@@ -267,13 +267,13 @@ macro_rules! check_data_parity_shards {
         match ReedSolomon::new($data_shards, $parity_shards) {
             Ok(_)                          => {},
             Err(Error::TooFewDataShards)   => {
-                exit_with_msg!(usr $json_enabled => "Too few data shards for Reed-Solomon erasure code");
+                exit_with_msg!(usr $json_printer => "Too few data shards for Reed-Solomon erasure code");
             },
             Err(Error::TooFewParityShards) => {
-                exit_with_msg!(usr $json_enabled => "Too few parity shards for Reed-Solomon erasure code");
+                exit_with_msg!(usr $json_printer => "Too few parity shards for Reed-Solomon erasure code");
             },
             Err(Error::TooManyShards)      => {
-                exit_with_msg!(usr $json_enabled => "Too many shards for Reed-Solomon erasure code");
+                exit_with_msg!(usr $json_printer => "Too many shards for Reed-Solomon erasure code");
             },
             Err(_)                         => { panic!(); }
         }
@@ -282,7 +282,7 @@ macro_rules! check_data_parity_shards {
 
 macro_rules! get_burst_or_zero {
     (
-        $matches:expr, $json_enabled:expr
+        $matches:expr, $json_printer:expr
     ) => {{
         match $matches.value_of("burst") {
             None    => 0,
@@ -290,7 +290,7 @@ macro_rules! get_burst_or_zero {
                 match usize::from_str(&x) {
                     Ok(x)  => x,
                     Err(_) => {
-                        exit_with_msg!(usr $json_enabled => "Failed to parse burst error resistance level");
+                        exit_with_msg!(usr $json_printer => "Failed to parse burst error resistance level");
                     }
                 }
             }
@@ -319,7 +319,7 @@ macro_rules! ask_if_wish_to_continue {
 
 macro_rules! get_burst_opt {
     (
-        $matches:expr, $json_enabled:expr
+        $matches:expr, $json_printer:expr
     ) => {{
         use std::str::FromStr;
 
@@ -329,7 +329,7 @@ macro_rules! get_burst_opt {
                 match usize::from_str(&x) {
                     Ok(x)  => Some(x),
                     Err(_) => {
-                        exit_with_msg!(usr $json_enabled => "Failed to parse burst error resistance level");
+                        exit_with_msg!(usr $json_printer => "Failed to parse burst error resistance level");
                     }
                 }
             }
