@@ -1,11 +1,11 @@
 #![allow(dead_code)]
 use crate::file_writer::FileWriter;
 use crate::general_error::Error;
+use crate::reader::ReadResult;
 use crate::stdout_error::{to_err, StdoutError};
 use std::fs::Metadata;
 use std::io::SeekFrom;
 use std::io::Write;
-use crate::reader::ReadResult;
 
 pub enum WriterType {
     File(FileWriter),

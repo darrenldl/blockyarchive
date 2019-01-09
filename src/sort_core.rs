@@ -324,9 +324,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                 let read_res = writer
                                     .read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
 
-                                read_res.eof_seen
-                                    ||
-                                {
+                                read_res.eof_seen || {
                                     // if block at output position is a valid metadata block,
                                     // then don't overwrite
                                     match check_block.sync_from_buffer(&check_buffer, Some(&pred)) {
@@ -351,10 +349,11 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
                     // read block in original container
                     reader.seek(SeekFrom::Start(p + seek_to))?;
-                    let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
+                    let read_res =
+                        reader.read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
 
-                    let same_order = !read_res.eof_seen &&
-                        match buffer.cmp(&check_buffer) {
+                    let same_order = !read_res.eof_seen
+                        && match buffer.cmp(&check_buffer) {
                             Ordering::Equal => true,
                             _ => false,
                         };
@@ -388,8 +387,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                         let read_res =
                             writer.read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
 
-                        read_res.eof_seen
-                        || {
+                        read_res.eof_seen || {
                             // if block at output position is a valid block and has same seq number,
                             // then don't overwrite
                             match check_block.sync_from_buffer(&check_buffer, Some(&pred)) {

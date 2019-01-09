@@ -331,8 +331,8 @@ pub fn repair_file(param: &Param) -> Result<Option<Stats>, Error> {
             reader.seek(SeekFrom::Start(p))?;
             let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
-            let block_broken = read_res.eof_seen ||
-                match block.sync_from_buffer(&buffer, Some(&pred)) {
+            let block_broken = read_res.eof_seen
+                || match block.sync_from_buffer(&buffer, Some(&pred)) {
                     Ok(()) => false,
                     Err(_) => true,
                 };

@@ -773,9 +773,7 @@ pub fn decode(
                                     .read(sbx_block::slice_data_buf_mut(version, &mut check_buffer))
                                     .unwrap()?;
 
-                                read_res.eof_seen
-                                    ||
-                                   {
+                                read_res.eof_seen || {
                                     misc_utils::buffer_is_blank(sbx_block::slice_data_buf(
                                         version,
                                         &check_buffer,
@@ -873,10 +871,11 @@ pub fn decode(
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
                         reader.seek(SeekFrom::Start(p + seek_to))?;
-                        let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
+                        let read_res =
+                            reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
-                        let decode_successful = !read_res.eof_seen &&
-                            match block.sync_from_buffer(&buffer, Some(&pred)) {
+                        let decode_successful = !read_res.eof_seen
+                            && match block.sync_from_buffer(&buffer, Some(&pred)) {
                                 Ok(()) => true,
                                 Err(_) => false,
                             };
@@ -910,10 +909,10 @@ pub fn decode(
                             &mut buffer,
                         ))?;
 
-                        let decode_successful = !read_res.eof_seen &&
-                            match block.sync_from_buffer(&buffer, Some(&pred)) {
+                        let decode_successful = !read_res.eof_seen
+                            && match block.sync_from_buffer(&buffer, Some(&pred)) {
                                 Ok(_) => block.get_seq_num() == seq_num,
-                                _ => false
+                                _ => false,
                             };
 
                         if sbx_block::seq_num_is_meta(seq_num) {
