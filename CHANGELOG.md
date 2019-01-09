@@ -62,6 +62,10 @@
 
 - Updated burst error resistance level guessing code to respect `--from` and `--force-misalign` options
 
+- Fixed potential incorrect behaviour when processed block is incomplete
+
+  - Rectified by adding `#[must_use]` to `Reader::ReadResult`, forcing all code paths to check read result instead of possibly ignoring it
+
 ## 2.2.0
 
 - Added `--only-pick-uid` option to show mode
