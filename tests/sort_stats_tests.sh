@@ -2,7 +2,7 @@
 
 exit_code=0
 
-file_size=$[1024 * 1024 * 10]
+file_size=$(ls -l dummy | awk '{ print $5 }')
 
 # generate test data
 dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null

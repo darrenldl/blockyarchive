@@ -8,7 +8,7 @@ corrupt() {
   dd if=/dev/zero of=$2 bs=1 count=1 seek=$1 conv=notrunc &>/dev/null
 }
 
-file_size=$[1024 * 1024 * 1]
+file_size=$(ls -l dummy | awk '{ print $5 }')
 
 corrupt_count=10
 
