@@ -84,8 +84,6 @@ for ver in ${VERSIONS[*]}; do
     # check that blkar moves to the specified location if --guess-burst-from is specified
     offset=$[500 + RANDOM % 1000]
 
-    container_name=show_$data_shards\_$parity_shards\_$ver.sbx
-
     echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
     output=$(./../blkar encode --json --sbx-version $ver -f dummy $container_name \
                         --hash sha1 \
