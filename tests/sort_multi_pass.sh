@@ -156,26 +156,32 @@ for ver in ${VERSIONS[*]}; do
       block_size=512
       data_shards=$((1 + RANDOM % 128))
       parity_shards=$((1 + RANDOM % 128))
+      meta_count=1
     elif [[ $ver ==  2 ]]; then
       block_size=128
       data_shards=$((1 + RANDOM % 128))
       parity_shards=$((1 + RANDOM % 128))
+      meta_count=1
     elif [[ $ver ==  3 ]]; then
       block_size=4096
       data_shards=$((1 + RANDOM % 128))
       parity_shards=$((1 + RANDOM % 128))
+      meta_count=1
     elif [[ $ver == 17 ]]; then
       block_size=512
       data_shards=$((1 + RANDOM % 128))
       parity_shards=$((1 + RANDOM % 128))
+      meta_count=$[parity_shards + 1]
     elif [[ $ver == 18 ]]; then
       block_size=128
       data_shards=$((1 + RANDOM % 128))
       parity_shards=$((1 + RANDOM % 128))
+      meta_count=$[parity_shards + 1]
     else
       block_size=4096
       data_shards=$((1 + RANDOM % 128))
       parity_shards=$((1 + RANDOM % 128))
+      meta_count=$[parity_shards + 1]
     fi
 
     # burst=$((RANDOM % 15))
@@ -226,8 +232,6 @@ for ver in ${VERSIONS[*]}; do
       exit_code=1
     fi
 
-    meta_count=$[parity_shards + 1]
-
     # Create corrupted copies
     echo "Creating corrupted copies"
     cp $container_name.1 $container_name.1.1
@@ -245,7 +249,7 @@ for ver in ${VERSIONS[*]}; do
     corrupt $[4096 * (50 + meta_count)] $container_name.1.2
 
     echo -n "Sorting container using 1st container"
-    output=$(./../blkar sort --json --burst $burst --multi-pass $container_name.1.2 $container_name.1.1)
+    output=$(./../blkar sort --json --burst $burst -f $container_name.1.2 $container_name.1.1)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
