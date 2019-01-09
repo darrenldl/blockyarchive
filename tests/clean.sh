@@ -109,6 +109,10 @@ rm -f data_chunk
 
 rm -f data_chunk_orig
 
+rm -f chunk_*
+
+rm -f decode*.sbx.*
+
 for t in ${tests[@]}; do
   if [[ "$t" != "" ]]; then
     rm -rf $t
