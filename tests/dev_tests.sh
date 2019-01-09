@@ -57,6 +57,7 @@ tests=(
   "sort_multi_pass"
   "sort_multi_pass_no_skip"
   "decode_multi_pass"
+  "decode_multi_pass_no_skip"
   "file_size_calc_tests"
   "repair_truncated_tests"
   "repair_truncated_tests_encode_stdin"
