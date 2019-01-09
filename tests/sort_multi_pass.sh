@@ -8,7 +8,7 @@ corrupt() {
   dd if=/dev/zero of=$2 bs=1 count=1 seek=$1 conv=notrunc &>/dev/null
 }
 
-file_size=$[1024 * 1024 * 10]
+file_size=$(ls -l dummy | awk '{ print $5 }')
 
 rm -rf dummy_blank
 touch dummy_blank
@@ -230,13 +230,16 @@ for ver in ${VERSIONS[*]}; do
     cp $container_name.1 $container_name.1.1
     mv $container_name.1 $container_name.1.2
 
-    corrupt $[4096 * 2] $container_name.1.1
-    corrupt $[4096 * 4] $container_name.1.1
-    corrupt $[4096 * 6] $container_name.1.1
-    corrupt $[4096 * 8] $container_name.1.1
+    corrupt $[4096 *  1] $container_name.1.1
+    corrupt $[4096 * 10] $container_name.1.1
+    corrupt $[4096 * 20] $container_name.1.1
+    corrupt $[4096 * 30] $container_name.1.1
+    corrupt $[4096 * 40] $container_name.1.1
+    corrupt $[4096 * 50] $container_name.1.1
 
-    corrupt $[4096 * 4] $container_name.1.2
-    corrupt $[4096 * 8] $container_name.1.2
+    corrupt $[4096 * 10] $container_name.1.2
+    corrupt $[4096 * 30] $container_name.1.2
+    corrupt $[4096 * 50] $container_name.1.2
 
     echo -n "Sorting container using 1st container"
     output=$(./../blkar sort --json --burst $burst --multi-pass $container_name.1.2 $container_name.1.1)
@@ -281,6 +284,170 @@ for ver in ${VERSIONS[*]}; do
 
     output_name=dummy_$data_shards\_$parity_shards
 
+    echo "Checking container block source"
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 0] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 0] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 1] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 1] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 5] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 5] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 9] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 9] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 10] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.2   of=chunk_b skip=$[4096 * 10] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 15] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 15] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 19] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 19] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 20] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 20] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 25] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 25] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 29] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 29] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 30] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.2   of=chunk_b skip=$[4096 * 30] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 35] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 35] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 39] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 39] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 40] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 40] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 45] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 45] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 49] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 49] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 50] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.2   of=chunk_b skip=$[4096 * 50] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo -n " ==> Okay"
+    else
+      echo -n " ==> NOT okay"
+      exit_code=1
+    fi
+    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 55] bs=1 count=$block_size 2>/dev/null
+    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 55] bs=1 count=$block_size 2>/dev/null
+    cmp chunk_a chunk_b
+    if [[ $? == 0 ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+
     echo -n "Decoding"
     output=$(./../blkar decode --json -f $container_name.1.1 $output_name)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
@@ -294,56 +461,15 @@ for ver in ${VERSIONS[*]}; do
       exit_code=1
     fi
 
-    echo -n "Checking container block source"
-    rm chunk_a chunk_b
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 2] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 2] bs=1 count=$block_size 2>/dev/null
-    cmp chunk_a chunk_b
-    if [[ $? == 0 ]]; then
-      echo -n " ==> Okay"
-    else
-      echo -n " ==> NOT okay"
-      exit_code=1
-    fi
-    rm chunk_a chunk_b
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 4] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.2   of=chunk_b skip=$[4096 * 4] bs=1 count=$block_size 2>/dev/null
-    cmp chunk_a chunk_b
-    if [[ $? == 0 ]]; then
-      echo -n " ==> Okay"
-    else
-      echo -n " ==> NOT okay"
-      exit_code=1
-    fi
-    rm chunk_a chunk_b
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 6] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.1.2 of=chunk_b skip=$[4096 * 6] bs=1 count=$block_size 2>/dev/null
-    cmp chunk_a chunk_b
-    if [[ $? == 0 ]]; then
-      echo -n " ==> Okay"
-    else
-      echo -n " ==> NOT okay"
-      exit_code=1
-    fi
-    rm chunk_a chunk_b
-    dd if=$container_name.1.1 of=chunk_a skip=$[4096 * 8] bs=1 count=$block_size 2>/dev/null
-    dd if=$container_name.2   of=chunk_b skip=$[4096 * 8] bs=1 count=$block_size 2>/dev/null
-    cmp chunk_a chunk_b
-    if [[ $? == 0 ]]; then
-      echo " ==> Okay"
-    else
-      echo " ==> NOT okay"
-      exit_code=1
-    fi
-
     echo -n "Comparing decoded data to original"
-    cmp dummy $output_name
+    cmp dummy $output_name >/dev/null
     if [[ $? != 0 ]]; then
       echo " ==> Okay"
     else
       echo " ==> NOT okay"
       exit_code=1
     fi
+    exit
   done
 done
 
