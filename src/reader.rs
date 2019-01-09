@@ -8,6 +8,7 @@ use std::io::SeekFrom;
 
 const READ_RETRIES: usize = 5;
 
+#[must_use]
 pub struct ReadResult {
     pub len_read: usize,
     pub eof_seen: bool,

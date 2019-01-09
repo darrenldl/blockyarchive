@@ -10,6 +10,8 @@ use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::Write;
+use crate::reader::ReadResult;
+use crate::file_reader::READ_RETRIES;
 
 macro_rules! flush {
     (
@@ -127,15 +129,30 @@ impl FileWriter {
         }
     }
 
-    pub fn read(&mut self, buf: &mut [u8]) -> Result<usize, Error> {
+    pub fn read(&mut self, buf: &mut [u8]) -> Result<ReadResult, Error> {
         if !self.read_enabled {
             panic!("Read not enabled");
         }
 
-        match file_op!(self read => buf) {
-            Ok(len) => Ok(len),
-            Err(e) => Err(to_err(FileError::new(e.kind(), &self.path))),
+        let mut len_read = 0;
+        let mut tries = 0;
+        while len_read < buf.len() && tries < READ_RETRIES {
+            match file_op!(self read => &mut buf[len_read..]) {
+                Ok(len) => {
+                    len_read += len;
+                }
+                Err(e) => {
+                    return Err(to_err(FileError::new(e.kind(), &self.path)));
+                }
+            }
+
+            tries += 1;
         }
+
+        Ok(ReadResult {
+            len_read,
+            eof_seen: len_read < buf.len(),
+        })
     }
 
     pub fn set_len(&mut self, size: u64) -> Result<(), Error> {

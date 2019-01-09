@@ -769,14 +769,18 @@ pub fn decode(
                             Some(MultiPassType::SkipGood) => {
                                 // only write if the position to write to does not already contain a non-blank chunk
                                 writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
-                                writer
+                                let read_res = writer
                                     .read(sbx_block::slice_data_buf_mut(version, &mut check_buffer))
                                     .unwrap()?;
 
-                                misc_utils::buffer_is_blank(sbx_block::slice_data_buf(
-                                    version,
-                                    &check_buffer,
-                                ))
+                                read_res.eof_seen
+                                    ||
+                                   {
+                                    misc_utils::buffer_is_blank(sbx_block::slice_data_buf(
+                                        version,
+                                        &check_buffer,
+                                    ))
+                                }
                             }
                         };
 
@@ -869,11 +873,18 @@ pub fn decode(
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
                         reader.seek(SeekFrom::Start(p + seek_to))?;
-                        reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
+                        let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
-                        match block.sync_from_buffer(&buffer, Some(&pred)) {
-                            Ok(()) => stats.meta_blocks_decoded += 1,
-                            Err(_) => stats.incre_meta_blocks_failed(),
+                        let decode_successful = !read_res.eof_seen &&
+                            match block.sync_from_buffer(&buffer, Some(&pred)) {
+                                Ok(()) => true,
+                                Err(_) => false,
+                            };
+
+                        if decode_successful {
+                            stats.meta_blocks_decoded += 1
+                        } else {
+                            stats.incre_meta_blocks_failed()
                         }
                     }
 
@@ -899,55 +910,45 @@ pub fn decode(
                             &mut buffer,
                         ))?;
 
-                        if read_res.eof_seen {
-                            if sbx_block::seq_num_is_meta(seq_num) {
-                                unreachable!();
-                            } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
-                                stats.incre_parity_blocks_failed();
+                        let decode_successful = !read_res.eof_seen &&
+                            match block.sync_from_buffer(&buffer, Some(&pred)) {
+                                Ok(_) => block.get_seq_num() == seq_num,
+                                _ => false
+                            };
+
+                        if sbx_block::seq_num_is_meta(seq_num) {
+                            unreachable!();
+                        } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
+                            if decode_successful {
+                                stats.parity_blocks_decoded += 1;
                             } else {
-                                stats.incre_data_blocks_failed();
+                                stats.incre_parity_blocks_failed();
                             }
                         } else {
-                            match block.sync_from_buffer(&buffer, Some(&pred)) {
-                                Ok(_) if block.get_seq_num() == seq_num => {
-                                    if block.is_meta() {
-                                        // do nothing if block is meta
-                                        unreachable!();
-                                    } else if block.is_parity(data, parity) {
-                                        stats.parity_blocks_decoded += 1;
-                                    } else {
-                                        stats.data_blocks_decoded += 1;
+                            if decode_successful {
+                                stats.data_blocks_decoded += 1;
 
-                                        // write data chunk
-                                        write_data_only_block(
-                                            data_par_shards,
-                                            is_last_data_block(&stats, total_data_chunk_count),
-                                            data_size_of_last_data_block,
-                                            &ref_block,
-                                            &block,
-                                            &mut writer,
-                                            &mut hash_ctx,
-                                            &buffer,
-                                        )?;
-                                    }
-                                }
-                                _ => {
-                                    if sbx_block::seq_num_is_meta(seq_num) {
-                                        unreachable!();
-                                    } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
-                                        stats.incre_parity_blocks_failed();
-                                    } else {
-                                        stats.incre_data_blocks_failed();
+                                // write data chunk
+                                write_data_only_block(
+                                    data_par_shards,
+                                    is_last_data_block(&stats, total_data_chunk_count),
+                                    data_size_of_last_data_block,
+                                    &ref_block,
+                                    &block,
+                                    &mut writer,
+                                    &mut hash_ctx,
+                                    &buffer,
+                                )?;
+                            } else {
+                                stats.incre_data_blocks_failed();
 
-                                        write_blank_chunk(
-                                            is_last_data_block(&stats, total_data_chunk_count),
-                                            data_size_of_last_data_block,
-                                            &ref_block,
-                                            &mut writer,
-                                            &mut hash_ctx,
-                                        )?;
-                                    }
-                                }
+                                write_blank_chunk(
+                                    is_last_data_block(&stats, total_data_chunk_count),
+                                    data_size_of_last_data_block,
+                                    &ref_block,
+                                    &mut writer,
+                                    &mut hash_ctx,
+                                )?;
                             }
                         }
 

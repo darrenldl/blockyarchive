@@ -329,37 +329,41 @@ pub fn repair_file(param: &Param) -> Result<Option<Stats>, Error> {
             break_if_atomic_bool!(ctrlc_stop_flag);
 
             reader.seek(SeekFrom::Start(p))?;
-            reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
-            match block.sync_from_buffer(&buffer, Some(&pred)) {
-                Ok(()) => {
-                    stats.meta_blocks_decoded += 1;
-                }
-                Err(_) => {
-                    if json_printer.json_enabled() {
-                        if param.verbose {
-                            json_printer.print_open_bracket(None, BracketType::Curly);
+            let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
-                            print_maybe_json!(param.json_printer, "seq num : 0");
-                            print_maybe_json!(param.json_printer, "pos : {}", p);
+            let block_broken = read_res.eof_seen ||
+                match block.sync_from_buffer(&buffer, Some(&pred)) {
+                    Ok(()) => false,
+                    Err(_) => true,
+                };
 
-                            json_printer.print_close_bracket();
-                        }
-                    } else {
-                        print_if!(verbose => param, reporter =>
-                                  "Replaced invalid metadata block at {} (0x{:X}) with reference block", p, p;);
+            if block_broken {
+                if json_printer.json_enabled() {
+                    if param.verbose {
+                        json_printer.print_open_bracket(None, BracketType::Curly);
+
+                        print_maybe_json!(param.json_printer, "seq num : 0");
+                        print_maybe_json!(param.json_printer, "pos : {}", p);
+
+                        json_printer.print_close_bracket();
                     }
-
-                    stats.blocks_decode_failed += 1;
-
-                    reader.seek(SeekFrom::Start(p))?;
-
-                    ref_block.sync_to_buffer(None, &mut buffer).unwrap();
-                    if !param.dry_run {
-                        reader.write(sbx_block::slice_buf(version, &buffer))?;
-                    }
-
-                    stats.meta_blocks_repaired += 1;
+                } else {
+                    print_if!(verbose => param, reporter =>
+                              "Replaced invalid metadata block at {} (0x{:X}) with reference block", p, p;);
                 }
+
+                stats.blocks_decode_failed += 1;
+
+                reader.seek(SeekFrom::Start(p))?;
+
+                ref_block.sync_to_buffer(None, &mut buffer).unwrap();
+                if !param.dry_run {
+                    reader.write(sbx_block::slice_buf(version, &buffer))?;
+                }
+
+                stats.meta_blocks_repaired += 1;
+            } else {
+                stats.meta_blocks_decoded += 1;
             }
         }
     }

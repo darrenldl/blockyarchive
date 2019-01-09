@@ -13,7 +13,7 @@ use std::io::Write;
 
 use crate::reader::ReadResult;
 
-const READ_RETRIES: usize = 5;
+pub const READ_RETRIES: usize = 5;
 
 macro_rules! file_op {
     (

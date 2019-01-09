@@ -5,6 +5,7 @@ use crate::stdout_error::{to_err, StdoutError};
 use std::fs::Metadata;
 use std::io::SeekFrom;
 use std::io::Write;
+use crate::reader::ReadResult;
 
 pub enum WriterType {
     File(FileWriter),
@@ -30,7 +31,7 @@ impl Writer {
         }
     }
 
-    pub fn read(&mut self, buf: &mut [u8]) -> Option<Result<usize, Error>> {
+    pub fn read(&mut self, buf: &mut [u8]) -> Option<Result<ReadResult, Error>> {
         match self.writer {
             WriterType::File(ref mut f) => Some(f.read(buf)),
             WriterType::Stdout(_) => None,
