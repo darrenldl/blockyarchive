@@ -11,8 +11,7 @@ corrupt() {
 file_size=$(ls -l dummy | awk '{ print $5 }')
 
 rm -rf dummy_blank
-touch dummy_blank
-truncate -s $file_size dummy_blank
+dd if=/dev/zero of=dummy_blank bs=1024 count=$[file_size / 1024] 2>/dev/null
 
 for ver in ${VERSIONS[*]}; do
     for (( i=0; i < 3; i++ )); do
