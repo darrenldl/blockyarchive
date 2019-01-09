@@ -315,10 +315,38 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                 let reader_cur_pos = reader.cur_pos()?;
 
                 for &p in write_pos_s.iter() {
-                    if let Some(ref mut writer) = writer {
-                        // write metadata blocks
-                        writer.seek(SeekFrom::Start(p))?;
-                        writer.write(sbx_block::slice_buf(version, &buffer))?;
+                    let do_write = match param.multi_pass {
+                        None | Some(MultiPassType::OverwriteAll) => true,
+                        Some(MultiPassType::SkipGood) => {
+                            if let Some(ref mut writer) = writer {
+                                // read metadata blocks
+                                writer.seek(SeekFrom::Start(p))?;
+                                let read_len = writer
+                                    .read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
+
+                                if read_len == 0 {
+                                    true
+                                } else {
+                                    // if block at output position is a valid metadata block,
+                                    // then don't overwrite
+                                    match check_block.sync_from_buffer(&check_buffer, Some(&pred)) {
+                                        Ok(()) => check_block.get_seq_num() != 0,
+                                        Err(_) => true,
+                                    }
+                                }
+                            } else {
+                                // doesn't really matter what to put here, but let's pick default to true
+                                true
+                            }
+                        }
+                    };
+
+                    if do_write {
+                        if let Some(ref mut writer) = writer {
+                            // write metadata blocks
+                            writer.seek(SeekFrom::Start(p))?;
+                            writer.write(sbx_block::slice_buf(version, &buffer))?;
+                        }
                     }
 
                     // read block in original container
@@ -350,13 +378,18 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                     if let Some(ref mut writer) = writer {
                         // read block in output container
                         writer.seek(SeekFrom::Start(write_pos))?;
-                        writer.read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
+                        let read_len =
+                            writer.read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
 
-                        // if block at output position is a valid block and has same seq number
-                        // then don't overwrite
-                        match check_block.sync_from_buffer(&check_buffer, Some(&pred)) {
-                            Ok(()) => check_block.get_seq_num() != block.get_seq_num(),
-                            Err(_) => true,
+                        if read_len == 0 {
+                            true
+                        } else {
+                            // if block at output position is a valid block and has same seq number,
+                            // then don't overwrite
+                            match check_block.sync_from_buffer(&check_buffer, Some(&pred)) {
+                                Ok(()) => check_block.get_seq_num() != block.get_seq_num(),
+                                Err(_) => true,
+                            }
                         }
                     } else {
                         // doesn't really matter what to put here, but let's pick default to true
