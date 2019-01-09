@@ -469,7 +469,6 @@ for ver in ${VERSIONS[*]}; do
       echo " ==> NOT okay"
       exit_code=1
     fi
-    exit
   done
 done
 
