@@ -971,6 +971,7 @@ pub fn decode(
                         seek_to / ver_to_block_size(version) as u64,
                         SBX_LAST_SEQ_NUM as u64,
                     );
+
                     loop {
                         let seq_num = sbx_block::calc_seq_num_at_index(
                             block_index,
