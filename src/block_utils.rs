@@ -438,7 +438,7 @@ pub fn guess_starting_block_index(
     force_misalign: bool,
     ref_block: &Block,
     data_par_burst: Option<(usize, usize, usize)>,
-) -> Result<Option<u64>, Error> {
+) -> Result<u64, Error> {
     let version = ref_block.get_version();
 
     let block_size = ver_to_block_size(version) as u64;
@@ -458,18 +458,20 @@ pub fn guess_starting_block_index(
 
     let mut block = Block::dummy();
 
-    let mut reader = FileReader::new(in_file,
-                                     FileReaderParam {
-                                         write: false,
-                                         buffered: true,
-                                     })?;
+    let mut reader = FileReader::new(
+        in_file,
+        FileReaderParam {
+            write: false,
+            buffered: true,
+        },
+    )?;
 
     const BLOCKS_TO_SAMPLE: usize = 1024;
 
     let mut block_indices: SmallVec<[Option<u64>; BLOCKS_TO_SAMPLE]> =
         smallvec![None; BLOCKS_TO_SAMPLE];
 
-    let mut block_index_count = HashMap::with_capacity(block_indices.len());
+    let mut block_index_count: HashMap<u64, usize, _> = HashMap::with_capacity(block_indices.len());
 
     let pred = block_pred_same_ver_uid!(ref_block);
 
@@ -506,7 +508,7 @@ pub fn guess_starting_block_index(
                         Some(block_index - blocks_processed as u64)
                     }
                 }
-            },
+            }
             Err(_) => None,
         };
 
@@ -515,11 +517,29 @@ pub fn guess_starting_block_index(
 
     // count occurances of block index
     for index in block_indices {
-        let &current_count = block_index_count.get(&index).unwrap_or(&0);
+        if let Some(index) = index {
+            let &current_count = block_index_count.get(&index).unwrap_or(&0);
 
-        block_index_count.insert(index, current_count + 1);
+            block_index_count.insert(index, current_count + 1);
+        }
     }
 
     // pick the block index with highest count
-    Ok(Some(0))
+    let mut index_with_highest_count: Option<u64> = None;
+    for (&index, &count) in block_index_count.iter() {
+        index_with_highest_count = Some(match index_with_highest_count {
+            None => index,
+            Some(x) => {
+                let &current_count = block_index_count.get(&x).unwrap();
+
+                if count > current_count {
+                    index
+                } else {
+                    x
+                }
+            }
+        });
+    }
+
+    Ok(index_with_highest_count.unwrap_or(0))
 }

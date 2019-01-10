@@ -61,7 +61,6 @@ pub struct DecodeFailsBreakdown {
     pub meta_blocks_decode_failed: u64,
     pub data_blocks_decode_failed: u64,
     pub parity_blocks_decode_failed: u64,
-    pub uncertain_blocks_decode_failed: u64,
 }
 
 #[derive(Clone, Debug)]
@@ -141,7 +140,6 @@ impl fmt::Display for Stats {
                     write_maybe_json!(f, json_printer, "Number of blocks failed to decode (metadata)    : {}", x.meta_blocks_decode_failed => skip_quotes)?;
                     write_maybe_json!(f, json_printer, "Number of blocks failed to decode (data)        : {}", x.data_blocks_decode_failed => skip_quotes)?;
                     write_maybe_json!(f, json_printer, "Number of blocks failed to decode (parity)      : {}", x.parity_blocks_decode_failed => skip_quotes)?;
-                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (uncertain)   : {}", x.uncertain_blocks_decode_failed => skip_quotes)?;
                 }
             };
             write_maybe_json!(f, json_printer, "File size                              {}: {}", padding, self.out_file_size => skip_quotes)?;
@@ -378,7 +376,6 @@ impl Stats {
                 meta_blocks_decode_failed: 0,
                 data_blocks_decode_failed: 0,
                 parity_blocks_decode_failed: 0,
-                uncertain_blocks_decode_failed: 0,
             }),
         };
         Stats {
@@ -428,15 +425,6 @@ impl Stats {
         match self.blocks_decode_failed {
             DecodeFailStats::Breakdown(ref mut x) => {
                 x.parity_blocks_decode_failed += 1;
-            }
-            DecodeFailStats::Total(_) => panic!(),
-        }
-    }
-
-    pub fn incre_uncertain_blocks_failed(&mut self) {
-        match self.blocks_decode_failed {
-            DecodeFailStats::Breakdown(ref mut x) => {
-                x.uncertain_blocks_decode_failed += 1;
             }
             DecodeFailStats::Total(_) => panic!(),
         }
@@ -972,62 +960,18 @@ pub fn decode(
                     }
                 }
                 ReadPattern::Sequential(data_par_burst) => {
-                    fn update_block_index_possibly(
-                        block_index: &mut Option<u64>,
-                        block: &Block,
-                        data_par_burst: Option<(usize, usize, usize)>,
-                    ) {
-                        match block_index {
-                            Some(_) => {}
-                            None => {
-                                if block.is_meta() {
-                                    let indices = sbx_block::calc_meta_block_all_write_indices(
-                                        data_par_burst,
-                                    );
-
-                                    if indices.len() == 1 {
-                                        *block_index = Some(indices[0]);
-                                    } else {
-                                        // do nothing if too many possibilities
-                                    }
-                                } else {
-                                    let index = sbx_block::calc_data_block_write_index(
-                                        block.get_seq_num(),
-                                        Some(true),
-                                        data_par_burst,
-                                    );
-
-                                    *block_index = Some(index);
-                                }
-                            }
-                        }
-                    }
-
-                    fn update_seq_num_possibly(
-                        seq_num: &mut Option<u32>,
-                        block_index: Option<u64>,
-                        data_par_burst: Option<(usize, usize, usize)>,
-                    ) {
-                        match block_index {
-                            Some(block_index) => {
-                                *seq_num = Some(sbx_block::calc_seq_num_at_index(
-                                    block_index,
-                                    Some(true),
-                                    data_par_burst,
-                                ))
-                            }
-                            None => {}
-                        }
-                    }
-
                     let mut bytes_processed: u64 = 0;
 
                     // seek to calculated position
                     reader.seek(SeekFrom::Start(seek_to))?;
 
-                    // guess the block index based on the seq num when we read our first data block
-                    let mut block_index = None;
-                    let mut seq_num = None;
+                    let mut block_index = block_utils::guess_starting_block_index(
+                        &param.in_file,
+                        param.from_pos,
+                        param.force_misalign,
+                        &ref_block,
+                        data_par_burst,
+                    )?;
 
                     loop {
                         let mut stats = stats.lock().unwrap();
@@ -1046,34 +990,23 @@ pub fn decode(
 
                         break_if_eof_seen!(read_res);
 
-                        update_seq_num_possibly(&mut seq_num, block_index, data_par_burst);
+                        let seq_num = sbx_block::calc_seq_num_at_index(
+                            block_index,
+                            Some(true),
+                            data_par_burst,
+                        );
 
                         let block_okay = match block.sync_from_buffer(&buffer, Some(&pred)) {
                             Ok(_) => {
-                                // guess our block index if the block read was successful
-                                update_block_index_possibly(
-                                    &mut block_index,
-                                    &block,
-                                    data_par_burst,
-                                );
+                                let block_seq_num = block.get_seq_num();
 
-                                // recalculate seq_num if failed previously
-                                update_seq_num_possibly(&mut seq_num, block_index, data_par_burst);
-
-                                match seq_num {
-                                    None => true,
-                                    Some(seq_num) => {
-                                        let block_seq_num = block.get_seq_num();
-
-                                        match data_par_burst {
-                                            Some(_) => block_seq_num == seq_num,
-                                            None =>
-                                            // fix seq num for the case of no metadata block
-                                            {
-                                                block.get_seq_num() == seq_num
-                                                    || block.get_seq_num() == seq_num + 1
-                                            }
-                                        }
+                                match data_par_burst {
+                                    Some(_) => block_seq_num == seq_num,
+                                    None =>
+                                    // fix seq num for the case of no metadata block
+                                    {
+                                        block.get_seq_num() == seq_num
+                                            || block.get_seq_num() == seq_num + 1
                                     }
                                 }
                             }
@@ -1107,30 +1040,23 @@ pub fn decode(
                                 )?;
                             }
                         } else {
-                            match seq_num {
-                                Some(seq_num) => {
-                                    if sbx_block::seq_num_is_meta(seq_num) {
-                                        stats.incre_meta_blocks_failed();
-                                    } else if sbx_block::seq_num_is_parity_w_data_par_burst(
-                                        seq_num,
-                                        data_par_burst,
-                                    ) {
-                                        stats.incre_parity_blocks_failed();
-                                    } else {
-                                        stats.incre_data_blocks_failed();
+                            if sbx_block::seq_num_is_meta(seq_num) {
+                                stats.incre_meta_blocks_failed();
+                            } else if sbx_block::seq_num_is_parity_w_data_par_burst(
+                                seq_num,
+                                data_par_burst,
+                            ) {
+                                stats.incre_parity_blocks_failed();
+                            } else {
+                                stats.incre_data_blocks_failed();
 
-                                        write_blank_chunk(
-                                            is_last_data_block(&stats, total_data_chunk_count),
-                                            data_size_of_last_data_block,
-                                            &ref_block,
-                                            &mut writer,
-                                            &mut hash_ctx,
-                                        )?;
-                                    }
-                                }
-                                None => {
-                                    stats.incre_uncertain_blocks_failed();
-                                }
+                                write_blank_chunk(
+                                    is_last_data_block(&stats, total_data_chunk_count),
+                                    data_size_of_last_data_block,
+                                    &ref_block,
+                                    &mut writer,
+                                    &mut hash_ctx,
+                                )?;
                             }
                         }
 
@@ -1138,9 +1064,7 @@ pub fn decode(
                             break;
                         }
 
-                        if let Some(ref mut block_index) = block_index {
-                            incre_or_break_if_last!(block_index => *block_index);
-                        }
+                        incre_or_break_if_last!(block_index => block_index);
                     }
                 }
             }
