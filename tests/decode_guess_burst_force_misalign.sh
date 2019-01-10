@@ -9,8 +9,7 @@ file_size=$(ls -l dummy | awk '{ print $5 }')
 # generate test data
 dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null
 
-# for ver in ${VERSIONS[*]}; do
-for ver in 17; do
+for ver in ${VERSIONS[*]}; do
   for (( i=0; i < 3; i++ )); do
     if   [[ $ver ==  1 ]]; then
       data_shards=$((1 + RANDOM % 128))
@@ -83,8 +82,7 @@ for ver in 17; do
     fi
 
     # check that blkar moves to the specified location if --guess-burst-from is specified
-    # offset=$[500 + RANDOM % 1000]
-    offset=$[512]
+    offset=$[500 + RANDOM % 1000]
 
     echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
     output=$(./../blkar encode --json --sbx-version $ver -f dummy $container_name \
