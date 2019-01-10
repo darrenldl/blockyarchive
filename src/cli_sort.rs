@@ -26,6 +26,7 @@ Ignored if --dry-run is supplied.",
         .arg(ref_from_byte_arg())
         .arg(ref_to_byte_inc_arg())
         .arg(ref_to_byte_exc_arg())
+        .arg(guess_burst_from_byte_arg())
         .arg(from_byte_arg().help(FROM_BYTE_ARG_HELP_MSG_REF_BLOCK))
         .arg(to_byte_inc_arg())
         .arg(to_byte_exc_arg())
