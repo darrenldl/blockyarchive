@@ -31,12 +31,14 @@ for ver in ${VERSIONS[*]}; do
       parity_shards=$((1 + RANDOM % 128))
     fi
 
-    burst=$[1 + RANDOM % 15]
+    # burst=$[1 + RANDOM % 1000]
+    burst=1000
 
     # check that blkar defaults to guessing from start if --guess-burst-from is not specified
     offset=$[1 + RANDOM % 100]
 
-    container_name=show_$data_shards\_$parity_shards\_$ver.sbx
+    container_name=sort_$data_shards\_$parity_shards\_$ver.sbx
+    output_name=sort_$data_shards\_$parity_shards\_$ver
 
     echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
     output=$(./../blkar encode --json --sbx-version $ver -f dummy $container_name \
@@ -66,7 +68,21 @@ for ver in ${VERSIONS[*]}; do
     cat $container_name.tmp >> $container_name
     rm $container_name.tmp
 
-    echo -n "Checking container burst error resistance level"
+    echo -n "Sorting container"
+    output=$(./../blkar sort -f --json --force-misalign --from $offset $container_name $output_name)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo " ==> Invalid JSON"
+      exit_code=1
+    fi
+    cmp -i $offset:0 $container_name $output_name
+    if [[ $? == 0 ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+
+    echo -n "Checking sorted container burst error resistance level"
     output=$(./../blkar show --json --force-misalign --from $offset --guess-burst $container_name)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
@@ -74,7 +90,7 @@ for ver in ${VERSIONS[*]}; do
     fi
     burst_shown=$(echo $output | jq -r ".bestGuessForBurstErrorResistanceLevel")
     if [[ (($ver == "1" || $ver == "2" || $ver == "3") && ($burst_shown == "null"))
-              || (($ver == "17" || $ver == "18" || $ver == "19") && ($burst_shown == $burst)) ]]; then
+                || (($ver == "17" || $ver == "18" || $ver == "19") && ($burst_shown == $burst)) ]]; then
       echo " ==> Okay"
     else
       echo " ==> NOT okay"
@@ -112,15 +128,29 @@ for ver in ${VERSIONS[*]}; do
     cat $container_name.tmp >> $container_name
     rm $container_name.tmp
 
-    echo -n "Checking container burst error resistance level"
-    output=$(./../blkar show --json --force-misalign --guess-burst-from $offset --from $offset --guess-burst $container_name)
+    echo -n "Sorting container"
+    output=$(./../blkar sort -f --json --force-misalign --guess-burst-from $offset --from $offset $container_name $output_name)
+    if [[ $(echo $output | jq -r ".error") != null ]]; then
+      echo " ==> Invalid JSON"
+      exit_code=1
+    fi
+    cmp -i $offset:0 $container_name $output_name
+    if [[ $? == 0 ]]; then
+      echo " ==> Okay"
+    else
+      echo " ==> NOT okay"
+      exit_code=1
+    fi
+
+    echo -n "Checking sorted container burst error resistance level"
+    output=$(./../blkar show --json --force-misalign --from $offset --guess-burst $container_name)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
     fi
     burst_shown=$(echo $output | jq -r ".bestGuessForBurstErrorResistanceLevel")
     if [[ (($ver == "1" || $ver == "2" || $ver == "3") && ($burst_shown == "null"))
-              || (($ver == "17" || $ver == "18" || $ver == "19") && ($burst_shown == $burst)) ]]; then
+                  || (($ver == "17" || $ver == "18" || $ver == "19") && ($burst_shown == $burst)) ]]; then
       echo " ==> Okay"
     else
       echo " ==> NOT okay"

@@ -97,6 +97,7 @@ tests=(
   "sort_ref_from_to_tests_force_misalign"
   "show_guess_burst_force_misalign"
   "decode_guess_burst_force_misalign"
+  "sort_guess_burst_force_misalign"
 )
 
 test_count=${#tests[@]}
