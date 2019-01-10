@@ -31,7 +31,7 @@ for ver in ${VERSIONS[*]}; do
       parity_shards=$((1 + RANDOM % 128))
     fi
 
-    burst=$[1 + RANDOM % 15]
+    burst=$[1 + RANDOM % 1000]
 
     # check that blkar defaults to guessing from start if --guess-burst-from is not specified
     offset=$[1 + RANDOM % 100]

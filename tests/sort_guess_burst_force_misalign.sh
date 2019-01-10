@@ -31,8 +31,7 @@ for ver in ${VERSIONS[*]}; do
       parity_shards=$((1 + RANDOM % 128))
     fi
 
-    # burst=$[1 + RANDOM % 1000]
-    burst=1000
+    burst=$[1 + RANDOM % 1000]
 
     # check that blkar defaults to guessing from start if --guess-burst-from is not specified
     offset=$[1 + RANDOM % 100]
@@ -89,6 +88,7 @@ for ver in ${VERSIONS[*]}; do
       exit_code=1
     fi
     burst_shown=$(echo $output | jq -r ".bestGuessForBurstErrorResistanceLevel")
+    echo "burst shown : $burst_shown, burst : $burst"
     if [[ (($ver == "1" || $ver == "2" || $ver == "3") && ($burst_shown == "null"))
                 || (($ver == "17" || $ver == "18" || $ver == "19") && ($burst_shown == $burst)) ]]; then
       echo " ==> Okay"
