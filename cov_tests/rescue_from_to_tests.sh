@@ -43,7 +43,7 @@ echo "Rescuing from dummy disk"
 
 echo -n "Checking that blkar only decodes first block"
 rm rescued_data/DEADBEEF* &>/dev/null
-output=$(kcov_blkar rescue --json dummy_empty_disk rescued_data --from 0 --to 511)
+output=$(kcov_blkar rescue --json dummy_empty_disk rescued_data --from 0 --to-inc 511)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
@@ -63,7 +63,7 @@ fi
 
 echo -n "Checking that blkar only decodes second block"
 rm rescued_data/DEADBEEF* &>/dev/null
-output=$(kcov_blkar rescue --json dummy_empty_disk rescued_data --from 512 --to 512)
+output=$(kcov_blkar rescue --json dummy_empty_disk rescued_data --from 512 --to-inc 512)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
     echo " ==> Invalid JSON"
     exit_code=1

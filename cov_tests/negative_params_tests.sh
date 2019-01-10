@@ -19,7 +19,7 @@ for v in ${VALS[*]}; do
     echo "show using $v to"
     echo "========================================"
 
-    ./blkar show --to="$v" dummy.sbx
+    ./blkar show --to-exc="$v" dummy.sbx
 
     echo ""
 done
