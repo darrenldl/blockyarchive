@@ -1,7 +1,8 @@
 [package]
 name    = "blkar"
-version = "2.3.0"
+version = "3.0.0"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
+edition = "2018"
 build   = "build.rs"
 exclude = [
     "ci/*",

@@ -1,28 +1,31 @@
 #![cfg(test)]
 
-use misc_utils::*;
-use integer_utils::IntegerUtils;
+use crate::integer_utils::IntegerUtils;
+use crate::misc_utils::*;
 
 mod hex_tests {
     use super::*;
-    use rand_utils;
+    use crate::rand_utils;
 
     #[test]
     fn hex_to_bytes_test_cases() {
         {
             let hex = "010203";
-            assert_eq!(&[1u8, 2, 3],
-                       hex_string_to_bytes(hex).unwrap().as_ref());
+            assert_eq!(&[1u8, 2, 3], hex_string_to_bytes(hex).unwrap().as_ref());
         }
         {
             let hex = "abcdef";
-            assert_eq!(&[0xABu8, 0xCD, 0xEF],
-                       hex_string_to_bytes(hex).unwrap().as_ref());
+            assert_eq!(
+                &[0xABu8, 0xCD, 0xEF],
+                hex_string_to_bytes(hex).unwrap().as_ref()
+            );
         }
         {
             let hex = "ABCDEF";
-            assert_eq!(&[0xABu8, 0xCD, 0xEF],
-                       hex_string_to_bytes(hex).unwrap().as_ref());
+            assert_eq!(
+                &[0xABu8, 0xCD, 0xEF],
+                hex_string_to_bytes(hex).unwrap().as_ref()
+            );
         }
     }
 
@@ -30,23 +33,19 @@ mod hex_tests {
     fn bytes_to_hex_test_cases() {
         {
             let bytes = [0u8, 1, 2];
-            assert_eq!("000102",
-                       bytes_to_lower_hex_string(&bytes));
+            assert_eq!("000102", bytes_to_lower_hex_string(&bytes));
         }
         {
             let bytes = [0u8, 1, 2];
-            assert_eq!("000102",
-                       bytes_to_upper_hex_string(&bytes));
+            assert_eq!("000102", bytes_to_upper_hex_string(&bytes));
         }
         {
             let bytes = [0xABu8, 0xCD, 0xEF];
-            assert_eq!("abcdef",
-                       bytes_to_lower_hex_string(&bytes));
+            assert_eq!("abcdef", bytes_to_lower_hex_string(&bytes));
         }
         {
             let bytes = [0xABu8, 0xCD, 0xEF];
-            assert_eq!("ABCDEF",
-                       bytes_to_upper_hex_string(&bytes));
+            assert_eq!("ABCDEF", bytes_to_upper_hex_string(&bytes));
         }
     }
 
@@ -54,50 +53,60 @@ mod hex_tests {
     fn hex_to_bytes_to_hex() {
         {
             let hex = "1234567890";
-            assert_eq!(hex,
-                       bytes_to_lower_hex_string(
-                           hex_string_to_bytes(hex).unwrap().as_ref()));
+            assert_eq!(
+                hex,
+                bytes_to_lower_hex_string(hex_string_to_bytes(hex).unwrap().as_ref())
+            );
         }
         {
             let hex = "abcdef0123";
-            assert_eq!(hex,
-                       bytes_to_lower_hex_string(
-                           hex_string_to_bytes(hex).unwrap().as_ref()));
+            assert_eq!(
+                hex,
+                bytes_to_lower_hex_string(hex_string_to_bytes(hex).unwrap().as_ref())
+            );
         }
         {
             let hex = "1234567890";
-            assert_eq!(hex,
-                       bytes_to_upper_hex_string(
-                           hex_string_to_bytes(hex).unwrap().as_ref()));
+            assert_eq!(
+                hex,
+                bytes_to_upper_hex_string(hex_string_to_bytes(hex).unwrap().as_ref())
+            );
         }
         {
             let hex = "ABCDEF0123";
-            assert_eq!(hex,
-                       bytes_to_upper_hex_string(
-                           hex_string_to_bytes(hex).unwrap().as_ref()));
+            assert_eq!(
+                hex,
+                bytes_to_upper_hex_string(hex_string_to_bytes(hex).unwrap().as_ref())
+            );
         }
         {
-            let mut bytes : [u8; 100] = [0; 100];
+            let mut bytes: [u8; 100] = [0; 100];
             for _ in 0..1000 {
                 rand_utils::fill_random_bytes(&mut bytes);
                 let hex = bytes_to_lower_hex_string(&bytes);
-                assert_eq!(hex,
-                           bytes_to_lower_hex_string(
-                               hex_string_to_bytes(&hex).unwrap().as_ref()));
+                assert_eq!(
+                    hex,
+                    bytes_to_lower_hex_string(hex_string_to_bytes(&hex).unwrap().as_ref())
+                );
                 let hex = bytes_to_upper_hex_string(&bytes);
-                assert_eq!(hex,
-                           bytes_to_upper_hex_string(
-                               hex_string_to_bytes(&hex).unwrap().as_ref()));
+                assert_eq!(
+                    hex,
+                    bytes_to_upper_hex_string(hex_string_to_bytes(&hex).unwrap().as_ref())
+                );
             }
         }
     }
 
     #[test]
     fn error_handling() {
-        assert_eq!(hex_string_to_bytes("abc").unwrap_err(),
-                   HexError::InvalidLen);
-        assert_eq!(hex_string_to_bytes("LL").unwrap_err(),
-                   HexError::InvalidHexString);
+        assert_eq!(
+            hex_string_to_bytes("abc").unwrap_err(),
+            HexError::InvalidLen
+        );
+        assert_eq!(
+            hex_string_to_bytes("LL").unwrap_err(),
+            HexError::InvalidHexString
+        );
     }
 }
 
@@ -117,12 +126,18 @@ quickcheck! {
                                                         force_misalign    : bool,
                                                         bytes_so_far      : u64,
                                                         last_possible_pos : u64) -> bool {
+        let to_byte = match to_byte_inc {
+            None    => None,
+            Some(x) => Some(RangeEnd::Inc(x)),
+        };
+
         let RequiredLenAndSeekTo { required_len, seek_to } =
-            calc_required_len_and_seek_to_from_byte_range_inc(from_byte,
-                                                              to_byte_inc,
-                                                              force_misalign,
-                                                              bytes_so_far,
-                                                              last_possible_pos);
+            calc_required_len_and_seek_to_from_byte_range(from_byte,
+                                                          to_byte,
+                                                          force_misalign,
+                                                          bytes_so_far,
+                                                          PositionOrLength::Pos(last_possible_pos),
+                                                          None);
 
         let from_byte = match from_byte   {
             None => 0,
@@ -150,7 +165,10 @@ quickcheck! {
 #[cfg(not(target_os = "windows"))]
 fn test_make_path_simple_cases() {
     assert_eq!("abcd/efgh", make_path(&["abcd", "efgh"]));
-    assert_eq!("/usb/folder1/test.sbx", make_path(&["/usb/", "/folder1/", "/test.sbx/"]));
+    assert_eq!(
+        "/usb/folder1/test.sbx",
+        make_path(&["/usb/", "/folder1/", "/test.sbx/"])
+    );
     assert_eq!("/abcd/efgh", make_path(&["/abcd/", "efgh"]));
     assert_eq!("abcd/efgh", make_path(&["abcd/", "/efgh"]));
     assert_eq!("/abcd/efgh", make_path(&["/abcd", "efgh/"]));
@@ -161,7 +179,7 @@ fn test_make_path_simple_cases() {
 
 #[test]
 fn test_buffer_is_blank_simple_cases() {
-    let buffer : [u8; 100] = [0; 100];
+    let buffer: [u8; 100] = [0; 100];
     assert!(buffer_is_blank(&buffer));
     assert!(buffer_is_blank(&buffer[0..10]));
     assert!(buffer_is_blank(&buffer[1..2]));

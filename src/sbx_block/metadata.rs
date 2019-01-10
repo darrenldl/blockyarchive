@@ -1,9 +1,8 @@
 use std;
 
-use multihash;
-use sbx_specs::{Version,
-                ver_to_data_size};
 use super::Error;
+use crate::multihash;
+use crate::sbx_specs::{ver_to_data_size, Version};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Metadata {
@@ -40,24 +39,24 @@ pub enum MetadataID {
     RSP,
 }
 
-static PREAMBLE_LEN : usize = 3 + 1;
+static PREAMBLE_LEN: usize = 3 + 1;
 
-fn single_info_size(meta : &Metadata) -> usize {
+fn single_info_size(meta: &Metadata) -> usize {
     use self::Metadata::*;
     use std::mem;
     match *meta {
-        FNM(ref x) | SNM(ref x)  => x.len(),
+        FNM(ref x) | SNM(ref x) => x.len(),
         FSZ(_) | FDT(_) | SDT(_) => mem::size_of::<u64>(),
-        HSH(ref x)               => multihash::specs::Param::new(x.0).total_length(),
-        RSD(_) | RSP(_)          => mem::size_of::<u8>(),
+        HSH(ref x) => multihash::specs::Param::new(x.0).total_length(),
+        RSD(_) | RSP(_) => mem::size_of::<u8>(),
     }
 }
 
-fn single_meta_size(meta : &Metadata) -> usize {
+fn single_meta_size(meta: &Metadata) -> usize {
     PREAMBLE_LEN + single_info_size(meta)
 }
 
-pub fn id_to_bytes(id : MetadataID) -> [u8; 3] {
+pub fn id_to_bytes(id: MetadataID) -> [u8; 3] {
     use self::MetadataID::*;
     match id {
         FNM => [b'F', b'N', b'M'],
@@ -71,7 +70,7 @@ pub fn id_to_bytes(id : MetadataID) -> [u8; 3] {
     }
 }
 
-pub fn id_to_str(id : MetadataID) -> &'static str {
+pub fn id_to_str(id: MetadataID) -> &'static str {
     use self::MetadataID::*;
     match id {
         FNM => "FNM",
@@ -85,7 +84,7 @@ pub fn id_to_str(id : MetadataID) -> &'static str {
     }
 }
 
-pub fn meta_to_id(meta : &Metadata) -> MetadataID {
+pub fn meta_to_id(meta: &Metadata) -> MetadataID {
     match *meta {
         Metadata::FNM(_) => MetadataID::FNM,
         Metadata::SNM(_) => MetadataID::SNM,
@@ -98,10 +97,9 @@ pub fn meta_to_id(meta : &Metadata) -> MetadataID {
     }
 }
 
-fn single_to_bytes(meta   : &Metadata,
-                   buffer : &mut [u8]) -> Result<usize, ()> {
+fn single_to_bytes(meta: &Metadata, buffer: &mut [u8]) -> Result<usize, ()> {
     let total_size = single_meta_size(meta);
-    let info_size  = single_info_size(meta);
+    let info_size = single_info_size(meta);
 
     if buffer.len() < total_size {
         return Err(());
@@ -124,20 +122,18 @@ fn single_to_bytes(meta   : &Metadata,
     match *meta {
         FNM(ref x) | SNM(ref x) => {
             dst.copy_from_slice(x.as_bytes());
-        },
+        }
         FSZ(x) => {
-            let be_bytes : [u8; 8] =
-                unsafe { std::mem::transmute::<u64, [u8; 8]>(x.to_be()) };
+            let be_bytes: [u8; 8] = unsafe { std::mem::transmute::<u64, [u8; 8]>(x.to_be()) };
             dst.copy_from_slice(&be_bytes);
-        },
+        }
         FDT(x) | SDT(x) => {
-            let be_bytes : [u8; 8] =
-                unsafe { std::mem::transmute::<i64, [u8; 8]>(x.to_be()) };
+            let be_bytes: [u8; 8] = unsafe { std::mem::transmute::<i64, [u8; 8]>(x.to_be()) };
             dst.copy_from_slice(&be_bytes);
-        },
+        }
         HSH(ref x) => {
             multihash::hash_bytes_to_bytes(x, dst);
-        },
+        }
         RSD(x) | RSP(x) => {
             dst[0] = x;
         }
@@ -146,16 +142,15 @@ fn single_to_bytes(meta   : &Metadata,
     Ok(total_size)
 }
 
-pub fn to_bytes(meta   : &[Metadata],
-                buffer : &mut [u8])
-                -> Result<(), Error> {
+pub fn to_bytes(meta: &[Metadata], buffer: &mut [u8]) -> Result<(), Error> {
     let mut cur_pos = 0;
     for m in meta.iter() {
-        let size_written =
-            match single_to_bytes(m, &mut buffer[cur_pos..]) {
-                Ok(x)   => x,
-                Err(()) => { return Err(Error::TooMuchMetadata(meta.to_vec())); }
-            };
+        let size_written = match single_to_bytes(m, &mut buffer[cur_pos..]) {
+            Ok(x) => x,
+            Err(()) => {
+                return Err(Error::TooMuchMetadata(meta.to_vec()));
+            }
+        };
 
         cur_pos += size_written;
     }
@@ -168,15 +163,13 @@ pub fn to_bytes(meta   : &[Metadata],
     Ok(())
 }
 
-pub fn make_too_much_meta_err_string(version : Version,
-                                     meta    : &[Metadata]) -> String {
+pub fn make_too_much_meta_err_string(version: Version, meta: &[Metadata]) -> String {
     let msg = make_distribution_string(version, meta);
 
     format!("Too much metadata, distribution :\n{}", &msg)
 }
 
-pub fn make_distribution_string(version : Version,
-                                metas   : &[Metadata]) -> String {
+pub fn make_distribution_string(version: Version, metas: &[Metadata]) -> String {
     let mut string = String::with_capacity(1000);
     string.push_str("|  ID | Length | Total length |\n");
 
@@ -184,16 +177,16 @@ pub fn make_distribution_string(version : Version,
     let max_size = ver_to_data_size(version);
 
     for i in 0..metas.len() {
-        let id_str     = id_to_str(meta_to_id(&metas[i]));
+        let id_str = id_to_str(meta_to_id(&metas[i]));
         let total_size = single_meta_size(&metas[i]);
-        let info_size  = single_info_size(&metas[i]);
+        let info_size = single_info_size(&metas[i]);
 
         overall_total += total_size;
 
-        string.push_str(&format!("| {} | {:6} |       {:6} |\n",
-                                 id_str,
-                                 info_size,
-                                 total_size));
+        string.push_str(&format!(
+            "| {} | {:6} |       {:6} |\n",
+            id_str, info_size, total_size
+        ));
     }
     string.push_str("\n");
     string.push_str(&format!("Overall total length : {:6}\n", overall_total));
@@ -202,40 +195,41 @@ pub fn make_distribution_string(version : Version,
 }
 
 mod parsers {
-    use super::UncheckedMetadata;
-    use super::UncheckedMetadata::*;
     use super::super::super::misc_utils;
     use super::super::super::multihash::parsers::multihash_w_len_p;
+    use super::UncheckedMetadata;
+    use super::UncheckedMetadata::*;
 
-    use nom::be_u8;
-    use nom::be_u64;
     use nom::be_i64;
+    use nom::be_u64;
+    use nom::be_u8;
 
     macro_rules! make_meta_parser {
         (
             $name:ident, $id:expr, $constructor:path
                 => num, $n_must_be:expr, $res_parser:ident
         ) => {
-            named!($name <UncheckedMetadata>,
-                   do_parse!(
-                       _id : tag!($id) >>
-                           n : be_u8 >>
-                           res : cond_reduce!(n >= 1 && n == $n_must_be,
-                                              $res_parser) >>
-                           ($constructor(res))
-                   )
+            named!(
+                $name<UncheckedMetadata>,
+                do_parse!(
+                    _id: tag!($id)
+                        >> n: be_u8
+                        >> res: cond_reduce!(n >= 1 && n == $n_must_be, $res_parser)
+                        >> ($constructor(res))
+                )
             );
         };
         (
             $name:ident, $id:expr, $constructor:path => str
         ) => {
-            named!($name <UncheckedMetadata>,
-                   do_parse!(
-                       tag!($id) >>
-                           n : be_u8 >>
-                           res : cond_reduce!(n >= 1, take!(n)) >>
-                           ($constructor(misc_utils::slice_to_vec(res)))
-                   )
+            named!(
+                $name<UncheckedMetadata>,
+                do_parse!(
+                    tag!($id)
+                        >> n: be_u8
+                        >> res: cond_reduce!(n >= 1, take!(n))
+                        >> ($constructor(misc_utils::slice_to_vec(res)))
+                )
             );
         };
     }
@@ -248,12 +242,9 @@ mod parsers {
     make_meta_parser!(rsd_p, b"RSD", RSD => num, 1, be_u8);
     make_meta_parser!(rsp_p, b"RSP", RSP => num, 1, be_u8);
 
-    named!(hsh_p <UncheckedMetadata>,
-           do_parse!(
-               _id : tag!(b"HSH") >>
-                   res : multihash_w_len_p >>
-                   (HSH(res))
-           )
+    named!(
+        hsh_p<UncheckedMetadata>,
+        do_parse!(_id: tag!(b"HSH") >> res: multihash_w_len_p >> (HSH(res)))
     );
 
     named!(pub meta_p <Vec<UncheckedMetadata>>,
@@ -271,76 +262,78 @@ mod parsers {
     );
 }
 
-pub fn filter_invalid_metadata(input : Vec<UncheckedMetadata>) -> Vec<Metadata> {
+pub fn filter_invalid_metadata(input: Vec<UncheckedMetadata>) -> Vec<Metadata> {
     use self::UncheckedMetadata::*;
     let mut res = Vec::with_capacity(input.len());
 
-    let mut rsd : Option<usize> = None;
-    let mut rsp : Option<usize> = None;
+    let mut rsd: Option<usize> = None;
+    let mut rsp: Option<usize> = None;
 
     for meta in input.into_iter() {
-        let possibly_push : Option<Metadata> =
-            match meta {
-                FNM(x) => match String::from_utf8(x) {
-                    Ok(x)  => Some(Metadata::FNM(x)),
-                    Err(_) => None,
-                },
-                SNM(x) => { match String::from_utf8(x) {
-                    Ok(x)  => Some(Metadata::SNM(x)),
-                    Err(_) => None,
-                }},
-                FSZ(x) => Some(Metadata::FSZ(x)),
-                FDT(x) => Some(Metadata::FDT(x)),
-                SDT(x) => Some(Metadata::SDT(x)),
-                HSH(h) => Some(Metadata::HSH(h)),
-                RSD(d) => if 1 <= d {
+        let possibly_push: Option<Metadata> = match meta {
+            FNM(x) => match String::from_utf8(x) {
+                Ok(x) => Some(Metadata::FNM(x)),
+                Err(_) => None,
+            },
+            SNM(x) => match String::from_utf8(x) {
+                Ok(x) => Some(Metadata::SNM(x)),
+                Err(_) => None,
+            },
+            FSZ(x) => Some(Metadata::FSZ(x)),
+            FDT(x) => Some(Metadata::FDT(x)),
+            SDT(x) => Some(Metadata::SDT(x)),
+            HSH(h) => Some(Metadata::HSH(h)),
+            RSD(d) => {
+                if 1 <= d {
                     // only record first occurance
-                    if let None = rsd { rsd = Some(d as usize); }
+                    if let None = rsd {
+                        rsd = Some(d as usize);
+                    }
                     Some(Metadata::RSD(d))
                 } else {
                     None
-                },
-                RSP(p) => if 1 <= p {
+                }
+            }
+            RSP(p) => {
+                if 1 <= p {
                     // only record first occurance
-                    if let None = rsp { rsp = Some(p as usize); }
+                    if let None = rsp {
+                        rsp = Some(p as usize);
+                    }
                     Some(Metadata::RSP(p))
                 } else {
                     None
                 }
-            };
+            }
+        };
 
         match possibly_push {
-            None    => {},
-            Some(x) => { res.push(x) }
+            None => {}
+            Some(x) => res.push(x),
         }
     }
 
-    let res =
-        match (rsd, rsp) {
-            (Some(d), Some(p)) if d + p > 256 => {
-                // remove all RSD and RSP fields
-                res.into_iter()
-                    .filter(|x| meta_to_id(x) != MetadataID::RSD
-                            &&  meta_to_id(x) != MetadataID::RSP)
-                    .collect()
-            },
-            (..) => res
-        };
+    let res = match (rsd, rsp) {
+        (Some(d), Some(p)) if d + p > 256 => {
+            // remove all RSD and RSP fields
+            res.into_iter()
+                .filter(|x| meta_to_id(x) != MetadataID::RSD && meta_to_id(x) != MetadataID::RSP)
+                .collect()
+        }
+        (..) => res,
+    };
 
     res
 }
 
-pub fn from_bytes(bytes : &[u8])
-                  -> Result<Vec<Metadata>, Error> {
+pub fn from_bytes(bytes: &[u8]) -> Result<Vec<Metadata>, Error> {
     match parsers::meta_p(bytes) {
         Ok((_, res)) => Ok(filter_invalid_metadata(res)),
-        _            => Err(Error::ParseError)
+        _ => Err(Error::ParseError),
     }
 }
 
-pub fn get_meta_ref_by_id(id    : MetadataID,
-                          metas : &[Metadata])
-                          -> Option<&Metadata> {
+pub fn get_meta_ref_by_id(id: MetadataID, metas: &[Metadata]) -> Option<&Metadata> {
     for m in metas.iter() {
         if meta_to_id(m) == id {
             return Some(m);
@@ -349,9 +342,7 @@ pub fn get_meta_ref_by_id(id    : MetadataID,
     None
 }
 
-pub fn get_meta_ref_mut_by_id(id    : MetadataID,
-                              metas : &mut [Metadata])
-                              -> Option<&mut Metadata> {
+pub fn get_meta_ref_mut_by_id(id: MetadataID, metas: &mut [Metadata]) -> Option<&mut Metadata> {
     for m in metas.iter_mut() {
         if meta_to_id(m) == id {
             return Some(m);

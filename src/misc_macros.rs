@@ -4,19 +4,82 @@ macro_rules! unwrap_or {
     ) => {{
         match $val {
             Some(x) => x,
-            None    => $or
+            None => $or,
         }
-    }}
+    }};
 }
 
 macro_rules! get_ref_block {
     (
+        $param:expr, $json_printer:expr, $stop_flag:expr
+    ) => {{
+        get_ref_block!($param, $json_printer, $param.ref_block_choice, $stop_flag)
+    }};
+    (
         $param:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
+    ) => {{
+        use crate::sbx_specs::SBX_SCAN_BLOCK_SIZE;
+
+        let from_pos = match $param.ref_block_from_pos {
+            Some(x) => Some(x),
+            None => {
+                match $param.from_pos {
+                    Some(x) => Some(x % SBX_SCAN_BLOCK_SIZE as u64),
+                    None => None
+                }
+            },
+        };
+
+        get_ref_block!($param,
+                       from_pos,
+                       $param.ref_block_to_pos,
+                       $json_printer,
+                       $ref_block_choice,
+                       $stop_flag)
+    }};
+    (
+        no_force_misalign => $param:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
+    ) => {{
+        get_ref_block!(no_force_misalign =>
+                       $param,
+                       $param.ref_block_from_pos,
+                       $param.ref_block_to_pos,
+                       $json_printer,
+                       $ref_block_choice,
+                       $stop_flag)
+    }};
+    (
+        $param:expr, $ref_block_from_pos:expr, $ref_block_to_pos:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
+    ) => {{
+        get_ref_block!($param,
+                       $ref_block_from_pos,
+                       $ref_block_to_pos,
+                       $param.force_misalign,
+                       $json_printer,
+                       $ref_block_choice,
+                       $stop_flag)
+    }};
+    (
+        no_force_misalign => $param:expr, $ref_block_from_pos:expr, $ref_block_to_pos:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
+    ) => {{
+        get_ref_block!($param,
+                       $ref_block_from_pos,
+                       $ref_block_to_pos,
+                       false,
+                       $json_printer,
+                       $ref_block_choice,
+                       $stop_flag)
+    }};
+    (
+        $param:expr, $ref_block_from_pos:expr, $ref_block_to_pos:expr, $force_misalign:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
     ) => {{
         use std::sync::atomic::Ordering;
 
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&$param.in_file,
+                                             $ref_block_from_pos,
+                                             $ref_block_to_pos,
+                                             $force_misalign,
                                              $ref_block_choice,
                                              $param.pr_verbosity_level,
                                              $param.json_printer.json_enabled(),
@@ -39,11 +102,6 @@ macro_rules! get_ref_block {
 
         (ref_block_pos, ref_block)
     }};
-    (
-        $param:expr, $json_printer:expr, $stop_flag:expr
-    ) => {{
-        get_ref_block!($param, $json_printer, $param.ref_block_choice, $stop_flag)
-    }}
 }
 
 macro_rules! print_block {
@@ -115,7 +173,7 @@ macro_rules! return_if_not_ver_uses_rs {
     (
         $version:expr, $json_printer:expr
     ) => {{
-        use sbx_specs::*;
+        use crate::sbx_specs::*;
         if !ver_uses_rs($version) {
             print_if!(not_json => $json_printer => "Version {} does not use Reed-Solomon erasure code, exiting now", ver_to_usize($version););
             return Ok(None);
@@ -138,9 +196,37 @@ macro_rules! return_if_ref_not_meta {
     }}
 }
 
+macro_rules! get_guess_burst_from_pos_from_param {
+    (
+        $param:expr
+    ) => {{
+        use crate::block_utils::GuessBurstFromPos;
+
+        match $param.guess_burst_from_pos {
+            Some(x) => Some(GuessBurstFromPos::NoShift(x)),
+            None => match $param.from_pos {
+                None => None,
+                Some(x) => Some(GuessBurstFromPos::ShiftToStart(x)),
+            },
+        }
+    }};
+}
+
 macro_rules! get_burst_or_guess {
     (
+        no_offset => $param:expr, $ref_block_pos:expr, $ref_block:expr
+    ) => {{
+        get_burst_or_guess!($param, None, false, $ref_block_pos, $ref_block)
+    }};
+    (
         $param:expr, $ref_block_pos:expr, $ref_block:expr
+    ) => {{
+        let from_pos = get_guess_burst_from_pos_from_param!($param);
+
+        get_burst_or_guess!($param, from_pos, $param.force_misalign, $ref_block_pos, $ref_block)
+    }};
+    (
+        $param:expr, $from_pos:expr, $force_misalign:expr, $ref_block_pos:expr, $ref_block:expr
     ) => {{
         let burst = unwrap_or!($param.burst,
                                if ver_uses_rs($ref_block.get_version()) {
@@ -149,6 +235,8 @@ macro_rules! get_burst_or_guess {
                                                            "guess burst error resistance level");
 
                                    unwrap_or!(block_utils::guess_burst_err_resistance_level(&$param.in_file,
+                                                                                            $from_pos,
+                                                                                            $force_misalign,
                                                                                             $ref_block_pos,
                                                                                             &$ref_block)?,
                                               {
@@ -355,7 +443,7 @@ macro_rules! break_if_atomic_bool {
         if $atomic_bool.load(Ordering::SeqCst) {
             break;
         }
-    }}
+    }};
 }
 
 macro_rules! break_if_reached_required_len {
@@ -365,7 +453,7 @@ macro_rules! break_if_reached_required_len {
         if $bytes_processed >= $required_len {
             break;
         }
-    }}
+    }};
 }
 
 macro_rules! shadow_to_avoid_use {
@@ -374,5 +462,48 @@ macro_rules! shadow_to_avoid_use {
     ) => {
         #[allow(unused_variables)]
         let $var = ();
-    }
+    };
+}
+
+macro_rules! break_if_last {
+    (
+        $cur:expr, $last:expr
+    ) => {{
+        if $cur == $last {
+            break;
+        }
+    }};
+    (
+        seq_num => $cur:expr
+    ) => {{
+        use crate::sbx_specs::SBX_LAST_SEQ_NUM;
+
+        break_if_last!($cur, SBX_LAST_SEQ_NUM);
+    }};
+    (
+        block_index => $cur:expr
+    ) => {{
+        break_if_last!($cur, std::u64::MAX);
+    }};
+}
+
+macro_rules! incre_or_break_if_last {
+    (
+        $cur:expr, $last:expr
+    ) => {{
+        break_if_last!($cur, $last);
+        $cur += 1;
+    }};
+    (
+        seq_num => $cur:expr
+    ) => {
+        break_if_last!(seq_num => $cur);
+        $cur += 1;
+    };
+    (
+        block_index => $cur:expr
+    ) => {
+        break_if_last!(block_index => $cur);
+        $cur += 1;
+    };
 }

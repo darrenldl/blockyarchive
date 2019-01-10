@@ -4,7 +4,7 @@ exit_code=0
 
 VERSIONS=(1 2 3 17 18 19)
 
-file_size=$[1024 * 1024 * 10]
+file_size=$(ls -l dummy | awk '{ print $5 }')
 
 # generate test data
 dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null
@@ -37,7 +37,7 @@ for ver in ${VERSIONS[*]}; do
 
         echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
         output=$(cat dummy | \
-                   ./blkar encode --json --sbx-version $ver -f - $container_name \
+                   ./../blkar encode --json --sbx-version $ver -f - $container_name \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
@@ -60,7 +60,7 @@ for ver in ${VERSIONS[*]}; do
         new_burst=$[$burst+2]
 
         echo -n "Sorting container"
-        output=$(./blkar sort --json -f --burst $new_burst $container_name sorted_$container_name)
+        output=$(./../blkar sort --json -f --burst $new_burst $container_name sorted_$container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -73,7 +73,7 @@ for ver in ${VERSIONS[*]}; do
         fi
 
         echo -n "Checking sorted container burst error resistance level"
-        output=$(./blkar show --json --guess-burst sorted_$container_name)
+        output=$(./../blkar show --json --guess-burst sorted_$container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -90,7 +90,7 @@ for ver in ${VERSIONS[*]}; do
         output_name=dummy_$data_shards\_$parity_shards
 
         echo -n "Decoding"
-        output=$(./blkar decode --json -f sorted_$container_name $output_name)
+        output=$(./../blkar decode --json -f sorted_$container_name $output_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -113,4 +113,4 @@ for ver in ${VERSIONS[*]}; do
     done
 done
 
-exit $exit_code
+echo $exit_code > exit_code

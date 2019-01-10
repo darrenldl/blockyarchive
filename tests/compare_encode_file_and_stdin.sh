@@ -7,7 +7,7 @@ VERSIONS=(1 2 3 17 18 19)
 # Encode in all 6 versions
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver"
-  output=$(./blkar encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
+  output=$(./../blkar encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
                   --rs-data 10 --rs-parity 2 --uid DEADBEEF0123)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
@@ -24,7 +24,7 @@ done
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver using stdin as input"
   output=$(cat dummy | \
-             ./blkar encode --json --sbx-version $ver -f - dummy"$ver"_stdin.sbx \
+             ./../blkar encode --json --sbx-version $ver -f - dummy"$ver"_stdin.sbx \
                     --rs-data 10 --rs-parity 2 --uid DEADBEEF0123)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
@@ -60,4 +60,4 @@ for ver in ${VERSIONS[*]}; do
   fi
 done
 
-exit $exit_code
+echo $exit_code > exit_code

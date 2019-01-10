@@ -9,21 +9,21 @@ uid3=$(cat /dev/urandom | tr -dc 0-9A-F | fold -w 12 | head -n 1)
 uid_unused=$(cat /dev/urandom | tr -dc 0-9a-f | fold -w 12 | head -n 1)
 
 echo -n "Encoding files"
-output=$(./blkar encode --json --uid $uid1 -f dummy rescue_picky_uid1.sbx)
+output=$(./../blkar encode --json --uid $uid1 -f dummy rescue_picky_uid1.sbx)
 if [[ $(echo $output | jq -r ".stats.fileUID") == "$uid1" ]]; then
     echo -n " ==> Okay"
 else
     echo -n " ==> NOT okay"
     exit_code=1
 fi
-output=$(./blkar encode --json --uid $uid2 -f dummy rescue_picky_uid2.sbx)
+output=$(./../blkar encode --json --uid $uid2 -f dummy rescue_picky_uid2.sbx)
 if [[ $(echo $output | jq -r ".stats.fileUID") == "$uid2" ]]; then
     echo -n " ==> Okay"
 else
     echo -n " ==> NOT okay"
     exit_code=1
 fi
-output=$(./blkar encode --json --uid $uid3 -f dummy rescue_picky_uid3.sbx)
+output=$(./../blkar encode --json --uid $uid3 -f dummy rescue_picky_uid3.sbx)
 if [[ $(echo $output | jq -r ".stats.fileUID") == "$uid3" ]]; then
     echo " ==> Okay"
 else
@@ -42,7 +42,7 @@ cat rescue_picky_uid3.sbx >> dummy_disk2
 echo -n "Showing from dummy disk 2 with unused uid"
 rm -rf rescued_data2 &>/dev/null
 mkdir rescued_data2 &>/dev/null
-output=$(./blkar show --json --only-pick-uid $uid_unused dummy_disk2)
+output=$(./../blkar show --json --only-pick-uid $uid_unused dummy_disk2)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
@@ -55,7 +55,7 @@ else
 fi
 
 echo -n "Showing from dummy disk 2 with "$uid1
-output=$(./blkar show --json --only-pick-uid $uid1 dummy_disk2)
+output=$(./../blkar show --json --only-pick-uid $uid1 dummy_disk2)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -74,7 +74,7 @@ else
 fi
 
 echo -n "Showing from dummy disk 2 with "$uid2
-output=$(./blkar show --json --only-pick-uid $uid2 dummy_disk2)
+output=$(./../blkar show --json --only-pick-uid $uid2 dummy_disk2)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -93,7 +93,7 @@ else
 fi
 
 echo -n "Showing from dummy disk 2 with "$uid3
-output=$(./blkar show --json --only-pick-uid $uid3 dummy_disk2)
+output=$(./../blkar show --json --only-pick-uid $uid3 dummy_disk2)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
@@ -111,4 +111,4 @@ else
   exit_code=1
 fi
 
-exit $exit_code
+echo $exit_code > exit_code

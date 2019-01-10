@@ -8,7 +8,7 @@ VERSIONS=(1 2 3)
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver"
   output=$(cat dummy | \
-             ./blkar encode --json --sbx-version $ver -f --no-meta - dummy$ver.sbx)
+             ./../blkar encode --json --sbx-version $ver -f --no-meta - dummy$ver.sbx)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -24,7 +24,7 @@ done
 # Check all of them
 for ver in ${VERSIONS[*]}; do
   echo -n "Checking version $ver container"
-  output=$(./blkar check --json --verbose dummy$ver.sbx)
+  output=$(./../blkar check --json --verbose dummy$ver.sbx)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -40,7 +40,7 @@ done
 # Decode all of them
 for ver in ${VERSIONS[*]}; do
   echo -n "Decoding version $ver container"
-  output=$(./blkar decode --json -f dummy$ver.sbx dummy$ver)
+  output=$(./../blkar decode --json -f dummy$ver.sbx dummy$ver)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -65,4 +65,4 @@ for ver in ${VERSIONS[*]}; do
   fi
 done
 
-exit $exit_code
+echo $exit_code > exit_code

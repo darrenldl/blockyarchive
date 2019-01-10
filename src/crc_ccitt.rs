@@ -41,16 +41,13 @@
 
 include!(concat!(env!("OUT_DIR"), "/table.rs"));
 
-pub fn crc_ccitt_generic (start_val : u16, input : &[u8]) -> u16 {
-    let mut crc : u16 = start_val;
+pub fn crc_ccitt_generic(start_val: u16, input: &[u8]) -> u16 {
+    let mut crc: u16 = start_val;
 
     for c in input {
-        let c_u16 :u16 = *c as u16;
+        let c_u16: u16 = *c as u16;
 
-        crc =
-            (crc << 8)
-            ^
-            CRCCCITT_TABLE[ (((crc >> 8) ^ c_u16) & 0x00FFu16) as usize ];
+        crc = (crc << 8) ^ CRCCCITT_TABLE[(((crc >> 8) ^ c_u16) & 0x00FFu16) as usize];
     }
 
     crc
@@ -70,7 +67,7 @@ mod tests {
 
     #[test]
     fn basic_value_tests_0x1d0f() {
-        assert_eq!(crc_ccitt_generic(0x1D0f, b"a", ), 0xB01B);
+        assert_eq!(crc_ccitt_generic(0x1D0f, b"a",), 0xB01B);
         assert_eq!(crc_ccitt_generic(0x1D0f, b"abcd"), 0xA626);
         assert_eq!(crc_ccitt_generic(0x1D0f, b"0"), 0xFACF);
         assert_eq!(crc_ccitt_generic(0x1D0f, b"0123"), 0xB5AB);

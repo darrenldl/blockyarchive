@@ -1,37 +1,33 @@
-use show_core::Param;
-use show_core;
-use sbx_specs::SBX_FILE_UID_LEN;
-use std::str::FromStr;
+use crate::sbx_specs::SBX_FILE_UID_LEN;
+use crate::show_core;
+use crate::show_core::Param;
 
-use json_printer::BracketType;
+use crate::json_printer::BracketType;
 
+use crate::cli_utils::*;
 use clap::*;
-use cli_utils::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("show")
         .about("Search for and print metadata in file")
-        .arg(in_file_arg()
-             .help("SBX container to search for metadata"))
-        .arg(Arg::with_name("show_all")
-             .long("show-all")
-             .help("Show all metadata (by default only shows the first one)"))
+        .arg(in_file_arg().help("SBX container to search for metadata"))
+        .arg(
+            Arg::with_name("show_all")
+                .long("show-all")
+                .help("Show all metadata (by default only shows the first one)"),
+        )
         .arg(only_pick_uid_arg())
         .arg(force_misalign_arg())
         .arg(pr_verbosity_level_arg())
-        .arg(from_byte_arg()
-             .help("Start from byte FROM-BYTE. The position is automatically rounded
-down to the closest multiple of 128 bytes. If this option is not
-specified, defaults to the start of file. Negative values are rejected.
-If FROM-BYTE exceeds the largest possible position (file size - 1),
-then it will be treated as (file size - 1). The rounding procedure
-is applied after all auto-adjustments."))
-        .arg(to_byte_arg())
+        .arg(guess_burst_from_byte_arg())
+        .arg(from_byte_arg().help(FROM_BYTE_ARG_HELP_MSG_SCAN))
+        .arg(to_byte_inc_arg())
+        .arg(to_byte_exc_arg())
         .arg(guess_burst_arg())
         .arg(json_arg())
 }
 
-pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
+pub fn show<'a>(matches: &ArgMatches<'a>) -> i32 {
     let json_printer = get_json_printer!(matches);
 
     json_printer.print_open_bracket(None, BracketType::Curly);
@@ -41,22 +37,27 @@ pub fn show<'a>(matches : &ArgMatches<'a>) -> i32 {
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
     let from_pos = get_from_pos!(matches, json_printer);
-    let to_pos   = get_to_pos!(matches, json_printer);
+    let to_pos = get_to_pos!(matches, json_printer);
+
+    let guess_burst_from_pos = get_guess_burst_from_pos!(matches, json_printer);
 
     let mut temp_uid = [0; SBX_FILE_UID_LEN];
-    let uid : Option<&[u8; SBX_FILE_UID_LEN]> = get_uid!(matches, temp_uid, json_printer);
+    let uid: Option<&[u8; SBX_FILE_UID_LEN]> = get_uid!(matches, temp_uid, json_printer);
 
-    let param = Param::new(matches.is_present("show_all"),
-                           matches.is_present("guess_burst"),
-                           matches.is_present("force_misalign"),
-                           &json_printer,
-                           from_pos,
-                           to_pos,
-                           in_file,
-                           uid,
-                           pr_verbosity_level);
+    let param = Param::new(
+        matches.is_present("show_all"),
+        matches.is_present("guess_burst"),
+        guess_burst_from_pos,
+        matches.is_present("force_misalign"),
+        &json_printer,
+        from_pos,
+        to_pos,
+        in_file,
+        uid,
+        pr_verbosity_level,
+    );
     match show_core::show_file(&param) {
-        Ok(s)  => exit_with_msg!(ok json_printer => "{}", s),
-        Err(e) => exit_with_msg!(op json_printer => "{}", e)
+        Ok(s) => exit_with_msg!(ok json_printer => "{}", s),
+        Err(e) => exit_with_msg!(op json_printer => "{}", e),
     }
 }

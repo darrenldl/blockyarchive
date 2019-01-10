@@ -1,11 +1,10 @@
 #![cfg(test)]
 use super::encoder::*;
-use sbx_block;
-use sbx_specs::{Version,
-                SBX_LARGEST_BLOCK_SIZE};
+use crate::sbx_block;
+use crate::sbx_specs::{Version, SBX_LARGEST_BLOCK_SIZE};
 use reed_solomon_erasure::ReedSolomon;
 
-use rand_utils::fill_random_bytes;
+use crate::rand_utils::fill_random_bytes;
 
 macro_rules! make_random_block_buffers {
     ($per_shard:expr, $size:expr) => {{
@@ -19,7 +18,7 @@ macro_rules! make_random_block_buffers {
         }
 
         buffer
-    }}
+    }};
 }
 
 #[test]
@@ -62,8 +61,10 @@ fn test_encoder_encode_correctly_simple_cases() {
 
                 let mut i = 0;
                 for b in encoder.encode_no_block_sync(refs[9]).unwrap().iter() {
-                    assert_eq!(sbx_block::slice_data_buf(version, b),
-                               sbx_block::slice_data_buf(version, &buffer[i + 10]));
+                    assert_eq!(
+                        sbx_block::slice_data_buf(version, b),
+                        sbx_block::slice_data_buf(version, &buffer[i + 10])
+                    );
                     i += 1;
                 }
             }

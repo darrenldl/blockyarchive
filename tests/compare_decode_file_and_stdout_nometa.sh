@@ -8,13 +8,13 @@ corrupt() {
   dd if=/dev/zero of=$2 bs=1 count=1 seek=$1 conv=notrunc &>/dev/null
 }
 
-file_size=$[1024 * 1024 * 1]
+file_size=$(ls -l dummy | awk '{ print $5 }')
 
 corrupt_count=10
 
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver"
-  output=$(./blkar encode --json --sbx-version $ver -f --no-meta dummy dummy$ver.sbx \
+  output=$(./../blkar encode --json --sbx-version $ver -f --no-meta dummy dummy$ver.sbx \
                   --rs-data 10 --rs-parity 2)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
@@ -30,7 +30,7 @@ for ver in ${VERSIONS[*]}; do
   container_name=dummy$ver.sbx
 
   echo "Decoding version $ver container"
-  output=$(./blkar decode --json --verbose dummy$ver.sbx dummy$ver -f)
+  output=$(./../blkar decode --json --verbose dummy$ver.sbx dummy$ver -f)
   # if [[ $(echo $output | jq -r ".error") != null ]]; then
   #   echo " ==> Invalid JSON"
   #   exit_code=1
@@ -43,7 +43,7 @@ for ver in ${VERSIONS[*]}; do
   # fi
 
   echo "Decoding version $ver container (stdout output)"
-  output=$(./blkar decode --json --verbose dummy$ver.sbx - 2>&1 > dummy"$ver"_stdout)
+  output=$(./../blkar decode --json --verbose dummy$ver.sbx - 2>&1 > dummy"$ver"_stdout)
   # if [[ $(echo $output | jq -r ".error") != null ]]; then
   #   echo " ==> Invalid JSON"
   #   exit_code=1
@@ -65,4 +65,4 @@ for ver in ${VERSIONS[*]}; do
   fi
 done
 
-exit $exit_code
+echo $exit_code > exit_code

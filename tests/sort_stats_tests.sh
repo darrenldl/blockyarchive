@@ -2,7 +2,7 @@
 
 exit_code=0
 
-file_size=$[1024 * 1024 * 10]
+file_size=$(ls -l dummy | awk '{ print $5 }')
 
 # generate test data
 dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null
@@ -14,7 +14,7 @@ for ver in 1 2 3; do
         container_name=sort_$ver.sbx
 
         echo -n "Encoding in version $ver"
-        output=$(./blkar encode --json --sbx-version $ver -f dummy $container_name \
+        output=$(./../blkar encode --json --sbx-version $ver -f dummy $container_name \
                         --hash sha1)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
@@ -36,7 +36,7 @@ for ver in 1 2 3; do
         new_burst=$[$burst+2]
 
         echo -n "Sorting container"
-        output=$(./blkar sort --json -f --burst $new_burst $container_name sorted_$container_name)
+        output=$(./../blkar sort --json -f --burst $new_burst $container_name sorted_$container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -90,7 +90,7 @@ for ver in 17 18 19; do
     container_name=sort_$data_shards\_$parity_shards\_$ver.sbx
 
     echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
-    output=$(./blkar encode --json --sbx-version $ver -f dummy $container_name \
+    output=$(./../blkar encode --json --sbx-version $ver -f dummy $container_name \
                      --hash sha1 \
                      --burst $burst \
                      --rs-data $data_shards --rs-parity $parity_shards)
@@ -112,7 +112,7 @@ for ver in 17 18 19; do
     fi
 
     echo -n "Sorting container with same burst error resistance level"
-    output=$(./blkar sort --json -f --burst $burst $container_name sorted_$container_name)
+    output=$(./../blkar sort --json -f --burst $burst $container_name sorted_$container_name)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -162,7 +162,7 @@ for ver in 17 18 19; do
     new_burst=$[burst + 2]
 
     echo -n "Sorting container with different burst error resistance level"
-    output=$(./blkar sort --json -f --burst $new_burst $container_name sorted_$container_name)
+    output=$(./../blkar sort --json -f --burst $new_burst $container_name sorted_$container_name)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -206,4 +206,4 @@ for ver in 17 18 19; do
   done
 done
 
-exit $exit_code
+echo $exit_code > exit_code

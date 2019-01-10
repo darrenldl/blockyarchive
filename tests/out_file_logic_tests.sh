@@ -10,7 +10,7 @@ rm out_test/* &>/dev/null
 
 echo -n "Testing encode output with no provided path"
 rm dummy.sbx &>/dev/null
-./blkar encode dummy &>/dev/null
+./../blkar encode dummy &>/dev/null
 
 if [ -f "dummy.sbx" ]; then
   echo " ==> Okay"
@@ -20,7 +20,7 @@ else
 fi
 
 echo -n "Testing encode output with provided full file path"
-./blkar encode dummy out_test/dummy1.sbx &>/dev/null
+./../blkar encode dummy out_test/dummy1.sbx &>/dev/null
 
 if [ -f "out_test/dummy1.sbx" ]; then
   echo " ==> Okay"
@@ -30,7 +30,7 @@ else
 fi
 
 echo -n "Testing encode output with provided directory path"
-./blkar encode dummy out_test &>/dev/null
+./../blkar encode dummy out_test &>/dev/null
 
 if [ -f "out_test/dummy.sbx" ]; then
   echo " ==> Okay"
@@ -41,7 +41,7 @@ fi
 
 echo -n "Testing decode output with no provided path"
 rm dummy &>/dev/null
-./blkar decode dummy.sbx &>/dev/null
+./../blkar decode dummy.sbx &>/dev/null
 
 if [ -f "dummy" ]; then
   echo " ==> Okay"
@@ -51,7 +51,7 @@ else
 fi
 
 echo -n "Testing decode output with provided full file path"
-./blkar decode dummy.sbx out_test/decoded &>/dev/null
+./../blkar decode dummy.sbx out_test/decoded &>/dev/null
 
 if [ -f "out_test/decoded" ]; then
   echo " ==> Okay"
@@ -61,7 +61,7 @@ else
 fi
 
 echo -n "Testing decode output with provided directory path"
-./blkar decode dummy.sbx out_test &>/dev/null
+./../blkar decode dummy.sbx out_test &>/dev/null
 
 if [ -f "out_test/dummy" ]; then
   echo " ==> Okay"
@@ -75,12 +75,12 @@ truncate -s 1K dummy
 
 echo "Encode with no metadata"
 rm dummy.sbx &>/dev/null
-./blkar encode dummy --no-meta &>/dev/null
+./../blkar encode dummy --no-meta &>/dev/null
 
 echo "Repeating same tests for decoding"
 echo -n "Testing decode output with no provided path"
 rm dummy &>/dev/null
-./blkar decode dummy.sbx &>/dev/null
+./../blkar decode dummy.sbx &>/dev/null
 
 if [ ! -f "dummy" ]; then
   echo " ==> Okay"
@@ -92,7 +92,7 @@ fi
 rm out_test/* &>/dev/null
 
 echo -n "Testing decode output with provided full file path"
-./blkar decode dummy.sbx out_test/decoded &>/dev/null
+./../blkar decode dummy.sbx out_test/decoded &>/dev/null
 
 if [ -f "out_test/decoded" ]; then
   echo " ==> Okay"
@@ -102,7 +102,7 @@ else
 fi
 
 echo -n "Testing decode output with provided directory path"
-./blkar decode dummy.sbx out_test &>/dev/null
+./../blkar decode dummy.sbx out_test &>/dev/null
 
 if [ ! -f "out_test/dummy" ]; then
   echo " ==> Okay"
@@ -111,4 +111,4 @@ else
   exit_code=1
 fi
 
-exit $exit_code
+echo $exit_code > exit_code

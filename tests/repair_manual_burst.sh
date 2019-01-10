@@ -8,7 +8,7 @@ corrupt() {
   dd if=/dev/zero of=$2 bs=1 count=1 seek=$1 conv=notrunc &>/dev/null
 }
 
-file_size=$[1024 * 1024 * 1]
+file_size=$(ls -l dummy | awk '{ print $5 }')
 
 # generate test data
 dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null
@@ -31,7 +31,7 @@ for ver in ${VERSIONS[*]}; do
     container_name=corrupt_$data_shards\_$parity_shards\_$burst\_$ver.sbx
 
     echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards, burst = $burst"
-    output=$(./blkar encode --json --sbx-version $ver -f dummy $container_name \
+    output=$(./../blkar encode --json --sbx-version $ver -f dummy $container_name \
                      --hash sha1 \
                      --rs-data $data_shards --rs-parity $parity_shards \
                      --burst $burst)
@@ -60,7 +60,7 @@ for ver in ${VERSIONS[*]}; do
     done
 
     echo -n "Repairing without --burst"
-    output=$(./blkar repair --json --verbose $container_name)
+    output=$(./../blkar repair --json --verbose $container_name)
     # blkar may error out as guessing burst error level may fail entirely,
     # so only check for values if it didn't error out
     if [[ $(echo $output | jq -r ".error") == null ]]; then
@@ -81,7 +81,7 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     echo -n "Repairing with --burst"
-    output=$(./blkar repair --json --verbose --burst $burst $container_name)
+    output=$(./../blkar repair --json --verbose --burst $burst $container_name)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -102,7 +102,7 @@ for ver in ${VERSIONS[*]}; do
     output_name=dummy_$data_shards\_$parity_shards
 
     echo -n "Decoding"
-    output=$(./blkar decode --json -f $container_name $output_name)
+    output=$(./../blkar decode --json -f $container_name $output_name)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -125,4 +125,4 @@ for ver in ${VERSIONS[*]}; do
   done
 done
 
-exit $exit_code
+echo $exit_code > exit_code

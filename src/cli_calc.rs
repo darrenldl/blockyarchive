@@ -1,38 +1,36 @@
-use sbx_specs::{Version,
-                ver_to_usize,
-                ver_to_block_size,
-                ver_to_data_size,
-                ver_uses_rs};
+use crate::sbx_specs::{ver_to_block_size, ver_to_data_size, ver_to_usize, ver_uses_rs, Version};
 
 use std::str::FromStr;
 
-use file_utils;
+use crate::file_utils;
 
-use json_printer::BracketType;
+use crate::json_printer::BracketType;
 
+use crate::cli_utils::*;
 use clap::*;
-use cli_utils::*;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("calc")
         .about("Calculate and display detailed information given an encoding configuration")
-        .arg(Arg::with_name("in_file_size")
-             .value_name("INFILE-SIZE")
-             .required(true)
-             .index(1)
-             .help("Input file size"))
+        .arg(
+            Arg::with_name("in_file_size")
+                .value_name("INFILE-SIZE")
+                .required(true)
+                .index(1)
+                .help("Input file size"),
+        )
         .arg(sbx_version_arg())
-        .arg(Arg::with_name("no_meta")
-             .long("no-meta")
-             .help("Skip metadata block in the calculations. Metadata block is
+        .arg(Arg::with_name("no_meta").long("no-meta").help(
+            "Skip metadata block in the calculations. Metadata block is
 never skipped for version 17, 18, 19.
-This means this option has no effect for version 17, 18, 19."))
+This means this option has no effect for version 17, 18, 19.",
+        ))
         .arg(rs_data_arg())
         .arg(rs_parity_arg())
         .arg(burst_arg())
         .arg(json_arg())
 }
 
-pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
+pub fn calc<'a>(matches: &ArgMatches<'a>) -> i32 {
     let json_printer = get_json_printer!(matches);
 
     json_printer.print_open_bracket(None, BracketType::Curly);
@@ -41,48 +39,48 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
 
     let meta_enabled = Some(get_meta_enabled!(matches));
 
-    let in_file_size =
-        match u64::from_str(matches.value_of("in_file_size").unwrap()) {
-            Ok(x)  => x,
-            Err(_) => exit_with_msg!(usr json_printer => "Invalid file size")
-        };
+    let in_file_size = match u64::from_str(matches.value_of("in_file_size").unwrap()) {
+        Ok(x) => x,
+        Err(_) => exit_with_msg!(usr json_printer => "Invalid file size"),
+    };
 
-    let data_par_burst =
-        if ver_uses_rs(version) {
-            // deal with RS related options
-            let data_shards   = get_data_shards!(matches, version, json_printer);
-            let parity_shards = get_parity_shards!(matches, version, json_printer);
+    let data_par_burst = if ver_uses_rs(version) {
+        // deal with RS related options
+        let data_shards = get_data_shards!(matches, version, json_printer);
+        let parity_shards = get_parity_shards!(matches, version, json_printer);
 
-            check_data_parity_shards!(data_shards, parity_shards, json_printer);
+        check_data_parity_shards!(data_shards, parity_shards, json_printer);
 
-            let burst = get_burst_or_zero!(matches, json_printer);
+        let burst = get_burst_or_zero!(matches, json_printer);
 
-            Some((data_shards, parity_shards, burst))
-        } else {
-            None
-        };
+        Some((data_shards, parity_shards, burst))
+    } else {
+        None
+    };
 
-    let out_file_size =
-        file_utils::from_orig_file_size::calc_container_size(version,
-                                                             meta_enabled,
-                                                             data_par_burst,
-                                                             in_file_size);
+    let out_file_size = file_utils::from_orig_file_size::calc_container_size(
+        version,
+        meta_enabled,
+        data_par_burst,
+        in_file_size,
+    );
 
-    let total_block_count =
-        file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps(version,
-                                                                               meta_enabled,
-                                                                               data_par_burst,
-                                                                               in_file_size);
+    let total_block_count = file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps(
+        version,
+        meta_enabled,
+        data_par_burst,
+        in_file_size,
+    );
 
     let meta_block_count =
-        file_utils::calc_meta_block_count_exc_burst_gaps(version,
-                                                         meta_enabled,
-                                                         data_par_burst);
+        file_utils::calc_meta_block_count_exc_burst_gaps(version, meta_enabled, data_par_burst);
 
     let (data_only_block_count, parity_block_count) =
-        file_utils::from_orig_file_size::calc_data_only_and_parity_block_count_exc_burst_gaps(version,
-                                                                                              data_par_burst,
-                                                                                              in_file_size);
+        file_utils::from_orig_file_size::calc_data_only_and_parity_block_count_exc_burst_gaps(
+            version,
+            data_par_burst,
+            in_file_size,
+        );
 
     json_printer.print_open_bracket(Some("stats"), BracketType::Curly);
 
@@ -90,10 +88,17 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
              "SBX container general info";
              "========================================";);
     if ver_uses_rs(version) {
-        print_maybe_json!(json_printer, "    SBX container version        : {}",
-                          ver_to_usize(version));
+        print_maybe_json!(
+            json_printer,
+            "    SBX container version        : {}",
+            ver_to_usize(version)
+        );
     } else {
-        print_maybe_json!(json_printer, "    SBX container version        : {}", ver_to_usize(version));
+        print_maybe_json!(
+            json_printer,
+            "    SBX container version        : {}",
+            ver_to_usize(version)
+        );
     }
     print_maybe_json!(json_printer,     "    SBX container block size     : {}", ver_to_block_size(version) => skip_quotes);
     print_maybe_json!(json_printer,     "    SBX container data  size     : {}", ver_to_data_size(version)  => skip_quotes);
@@ -160,7 +165,7 @@ pub fn calc<'a>(matches : &ArgMatches<'a>) -> i32 {
                 );
             }
 
-            let block_set_size       = data + par;
+            let block_set_size = data + par;
             let super_block_set_size = (data + par) * burst;
 
             print_block!("    The container can tolerate {} burst SBX block corruptions in", par;

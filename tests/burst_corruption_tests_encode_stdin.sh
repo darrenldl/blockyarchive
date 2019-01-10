@@ -8,7 +8,7 @@ corrupt() {
     dd if=/dev/zero of=$4 bs=$2 count=$3 seek=$1 conv=notrunc &>/dev/null
 }
 
-file_size=$[1024 * 1024 * 1]
+file_size=$(ls -l dummy | awk '{ print $5 }')
 
 # generate test data
 dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null
@@ -33,7 +33,7 @@ for ver in ${VERSIONS[*]}; do
 
         echo -n "Encoding"
         output=$(cat dummy | \
-                   ./blkar encode --json --sbx-version $ver -f - $container_name \
+                   ./../blkar encode --json --sbx-version $ver -f - $container_name \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards \
                         --burst $burst)
@@ -55,7 +55,7 @@ for ver in ${VERSIONS[*]}; do
         fi
 
         echo -n "Checking burst error resistance level"
-        output=$(./blkar show --json --guess-burst $container_name)
+        output=$(./../blkar show --json --guess-burst $container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -83,7 +83,7 @@ for ver in ${VERSIONS[*]}; do
         done
 
         echo -n "Repairing"
-        output=$(./blkar repair --json --verbose $container_name)
+        output=$(./../blkar repair --json --verbose $container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -98,7 +98,7 @@ for ver in ${VERSIONS[*]}; do
         output_name=dummy_$data_shards\_$parity_shards
 
         echo -n "Decoding"
-        output=$(./blkar decode --json -f $container_name $output_name)
+        output=$(./../blkar decode --json -f $container_name $output_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -121,4 +121,4 @@ for ver in ${VERSIONS[*]}; do
     done
 done
 
-exit $exit_code
+echo $exit_code > exit_code

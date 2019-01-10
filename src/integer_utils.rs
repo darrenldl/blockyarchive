@@ -1,9 +1,9 @@
 pub trait IntegerUtils {
     type Item;
-    fn round_down_to_multiple(Self::Item, Self::Item) -> Self::Item;
-    fn round_up_to_multiple  (Self::Item, Self::Item) -> Self::Item;
-    fn ensure_at_least       (Self::Item, Self::Item) -> Self::Item;
-    fn ensure_at_most        (Self::Item, Self::Item) -> Self::Item;
+    fn round_down_to_multiple(_: Self::Item, _: Self::Item) -> Self::Item;
+    fn round_up_to_multiple(_: Self::Item, _: Self::Item) -> Self::Item;
+    fn ensure_at_least(_: Self::Item, _: Self::Item) -> Self::Item;
+    fn ensure_at_most(_: Self::Item, _: Self::Item) -> Self::Item;
 }
 
 macro_rules! impl_integer_utils {
@@ -44,5 +44,4 @@ macro_rules! impl_integer_utils {
     }
 }
 
-impl_integer_utils!(u8, u16, u32, u64, usize,
-                    i8, i16, i32, i64, isize);
+impl_integer_utils!(u8, u16, u32, u64, usize, i8, i16, i32, i64, isize);

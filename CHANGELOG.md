@@ -1,10 +1,10 @@
-## 2.3.0
+## 3.0.0
 
 - Changed decode mode to use only file portion of stored file name in SBX container
 
   - In previous versions, if the stored file name contains a path, then the entire path would be used, which can lead to unexpected output locations
 
-- Added `--multi-pass` flag to decode and sort mode
+- Added `--multi-pass` and `--multi-pass-no-skip` flag to decode and sort mode
 
   - This disables truncation, and allows updating the file gradually across multiple runs
 
@@ -15,6 +15,56 @@
 - Added `--dry-run` flag to sort mode
 
   - Combined with the improved stats tracking allows checking if the container is sorted or not
+
+- Repalced `--to` with `--to-inc` and `--to-exc`
+
+  - This affects `rescue` and `show` mode
+
+- Added `--from`, `--to-inc` and `--to-exc` to the following modes
+
+  - check
+  - decode
+  - encode
+  - sort
+
+- Added `--ref-from`, `--ref-to-inc` and `--ref-to-exc` to the following modes
+
+  - check
+  - decode
+  - sort
+
+- Added `--force-misalign` to the following modes
+
+  - check
+  - decode
+  - sort
+
+- Updated reference block scanning code to respect `--force-misalign`
+
+- Updated burst error resistance level guessing to respect `--force-misalign`
+
+- Updated decode mode stats output
+
+  - This results in potentially incompatible JSON output
+
+- Fixed `misc_utils::calc_required_len_and_seek_to_from_byte_range`
+
+  - Sometimes off by one error occured
+
+- Ran `rustfmt` for code formatting
+
+- Ran `cargo fix --edition` to update to Rust 2018 edition
+
+- Fixed potential integer overflow issues in decode and repair mode
+
+  - Previously, when output is stdout, block index and seq num counter in decode mode may be incremented even if already at max
+  - Previously, seq num counter in repair mode may be incremented even if already at max
+
+- Updated burst error resistance level guessing code to respect `--from` and `--force-misalign` options
+
+- Fixed potential incorrect behaviour when processed block is incomplete
+
+  - Rectified by adding `#[must_use]` to `Reader::ReadResult`, forcing all code paths to check read result instead of possibly ignoring it
 
 ## 2.2.0
 

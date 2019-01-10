@@ -10,463 +10,216 @@ if [[ $PWD != */tests ]]; then
   cd tests
 fi
 
-./copy_release.sh
+if [[ "$1" == "debug" ]]; then
+  ./copy.sh
+else
+  ./copy_release.sh
+fi
 
 test_failed=0
 test_failed_names=""
 
-echo "Generating test data"
-./gen_dummy.sh
-# truncate -s 10m dummy
+tests=(
+  "version_tests"
+  "version_tests_encode_stdin"
+  "version_tests_decode_stdout"
+  "compare_encode_file_and_stdin"
+  "compare_decode_file_and_stdout"
+  "compare_decode_file_and_stdout_corrupted_container"
+  "decode_manual_burst"
+  "decode_manual_burst_encode_stdin"
+  "decode_manual_burst_decode_stdout"
+  "repair_manual_burst"
+  "repair_manual_burst_encode_stdin"
+  "repair_manual_burst_decode_stdout"
+  "nometa_tests"
+  "nometa_tests_encode_stdin"
+  "nometa_tests_decode_stdout"
+  "compare_decode_file_and_stdout_nometa"
+  "hash_tests"
+  "hash_tests_encode_stdin"
+  "hash_tests_decode_stdout"
+  "rescue_tests"
+  "rescue_tests_encode_stdin"
+  "rescue_tests_decode_stdout"
+  "rescue_pick_uid_tests"
+  "rescue_pick_uid_tests_encode_stdin"
+  "rescue_pick_uid_tests_decode_stdout"
+  "show_pick_uid_tests"
+  "out_file_logic_tests"
+  "corruption_tests"
+  "corruption_tests_encode_stdin"
+  "corruption_tests_decode_stdout"
+  "burst_corruption_tests"
+  "burst_corruption_tests_encode_stdin"
+  "burst_corruption_tests_decode_stdout"
+  "sort_tests"
+  "sort_tests_encode_stdin"
+  "sort_tests_decode_stdout"
+  "sort_stats_tests"
+  "sort_dry_run"
+  "sort_multi_pass"
+  "sort_multi_pass_no_skip"
+  "decode_multi_pass"
+  "decode_multi_pass_no_skip"
+  "file_size_calc_tests"
+  "repair_truncated_tests"
+  "repair_truncated_tests_encode_stdin"
+  "repair_truncated_tests_decode_stdout"
+  "decode_blanks"
+  "decode_blanks_decode_stdout"
+  "check_from_to_tests"
+  "check_from_to_rounding"
+  "check_from_to_force_misalign"
+  "decode_from_to_tests"
+  "decode_from_to_tests_rounding"
+  "decode_from_to_tests_force_misalign"
+  "decode_from_to_tests_corruption_based"
+  "decode_from_to_tests_corruption_based_rounding"
+  "decode_from_to_tests_corruption_based_force_misalign"
+  "decode_from_to_tests_decode_stdout"
+  "decode_from_to_tests_decode_stdout_rounding"
+  "decode_from_to_tests_decode_stdout_force_misalign"
+  "show_from_to_tests"
+  "show_from_to_tests_rounding"
+  "show_from_to_tests_force_misalign"
+  "rescue_from_to_tests"
+  "rescue_from_to_tests_encode_stdin"
+  "rescue_from_to_tests_rounding"
+  "rescue_from_to_tests_force_misalign"
+  "sort_from_to_tests"
+  "sort_from_to_tests_rounding"
+  "sort_from_to_tests_force_misalign"
+  "check_ref_from_to_tests"
+  "check_ref_from_to_tests_rounding"
+  "check_ref_from_to_tests_force_misalign"
+  "decode_ref_from_to_tests"
+  "decode_ref_from_to_tests_rounding"
+  "decode_ref_from_to_tests_force_misalign"
+  "sort_ref_from_to_tests"
+  "sort_ref_from_to_tests_rounding"
+  "sort_ref_from_to_tests_force_misalign"
+  "show_guess_burst_force_misalign"
+  "decode_guess_burst_force_misalign"
+  "sort_guess_burst_force_misalign"
+)
 
-# version tests
-echo "========================================"
-echo "Starting version tests"
-echo "========================================"
-./version_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-    test_failed_names=$test_failed_names"- version_tests.sh\n"
-fi
+test_count=${#tests[@]}
 
-echo "========================================"
-echo "Starting version tests (stdin as encode input)"
-echo "========================================"
-./version_tests_encode_stdin.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- version_tests_encode_stdin.sh\n"
-fi
+simul_test_count=5
 
-echo "========================================"
-echo "Starting version tests (stdout as decode output)"
-echo "========================================"
-./version_tests_decode_stdout.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- version_tests_decode_stdout.sh\n"
-fi
+start_date=$(date "+%Y-%m-%d %H:%M")
+start_time=$(date "+%s")
 
-# compare encode file and stdin input
-echo "========================================"
-echo "Starting comparison between encode with file input and stdin input"
-echo "========================================"
-./compare_encode_file_and_stdin.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- compare_encode_file_and_stdin.sh\n"
-fi
+echo ""
+echo "Test start :" $start_date
+echo ""
 
-# compare decode file and stdout output
-echo "========================================"
-echo "Starting comparison between decode with file output and stdout output"
-echo "========================================"
-./compare_decode_file_and_stdout.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- compare_decode_file_and_stdout.sh\n"
-fi
+echo "Starting $test_count tests"
+echo ""
 
-echo "========================================"
-echo "Starting comparison between decode with file output and stdout output with corrupted container"
-echo "========================================"
-./compare_decode_file_and_stdout_corrupted_container.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- compare_decode_file_and_stdout_corrupted_container.sh\n"
-fi
+i=0
+while (( $i < $test_count )); do
+  if (( $test_count - $i >= $simul_test_count )); then
+    tests_to_run=$simul_test_count
+  else
+    tests_to_run=$[test_count - i]
+  fi
 
-# decode manual burst tests
-echo "========================================"
-echo "Starting decode manual burst tests"
-echo "========================================"
-./decode_manual_burst.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- decode_manual_burst.sh\n"
-fi
+  echo "Running $tests_to_run tests in parallel"
 
-echo "========================================"
-echo "Starting decode manual burst tests (stdin as encode input)"
-echo "========================================"
-./decode_manual_burst_encode_stdin.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- decode_manual_burst_encode_stdin.sh\n"
-fi
+  j=$i
 
-echo "========================================"
-echo "Starting decode manual burst tests (stdout as decode output)"
-echo "========================================"
-./decode_manual_burst_decode_stdout.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- decode_manual_burst_decode_stdout.sh\n"
-fi
+  for (( c=0; c < $tests_to_run; c++ )); do
+    t=${tests[$i]}
+    if [[ "$t" != "" ]]; then
+      echo "    Starting $t"
 
-# repair manual burst tests
-echo "========================================"
-echo "Starting repair manual burst tests"
-echo "========================================"
-./repair_manual_burst.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- repair_manual_burst.sh\n"
-fi
+      rm -rf $t/
+      mkdir $t/
+      cd $t
+      ./../gen_dummy.sh
+      ./../$t.sh > log 2> stderr_log &
+      cd ..
 
-echo "========================================"
-echo "Starting repair manual burst tests (stdin as encode input)"
-echo "========================================"
-./repair_manual_burst_encode_stdin.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- repair_manual_burst_encode_stdin.sh\n"
-fi
+      i=$[i+1]
+    fi
+  done
 
-echo "========================================"
-echo "Starting repair manual burst tests (stdout as decode output)"
-echo "========================================"
-./repair_manual_burst_decode_stdout.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- repair_manual_burst_decode_stdout.sh\n"
-fi
+  echo "Waiting for tests to finish"
 
-# nometa tests
-echo "========================================"
-echo "Starting nometa tests"
-echo "========================================"
-./nometa_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-    test_failed_names=$test_failed_names"- nometa_tests.sh\n"
-fi
+  wait
 
-echo "========================================"
-echo "Starting nometa tests (stdin as encode input)"
-echo "========================================"
-./nometa_tests_encode_stdin.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- nometa_tests_encode_stdin.sh\n"
-fi
+  echo "Cleaning up files"
 
-echo "========================================"
-echo "Starting nometa tests (stdout as decode output)"
-echo "========================================"
-./nometa_tests_decode_stdout.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- nometa_tests_decode_stdout.sh\n"
-fi
+  for (( c=0; c < $tests_to_run; c++ )); do
+    t=${tests[$j]}
 
-echo "========================================"
-echo "Starting comparison between decode with file output and stdout output with nometa"
-echo "========================================"
-./compare_decode_file_and_stdout_nometa.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- compare_decode_file_and_stdout_nometa.sh\n"
-fi
+    if [[ "$t" != "" ]]; then
+      cd $t
 
-# hash test
-echo "========================================"
-echo "Starting hash tests"
-echo "========================================"
-./hash_tests.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- hash_tests.sh\n"
-fi
+      if [[ $? == 0 ]]; then
+        find . -type f \
+             -not -name "exit_code" \
+             -not -name "log" \
+             -not -name "stderr_log" \
+             -delete
 
-echo "========================================"
-echo "Starting hash tests (stdin as encode input)"
-echo "========================================"
-./hash_tests_encode_stdin.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- hash_tests_encode_stdin.sh\n"
-fi
+        cd ..
+      fi
+    fi
 
-echo "========================================"
-echo "Starting hash tests (stdout as decode output)"
-echo "========================================"
-./hash_tests_decode_stdout.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-    test_failed_names=$test_failed_names"- hash_tests_decode_stdout.sh\n"
-fi
+    j=$[j+1]
+  done
 
-# rescue tests
-echo "========================================"
-echo "Starting rescue tests"
-echo "========================================"
-./rescue_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-    test_failed_names=$test_failed_names"- rescue_tests.sh\n"
-fi
+  echo ""
+  echo "$[test_count - i] / $test_count tests remaining"
+  echo ""
+done
 
-echo "========================================"
-echo "Starting rescue tests (stdin as encode input)"
-echo "========================================"
-./rescue_tests_encode_stdin.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- rescue_tests_encode_stdin.sh\n"
-fi
+# go through all exit codes
+test_fail_count=0
+tests_failed=()
 
-echo "========================================"
-echo "Starting rescue tests (stdout as decode output)"
-echo "========================================"
-./rescue_tests_decode_stdout.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- rescue_tests_decode_stdout.sh\n"
-fi
+for t in ${tests[@]}; do
+  t_exit_code=$(cat $t/exit_code)
 
-echo "========================================"
-echo "Starting rescue with specified range tests"
-echo "========================================"
-./rescue_from_to_tests.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- rescue_from_to_tests.sh\n"
-fi
+  if (( $t_exit_code != 0 )); then
+    echo "========================================"
+    echo "Log of $t :"
+    echo ""
+    cat $t/log
+    echo ""
+    echo "Stderr log of $t :"
+    cat $t/stderr_log
+  fi
 
+  if (( $t_exit_code != 0 )); then
+    test_fail_count=$[$test_fail_count + 1]
+    tests_failed+=("$t")
+  fi
+done
 echo "========================================"
-echo "Starting rescue with specified range tests (stdin as encode input)"
-echo "========================================"
-./rescue_from_to_tests_encode_stdin.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- rescue_from_to_tests_encode_stdin.sh\n"
-fi
 
-echo "========================================"
-echo "Starting rescue with specified range tests (stdout as decode output)"
-echo "========================================"
-echo "Non applicable, skipped"
-
-echo "========================================"
-echo "Starting rescue with specified uid tests"
-echo "========================================"
-./rescue_pick_uid_tests.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- rescue_pick_uid_tests.sh\n"
-fi
-
-echo "========================================"
-echo "Starting rescue with specified uid tests (stdin as encode input)"
-echo "========================================"
-./rescue_pick_uid_tests_encode_stdin.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- rescue_pick_uid_tests_encode_stdin.sh\n"
-fi
-
-echo "========================================"
-echo "Starting rescue with specified uid tests (stdout as decode output)"
-echo "========================================"
-./rescue_pick_uid_tests_decode_stdout.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-    test_failed_names=$test_failed_names"- rescue_pick_uid_tests_decode_stdout.sh\n"
-fi
-
-echo "========================================"
-echo "Starting show with specified range tests"
-echo "========================================"
-./show_from_to_tests.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- show_from_to_tests.sh\n"
-fi
-
-echo "========================================"
-echo "Starting show with specified uid tests"
-echo "========================================"
-./show_pick_uid_tests.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- show_pick_uid_tests.sh\n"
-fi
-
-# output file tests
-echo "========================================"
-echo "Starting output file path logic tests"
-echo "========================================"
-./out_file_logic_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-    test_failed_names=$test_failed_names"- out_file_logic_tests.sh\n"
-fi
-
-# corruption tests
-echo "========================================"
-echo "Starting corruption tests"
-echo "========================================"
-./corruption_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-    test_failed_names=$test_failed_names"- corruption_tests.sh\n"
-fi
-
-echo "========================================"
-echo "Starting corruption tests (stdin as encode input)"
-echo "========================================"
-./corruption_tests_encode_stdin.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- corruption_tests_encode_stdin.sh\n"
-fi
-
-echo "========================================"
-echo "Starting corruption tests (stdout as decode output)"
-echo "========================================"
-./corruption_tests_decode_stdout.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- corruption_tests_decode_stdout.sh\n"
-fi
-
-# burst corruption tests
-echo "========================================"
-echo "Starting burst corruption tests"
-echo "========================================"
-./burst_corruption_tests.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- burst_corruption_tests.sh\n"
-fi
-
-echo "========================================"
-echo "Starting burst corruption tests (stdin as encode input)"
-echo "========================================"
-./burst_corruption_tests_encode_stdin.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- burst_corruption_tests_encode_stdin.sh\n"
-fi
-
-echo "========================================"
-echo "Starting burst corruption tests (stdout as decode output)"
-echo "========================================"
-./burst_corruption_tests_decode_stdout.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-    test_failed_names=$test_failed_names"- burst_corruption_tests_decode_stdout.sh\n"
-fi
-
-# sort tests
-echo "========================================"
-echo "Starting sort tests"
-echo "========================================"
-./sort_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-    test_failed_names=$test_failed_names"- sort_tests.sh\n"
-fi
-
-echo "========================================"
-echo "Starting sort tests (stdin as encode input)"
-echo "========================================"
-./sort_tests_encode_stdin.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- sort_tests_encode_stdin.sh\n"
-fi
-
-echo "========================================"
-echo "Starting sort tests (stdout as decode output)"
-echo "========================================"
-./sort_tests_decode_stdout.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- sort_tests_decode_stdout.sh\n"
-fi
-
-echo "========================================"
-echo "Starting sort stats tests"
-echo "========================================"
-./sort_stats_tests.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- sort_stats_tests.sh\n"
-fi
-
-echo "========================================"
-echo "Starting sort dry run tests"
-echo "========================================"
-./sort_dry_run.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- sort_dry_run.sh\n"
-fi
-
-echo "========================================"
-echo "Starting sort multi-pass tests"
-echo "========================================"
-./sort_multi_pass.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- sort_multi_pass.sh\n"
-fi
-
-echo "========================================"
-echo "Starting decode multi-pass tests"
-echo "========================================"
-./decode_multi_pass.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- decode_multi_pass.sh\n"
-fi
-
-# file size tests
-echo "========================================"
-echo "Starting file size calculation tests"
-echo "========================================"
-./file_size_calc_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-    test_failed_names=$test_failed_names"- file_size_calc_tests.sh\n"
-fi
-
-# container truncation tests
-echo "========================================"
-echo "Starting truncated container repair tests"
-echo "========================================"
-./repair_truncated_tests.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- repair_truncated_tests.sh\n"
-fi
-
-echo "========================================"
-echo "Starting truncated container repair tests (stdin as encode input)"
-echo "========================================"
-./repair_truncated_tests_encode_stdin.sh
-if [[ $? != 0 ]]; then
-  test_failed=$[$test_failed+1]
-  test_failed_names=$test_failed_names"- repair_truncated_tests_encode_stdin.sh\n"
-fi
-
-echo "========================================"
-echo "Starting truncated container repair tests (stdout as decode output)"
-echo "========================================"
-./repair_truncated_tests_decode_stdout.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-    test_failed_names=$test_failed_names"- repair_truncated_tests_decode_stdout.sh\n"
-fi
-
-if [[ $test_failed == 0 ]]; then
-    echo "All tests passed"
-    exit 0
+if [[ $test_fail_count == 0 ]]; then
+    echo "All $test_count tests passed"
+    exit_code=0
 else
-    echo "$test_failed tests failed"
-    echo "List of tests failed"
-    echo -e $test_failed_names
-    exit 1
+  echo
+    echo "$test_fail_count tests failed"
+    echo ""
+    echo "List of tests failed :"
+    for t in ${tests_failed[@]}; do
+      echo "    "$t
+    done
+    exit_code=1
 fi
+
+end_date=$(date "+%Y-%m-%d %H:%M")
+end_time=$(date "+%s")
+echo ""
+echo "Test end :" $end_date
+
+echo "Time elapsed :" $[(end_time - start_time) / 60] "minutes"
+
+exit $exit_code
