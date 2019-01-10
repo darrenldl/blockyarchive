@@ -132,7 +132,13 @@ pub fn calc_required_len_and_seek_to_from_byte_range(
 ) -> RequiredLenAndSeekTo {
     let last_possible_pos = match last_possible_pos_or_len {
         PositionOrLength::Pos(x) => x,
-        PositionOrLength::Len(x) => x - 1,
+        PositionOrLength::Len(x) => {
+            if x == 0 {
+                0
+            } else {
+                x - 1
+            }
+        }
     };
 
     let multiple_of = match multiple_of {
