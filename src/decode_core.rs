@@ -997,19 +997,7 @@ pub fn decode(
                         );
 
                         let block_okay = match block.sync_from_buffer(&buffer, Some(&pred)) {
-                            Ok(_) => {
-                                let block_seq_num = block.get_seq_num();
-
-                                match data_par_burst {
-                                    Some(_) => block_seq_num == seq_num,
-                                    None =>
-                                    // fix seq num for the case of no metadata block
-                                    {
-                                        block.get_seq_num() == seq_num
-                                            || block.get_seq_num() == seq_num + 1
-                                    }
-                                }
-                            }
+                            Ok(_) => block.get_seq_num() == seq_num,
                             Err(_) => false,
                         };
 
