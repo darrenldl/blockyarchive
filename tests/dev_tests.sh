@@ -10,7 +10,11 @@ if [[ $PWD != */tests ]]; then
   cd tests
 fi
 
-./copy_release.sh
+if [[ "$1" == "debug" ]]; then
+  ./copy.sh
+else
+  ./copy_release.sh
+fi
 
 test_failed=0
 test_failed_names=""
