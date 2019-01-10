@@ -336,8 +336,20 @@ pub fn guess_burst_err_resistance_level(
 
     let from_pos = match from_pos {
         None => 0,
-        Some(GuessBurstFromPos::ShiftToStart(x)) => if force_misalign { x % block_size as u64 } else { 0 },
-        Some(GuessBurstFromPos::NoShift(x)) => if force_misalign { x } else { u64::round_down_to_multiple(x, block_size) },
+        Some(GuessBurstFromPos::ShiftToStart(x)) => {
+            if force_misalign {
+                x % block_size as u64
+            } else {
+                0
+            }
+        }
+        Some(GuessBurstFromPos::NoShift(x)) => {
+            if force_misalign {
+                x
+            } else {
+                u64::round_down_to_multiple(x, block_size)
+            }
+        }
     };
 
     const BLOCKS_TO_SAMPLE_BASE_NUM: usize = 1024;

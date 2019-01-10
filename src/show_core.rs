@@ -175,8 +175,13 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
                         e
                     )))
                 }
-                Ok(None) => { print_if!(not_json => json_printer => "Failed to guess level";);
-                              print_field_if_json!(json_printer, "Best guess for burst error resistance level : null"); },
+                Ok(None) => {
+                    print_if!(not_json => json_printer => "Failed to guess level";);
+                    print_field_if_json!(
+                        json_printer,
+                        "Best guess for burst error resistance level : null"
+                    );
+                }
                 Ok(Some(x)) => {
                     print_maybe_json!(json_printer, "Best guess for burst error resistance level : {}", x => skip_quotes)
                 }

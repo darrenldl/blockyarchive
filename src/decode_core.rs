@@ -28,15 +28,13 @@ use crate::cli_utils::report_ref_block_info;
 use crate::general_error::Error;
 use crate::sbx_specs::Version;
 
-use crate::integer_utils::IntegerUtils;
-
 use crate::misc_utils::MultiPassType;
 
 use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_specs::{
     ver_to_block_size, ver_to_data_size, ver_to_usize, ver_uses_rs, SBX_FILE_UID_LEN,
-    SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM,
+    SBX_LARGEST_BLOCK_SIZE,
 };
 
 use crate::block_utils;
@@ -974,12 +972,18 @@ pub fn decode(
                     }
                 }
                 ReadPattern::Sequential(data_par_burst) => {
-                    fn update_block_index_possibly(block_index: &mut Option<u64>, block: &Block, data_par_burst: Option<(usize, usize, usize)>) {
+                    fn update_block_index_possibly(
+                        block_index: &mut Option<u64>,
+                        block: &Block,
+                        data_par_burst: Option<(usize, usize, usize)>,
+                    ) {
                         match block_index {
-                            Some(_) => {},
+                            Some(_) => {}
                             None => {
                                 if block.is_meta() {
-                                    let indices = sbx_block::calc_meta_block_all_write_indices(data_par_burst);
+                                    let indices = sbx_block::calc_meta_block_all_write_indices(
+                                        data_par_burst,
+                                    );
 
                                     if indices.len() == 1 {
                                         *block_index = Some(indices[0]);
@@ -987,7 +991,11 @@ pub fn decode(
                                         // do nothing if too many possibilities
                                     }
                                 } else {
-                                    let index = sbx_block::calc_data_block_write_index(block.get_seq_num(), Some(true), data_par_burst);
+                                    let index = sbx_block::calc_data_block_write_index(
+                                        block.get_seq_num(),
+                                        Some(true),
+                                        data_par_burst,
+                                    );
 
                                     *block_index = Some(index);
                                 }
@@ -995,7 +1003,11 @@ pub fn decode(
                         }
                     }
 
-                    fn update_seq_num_possibly(seq_num: &mut Option<u32>, block_index: Option<u64>, data_par_burst: Option<(usize, usize, usize)>) {
+                    fn update_seq_num_possibly(
+                        seq_num: &mut Option<u32>,
+                        block_index: Option<u64>,
+                        data_par_burst: Option<(usize, usize, usize)>,
+                    ) {
                         match block_index {
                             Some(block_index) => {
                                 *seq_num = Some(sbx_block::calc_seq_num_at_index(
@@ -1003,8 +1015,8 @@ pub fn decode(
                                     Some(true),
                                     data_par_burst,
                                 ))
-                            },
-                            None => {},
+                            }
+                            None => {}
                         }
                     }
 
@@ -1039,7 +1051,11 @@ pub fn decode(
                         let block_okay = match block.sync_from_buffer(&buffer, Some(&pred)) {
                             Ok(_) => {
                                 // guess our block index if the block read was successful
-                                update_block_index_possibly(&mut block_index, &block, data_par_burst);
+                                update_block_index_possibly(
+                                    &mut block_index,
+                                    &block,
+                                    data_par_burst,
+                                );
 
                                 // recalculate seq_num if failed previously
                                 update_seq_num_possibly(&mut seq_num, block_index, data_par_burst);
@@ -1111,7 +1127,7 @@ pub fn decode(
                                             &mut hash_ctx,
                                         )?;
                                     }
-                                },
+                                }
                                 None => {
                                     stats.incre_uncertain_blocks_failed();
                                 }

@@ -206,7 +206,7 @@ macro_rules! get_guess_burst_from_pos_from_param {
             Some(x) => Some(GuessBurstFromPos::NoShift(x)),
             None => match $param.from_pos {
                 None => None,
-                Some(x) => Some(GuessBurstFromPos::ShiftToStart(x))
+                Some(x) => Some(GuessBurstFromPos::ShiftToStart(x)),
             },
         }
     }};
