@@ -18,6 +18,8 @@ use crate::sbx_block;
 
 use crate::integer_utils::IntegerUtils;
 
+use std::collections::HashMap;
+
 use crate::sbx_specs::{
     ver_to_block_size, ver_to_usize, ver_uses_rs, SBX_LARGEST_BLOCK_SIZE,
     SBX_MAX_BURST_ERR_RESISTANCE, SBX_SCAN_BLOCK_SIZE,
@@ -428,4 +430,96 @@ pub fn guess_burst_err_resistance_level(
     } else {
         Ok(Some(best_guess))
     }
+}
+
+pub fn guess_starting_block_index(
+    in_file: &str,
+    from_pos: Option<u64>,
+    force_misalign: bool,
+    ref_block: &Block,
+    data_par_burst: Option<(usize, usize, usize)>,
+) -> Result<Option<u64>, Error> {
+    let version = ref_block.get_version();
+
+    let block_size = ver_to_block_size(version) as u64;
+
+    let from_pos = match from_pos {
+        None => 0,
+        Some(x) => {
+            if force_misalign {
+                x
+            } else {
+                u64::round_down_to_multiple(x, block_size)
+            }
+        }
+    };
+
+    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
+    let mut block = Block::dummy();
+
+    let mut reader = FileReader::new(in_file,
+                                     FileReaderParam {
+                                         write: false,
+                                         buffered: true,
+                                     })?;
+
+    const BLOCKS_TO_SAMPLE: usize = 1024;
+
+    let mut block_indices: SmallVec<[Option<u64>; BLOCKS_TO_SAMPLE]> =
+        smallvec![None; BLOCKS_TO_SAMPLE];
+
+    let mut block_index_count = HashMap::with_capacity(block_indices.len());
+
+    let pred = block_pred_same_ver_uid!(ref_block);
+
+    reader.seek(SeekFrom::Start(from_pos))?;
+
+    let mut blocks_processed = 0;
+
+    loop {
+        let read_res = reader.read(sbx_block::slice_buf_mut(
+            ref_block.get_version(),
+            &mut buffer,
+        ))?;
+
+        break_if_eof_seen!(read_res);
+
+        if blocks_processed >= block_indices.len() {
+            break;
+        }
+
+        block_indices[blocks_processed] = match block.sync_from_buffer(&buffer, Some(&pred)) {
+            Ok(()) => {
+                if block.is_meta() {
+                    None
+                } else {
+                    let block_index = sbx_block::calc_data_block_write_index(
+                        block.get_seq_num(),
+                        Some(true),
+                        data_par_burst,
+                    );
+
+                    if block_index < blocks_processed as u64 {
+                        None
+                    } else {
+                        Some(block_index - blocks_processed as u64)
+                    }
+                }
+            },
+            Err(_) => None,
+        };
+
+        blocks_processed += 1;
+    }
+
+    // count occurances of block index
+    for index in block_indices {
+        let &current_count = block_index_count.get(&index).unwrap_or(&0);
+
+        block_index_count.insert(index, current_count + 1);
+    }
+
+    // pick the block index with highest count
+    Ok(Some(0))
 }
