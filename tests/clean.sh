@@ -117,6 +117,10 @@ rm -f chunk_*
 
 rm -f decode*.sbx.*
 
+find . -regextype sed -regex "./sort_[0-9]*_[0-9]*_[0-9]*" -delete
+
+find . -regextype sed -regex "./decode_[0-9]*_[0-9]*_[0-9]*" -delete
+
 for t in ${tests[@]}; do
   if [[ "$t" != "" ]]; then
     rm -rf $t
