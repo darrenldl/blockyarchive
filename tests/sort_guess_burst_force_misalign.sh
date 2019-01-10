@@ -82,13 +82,12 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     echo -n "Checking sorted container burst error resistance level"
-    output=$(./../blkar show --json --force-misalign --from $offset --guess-burst $container_name)
+    output=$(./../blkar show --json --guess-burst $output_name)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
     fi
     burst_shown=$(echo $output | jq -r ".bestGuessForBurstErrorResistanceLevel")
-    echo "burst shown : $burst_shown, burst : $burst"
     if [[ (($ver == "1" || $ver == "2" || $ver == "3") && ($burst_shown == "null"))
                 || (($ver == "17" || $ver == "18" || $ver == "19") && ($burst_shown == $burst)) ]]; then
       echo " ==> Okay"
@@ -143,7 +142,7 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     echo -n "Checking sorted container burst error resistance level"
-    output=$(./../blkar show --json --force-misalign --from $offset --guess-burst $container_name)
+    output=$(./../blkar show --json --guess-burst $output_name)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
