@@ -61,7 +61,7 @@ pub fn force_arg<'a, 'b>() -> Arg<'a, 'b> {
 
 pub fn multi_pass_arg<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("multi_pass").long("multi-pass").help(
-        "Disable truncation of OUT, and avoid writing if a good block
+        "Disable truncation of OUT, and skip writing if a good block
 already exists at the location. This allows writing to OUT multiple
 times to update it gradually.",
     )
@@ -101,8 +101,8 @@ pub const FROM_BYTE_ARG_HELP_MSG_SCAN: &str =
 down to the closest multiple of 128 bytes, after adding the bytes
 processed field from the log file (if specified). If this option is
 not specified, defaults to the start of file. Negative values are
-rejected. If FROM-BYTE exceeds the largest possible
-position (file size - 1), then it will be treated as (file size - 1).
+rejected. If FROM-BYTE exceeds the largest possible position
+(file size - 1), then it will be treated as (file size - 1).
 The rounding procedure is applied after all auto-adjustments.";
 
 pub const FROM_BYTE_ARG_HELP_MSG_REF_BLOCK: &str =
