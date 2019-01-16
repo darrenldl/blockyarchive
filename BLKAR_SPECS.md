@@ -84,6 +84,24 @@ Metadata block is valid if
    - if sequence number was marked missing, then it is ignored and checked for mismatch
 3. return the level with least amount of mismatches
 
+## Guessing starting block index
+
+1. Read **1024** blocks starting from specified `from` position
+
+   - if block is valid && is meta, then mark as missing
+
+   - if block is valid && is data, calculate anticipated global block index from the sequence number
+
+     - if **global block index < blocks processed**, then mark as missing
+
+     - else mark block index as **global block index - blocks processed**
+
+   - Overall this collects the starting block indices calculated from the global block indices of sampled blocks
+
+2. Go through collected starting block indices, and count the occurence of each starting block index seen
+
+3. Pick the starting block index with highest count
+
 ## Check workflow
 
 1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
