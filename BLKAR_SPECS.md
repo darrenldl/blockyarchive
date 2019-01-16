@@ -152,29 +152,58 @@ Data block is valid if and only if
 
 ### If output to stdout
 
-1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
+##### Read pattern
 
-2. Scan for valid blocks from the SBX container in the anticipated pattern to decode and output using reference block's block size as alignment
+Read pattern is one of
 
-   - The anticipated pattern is same as the guessed encoding pattern, which depends on the SBX version, data parity parameters, guessed burst error resistance level
+1. Burst error resistant
 
+2. Sequential with burst error resistance awareness
+
+3. Sequential with no burst error resistance awareness
+
+##### Workflow
+
+- A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
+
+- Determine the read pattern
+
+  - if container is RS enabled, then
+
+    - if none of `--from`, `--to-exc` and `--to-inc` are specified, then read pattern is `1.`
+
+    - else read pattern is `2.`
+
+  - else read pattern is `3.`
+
+- If read pattern is `1.`
+
+  1. Go through metadata blocks in anticipated positions and try to decode. This is purely for statistics of successfully decoded metadata blocks
+
+  2. Scan for valid blocks from the SBX container in the anticipated pattern to decode and output using reference block's block size as alignment
+
+     - The anticipated pattern is same as the guessed encoding pattern, which depends on the SBX version, data parity parameters, guessed burst error resistance level
      - blkar halts after going through the last anticipated seq num
+     - If a block is valid, and contains the anticipated seq num, then
+       - if the block is a metadata block, then nothing is done
 
-   - If a block is valid, and contains the anticipated seq num, then
+       - if the block is a data parity block, then nothing is done
 
-     - if the block is a metadata block, then nothing is done
+       - if the block is a data block, then
 
-     - if the block is a data parity block, then nothing is done
+         - if blkar can determine the block is the last block, the data chunk of the block is truncated then outputted to stdout
 
-     - if the block is a data block, then
+           - this is only possible when metadata block is used as reference block, and also contains the original file size
 
-       - if blkar can determine the block is the last block, the data chunk of the block is truncated then outputted to stdout
+         - else the data chunk of the block is outputted to stdout
 
-         - this is only possible when metadata block is used as reference block, and also contains the original file size
+       - else a blank chunk of the same size as a normal data chunk is outputted to stdout
 
-       - else the data chunk of the block is outputted to stdout
+- If read pattern is `2.` or `3.`
 
-   - else a blank chunk of the same size as a normal data chunk is outputted to stdout
+  1. The starting block index of the blocks to read is guessed first (see **Guessing starting block index** procedure specified above)
+
+  2. 
 
 ## Encode workflow
 
