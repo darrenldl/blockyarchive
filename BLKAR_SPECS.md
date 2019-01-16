@@ -84,24 +84,15 @@ Metadata block is valid if
    - if sequence number was marked missing, then it is ignored and checked for mismatch
 3. return the level with least amount of mismatches
 
-## Encode workflow
+## Check workflow
 
-1. If metadata is enabled, the following file metadata are gathered from file or retrieved from user input
-   - file name
+1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
+2. Scan for valid blocks from start of SBX container to decode and output using reference block's block size as alignment
+   - if a block is invalid, and error message is shown
 
-   - SBX file name
+   - if a block is valid, nothing is done
 
-   - file size
-
-   - file last modification time
-
-   - encoding start time
-2. If metadata is enabled, then a partial metadata block is written into the output file as filler
-   - The written metadata block is valid, but does not contain the actual file hash, a filler pattern of 0x00 is used in place of the hash part of the multihash (the header and length indicator of multihash are still valid)
-3. Load version specific data sized chunk one at a time from input file to encode and output (and if metadata is enabled, Multihash hash state/ctx is updated as well - the actual hash state/ctx used depends on hash type, defaults to SHA256)
-   - data size = block size - header size (e.g. version 1 has data size of 512 - 16 = 496)
-   - if the seq num exceeds the maximum, the encoding procedure is terminated
-4. If metadata is enabled, the encoder seeks back to starting position of output file and overwrites the metadata block with one that contains the actual hash
+   - By default, completely blank sections are ignored as they usually indicate gaps introduced by the burst error resistance pattern
 
 ## Decode workflow
 
@@ -167,34 +158,24 @@ Data block is valid if and only if
 
    - else a blank chunk of the same size as a normal data chunk is outputted to stdout
 
-## Rescue workflow
+## Encode workflow
 
-1. Scan for valid blocks from start of the provided file using 128 bytes alignment
-   - rescue mode rescues all 3 versions of SBX blocks
+1. If metadata is enabled, the following file metadata are gathered from file or retrieved from user input
+   - file name
 
-   - if log file is specified, then
+   - SBX file name
 
-     - if the log file exists, then it will be used to initialize the scan's starting position
-       - bytes_processed field will be rounded down to closest multiple of 128 automatically
+   - file size
 
-   - the log file will be updated on every ~1.0 second
+   - file last modification time
 
-   - each block is appended to OUTDIR/UID, where :
-
-     - OUTDIR = output directory specified
-     - UID    = uid of the block in hex (uppercase)
-
-   - the original bytes in the file is used, that is, the output block bytes are not generated from scratch by blkar
-2. User is expected to attempt to decode the rescued data in OUTDIR using the blkar decode command
-
-## Show workflow
-
-1. Scan for metadata blocks from start of provided file using 128 bytes alignment
-   - if show all flag is supplied, all valid metadata blocks are displayed
-
-   - else only the first valid metadata block are displayed
-
-   - all displaying of blocks are immediate (no buffering of blocks)
+   - encoding start time
+2. If metadata is enabled, then a partial metadata block is written into the output file as filler
+   - The written metadata block is valid, but does not contain the actual file hash, a filler pattern of 0x00 is used in place of the hash part of the multihash (the header and length indicator of multihash are still valid)
+3. Load version specific data sized chunk one at a time from input file to encode and output (and if metadata is enabled, Multihash hash state/ctx is updated as well - the actual hash state/ctx used depends on hash type, defaults to SHA256)
+   - data size = block size - header size (e.g. version 1 has data size of 512 - 16 = 496)
+   - if the seq num exceeds the maximum, the encoding procedure is terminated
+4. If metadata is enabled, the encoder seeks back to starting position of output file and overwrites the metadata block with one that contains the actual hash
 
 ## Repair workflow
 
@@ -229,19 +210,38 @@ Data block is valid if and only if
 
    - The the RS codec is invoked once to attempt repair, and write out remaining blocks if repair is successful
 
-## Check workflow
-
-1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
-2. Scan for valid blocks from start of SBX container to decode and output using reference block's block size as alignment
-   - if a block is invalid, and error message is shown
-
-   - if a block is valid, nothing is done
-
-   - By default, completely blank sections are ignored as they usually indicate gaps introduced by the burst error resistance pattern
-
 #### Handling of irreparable blocks
 
 - Output sequence number of the blocks to log
+
+## Rescue workflow
+
+1. Scan for valid blocks from start of the provided file using 128 bytes alignment
+   - rescue mode rescues all 3 versions of SBX blocks
+
+   - if log file is specified, then
+
+     - if the log file exists, then it will be used to initialize the scan's starting position
+       - bytes_processed field will be rounded down to closest multiple of 128 automatically
+
+   - the log file will be updated on every ~1.0 second
+
+   - each block is appended to OUTDIR/UID, where :
+
+     - OUTDIR = output directory specified
+     - UID    = uid of the block in hex (uppercase)
+
+   - the original bytes in the file is used, that is, the output block bytes are not generated from scratch by blkar
+2. User is expected to attempt to decode the rescued data in OUTDIR using the blkar decode command
+
+## Show workflow
+
+1. Scan for metadata blocks from start of provided file using 128 bytes alignment
+   - if show all flag is supplied, all valid metadata blocks are displayed
+
+   - else only the first valid metadata block are displayed
+
+   - all displaying of blocks are immediate (no buffering of blocks)
 
 ## Sort workflow
 
