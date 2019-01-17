@@ -50,16 +50,10 @@ This means this option has no effect for version 17, 18, 19.",
         ))
         .arg(pr_verbosity_level_arg())
         .arg(sbx_version_arg())
-        .arg(
-            Arg::with_name("uid")
-                .value_name("UID-HEX")
-                .long("uid")
-                .takes_value(true)
-                .help(
-                    "Alternative file UID in hex (by default UID is randomly generated).
+        .arg(only_pick_uid_arg().long("uid").help(
+            "Alternative file UID in hex (by default UID is randomly generated).
 Uid must be exactly 6 bytes (12 hex digits) in length.",
-                ),
-        )
+        ))
         .arg(rs_data_arg())
         .arg(rs_parity_arg())
         .arg(from_byte_arg().help(FROM_BYTE_ARG_HELP_MSG_RAW_UNALIGNED))

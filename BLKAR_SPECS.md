@@ -84,24 +84,37 @@ Metadata block is valid if
    - if sequence number was marked missing, then it is ignored and checked for mismatch
 3. return the level with least amount of mismatches
 
-## Encode workflow
+## Guessing starting block index
 
-1. If metadata is enabled, the following file metadata are gathered from file or retrieved from user input
-   - file name
+1. Read **1024** blocks starting from specified `from` position
 
-   - SBX file name
+   - if block is valid && is meta, then mark as missing
 
-   - file size
+   - if block is valid && is data, calculate anticipated global block index from the sequence number
 
-   - file last modification time
+     - if **global block index < blocks processed**, then mark as missing
 
-   - encoding start time
-2. If metadata is enabled, then a partial metadata block is written into the output file as filler
-   - The written metadata block is valid, but does not contain the actual file hash, a filler pattern of 0x00 is used in place of the hash part of the multihash (the header and length indicator of multihash are still valid)
-3. Load version specific data sized chunk one at a time from input file to encode and output (and if metadata is enabled, Multihash hash state/ctx is updated as well - the actual hash state/ctx used depends on hash type, defaults to SHA256)
-   - data size = block size - header size (e.g. version 1 has data size of 512 - 16 = 496)
-   - if the seq num exceeds the maximum, the encoding procedure is terminated
-4. If metadata is enabled, the encoder seeks back to starting position of output file and overwrites the metadata block with one that contains the actual hash
+     - else mark block index as **global block index - blocks processed**
+
+   - Overall this collects the starting block indices calculated from the global block indices of sampled blocks
+
+2. Go through collected starting block indices, and count the occurence of each starting block index seen
+
+3. Pick the starting block index with highest count
+
+## Calc workflow
+
+Calc mode only operates at UI/UX level and does not handle any file data, thus it is not documented here
+
+## Check workflow
+
+1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
+2. Scan for valid blocks from start of SBX container to decode and output using reference block's block size as alignment
+   - if a block is invalid, and error message is shown
+
+   - if a block is valid, nothing is done
+
+   - By default, completely blank sections are ignored as they usually indicate gaps introduced by the burst error resistance pattern
 
 ## Decode workflow
 
@@ -143,58 +156,104 @@ Data block is valid if and only if
 
 ### If output to stdout
 
-1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
+##### Read pattern
 
-2. Scan for valid blocks from the SBX container in the anticipated pattern to decode and output using reference block's block size as alignment
+Read pattern is one of
 
-   - The anticipated pattern is same as the guessed encoding pattern, which depends on the SBX version, data parity parameters, guessed burst error resistance level
+1. Burst error resistant
 
+2. Sequential with burst error resistance awareness
+
+3. Sequential with no burst error resistance awareness
+
+##### Workflow
+
+- A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
+
+- Determine the read pattern
+
+  - if container is RS enabled, then
+
+    - if none of `--from`, `--to-exc` and `--to-inc` are specified, then read pattern is `1.`
+
+    - else read pattern is `2.`
+
+  - else read pattern is `3.`
+
+- If read pattern is `1.`
+
+  1. Go through metadata blocks in anticipated positions and try to decode. This is purely for statistics of successfully decoded metadata blocks
+
+  2. Scan for valid blocks from the SBX container in the anticipated pattern to decode and output using reference block's block size as alignment
+
+     - The anticipated pattern is same as the guessed encoding pattern, which depends on the SBX version, data parity parameters, guessed burst error resistance level
      - blkar halts after going through the last anticipated seq num
+     - If a block is valid, and contains the anticipated seq num, then
+       - if the block is a metadata block, then nothing is done
 
-   - If a block is valid, and contains the anticipated seq num, then
+       - if the block is a data parity block, then nothing is done
 
-     - if the block is a metadata block, then nothing is done
+       - if the block is a data block, then
 
-     - if the block is a data parity block, then nothing is done
+         - if blkar can determine the block is the last block, the data chunk of the block is truncated so the overall output size matches the original file size, then outputted to stdout
 
-     - if the block is a data block, then
+           - this is only possible when metadata block is used as reference block, and also contains the original file size
 
-       - if blkar can determine the block is the last block, the data chunk of the block is truncated then outputted to stdout
+         - else the data chunk of the block is outputted to stdout
 
+       - else a blank chunk of the same size as a normal data chunk is outputted to stdout
+
+- If read pattern is `2.` or `3.`
+
+  1. The starting block index of the blocks to read is guessed first (see **Guessing starting block index** procedure specified above)
+
+  2. Using the starting block index as the first block index, the anticipated seq num of each block index is calculated for each block read
+
+     - if the block is valid and matches the anticipated seq num, then
+
+       - if the block is a metadata block, do nothing
+
+       - else if the block is a parity block, do nothing
+
+       - else
+
+         - if blkar can determine the block is the last block, the data chunk of the block is truncated so the overall output size matches the original file size, then outputted to stdout
+           - this is only possible when metadata block is used as reference block, and also contains the original file size
+
+     - else
+
+       - if blkar can determine the block is the last block, a blank chunk is truncated so the overall output size matches the original file size, then outputted to stdout
          - this is only possible when metadata block is used as reference block, and also contains the original file size
 
-       - else the data chunk of the block is outputted to stdout
+     - whichever the case, the chunk is used to update the hashing context if required
 
-   - else a blank chunk of the same size as a normal data chunk is outputted to stdout
+       - hashing context is only created if the container contains a stored hash and the hash type is supported
 
-## Rescue workflow
+       - the hashing context is used to calculate the final hash displayed
 
-1. Scan for valid blocks from start of the provided file using 128 bytes alignment
-   - rescue mode rescues all 3 versions of SBX blocks
+## Encode workflow
 
-   - if log file is specified, then
+1. If metadata is enabled, the following file metadata are gathered from file or retrieved from user input
+   - file name
 
-     - if the log file exists, then it will be used to initialize the scan's starting position
-       - bytes_processed field will be rounded down to closest multiple of 128 automatically
+   - SBX file name
 
-   - the log file will be updated on every ~1.0 second
+   - file size
 
-   - each block is appended to OUTDIR/UID, where :
+   - file last modification time
 
-     - OUTDIR = output directory specified
-     - UID    = uid of the block in hex (uppercase)
+   - encoding start time
+2. If metadata is enabled, then a partial metadata block is written into the output file as filler
+   - The written metadata block is valid, but does not contain the actual file hash, a filler pattern of 0x00 is used in place of the hash part of the multihash (the header and length indicator of the multihash are still valid)
+3. Load version specific data sized chunk one at a time from input file to encode and output (and if metadata is enabled, Multihash hash state/ctx is updated as well - the actual hash state/ctx used depends on hash type, defaults to SHA256)
+   - data size = block size - header size (e.g. version 1 has data size of 512 - 16 = 496)
+   - if the seq num exceeds the maximum, the encoding procedure is terminated
+   - If RS is enabled, then the RS codec is updated as needed
+4. If metadata is enabled, the encoder seeks back to starting position of output file and overwrites the metadata block with one that contains the actual hash
 
-   - the original bytes in the file is used, that is, the output block bytes are not generated from scratch by blkar
-2. User is expected to attempt to decode the rescued data in OUTDIR using the blkar decode command
+##### Notes
 
-## Show workflow
-
-1. Scan for metadata blocks from start of provided file using 128 bytes alignment
-   - if show all flag is supplied, all valid metadata blocks are displayed
-
-   - else only the first valid metadata block are displayed
-
-   - all displaying of blocks are immediate (no buffering of blocks)
+- The work flow is the same whether input is file or stdin, as the reader used abstracts away the input type, and since the input is read purely sequentially, there was no need for different handling
 
 ## Repair workflow
 
@@ -224,24 +283,39 @@ Data block is valid if and only if
    - For each sequence number, calculate the block position and try to parse
 
    - Each valid block is loaded into the RS codec, and repair process starts for the current block set when the current block set is filled
-7. If current blockset contains enough blocks for repair, but repair process failed to start due to the block count reaching the calculated total block count
-   - This indicates blocks are missing due to truncation
-
-   - The the RS codec is invoked once to attempt repair, and write out remaining blocks if repair is successful
-
-## Check workflow
-
-1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
-2. Scan for valid blocks from start of SBX container to decode and output using reference block's block size as alignment
-   - if a block is invalid, and error message is shown
-
-   - if a block is valid, nothing is done
-
-   - By default, completely blank sections are ignored as they usually indicate gaps introduced by the burst error resistance pattern
 
 #### Handling of irreparable blocks
 
 - Output sequence number of the blocks to log
+
+## Rescue workflow
+
+1. Scan for valid blocks from start of the provided file using 128 bytes alignment
+   - rescue mode rescues all 3 versions of SBX blocks
+
+   - if log file is specified, then
+
+     - if the log file exists, then it will be used to initialize the scan's starting position
+       - bytes_processed field will be rounded down to closest multiple of 128 automatically
+
+   - the log file will be updated on every ~1.0 second
+
+   - each block is appended to OUTDIR/UID, where :
+
+     - OUTDIR = output directory specified
+     - UID = uid of the block in hex (uppercase)
+
+   - the original bytes in the file is used, that is, the output block bytes are not generated from scratch by blkar
+2. User is expected to attempt to decode the rescued data in OUTDIR using the blkar decode command
+
+## Show workflow
+
+1. Scan for metadata blocks from start of provided file using 128 bytes alignment
+   - if show all flag is supplied, all valid metadata blocks are displayed
+
+   - else only the first valid metadata block are displayed
+
+   - all displaying of blocks are immediate (no buffering of blocks)
 
 ## Sort workflow
 
@@ -266,10 +340,6 @@ Data block is valid if and only if
 #### Handling of missing blocks
 
 - Jumps/gaps caused by missing blocks are left to file system to handle (i.e. this may result in sparse file, or file with blank data in the gaps)
-
-## Calc workflow
-
-Calc mode only operates at UI/UX level and does not handle any file data, thus it is not documented here.
 
 ## To successfully encode a file
 

@@ -515,7 +515,7 @@ pub fn guess_starting_block_index(
         blocks_processed += 1;
     }
 
-    // count occurances of block index
+    // count occurences of block index
     for index in block_indices {
         if let Some(index) = index {
             let &current_count = block_index_count.get(&index).unwrap_or(&0);

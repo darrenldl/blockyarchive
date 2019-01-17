@@ -4,8 +4,10 @@
 
   - In previous versions, if the stored file name contains a path, then the entire path would be used, which can lead to unexpected output locations
 
-- Added `--multi-pass` and `--multi-pass-no-skip` flag to decode and sort mode
+- Added `--multi-pass` and `--multi-pass-no-skip` flag to the following modes
 
+  - decode
+  - sort mode
   - This disables truncation, and allows updating the file gradually across multiple runs
 
 - Upgraded stats tracking in sort mode

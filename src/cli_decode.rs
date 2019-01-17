@@ -25,7 +25,7 @@ provided and is not a directory, then it is used directly.",
         ))
         .arg(force_arg().help("Force overwrite even if OUT exists"))
         .arg(multi_pass_arg().help(
-            "Disable truncation of OUT, and avoid writing if a good block
+            "Disable truncation of OUT, and skip writing if a good block
 already exists at the location. This allows writing to OUT multiple
 times to update it gradually. Ignored if output is stdout.",
         ))
@@ -72,11 +72,11 @@ pub fn decode<'a>(matches: &ArgMatches<'a>) -> i32 {
                              "    Since output is stdout, blkar can only output data chunks in the";
                              "    anticipated encoding order.";
                              "";
-                             "        For versions with no RS enabled (version 1, 2, 3), this means blkar";
+                             "        For version with no RS enabled (version 1, 2, 3), this means blkar";
                              "        reads in the sequential pattern with optional metadata block and";
                              "        outputs the data chunks.";
                              "";
-                             "        For versions with RS enabled (version 17, 18, 19), this means blkar";
+                             "        For version with RS enabled (version 17, 18, 19), this means blkar";
                              "        first guesses the burst resistance level, then reads using the block";
                              "        set interleaving pattern and outputs the data chunks.";
                              "";
