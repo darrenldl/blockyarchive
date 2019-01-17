@@ -11,7 +11,7 @@ exclude = [
     "crc-ccitt/*",
     "libcrc_crcccitt/*",
     "appveyor.yml",
-    ".travis.yml"
+    ".travis.yml",
 ]
 
 description   = "Archive with forward error correction and sector level recoverability"
