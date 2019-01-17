@@ -242,11 +242,16 @@ Read pattern is one of
 
    - encoding start time
 2. If metadata is enabled, then a partial metadata block is written into the output file as filler
-   - The written metadata block is valid, but does not contain the actual file hash, a filler pattern of 0x00 is used in place of the hash part of the multihash (the header and length indicator of multihash are still valid)
+   - The written metadata block is valid, but does not contain the actual file hash, a filler pattern of 0x00 is used in place of the hash part of the multihash (the header and length indicator of the multihash are still valid)
 3. Load version specific data sized chunk one at a time from input file to encode and output (and if metadata is enabled, Multihash hash state/ctx is updated as well - the actual hash state/ctx used depends on hash type, defaults to SHA256)
    - data size = block size - header size (e.g. version 1 has data size of 512 - 16 = 496)
    - if the seq num exceeds the maximum, the encoding procedure is terminated
+   - If RS is enabled, then the RS codec is updated as needed
 4. If metadata is enabled, the encoder seeks back to starting position of output file and overwrites the metadata block with one that contains the actual hash
+
+##### Notes
+
+- The work flow is the same whether input is file or stdin, as the reader used abstracts away the input type, and since the input is read purely sequentially, there was no need for different handling
 
 ## Repair workflow
 
@@ -276,10 +281,6 @@ Data block is valid if and only if
    - For each sequence number, calculate the block position and try to parse
 
    - Each valid block is loaded into the RS codec, and repair process starts for the current block set when the current block set is filled
-7. If current blockset contains enough blocks for repair, but repair process failed to start due to the block count reaching the calculated total block count
-   - This indicates blocks are missing due to truncation
-
-   - The the RS codec is invoked once to attempt repair, and write out remaining blocks if repair is successful
 
 #### Handling of irreparable blocks
 
