@@ -102,6 +102,10 @@ Metadata block is valid if
 
 3. Pick the starting block index with highest count
 
+## Calc workflow
+
+Calc mode only operates at UI/UX level and does not handle any file data, thus it is not documented here
+
 ## Check workflow
 
 1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
@@ -214,13 +218,11 @@ Read pattern is one of
        - else
 
          - if blkar can determine the block is the last block, the data chunk of the block is truncated so the overall output size matches the original file size, then outputted to stdout
-
            - this is only possible when metadata block is used as reference block, and also contains the original file size
 
      - else
 
        - if blkar can determine the block is the last block, a blank chunk is truncated so the overall output size matches the original file size, then outputted to stdout
-
          - this is only possible when metadata block is used as reference block, and also contains the original file size
 
      - whichever the case, the chunk is used to update the hashing context if required
@@ -301,7 +303,7 @@ Data block is valid if and only if
    - each block is appended to OUTDIR/UID, where :
 
      - OUTDIR = output directory specified
-     - UID    = uid of the block in hex (uppercase)
+     - UID = uid of the block in hex (uppercase)
 
    - the original bytes in the file is used, that is, the output block bytes are not generated from scratch by blkar
 2. User is expected to attempt to decode the rescued data in OUTDIR using the blkar decode command
@@ -338,10 +340,6 @@ Data block is valid if and only if
 #### Handling of missing blocks
 
 - Jumps/gaps caused by missing blocks are left to file system to handle (i.e. this may result in sparse file, or file with blank data in the gaps)
-
-## Calc workflow
-
-Calc mode only operates at UI/UX level and does not handle any file data, thus it is not documented here.
 
 ## To successfully encode a file
 
