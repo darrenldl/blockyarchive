@@ -191,7 +191,7 @@ Read pattern is one of
 
        - if the block is a data block, then
 
-         - if blkar can determine the block is the last block, the data chunk of the block is truncated then outputted to stdout
+         - if blkar can determine the block is the last block, the data chunk of the block is truncated so the overall output size matches the original file size, then outputted to stdout
 
            - this is only possible when metadata block is used as reference block, and also contains the original file size
 
@@ -203,7 +203,31 @@ Read pattern is one of
 
   1. The starting block index of the blocks to read is guessed first (see **Guessing starting block index** procedure specified above)
 
-  2. 
+  2. Using the starting block index as the first block index, the anticipated seq num of each block index is calculated for each block read
+
+     - if the block is valid and matches the anticipated seq num, then
+
+       - if the block is a metadata block, do nothing
+
+       - else if the block is a parity block, do nothing
+
+       - else
+
+         - if blkar can determine the block is the last block, the data chunk of the block is truncated so the overall output size matches the original file size, then outputted to stdout
+
+           - this is only possible when metadata block is used as reference block, and also contains the original file size
+
+     - else
+
+       - if blkar can determine the block is the last block, a blank chunk is truncated so the overall output size matches the original file size, then outputted to stdout
+
+         - this is only possible when metadata block is used as reference block, and also contains the original file size
+
+     - whichever the case, the chunk is used to update the hashing context if required
+
+       - hashing context is only created if the container contains a stored hash and the hash type is supported
+
+       - the hashing context is used to calculate the final hash displayed
 
 ## Encode workflow
 
