@@ -90,7 +90,7 @@ The design of block set interleaving arrangement in RS enabled versions is heavi
 
 ## Donation
 
-**Note** : Donation will **NOT** fuel development of new features. As mentioned above, this project is meant to be stable, well tested and well-maintained, but normally I am not actively adding new features to it.
+**Note** : Donation will **NOT** fuel development of new features. As mentioned above, this project is meant to be stable, well tested and well maintained, but normally I am not actively adding new features to it.
 
 If blockyarchive has been useful to you, and you would like to donate to me for the development effort, you can donate through [here](http://ko-fi.com/darrenldl).
 
