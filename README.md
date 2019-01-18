@@ -39,6 +39,12 @@ blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox),
 
 As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
 
+## Status
+
+This project has reached its intended feature completeness, so no active development for new features will occur. However, this project is still actively looked after, i.e. I will respond to PRs, issues, and emails, will consider feature requests, respond to bug reports quickly, and so on.
+
+In other words, this is a completed project with respect to its original scope, but it is not abandoned.
+
 ## Getting started
 
 #### Installation
@@ -80,6 +86,12 @@ I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the
 The design of the readable rate in progress report text is copied from [Arch Linux pacman](https://wiki.archlinux.org/index.php/Pacman)'s progress bar design.
 
 The design of block set interleaving arrangement in RS enabled versions is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html). The interleaving provides resistance against burst sector errors.
+
+## Donation
+
+**Note** : Donation will **NOT** fuel development of new features. As mentioned above, this project is meant to be stable, well tested and well-maintained, but normally I am not actively adding new features to it.
+
+If blockyarchive has been useful to you, and you would like to donate to me for the development effort, you can donate through [here](http://ko-fi.com/darrenldl).
 
 ## License
 
