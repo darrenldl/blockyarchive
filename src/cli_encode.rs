@@ -52,7 +52,7 @@ This means this option has no effect for version 17, 18, 19.",
         .arg(sbx_version_arg())
         .arg(only_pick_uid_arg().long("uid").help(
             "Alternative file UID in hex (by default UID is randomly generated).
-Uid must be exactly 6 bytes (12 hex digits) in length.",
+UID must be exactly 6 bytes (12 hex digits) in length.",
         ))
         .arg(rs_data_arg())
         .arg(rs_parity_arg())
