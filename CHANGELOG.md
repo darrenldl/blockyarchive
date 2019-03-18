@@ -1,3 +1,9 @@
+# Changelog
+
+## 3.1.0
+
+- Changed "Uid" to "UID" in encode help messages for consistency
+
 ## 3.0.0
 
 - Changed decode mode to use only file portion of stored file name in SBX container
