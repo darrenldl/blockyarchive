@@ -24,7 +24,7 @@
 
   - Combined with the improved stats tracking allows checking if the container is sorted or not
 
-- Repalced `--to` with `--to-inc` and `--to-exc`
+- Replaced `--to` with `--to-inc` and `--to-exc`
 
   - This affects `rescue` and `show` mode
 
