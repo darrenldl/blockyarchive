@@ -53,6 +53,12 @@ pub enum BlockType {
     Meta,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum BlockArrangementScheme {
+    StreamOriented,
+    FileOriented,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
     IncorrectBlockType,

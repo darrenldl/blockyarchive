@@ -5,6 +5,8 @@ use crate::sbx_specs::{
 };
 use std::str::FromStr;
 use std::time::UNIX_EPOCH;
+use std::sync::Arc;
+use crate::output_channel::OutputChannel;
 
 use crate::json_printer::BracketType;
 
@@ -76,7 +78,7 @@ automatic guessing.",
 }
 
 pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
-    let json_printer = get_json_printer!(matches);
+    let mut json_printer = get_json_printer!(matches);
 
     json_printer.print_open_bracket(None, BracketType::Curly);
 
@@ -129,7 +131,7 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
             } else if file_utils::check_if_file_is_stdout(x) {
                 Arc::get_mut(&mut json_printer)
                     .unwrap()
-                    .set_output_channel(OutputChannel::Stderr)
+                    .set_output_channel(OutputChannel::Stderr);
                 None
             } else {
                 Some(String::from(x))
