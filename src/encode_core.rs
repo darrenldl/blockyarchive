@@ -665,7 +665,10 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     reporter.stop();
 
     stats.lock().unwrap().in_file_size = data_bytes_encoded;
-    stats.lock().unwrap().out_file_size = writer.get_file_size()?;
+    stats.lock().unwrap().out_file_size = file_utils::from_orig_file_size::calc_container_size(param.version,
+                                                                                               Some(param.meta_enabled),
+                                                                                               param.data_par_burst,
+                                                                                               data_bytes_encoded);
 
     let stats = stats.lock().unwrap().clone();
 
