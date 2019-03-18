@@ -461,7 +461,7 @@ fn block_sync_and_write(
         Err(_) => unreachable!(),
     }
 
-    if let Some(_) = param.out_file {
+    if let BlockArrangementScheme::FileOriented = param.block_arrangement_scheme {
         writer.seek(SeekFrom::Start(pos)).unwrap()?;
     }
 
