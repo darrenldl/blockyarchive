@@ -18,6 +18,7 @@ use std::time::UNIX_EPOCH;
 use crate::file_reader::{FileReader, FileReaderParam};
 use crate::file_writer::{FileWriter, FileWriterParam};
 use crate::reader::{Reader, ReaderType};
+use crate::writer::{Writer, WriterType};
 
 use crate::multihash;
 
@@ -167,6 +168,12 @@ impl fmt::Display for Stats {
 
         Ok(())
     }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum BlockArrangementScheme {
+    StreamOriented,
+    FileOriented,
 }
 
 #[derive(Clone, Debug)]
@@ -346,7 +353,7 @@ fn write_meta_blocks(
     hash: Option<multihash::HashBytes>,
     block: &mut Block,
     buffer: &mut [u8],
-    writer: &mut FileWriter,
+    writer: &mut Writer,
     record_stats: bool,
 ) -> Result<(), Error> {
     // pack metadata into the block
@@ -665,10 +672,12 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     reporter.stop();
 
     stats.lock().unwrap().in_file_size = data_bytes_encoded;
-    stats.lock().unwrap().out_file_size = file_utils::from_orig_file_size::calc_container_size(param.version,
-                                                                                               Some(param.meta_enabled),
-                                                                                               param.data_par_burst,
-                                                                                               data_bytes_encoded);
+    stats.lock().unwrap().out_file_size = file_utils::from_orig_file_size::calc_container_size(
+        param.version,
+        Some(param.meta_enabled),
+        param.data_par_burst,
+        data_bytes_encoded,
+    );
 
     let stats = stats.lock().unwrap().clone();
 
