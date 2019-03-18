@@ -128,8 +128,8 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
                 Some(misc_utils::make_path(&[x, &format!("{}.sbx", in_file)]))
             } else if file_utils::check_if_file_is_stdin(x) {
                 None
-            }else {
-                Some (String::from(x))
+            } else {
+                Some(String::from(x))
             }
         }
     };
@@ -255,7 +255,7 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
             Some(in_file)
         };
 
-        let out : Option<&str> = match out {
+        let out: Option<&str> = match out {
             None => None,
             Some(ref f) => Some(f),
         };

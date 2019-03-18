@@ -173,7 +173,7 @@ impl fmt::Display for Stats {
 #[derive(Copy, Clone, Debug)]
 enum MetadataSection {
     Start,
-    End
+    End,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -214,11 +214,9 @@ impl Param {
         pr_verbosity_level: PRVerbosityLevel,
     ) -> Param {
         let data_par_burst = match out_file {
-            None => {
-                match data_par_burst {
-                    Some((data, par, _)) => Some((data, par, 0)),
-                    None => None,
-                }
+            None => match data_par_burst {
+                Some((data, par, _)) => Some((data, par, 0)),
+                None => None,
             },
             Some(_) => data_par_burst,
         };
@@ -241,7 +239,7 @@ impl Param {
                 None => None,
                 Some(f) => Some(String::from(f)),
             },
-            block_arrangement_scheme : match out_file {
+            block_arrangement_scheme: match out_file {
                 Some(_) => BlockArrangementScheme::FileOriented,
                 None => BlockArrangementScheme::StreamOriented,
             },
@@ -312,7 +310,8 @@ fn pack_metadata(
     let meta = block.meta_mut().unwrap();
 
     match (param.block_arrangement_scheme, meta_section) {
-        (BlockArrangementScheme::FileOriented, _) | (BlockArrangementScheme::StreamOriented, MetadataSection::Start) => {
+        (BlockArrangementScheme::FileOriented, _)
+        | (BlockArrangementScheme::StreamOriented, MetadataSection::Start) => {
             // add file name
             if let Some(ref f) = param.in_file {
                 let file_name = file_utils::get_file_name_part_of_path(f);
@@ -346,12 +345,13 @@ fn pack_metadata(
                 meta.push(Metadata::RSD(param.data_par_burst.unwrap().0 as u8));
                 meta.push(Metadata::RSP(param.data_par_burst.unwrap().1 as u8));
             }
-        },
+        }
         _ => {}
     }
 
     match (param.block_arrangement_scheme, meta_section) {
-        (BlockArrangementScheme::FileOriented, _) | (BlockArrangementScheme::StreamOriented, MetadataSection::End) => {
+        (BlockArrangementScheme::FileOriented, _)
+        | (BlockArrangementScheme::StreamOriented, MetadataSection::End) => {
             // add hash
             let hsh = match hash {
                 Some(hsh) => hsh,
@@ -361,7 +361,7 @@ fn pack_metadata(
                 }
             };
             meta.push(Metadata::HSH(hsh));
-        },
+        }
         _ => {}
     }
 }
@@ -409,9 +409,8 @@ fn write_meta_blocks(
                 writer.seek(SeekFrom::Start(p)).unwrap()?;
 
                 writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
-
             }
-        },
+        }
         BlockArrangementScheme::StreamOriented => {
             for _ in 0..write_pos_s.len() {
                 writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
