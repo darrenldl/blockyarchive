@@ -46,12 +46,12 @@ const HASH_FILE_BLOCK_SIZE: usize = 4096;
 
 const BLANK_BUFFER: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
-pub enum WriteTo {
+enum WriteTo {
     File,
     Stdout,
 }
 
-pub enum ReadPattern {
+enum ReadPattern {
     Sequential(Option<(usize, usize, usize)>),
     BurstErrorResistant(usize, usize, usize),
 }

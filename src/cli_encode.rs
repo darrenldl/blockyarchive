@@ -126,7 +126,10 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
 
                 let in_file = file_utils::get_file_name_part_of_path(in_file);
                 Some(misc_utils::make_path(&[x, &format!("{}.sbx", in_file)]))
-            } else if file_utils::check_if_file_is_stdin(x) {
+            } else if file_utils::check_if_file_is_stdout(x) {
+                Arc::get_mut(&mut json_printer)
+                    .unwrap()
+                    .set_output_channel(OutputChannel::Stderr)
                 None
             } else {
                 Some(String::from(x))
