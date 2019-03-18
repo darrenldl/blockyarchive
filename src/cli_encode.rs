@@ -115,7 +115,7 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
             if file_utils::check_if_file_is_stdin(in_file) {
                 exit_with_msg!(usr json_printer => "Explicit output file name is required when input is stdin");
             } else {
-                format!("{}.sbx", in_file)
+                Some(format!("{}.sbx", in_file))
             }
         }
         Some(x) => {
@@ -125,9 +125,11 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
                 }
 
                 let in_file = file_utils::get_file_name_part_of_path(in_file);
-                misc_utils::make_path(&[x, &format!("{}.sbx", in_file)])
-            } else {
-                String::from(x)
+                Some(misc_utils::make_path(&[x, &format!("{}.sbx", in_file)]))
+            } else if file_utils::check_if_file_is_stdin(x) {
+                None
+            }else {
+                Some (String::from(x))
             }
         }
     };
@@ -185,6 +187,11 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
             },
         };
 
+        let out_name = match out {
+            None => "N/A",
+            Some(ref f) => f,
+        };
+
         let out_file_size = file_utils::from_orig_file_size::calc_container_size(
             version,
             Some(meta_enabled),
@@ -194,7 +201,7 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
 
         if ver_uses_rs(version) {
             print_maybe_json!(json_printer, "File name                    : {}", in_file);
-            print_maybe_json!(json_printer, "SBX container name           : {}", out);
+            print_maybe_json!(json_printer, "SBX container name           : {}", out_name);
             print_maybe_json!(
                 json_printer,
                 "SBX container version        : {}",
@@ -214,7 +221,7 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
             );
         } else {
             print_maybe_json!(json_printer, "File name                : {}", in_file);
-            print_maybe_json!(json_printer, "SBX container name       : {}", out);
+            print_maybe_json!(json_printer, "SBX container name       : {}", out_name);
             print_maybe_json!(
                 json_printer,
                 "SBX container version    : {}",
@@ -235,15 +242,22 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
 
         exit_with_msg!(ok json_printer => "")
     } else {
-        exit_if_file!(exists &out
-                      => matches.is_present("force")
-                      => json_printer
-                      => "File \"{}\" already exists", out);
+        if let Some(ref f) = out {
+            exit_if_file!(exists f
+                          => matches.is_present("force")
+                          => json_printer
+                          => "File \"{}\" already exists", f);
+        }
 
         let in_file = if file_utils::check_if_file_is_stdin(in_file) {
             None
         } else {
             Some(in_file)
+        };
+
+        let out : Option<&str> = match out {
+            None => None,
+            Some(ref f) => Some(f),
         };
 
         let param = Param::new(
@@ -256,7 +270,7 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
             from_pos,
             to_pos,
             in_file,
-            &out,
+            out,
             pr_verbosity_level,
         );
         match encode_core::encode_file(&param) {

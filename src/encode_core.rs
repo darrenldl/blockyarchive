@@ -171,7 +171,13 @@ impl fmt::Display for Stats {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum BlockArrangementScheme {
+enum MetadataSection {
+    Start,
+    End
+}
+
+#[derive(Copy, Clone, Debug)]
+enum BlockArrangementScheme {
     StreamOriented,
     FileOriented,
 }
@@ -188,7 +194,8 @@ pub struct Param {
     from_pos: Option<u64>,
     to_pos: Option<RangeEnd<u64>>,
     in_file: Option<String>,
-    out_file: String,
+    out_file: Option<String>,
+    block_arrangement_scheme: BlockArrangementScheme,
     pr_verbosity_level: PRVerbosityLevel,
 }
 
@@ -203,9 +210,19 @@ impl Param {
         from_pos: Option<u64>,
         to_pos: Option<RangeEnd<u64>>,
         in_file: Option<&str>,
-        out_file: &str,
+        out_file: Option<&str>,
         pr_verbosity_level: PRVerbosityLevel,
     ) -> Param {
+        let data_par_burst = match out_file {
+            None => {
+                match data_par_burst {
+                    Some((data, par, _)) => Some((data, par, 0)),
+                    None => None,
+                }
+            },
+            Some(_) => data_par_burst,
+        };
+
         Param {
             version,
             uid: uid.clone(),
@@ -220,7 +237,14 @@ impl Param {
                 None => None,
                 Some(f) => Some(String::from(f)),
             },
-            out_file: String::from(out_file),
+            out_file: match out_file {
+                None => None,
+                Some(f) => Some(String::from(f)),
+            },
+            block_arrangement_scheme : match out_file {
+                Some(_) => BlockArrangementScheme::FileOriented,
+                None => BlockArrangementScheme::StreamOriented,
+            },
             pr_verbosity_level,
         }
     }
@@ -277,6 +301,7 @@ impl ProgressReport for Stats {
 fn pack_metadata(
     block: &mut Block,
     param: &Param,
+    meta_section: MetadataSection,
     stats: &Stats,
     file_metadata: &Option<fs::Metadata>,
     file_size: Option<u64>,
@@ -286,67 +311,64 @@ fn pack_metadata(
 
     let meta = block.meta_mut().unwrap();
 
-    {
-        // add file name
-        match param.in_file {
-            None => {}
-            Some(ref f) => {
+    match (param.block_arrangement_scheme, meta_section) {
+        (BlockArrangementScheme::FileOriented, _) | (BlockArrangementScheme::StreamOriented, MetadataSection::Start) => {
+            // add file name
+            if let Some(ref f) = param.in_file {
                 let file_name = file_utils::get_file_name_part_of_path(f);
                 meta.push(Metadata::FNM(file_name));
             }
-        }
-    }
-    {
-        // add sbx file name
-        let file_name = file_utils::get_file_name_part_of_path(&param.out_file);
-        meta.push(Metadata::SNM(file_name));
-    }
-    {
-        // add file size
-        match file_size {
-            Some(f) => meta.push(Metadata::FSZ(f)),
-            None => {}
-        }
-    }
-    {
-        // add file last modifcation time
-        match file_metadata {
-            &Some(ref m) => match m.modified() {
-                Ok(t) => match t.duration_since(UNIX_EPOCH) {
-                    Ok(t) => meta.push(Metadata::FDT(t.as_secs() as i64)),
+            // add sbx file name
+            if let Some(ref f) = param.out_file {
+                let file_name = file_utils::get_file_name_part_of_path(f);
+                meta.push(Metadata::SNM(file_name));
+            }
+            // add file size
+            match file_size {
+                Some(f) => meta.push(Metadata::FSZ(f)),
+                None => {}
+            }
+            // add file last modifcation time
+            match file_metadata {
+                &Some(ref m) => match m.modified() {
+                    Ok(t) => match t.duration_since(UNIX_EPOCH) {
+                        Ok(t) => meta.push(Metadata::FDT(t.as_secs() as i64)),
+                        Err(_) => {}
+                    },
                     Err(_) => {}
                 },
-                Err(_) => {}
-            },
-            &None => {}
-        }
-    }
-    {
-        // add sbx encoding time
-        meta.push(Metadata::SDT(stats.start_time as i64));
-    }
-    {
-        // add hash
-        let hsh = match hash {
-            Some(hsh) => hsh,
-            None => {
-                let ctx = multihash::hash::Ctx::new(param.hash_type).unwrap();
-                ctx.finish_into_hash_bytes()
+                &None => {}
             }
-        };
-        meta.push(Metadata::HSH(hsh));
+            // add sbx encoding time
+            meta.push(Metadata::SDT(stats.start_time as i64));
+            // add RS params
+            if param.rs_enabled {
+                meta.push(Metadata::RSD(param.data_par_burst.unwrap().0 as u8));
+                meta.push(Metadata::RSP(param.data_par_burst.unwrap().1 as u8));
+            }
+        },
+        _ => {}
     }
-    {
-        // add RS params
-        if param.rs_enabled {
-            meta.push(Metadata::RSD(param.data_par_burst.unwrap().0 as u8));
-            meta.push(Metadata::RSP(param.data_par_burst.unwrap().1 as u8));
-        }
+
+    match (param.block_arrangement_scheme, meta_section) {
+        (BlockArrangementScheme::FileOriented, _) | (BlockArrangementScheme::StreamOriented, MetadataSection::End) => {
+            // add hash
+            let hsh = match hash {
+                Some(hsh) => hsh,
+                None => {
+                    let ctx = multihash::hash::Ctx::new(param.hash_type).unwrap();
+                    ctx.finish_into_hash_bytes()
+                }
+            };
+            meta.push(Metadata::HSH(hsh));
+        },
+        _ => {}
     }
 }
 
 fn write_meta_blocks(
     param: &Param,
+    meta_section: MetadataSection,
     stats: &Arc<Mutex<Stats>>,
     file_metadata: &Option<fs::Metadata>,
     file_size: Option<u64>,
@@ -360,6 +382,7 @@ fn write_meta_blocks(
     pack_metadata(
         block,
         param,
+        meta_section,
         &stats.lock().unwrap(),
         file_metadata,
         file_size,
@@ -380,14 +403,24 @@ fn write_meta_blocks(
     let write_pos_s =
         sbx_block::calc_meta_block_all_write_pos_s(param.version, param.data_par_burst);
 
-    for &p in write_pos_s.iter() {
-        writer.seek(SeekFrom::Start(p))?;
+    match param.block_arrangement_scheme {
+        BlockArrangementScheme::FileOriented => {
+            for &p in write_pos_s.iter() {
+                writer.seek(SeekFrom::Start(p)).unwrap()?;
 
-        writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
+                writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
 
-        if record_stats {
-            stats.lock().unwrap().meta_blocks_written += 1;
+            }
+        },
+        BlockArrangementScheme::StreamOriented => {
+            for _ in 0..write_pos_s.len() {
+                writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
+            }
         }
+    }
+
+    if record_stats {
+        stats.lock().unwrap().meta_blocks_written += write_pos_s.len() as u32;
     }
 
     block.add1_seq_num().unwrap();
@@ -399,7 +432,7 @@ fn write_data_block(
     param: &Param,
     block: &mut Block,
     buffer: &mut [u8],
-    writer: &mut FileWriter,
+    writer: &mut Writer,
 ) -> Result<(), Error> {
     let write_pos = calc_data_block_write_pos(
         param.version,
@@ -408,13 +441,14 @@ fn write_data_block(
         param.data_par_burst,
     );
 
-    block_sync_and_write(block, buffer, writer, write_pos)
+    block_sync_and_write(param, block, buffer, writer, write_pos)
 }
 
 fn block_sync_and_write(
+    param: &Param,
     block: &mut Block,
     buffer: &mut [u8],
-    writer: &mut FileWriter,
+    writer: &mut Writer,
     pos: u64,
 ) -> Result<(), Error> {
     match block.sync_to_buffer(None, buffer) {
@@ -428,7 +462,9 @@ fn block_sync_and_write(
         Err(_) => unreachable!(),
     }
 
-    writer.seek(SeekFrom::Start(pos))?;
+    if let Some(_) = param.out_file {
+        writer.seek(SeekFrom::Start(pos)).unwrap()?;
+    }
 
     writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
 
@@ -453,15 +489,18 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         None => Reader::new(ReaderType::Stdin(std::io::stdin())),
     };
 
-    let mut writer = FileWriter::new(
-        &param.out_file,
-        FileWriterParam {
-            read: false,
-            append: false,
-            truncate: true,
-            buffered: true,
-        },
-    )?;
+    let mut writer = match param.out_file {
+        Some(ref f) => Writer::new(WriterType::File(FileWriter::new(
+            f,
+            FileWriterParam {
+                read: false,
+                append: false,
+                truncate: true,
+                buffered: true,
+            },
+        )?)),
+        None => Writer::new(WriterType::Stdout(std::io::stdout())),
+    };
 
     let metadata = match reader.metadata() {
         Some(m) => Some(m?),
@@ -552,6 +591,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         // write dummy metadata block
         write_meta_blocks(
             param,
+            MetadataSection::Start,
             &stats,
             &metadata,
             required_len,
@@ -655,6 +695,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         // write actual medata blocks
         write_meta_blocks(
             param,
+            MetadataSection::End,
             &stats,
             &metadata,
             Some(data_bytes_encoded),
