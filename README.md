@@ -6,7 +6,6 @@
 [![Coverage Status](https://coveralls.io/repos/github/darrenldl/blockyarchive/badge.svg?branch=master)](https://coveralls.io/github/darrenldl/blockyarchive?branch=master)
 [![Crates](https://img.shields.io/crates/v/blkar.svg)](https://crates.io/crates/blkar)
 [![dependency status](https://deps.rs/repo/github/darrenldl/blockyarchive/status.svg)](https://deps.rs/repo/github/darrenldl/blockyarchive)
-[![ko-fi](https://www.ko-fi.com/img/donate_sm.png)](https://ko-fi.com/H2H7OXZN)
 [![Gitter chat](https://badges.gitter.im/blockyarchive/gitter.png)](https://gitter.im/blockyarchive/community)
 
 [Documentation](https://github.com/darrenldl/blockyarchive/wiki)
