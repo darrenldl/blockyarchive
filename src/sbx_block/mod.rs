@@ -53,11 +53,42 @@ pub enum BlockType {
     Meta,
 }
 
+// pub enum SBXMode {
+//     Plain,
+//     ErrorCorrected(usize, usize, usize),
+// }
+
+// pub enum SBXModeNoBurst {
+//     Plain,
+//     ErrorCorrected(usize, usize),
+// }
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum BlockArrangementScheme {
-    StreamOriented,
-    FileOriented,
+    StreamOriented(SBXModeNoBurst),
+    FileOriented(SBXMode),
 }
+
+// #[derive(Copy, Clone, Debug, PartialEq)]
+// pub struct SBXConfig {
+//     version : Version,
+//     arrangement : BlockArrangementScheme,
+// }
+
+// macro_rules! check_sbx_config {
+//     (
+//         $version:expr, $config:expr
+//     ) => {{
+//         match $config.arrangement {
+//             BlockArrangementScheme::StreamOriented(mode) => {
+//                 match mode {
+//                     SBXModeNoBurst::Plain => !ver_uses_rs($config.version),
+//                     SBXModeNoBurst::ErrorCorrected(data, burst)
+//                 }
+//             }
+//         }
+//     }}
+// }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
