@@ -18,13 +18,13 @@ Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for 
 
 ## Comparison to the original SeqBox implementation/design
 
-The original SeqBox implementation and format do not support repairing of data, only sector level recoverability.
+The original SeqBox implementation and format do not support repairing of data, only sector level recoverability
 
-Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format, and also allows arranging the blocks in a burst error resistant pattern.
+Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format, and also allows arranging the blocks in a burst error resistant pattern
 
-Blockyarchive is also more robust compared to the original SeqBox implementation, as it does not assume the SBX container to be well formed, and makes as few assumptions about the SBX container as possible, if at all.
+Blockyarchive is also more robust compared to the original SeqBox implementation, as it does not assume the SBX container to be completely well formed, and makes as few assumptions about the SBX container as possible
 
-blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), but much more optimized.
+blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), but much more optimized
 
 ## Features overall
 
@@ -37,13 +37,15 @@ blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox),
 
 ## Goals
 
-As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
+As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance
+
+For a feel of the quality of blkar, you can take a look at the number and variety of tests used in the [test suite](https://github.com/darrenldl/blockyarchive/tree/master/tests)
 
 ## Status
 
 This project has reached its intended feature completeness, so no active development for new features will occur. However, this project is still actively looked after, i.e. I will respond to PRs, issues, and emails, will consider feature requests, respond to bug reports quickly, and so on.
 
-In other words, this is a completed project with respect to its original scope, but it is not abandoned.
+In other words, this is a completed project with respect to its original scope, but it is not abandoned
 
 ## Getting started
 
@@ -91,7 +93,7 @@ The design of block set interleaving arrangement in RS enabled versions is heavi
 
 **Note** : Donation will **NOT** fuel development of new features. As mentioned above, this project is meant to be stable, well tested and well maintained, but normally I am not actively adding new features to it.
 
-If blockyarchive has been useful to you, and you would like to donate to me for the development effort, you can donate through [here](http://ko-fi.com/darrenldl).
+If blockyarchive has been useful to you, and you would like to donate to me for the development effort, you can donate through [here](http://ko-fi.com/darrenldl)
 
 ## License
 
