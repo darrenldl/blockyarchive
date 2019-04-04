@@ -1,12 +1,12 @@
 use crate::encode_core;
 use crate::encode_core::Param;
+use crate::output_channel::OutputChannel;
 use crate::sbx_specs::{
     ver_to_block_size, ver_to_data_size, ver_to_usize, ver_uses_rs, Version, SBX_FILE_UID_LEN,
 };
 use std::str::FromStr;
-use std::time::UNIX_EPOCH;
 use std::sync::Arc;
-use crate::output_channel::OutputChannel;
+use std::time::UNIX_EPOCH;
 
 use crate::json_printer::BracketType;
 

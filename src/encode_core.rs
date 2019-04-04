@@ -27,7 +27,8 @@ use crate::rs_codec::RSEncoder;
 use crate::sbx_specs::Version;
 
 use crate::sbx_block::{
-    calc_data_block_write_pos, make_too_much_meta_err_string, Block, BlockType, Metadata, BlockArrangementScheme
+    calc_data_block_write_pos, make_too_much_meta_err_string, Block, BlockArrangementScheme,
+    BlockType, Metadata,
 };
 
 use crate::sbx_block;
