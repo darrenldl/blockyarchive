@@ -38,11 +38,11 @@ Byte order: Big Endian
 
 ### Versions:
 
-| ver | blocksize | note    |
-| --- | --------- | ------- |
-| 1   | 512       | default |
-| 2   | 128       |         |
-| 3   | 4096      |         |
+| ver | blocksize | note                                            |
+| --- | --------- | ----------------------------------------------- |
+| 1   | 512       | ~~default~~ (no longer the default since 3.1.0) |
+| 2   | 128       |                                                 |
+| 3   | 4096      |                                                 |
 
 ### Metadata encoding:
 
