@@ -1,7 +1,8 @@
 #!/bin/bash
 
-if [[ $PWD != */tests ]]; then
-  cd tests
+if [[ $PWD != */blockyarchive/tests ]]; then
+  echo "Please invoke clean.sh in the tests directory"
+  exit 1
 fi
 
 tests=(
