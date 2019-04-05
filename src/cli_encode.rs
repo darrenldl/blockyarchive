@@ -93,7 +93,7 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
         }
     }
 
-    let (version, data_par_burst) = get_ver_data_par_burst_w_defaults!(matches, json_printer);
+    let (version, data_par_burst) = get_ver_and_data_par_burst_w_defaults!(matches, json_printer);
 
     let in_file = get_in_file!(accept_stdin matches, json_printer);
     let out = match matches.value_of("out") {

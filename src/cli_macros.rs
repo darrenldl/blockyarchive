@@ -257,7 +257,7 @@ macro_rules! get_parity_shards {
     }}
 }
 
-macro_rules! get_ver_data_par_burst_w_defaults {
+macro_rules! get_ver_and_data_par_burst_w_defaults {
     (
         $matches:expr, $json_printer:expr
     ) => {{
