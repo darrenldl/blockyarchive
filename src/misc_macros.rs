@@ -467,13 +467,6 @@ macro_rules! shadow_to_avoid_use {
 
 macro_rules! break_if_last {
     (
-        $cur:expr, $last:expr
-    ) => {{
-        if $cur == $last {
-            break;
-        }
-    }};
-    (
         seq_num => $cur:expr
     ) => {{
         use crate::sbx_specs::SBX_LAST_SEQ_NUM;
@@ -485,15 +478,16 @@ macro_rules! break_if_last {
     ) => {{
         break_if_last!($cur, std::u64::MAX);
     }};
-}
-
-macro_rules! incre_or_break_if_last {
     (
         $cur:expr, $last:expr
     ) => {{
-        break_if_last!($cur, $last);
-        $cur += 1;
+        if $cur == $last {
+            break;
+        }
     }};
+}
+
+macro_rules! incre_or_break_if_last {
     (
         seq_num => $cur:expr
     ) => {
@@ -506,4 +500,10 @@ macro_rules! incre_or_break_if_last {
         break_if_last!(block_index => $cur);
         $cur += 1;
     };
+    (
+        $cur:expr, $last:expr
+    ) => {{
+        break_if_last!($cur, $last);
+        $cur += 1;
+    }};
 }
