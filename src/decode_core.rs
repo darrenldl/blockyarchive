@@ -668,13 +668,9 @@ pub fn decode(
         return_if_ref_not_meta!(ref_block_pos, ref_block, "decode");
     }
 
-    let data_par_shards = if rs_enabled {
-        Some((
-            get_RSD_from_ref_block!(ref_block_pos, ref_block, "decode"),
-            get_RSP_from_ref_block!(ref_block_pos, ref_block, "decode"),
-        ))
-    } else {
-        None
+    let data_par_shards = match data_par_burst {
+        Some((data, parity, _)) => Some((data, parity)),
+        None => None,
     };
 
     let version = ref_block.get_version();
