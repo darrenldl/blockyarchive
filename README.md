@@ -59,7 +59,7 @@ cargo install blkar
 
 #### Usage guides & screencasts & other resources
 
-The [wiki](https://github.com/darrenldl/blockyarchive/wiki) contains comprehensive guides and resources.
+The [wiki](https://github.com/darrenldl/blockyarchive/wiki) contains comprehensive guides and resources
 
 ## Note on Rust to Bash ratio
 
@@ -87,7 +87,7 @@ Contributions are welcome. Note that by submitting contributions, you agree to l
 
 I would like to thank [Marco](https://github.com/MarcoPon) (the official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx. I would also like to thank him for his feedback on the numbering of the error correction enabled SBX versions (versions 17, 18, 19).
 
-I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of the osbx project, of which most of the designs are carried over to blkar, and also his further feedback on this project as well.
+I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of the osbx project, of which most of the designs are carried over to blkar, and also his further feedback on this project as well
 
 The design of the readable rate in progress report text is copied from [Arch Linux pacman](https://wiki.archlinux.org/index.php/Pacman)'s progress bar design
 
