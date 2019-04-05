@@ -228,12 +228,14 @@ pub fn sbx_version_arg<'a, 'b>() -> Arg<'a, 'b> {
         .help(
             "SBX container version, one of :
                     | SBX block size | Reed-Solomon | Burst error resistance |
-(default)  1        |      512 bytes |  not enabled |          not supported |
+           1        |      512 bytes |  not enabled |          not supported |
            2        |      128 bytes |  not enabled |          not supported |
            3        |     4096 bytes |  not enabled |          not supported |
-          17 (0x11) |      512 bytes |      enabled |              supported |
+(default) 17 (0x11) |      512 bytes |      enabled |              supported |
           18 (0x12) |      128 bytes |      enabled |              supported |
-          19 (0x13) |     4096 bytes |      enabled |              supported |",
+          19 (0x13) |     4096 bytes |      enabled |              supported |
+
+Details of default option : sbx-version=17, rs-data=10, rs-parity=2, burst=20",
         )
 }
 
