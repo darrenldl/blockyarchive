@@ -160,7 +160,7 @@ pub fn calc<'a>(matches: &ArgMatches<'a>) -> i32 {
                     "    Warning :";
                     "";
                     "        Burst error resistance level of {} may not provide", burst;
-                    "        meaningful resistance.";
+                    "        meaningful resistance";
                     "";
                 );
             }

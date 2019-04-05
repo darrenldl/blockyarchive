@@ -1077,7 +1077,7 @@ pub fn decode(
                 "Warning :";
                 "";
                 "    Reference block is not a metadata block, output file";
-                "    may contain data padding.";
+                "    may contain data padding";
                 "";)
         }
     }
