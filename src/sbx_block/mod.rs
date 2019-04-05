@@ -53,15 +53,15 @@ pub enum BlockType {
     Meta,
 }
 
-// pub enum SBXMode {
-//     Plain,
-//     ErrorCorrected(usize, usize, usize),
-// }
+pub enum SBXModeNoBurst {
+    Plain,
+    FEC(usize, usize),
+}
 
-// pub enum SBXModeNoBurst {
-//     Plain,
-//     ErrorCorrected(usize, usize),
-// }
+pub enum SBXMode {
+    Plain,
+    FEC(usize, usize, usize),
+}
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum BlockArrangementScheme {
@@ -69,26 +69,27 @@ pub enum BlockArrangementScheme {
     FileOriented(SBXMode),
 }
 
-// #[derive(Copy, Clone, Debug, PartialEq)]
-// pub struct SBXConfig {
-//     version : Version,
-//     arrangement : BlockArrangementScheme,
-// }
-
-// macro_rules! check_sbx_config {
-//     (
-//         $version:expr, $config:expr
-//     ) => {{
-//         match $config.arrangement {
-//             BlockArrangementScheme::StreamOriented(mode) => {
-//                 match mode {
-//                     SBXModeNoBurst::Plain => !ver_uses_rs($config.version),
-//                     SBXModeNoBurst::ErrorCorrected(data, burst)
-//                 }
-//             }
-//         }
-//     }}
-// }
+macro_rules! check_ver_consistent_with_bas {
+    (
+        $version:expr, $arrangement:expr
+    ) => {{
+        let ver_uses_rs = ver_uses_rs($config.version);
+        match $arrangement {
+            BlockArrangementScheme::StreamOriented(mode) => {
+                match mode {
+                    SBXModeNoBurst::Plain => assert(!ver_uses_rs),
+                    SBXModeNoBurst::FEC(_, _) => assert(ver_uses_rs),
+                }
+            },
+            BlockArrangementScheme::FileOriented(mode) => {
+                match mode {
+                    SBXMode::Plain => assert(!ver_uses_rs),
+                    SBXMode::FEC(_, _) => assert(ver_uses_rs),
+                }
+            }
+        }
+    }}
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
@@ -237,25 +238,55 @@ pub fn seq_num_is_parity(seq_num: u32, data_shards: usize, parity_shards: usize)
     }
 }
 
-pub fn seq_num_is_parity_w_data_par_burst(
-    seq_num: u32,
-    data_par_burst: Option<(usize, usize, usize)>,
-) -> bool {
-    match data_par_burst {
-        Some((data, parity, _)) => seq_num_is_parity(seq_num, data, parity),
-        None => false,
+// pub fn seq_num_is_parity_w_data_par_burst(
+//     seq_num: u32,
+//     data_par_burst: Option<(usize, usize, usize)>,
+// ) -> bool {
+//     match data_par_burst {
+//         Some((data, parity, _)) => seq_num_is_parity(seq_num, data, parity),
+//         None => false,
+//     }
+// }
+
+pub fn seq_num_is_parity_w_bas(seq_num: u32, bas: BlockArragnementScheme) -> bool {
+    match bas {
+        StreamOriented(mode) => match mode {
+            SBXModeNoBurst::Plain => false,
+            SBXModeNoBurst::FEC(data, parity) => seq_num_is_parity(seq_num, data, parity),
+        },
+        FileOriented(mode) => match mode {
+            SBXMode::Plain => false,
+            SBXMode::FEC(data, parity, _) => seq_num_is_parity(seq_num, data, parity),
+        },
     }
 }
 
+// pub fn calc_meta_block_dup_write_pos_s(
+//     version: Version,
+//     data_par_burst: Option<(usize, usize, usize)>,
+// ) -> SmallVec<[u64; 32]> {
+//     check_ver_consistent_with_opt!(version, data_par_burst);
+
+//     let block_size = ver_to_block_size(version) as u64;
+
+//     let mut res = calc_meta_block_dup_write_indices(data_par_burst);
+
+//     for i in res.iter_mut() {
+//         *i = *i * block_size;
+//     }
+
+//     res
+// }
+
 pub fn calc_meta_block_dup_write_pos_s(
     version: Version,
-    data_par_burst: Option<(usize, usize, usize)>,
+    bas: BlockArrangementScheme,
 ) -> SmallVec<[u64; 32]> {
-    check_ver_consistent_with_opt!(version, data_par_burst);
+    check_ver_consistent_with_bas!(version, bas);
 
     let block_size = ver_to_block_size(version) as u64;
 
-    let mut res = calc_meta_block_dup_write_indices(data_par_burst);
+    let mut res = calc_meta_block_dup_write_indices(bas);
 
     for i in res.iter_mut() {
         *i = *i * block_size;
@@ -264,11 +295,40 @@ pub fn calc_meta_block_dup_write_pos_s(
     res
 }
 
+// pub fn calc_meta_block_dup_write_indices(
+//     data_par_burst: Option<(usize, usize, usize)>,
+// ) -> SmallVec<[u64; 32]> {
+//     match data_par_burst {
+//         Some((_, parity, burst)) => {
+//             let mut res: SmallVec<[u64; 32]> = SmallVec::with_capacity(1 + parity);
+
+//             for i in 1..1 + parity as u64 {
+//                 res.push(i * (1 + burst) as u64);
+//             }
+
+//             res
+//         }
+//         None => SmallVec::new(),
+//     }
+// }
+
 pub fn calc_meta_block_dup_write_indices(
-    data_par_burst: Option<(usize, usize, usize)>,
+    bas: BlockArrangementScheme,
 ) -> SmallVec<[u64; 32]> {
-    match data_par_burst {
-        Some((_, parity, burst)) => {
+    let parity_burst =
+        match bas {
+            StreamOriented(mode) => match mode {
+                SBXModeNoBurst::Plain => None,
+                SBXModeNoBurst::FEC(_, parity) => Some((parity, 0)),
+
+            },
+            FileOriented(mode) => match mode {
+                SBXMode::Plain => None,
+                SBXMode::FEC(_, data, burst) => Some((parity, burst)),
+            }
+        };
+    match parity_burst {
+        Some((parity, burst)) => {
             let mut res: SmallVec<[u64; 32]> = SmallVec::with_capacity(1 + parity);
 
             for i in 1..1 + parity as u64 {
