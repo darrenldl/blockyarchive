@@ -93,21 +93,7 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
         }
     }
 
-    let version = get_version!(matches, json_printer);
-
-    let data_par_burst = if ver_uses_rs(version) {
-        // deal with RS related options
-        let data_shards = get_data_shards!(matches, version, json_printer);
-        let parity_shards = get_parity_shards!(matches, version, json_printer);
-
-        check_data_parity_shards!(data_shards, parity_shards, json_printer);
-
-        let burst = get_burst_or_zero!(matches, json_printer);
-
-        Some((data_shards, parity_shards, burst))
-    } else {
-        None
-    };
+    let (version, data_par_burst) = get_ver_data_par_burst_w_defaults!(matches, json_printer);
 
     let in_file = get_in_file!(accept_stdin matches, json_printer);
     let out = match matches.value_of("out") {

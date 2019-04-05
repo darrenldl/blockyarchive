@@ -257,6 +257,42 @@ macro_rules! get_parity_shards {
     }}
 }
 
+macro_rules! get_ver_data_par_burst_w_defaults {
+    (
+        $matches:expr, $json_printer:expr
+    ) => {{
+        use crate::sbx_specs::string_to_ver;
+        match $matches.value_of("sbx_version") {
+            None => (Version::V17, Some((10, 2, 20))),
+            Some(x) => {
+                let version =
+                    match string_to_ver(&x) {
+                        Ok(v)   => v,
+                        Err(()) => {
+                            exit_with_msg!(usr $json_printer => "Invalid SBX version");
+                        }
+                    };
+
+                let data_par_burst = if ver_uses_rs(version) {
+                    // deal with RS related options
+                    let data_shards = get_data_shards!($matches, version, $json_printer);
+                    let parity_shards = get_parity_shards!($matches, version, $json_printer);
+
+                    check_data_parity_shards!(data_shards, parity_shards, $json_printer);
+
+                    let burst = get_burst_or_zero!($matches, $json_printer);
+
+                    Some((data_shards, parity_shards, burst))
+                } else {
+                    None
+                };
+
+                (version, data_par_burst)
+            }
+        }
+    }}
+}
+
 macro_rules! check_data_parity_shards {
     (
         $data_shards:expr, $parity_shards:expr, $json_printer:expr
