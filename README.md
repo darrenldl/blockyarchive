@@ -10,40 +10,42 @@
 
 [Documentation](https://github.com/darrenldl/blockyarchive/wiki)
 
-Blockyarchive/blkar (formerly rust-SeqBox) is a comprehensive utility for creating, rescuing, and general handling of SeqBox archives, with optional forward error correction.
+Blockyarchive/blkar (pronounced "bloc-kar") is a comprehensive utility for creating, rescuing, and general handling of SeqBox archives, with optional forward error correction
 
-SeqBox is a single-file archive format designed by [Marco Pontello](https://github.com/MarcoPon) that facilitates sector level data recovery for when file system metadata is corrupted/missing, while the archive itself still exists as a normal file on file system.
+SeqBox is a single-file archive format designed by [Marco Pontello](https://github.com/MarcoPon) that facilitates sector level data recovery for when file system metadata is corrupted/missing, while the archive itself still exists as a normal file on file system
 
-Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for the original implementation and technical details on this.
+Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for the original implementation and technical details on this
+
+Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming
 
 ## Comparison to the original SeqBox implementation/design
 
-The original SeqBox implementation and format do not support repairing of data, only sector level recoverability.
+The original SeqBox implementation and format do not support repairing of data, only sector level recoverability
 
-Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format, and also allows arranging the blocks in a burst error resistant pattern.
+Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format, and also allows arranging the blocks in a burst error resistant pattern
 
-Blockyarchive is also more robust compared to the original SeqBox implementation, as it does not assume the SBX container to be well formed, and makes as few assumptions about the SBX container as possible, if at all.
+Blockyarchive is also more robust compared to the original SeqBox implementation, as it does not assume the SBX container to be well formed, and makes as few assumptions about the SBX container as possible
 
-blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), but much more optimized.
+blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), but much more optimized
 
 ## Features overall
 
 - Data recovery that does not depend on file system metadata (sector level recovery)
   - This allows data recovery even when data is fragmented and out of order
 - Supports error correction (via Reed-Solomon erasure code)
-- Supports burst sector error resistance
+- Supports burst (sector) error resistance
 - JSON mode
-  - Output information in JSON format instead of human readable text
+  - Outputs information in JSON format instead of human readable text, easy integration with scripts
 
 ## Goals
 
-As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
+As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance
 
 ## Status
 
 This project has reached its intended feature completeness, so no active development for new features will occur. However, this project is still actively looked after, i.e. I will respond to PRs, issues, and emails, will consider feature requests, respond to bug reports quickly, and so on.
 
-In other words, this is a completed project with respect to its original scope, but it is not abandoned.
+In other words, this is a completed project with respect to its original scope, but it is not abandoned
 
 ## Getting started
 
@@ -58,6 +60,10 @@ cargo install blkar
 #### Usage guides & screencasts & other resources
 
 The [wiki](https://github.com/darrenldl/blockyarchive/wiki) contains comprehensive guides and resources.
+
+## Note on Rust to Bash ratio
+
+Just to avoid confusion, blkar is written purely in Rust, Bash is only used to write tests
 
 ## Got a question?
 
@@ -83,7 +89,7 @@ I would like to thank [Marco](https://github.com/MarcoPon) (the official SeqBox 
 
 I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of the osbx project, of which most of the designs are carried over to blkar, and also his further feedback on this project as well.
 
-The design of the readable rate in progress report text is copied from [Arch Linux pacman](https://wiki.archlinux.org/index.php/Pacman)'s progress bar design.
+The design of the readable rate in progress report text is copied from [Arch Linux pacman](https://wiki.archlinux.org/index.php/Pacman)'s progress bar design
 
 The design of block set interleaving arrangement in RS enabled versions is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html). The interleaving provides resistance against burst sector errors.
 
