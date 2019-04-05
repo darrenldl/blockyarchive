@@ -8,7 +8,7 @@ corrupt() {
 
 echo "Testing version 1"
 echo "Encoding"
-output=$(./../blkar encode --json -f dummy)
+output=$(./../blkar encode --sbx-version 1 --json -f dummy)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -78,7 +78,7 @@ else
 fi
 
 echo "Encoding"
-output=$(./../blkar encode --json -f dummy)
+output=$(./../blkar encode --sbx-version 1 --json -f dummy)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -136,7 +136,7 @@ else
 fi
 
 echo "Encoding"
-output=$(./../blkar encode --json -f dummy)
+output=$(./../blkar encode --sbx-version 1 --json -f dummy)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1

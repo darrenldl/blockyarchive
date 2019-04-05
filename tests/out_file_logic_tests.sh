@@ -10,7 +10,7 @@ rm out_test/* &>/dev/null
 
 echo -n "Testing encode output with no provided path"
 rm dummy.sbx &>/dev/null
-./../blkar encode dummy &>/dev/null
+./../blkar encode --sbx-version 1 dummy &>/dev/null
 
 if [ -f "dummy.sbx" ]; then
   echo " ==> Okay"
@@ -75,7 +75,7 @@ truncate -s 1K dummy
 
 echo "Encode with no metadata"
 rm dummy.sbx &>/dev/null
-./../blkar encode dummy --no-meta &>/dev/null
+./../blkar encode --sbx-version 1 dummy --no-meta &>/dev/null
 
 echo "Repeating same tests for decoding"
 echo -n "Testing decode output with no provided path"

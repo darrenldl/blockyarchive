@@ -9,21 +9,21 @@ uid3=$(cat /dev/urandom | tr -dc 0-9A-F | fold -w 12 | head -n 1)
 uid_unused=$(cat /dev/urandom | tr -dc 0-9a-f | fold -w 12 | head -n 1)
 
 echo -n "Encoding files"
-output=$(./../blkar encode --json --uid $uid1 -f dummy rescue_picky_uid1.sbx)
+output=$(./../blkar encode --sbx-version 1 --json --uid $uid1 -f dummy rescue_picky_uid1.sbx)
 if [[ $(echo $output | jq -r ".stats.fileUID") == "$uid1" ]]; then
     echo -n " ==> Okay"
 else
     echo -n " ==> NOT okay"
     exit_code=1
 fi
-output=$(./../blkar encode --json --uid $uid2 -f dummy rescue_picky_uid2.sbx)
+output=$(./../blkar encode --sbx-version 1 --json --uid $uid2 -f dummy rescue_picky_uid2.sbx)
 if [[ $(echo $output | jq -r ".stats.fileUID") == "$uid2" ]]; then
     echo -n " ==> Okay"
 else
     echo -n " ==> NOT okay"
     exit_code=1
 fi
-output=$(./../blkar encode --json --uid $uid3 -f dummy rescue_picky_uid3.sbx)
+output=$(./../blkar encode --sbx-version 1 --json --uid $uid3 -f dummy rescue_picky_uid3.sbx)
 if [[ $(echo $output | jq -r ".stats.fileUID") == "$uid3" ]]; then
     echo " ==> Okay"
 else
