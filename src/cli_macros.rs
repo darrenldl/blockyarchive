@@ -323,7 +323,7 @@ macro_rules! get_burst_or_zero {
         match $matches.value_of("burst") {
             None    => 0,
             Some(x) => {
-                match usize::from_str(&x) {
+                match usize::from_str(x) {
                     Ok(x)  => x,
                     Err(_) => {
                         exit_with_msg!(usr $json_printer => "Failed to parse burst error resistance level");
