@@ -4,7 +4,7 @@
 
 - Changed "Uid" to "UID" in encode help messages for consistency
 - Changed default archiving options
-  - Changed from using SBX version 1 to using SBX version 17 with data parity ratio of 10:2 by default
+  - Changed from using SBX version 1 to using SBX version 17 with data parity ratio of 10:2 and burst error resistance level of 20 by default
 
 ## 3.0.0
 
