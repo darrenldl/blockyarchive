@@ -1,7 +1,7 @@
-SRCFILES = src/*.ml* \
-	src/bin/*.ml \
-	src/rs_codec/*.ml* \
-	src/sbx_block/*.ml*
+SRCFILES = src/*.rs \
+	src/bin/*.rs \
+	src/rs_codec/*.rs \
+	src/sbx_block/*.rs
 
 .PHONY: all
 all : bin
