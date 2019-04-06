@@ -1,4 +1,5 @@
-SRCFILES = src/*.rs \
+SRCFILES = build.rs \
+	src/*.rs \
 	src/bin/*.rs \
 	src/rs_codec/*.rs \
 	src/sbx_block/*.rs
