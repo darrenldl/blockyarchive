@@ -77,7 +77,7 @@ truncate -s 1K dummy
 
 echo "Encode with no metadata"
 rm dummy.sbx &>/dev/null
-kcov_blkar encode dummy --no-meta &>/dev/null
+kcov_blkar encode --sbx-version 1 dummy --no-meta &>/dev/null
 
 echo "Repeating same tests for decoding"
 echo -n "Testing decode output with no provided path"
