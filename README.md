@@ -37,6 +37,12 @@ blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox),
 - JSON mode
   - Outputs information in JSON format instead of human readable text, easy integration with scripts
 
+## Limitations
+
+- Only a single file is supported during encoding as SeqBox is a single-file archive format
+
+  - Blkar may still be usable as you can pipe stdout of other archivers, like tar, into blkar's stdin during encoding, and blkar can also pipe data out to stdout during decoding
+
 ## Goals
 
 As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance
