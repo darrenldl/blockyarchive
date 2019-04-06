@@ -284,7 +284,7 @@ Data block is valid if and only if
 
    - Each valid block is loaded into the RS codec, and repair process starts for the current block set when the current block set is filled
 
-   - Only blocks which were missing/damaged, then successfully repaired are written back, all other blocks are not touched
+   - Only blocks which were missing/damaged then successfully repaired are written back, all other blocks are not touched
 
      - This also means if a block cannot be repaired, then it is not touched
 
