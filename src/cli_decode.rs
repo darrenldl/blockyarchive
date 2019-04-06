@@ -26,14 +26,14 @@ provided and is not a directory, then it is used directly.",
         ))
         .arg(force_arg().help("Force overwrite even if OUT exists"))
         .arg(multi_pass_arg().help(
-            "Disable truncation of OUT, and skip writing if a good block
-already exists at the location. This allows writing to OUT multiple
-times to update it gradually. Ignored if output is stdout.",
+            "Disable truncation of OUT, and skip writing if a non-blank data
+chunk already exists at the location. This allows writing to OUT
+multiple times to update it gradually. Ignored if output is stdout.",
         ))
         .arg(multi_pass_no_skip_arg().help(
-            "Disable truncation of OUT, write even if a good block exists at the
-location. This allows writing to OUT multiple times to update it
-gradually. Ignored if output is stdout.",
+            "Disable truncation of OUT, write even if a non-blank data chunk
+exists at the location. This allows writing to OUT multiple times
+to update it gradually. Ignored if output is stdout.",
         ))
         .arg(no_meta_arg())
         .arg(pr_verbosity_level_arg())
