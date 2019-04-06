@@ -263,7 +263,19 @@ macro_rules! get_ver_and_data_par_burst_w_defaults {
     ) => {{
         use crate::sbx_specs::string_to_ver;
         match $matches.value_of("sbx_version") {
-            None => (Version::V17, Some((10, 2, 10))),
+            None => {
+                if let Some(_) = $matches.value_of("rs_data") {
+                    exit_with_msg!(usr $json_printer => "Please state the SBX version explicitly if you want to use a custom Reed-Solomon data shard count");
+                }
+                if let Some(_) = $matches.value_of("rs_parity") {
+                    exit_with_msg!(usr $json_printer => "Please state the SBX version explicitly if you want to use a custom Reed-Solomon parity shard count");
+                }
+                if let Some(_) = $matches.value_of("burst") {
+                    exit_with_msg!(usr $json_printer => "Please state the SBX version explicitly if you want to use a custom burst error resistance level");
+                }
+
+                (Version::V17, Some((10, 2, 10)))
+            },
             Some(x) => {
                 let version =
                     match string_to_ver(&x) {
