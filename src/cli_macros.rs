@@ -263,7 +263,7 @@ macro_rules! get_ver_and_data_par_burst_w_defaults {
     ) => {{
         use crate::sbx_specs::string_to_ver;
         match $matches.value_of("sbx_version") {
-            None => (Version::V17, Some((10, 2, 20))),
+            None => (Version::V17, Some((10, 2, 10))),
             Some(x) => {
                 let version =
                     match string_to_ver(&x) {

@@ -235,7 +235,7 @@ pub fn sbx_version_arg<'a, 'b>() -> Arg<'a, 'b> {
           18 (0x12) |      128 bytes |      enabled |              supported |
           19 (0x13) |     4096 bytes |      enabled |              supported |
 
-Details of default option : sbx-version=17, rs-data=10, rs-parity=2, burst=20",
+Details of default option : sbx-version=17, rs-data=10, rs-parity=2, burst=10",
         )
 }
 
