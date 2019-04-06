@@ -286,7 +286,7 @@ Data block is valid if and only if
 
    - Only blocks which were missing/damaged then successfully repaired are written back, all other blocks are not touched
 
-     - This also means if a block cannot be repaired, then it is not touched
+     - This means if a block cannot be repaired, then it is not touched
 
 #### Handling of irreparable blocks
 
