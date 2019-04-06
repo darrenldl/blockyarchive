@@ -9,7 +9,7 @@ touch dummy_empty1
 touch dummy_empty2
 
 echo -n "Encoding 1st file"
-output=$(kcov_blkar encode --json -f dummy_empty1 --uid DEADBEEF0001)
+output=$(kcov_blkar encode --sbx-version 1 --json -f dummy_empty1 --uid DEADBEEF0001)
 if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
