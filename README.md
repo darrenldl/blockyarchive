@@ -105,8 +105,6 @@ If blockyarchive has been useful to you, and you would like to donate to me for 
 
 The crcccitt code is translated from the C implementation in [libcrc](https://github.com/lammertb/libcrc) and are under the same MIT License as used by libcrc and as stated in libcrc source code, the license text of the crcccitt.c is copied over to `crcccitt/build.rs`, `crcccitt/src/lib.rs`, `build.rs` and `src/crc_ccitt.rs` as well
 
-The C source code of crcccitt copied directly from libcrc are under the MIT License as used by libcrc, the files are in ```libcrc_crcccitt```
-
 #### Official SeqBox code
 
 The files in tests folder copied from official SeqBox are under its license, which is MIT as of time of writing
