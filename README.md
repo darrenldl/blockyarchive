@@ -107,7 +107,7 @@ The crcccitt code is translated from the C implementation in [libcrc](https://gi
 
 #### Official SeqBox code
 
-The files in tests folder copied from official SeqBox are under its license, which is MIT as of time of writing
+The following files in tests folder copied from official SeqBox are under its license, which is MIT as of time of writing
 
 - tests/SeqBox/*
 
