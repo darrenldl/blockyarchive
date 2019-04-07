@@ -36,6 +36,10 @@ Ignored if --dry-run is supplied.",
 Defaults to guessing the level (guesses up to 1000) used by the
 original container and uses the result.",
         ))
+        .arg(Arg::with_name("report_blank").long("report-blank").help(
+            "Failure to sort completely blank blocks are ignored by default.
+Specify this if you want blkar to report blank blocks as well.",
+        ))
         .arg(verbose_arg().help("Show reference block info"))
         .arg(json_arg())
 }
@@ -85,6 +89,7 @@ pub fn sort<'a>(matches: &ArgMatches<'a>) -> i32 {
         get_ref_block_choice!(matches),
         ref_from_pos,
         ref_to_pos,
+        matches.is_present("report_blank"),
         guess_burst_from_pos,
         multi_pass,
         &json_printer,

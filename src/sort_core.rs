@@ -38,6 +38,7 @@ pub struct Param {
     ref_block_choice: RefBlockChoice,
     ref_block_from_pos: Option<u64>,
     ref_block_to_pos: Option<RangeEnd<u64>>,
+    report_blank: bool,
     guess_burst_from_pos: Option<u64>,
     multi_pass: Option<MultiPassType>,
     json_printer: Arc<JSONPrinter>,
@@ -56,6 +57,7 @@ impl Param {
         ref_block_choice: RefBlockChoice,
         ref_block_from_pos: Option<u64>,
         ref_block_to_pos: Option<RangeEnd<u64>>,
+        report_blank: bool,
         guess_burst_from_pos: Option<u64>,
         multi_pass: Option<MultiPassType>,
         json_printer: &Arc<JSONPrinter>,
@@ -72,6 +74,7 @@ impl Param {
             ref_block_choice,
             ref_block_from_pos,
             ref_block_to_pos,
+            report_blank,
             guess_burst_from_pos,
             multi_pass,
             json_printer: Arc::clone(json_printer),
@@ -305,7 +308,16 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
         break_if_eof_seen!(read_res);
 
         if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
-            stats.blocks_decode_failed += 1;
+            // only consider it failed if the buffer is not completely blank
+            // unless report blank is true
+            if param.report_blank
+                || !misc_utils::buffer_is_blank(sbx_block::slice_buf(
+                    ref_block.get_version(),
+                    &buffer,
+                ))
+            {
+                stats.blocks_decode_failed += 1;
+            }
             continue;
         }
 
