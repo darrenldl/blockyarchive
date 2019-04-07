@@ -38,7 +38,7 @@ original container and uses the result.",
         ))
         .arg(Arg::with_name("report_blank").long("report-blank").help(
             "Failure to sort completely blank blocks are ignored by default.
-Specify this if you want blkar to report blank blocks as well.",
+Specify this if you want blkar to report said failures as well.",
         ))
         .arg(verbose_arg().help("Show reference block info"))
         .arg(json_arg())
