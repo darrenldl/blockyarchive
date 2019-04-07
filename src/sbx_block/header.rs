@@ -57,7 +57,6 @@ impl Header {
     }
 
     pub fn from_bytes(&mut self, buffer: &[u8]) -> Result<(), Error> {
-        use super::Error;
         if buffer.len() != 16 {
             return Err(Error::IncorrectBufferSize);
         }
