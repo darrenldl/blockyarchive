@@ -59,7 +59,7 @@ impl LogError {
 }
 
 pub fn to_err(e: LogError) -> super::Error {
-    use super::{Error, ErrorKind};
+    use super::ErrorKind;
     Error::new(ErrorKind::LogError(e))
 }
 
