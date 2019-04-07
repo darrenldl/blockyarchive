@@ -39,9 +39,8 @@ blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox),
 
 ## Limitations
 
-- Only a single file is supported during encoding as SeqBox is a single-file archive format
-
-  - Blkar may still be usable as you can pipe stdout of other archivers, like tar, into blkar's stdin during encoding, and blkar can also pipe data out to stdout during decoding
+- Only a single file is supported as SeqBox is a single-file archive format
+  - However, blkar may still be usable when you have multiple files as you can pipe stdout of other archivers that support bundling multiple files, like tar, into blkar's stdin during encoding, and blkar can also pipe data out to stdout during decoding
 
 ## Goals
 
