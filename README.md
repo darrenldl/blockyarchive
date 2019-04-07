@@ -35,7 +35,7 @@ blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox),
 - Supports error correction (via Reed-Solomon erasure code)
 - Supports burst (sector) error resistance
 - JSON mode
-  - Outputs information in JSON format instead of human readable text, easy integration with scripts
+  - Outputs information in JSON format instead of human readable text, allowing easy integration with scripts
 
 ## Limitations
 
