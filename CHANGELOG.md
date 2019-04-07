@@ -7,6 +7,8 @@
   - Changed from using SBX version 1 to using SBX version 17 with data parity ratio of 10:2 and burst error resistance level of 10 by default
 - Slight change in wording in calc mode error correction parameters interpretation
   - Replaced the term "any" with "each" when referring to block set or super block set
+- Updated sort mode to ignore failure to sort completely blank blocks by default
+  - Added `--report-blank` flag to toggle this behaviour
 
 ## 3.0.0
 
