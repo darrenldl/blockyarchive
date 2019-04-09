@@ -57,7 +57,7 @@ In other words, this is a completed project with respect to its original scope, 
 
 #### Installation
 
-`blkar` is available via [GitHub releases](https://github.com/darrenldl/blockyarchive/releases) or via `cargo`
+`blkar` is available via [AUR](https://aur.archlinux.org/packages/blkar), [GitHub releases](https://github.com/darrenldl/blockyarchive/releases) or `cargo`
 
 ```
 cargo install blkar
