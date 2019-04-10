@@ -246,7 +246,7 @@ pub fn sbx_version_arg<'a, 'b>() -> Arg<'a, 'b> {
 Details of default option : sbx-version=17, rs-data=10, rs-parity=2, burst=10
 
 Note : blkar will function correctly regardless of the file extension you pick,
-       the listed ones above are just the defaults",
+       the ones listed above are just the defaults",
         )
 }
 
