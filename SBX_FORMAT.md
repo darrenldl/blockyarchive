@@ -4,7 +4,7 @@ The following specification is copied directly from the official specification w
 
 Byte order: Big Endian
 
-## For versions : 1, 2, 3
+## For SBX versions : 1, 2, 3
 
 ### Common blocks header:
 
@@ -73,9 +73,9 @@ Supported crypto hashes since 1.0.0 are
 
 Metadata block (block 0) can be disabled
 
-## For versions : 17 (0x11), 18 (0x12), 19 (0x13)
+## For ECSBX versions : 17 (0x11), 18 (0x12), 19 (0x13)
 
-Overall similar to above specs.
+ECSBX specification is overall similar to the SBX specification above
 
 Block categories : `Meta`, `Data`, `Parity`
 
