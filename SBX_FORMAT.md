@@ -1,6 +1,6 @@
 ## Technical Specification
 
-The following specification is copied directly from the official specification with extensions.
+The following specification is copied directly from the official specification with extensions
 
 Byte order: Big Endian
 
@@ -79,15 +79,15 @@ ECSBX specification is overall similar to the SBX specification above
 
 Block categories : `Meta`, `Data`, `Parity`
 
-`Meta` and `Data` are mutually exclusive, and `Meta` and `Parity` are mutually exclusive. A block can be both `Data` and `Parity`.
+`Meta` and `Data` are mutually exclusive, and `Meta` and `Parity` are mutually exclusive. A block can be both `Data` and `Parity`
 
-Assumes configuration is **M** data shards and **N** parity shards.
+Assumes configuration is **M** data shards and **N** parity shards
 
 ### Note
 
-The following only describes the sequence number arrangement, not the actual block arrangement.
+The following only describes the sequence number arrangement, not the actual block arrangement
 
-See section "Block set interleaving scheme" below for details on actual block arrangement.
+See section "Block set interleaving scheme" below for details on actual block arrangement
 
 ### Common blocks header:
 
@@ -122,11 +122,11 @@ For **N** continuous blocks
 | --- | -------- | ---- | ------ |
 | 16  | blockend | var  | parity |
 
-RS arrangement : M blocks (M data shards) N blocks (N parity shards).
+RS arrangement : M blocks (M data shards) N blocks (N parity shards)
 
-The M blocks are `Data` only.
+The M blocks are `Data` only
 
-The N blocks are both `Data` and `Parity`.
+The N blocks are both `Data` and `Parity`
 
 ### Last set of blocks
 
@@ -145,7 +145,7 @@ For **X** continuous blocks, where **X** is the remaining number of data blocks
 | 16  | n        | var  | data           |
 | n+1 | blockend | var  | padding (0x1a) |
 
-For **M - X** continuous blocks, where **M** is the specified data shards count.
+For **M - X** continuous blocks, where **M** is the specified data shards count
 
 | pos | to pos   | size | desc           |
 | --- | -------- | ---- | -------------- |
@@ -157,11 +157,11 @@ For **N** continuous blocks
 | --- | -------- | ---- | ------ |
 | 16  | blockend | var  | parity |
 
-RS arrangement : M blocks (X data shards + (M - X) padding blocks) N blocks.
+RS arrangement : M blocks (X data shards + (M - X) padding blocks) N blocks
 
-The M blocks are `Data` only.
+The M blocks are `Data` only
 
-The N blocks are both `Data` and `Parity`.
+The N blocks are both `Data` and `Parity`
 
 ### Versions:
 
@@ -197,25 +197,25 @@ Supported forward error correction algorithms since 1.0.0 are
 
 - Reed-Solomon erasure code - probably the only one for versions 17, 18, 19
 
-Metadata and the parity blocks are mandatory in versions 17, 18, 19.
+Metadata and the parity blocks are mandatory in versions 17, 18, 19
 
 ### Block set interleaving scheme
 
-This block set interleaving is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html).
+This block set interleaving is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html)
 
-The major difference between the two schemes is that RockFAT's one is byte based interleaving, blkar's one is SBX block based interleaving.
+The major difference between the two schemes is that RockFAT's one is byte based interleaving, blkar's one is SBX block based interleaving
 
-The other difference is that blkar allows customizing level of resistance against burst sector errors.
+The other difference is that blkar allows customizing level of resistance against burst sector errors
 
-A burst error is defined as consecutive SBX block erasures.
+A burst error is defined as consecutive SBX block erasures
 
-Burst error resistance is defined as the maximum number of consective SBX block erasures tolerable for any instance of burst error.
+Burst error resistance is defined as the maximum number of consective SBX block erasures tolerable for any instance of burst error
 
-The maximum number of such errors tolerable is same as the parity shard count.
+The maximum number of such errors tolerable is same as the parity shard count
 
-Assuming arrangement of **M** data shards, **N** parity shards, **B** burst error resistance.
+Assuming arrangement of **M** data shards, **N** parity shards, **B** burst error resistance
 
-Then the SBX container can tolerate up to **N** burst errors in every set of **(M + N) * B** consecutive blocks, and each individual error may be up to **B** SBX blocks.
+Then the SBX container can tolerate up to **N** burst errors in every set of **(M + N) * B** consecutive blocks, and each individual error may be up to **B** SBX blocks
 
 #### Diagrams
 
@@ -254,4 +254,4 @@ Let **K > 1 + N** :
 
 #### Limitations
 
-While an arbitrary number can be used for burst error resistance level during encoding, blkar will only guess up to 1000 when automatically guessing the burst error resistance level.
+While an arbitrary number can be used for burst error resistance level during encoding, blkar will only guess up to 1000 when automatically guessing the burst error resistance level
