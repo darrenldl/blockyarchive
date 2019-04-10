@@ -22,7 +22,7 @@ Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming
 
 The original SeqBox implementation and format do not support repairing of data, only sector level recoverability
 
-Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format, and also allows arranging the blocks in a burst error resistant pattern
+Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format (named Error-correcting SeqBox or EC-SeqBox for short), and also allows arranging the blocks in a burst error resistant pattern
 
 Blockyarchive is also more robust compared to the original SeqBox implementation, as it does not assume the SBX container to be well formed, and makes as few assumptions about the SBX container as possible
 
@@ -32,8 +32,8 @@ blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox),
 
 - Data recovery that does not depend on file system metadata (sector level recovery)
   - This allows data recovery even when data is fragmented and out of order
-- Supports error correction (via Reed-Solomon erasure code)
-- Supports burst (sector) error resistance
+- Supports error correction (via Reed-Solomon erasure code) for EC-SeqBox
+- Supports burst (sector) error resistance for EC-SeqBox
 - JSON mode
   - Outputs information in JSON format instead of human readable text, allowing easy integration with scripts
 
