@@ -22,7 +22,7 @@ fi
 echo "Checking dummy disk"
 
 echo "Collecting base statistics"
-output=$(./../blkar check --json dummy.sbx)
+output=$(./../blkar check --json dummy.ecsbx)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -32,7 +32,7 @@ okay_meta=$(echo $output | jq -r ".stats.numberOfBlocksPassedCheckMetadata")
 okay_data=$(echo $output | jq -r ".stats.numberOfBlocksPassedCheckData")
 
 echo -n "Checking that blkar only checks the first block"
-output=$(./../blkar check --json dummy.sbx --from 0 --to-inc 511)
+output=$(./../blkar check --json dummy.ecsbx --from 0 --to-inc 511)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -62,9 +62,9 @@ else
   exit_code=1
 fi
 
-corrupt 0 dummy.sbx
+corrupt 0 dummy.ecsbx
 
-output=$(./../blkar check --json dummy.sbx --from 0 --to-inc 511)
+output=$(./../blkar check --json dummy.ecsbx --from 0 --to-inc 511)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -95,7 +95,7 @@ else
 fi
 
 echo -n "Checking that blkar only checks the second block"
-output=$(./../blkar check --json dummy.sbx --from 512 --to-inc 512)
+output=$(./../blkar check --json dummy.ecsbx --from 512 --to-inc 512)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -125,9 +125,9 @@ else
   exit_code=1
 fi
 
-corrupt 512 dummy.sbx
+corrupt 512 dummy.ecsbx
 
-output=$(./../blkar check --json dummy.sbx --from 512 --to-inc 512)
+output=$(./../blkar check --json dummy.ecsbx --from 512 --to-inc 512)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -158,7 +158,7 @@ else
 fi
 
 echo -n "Checking that blkar checks both blocks"
-output=$(./../blkar check --json dummy.sbx --from 0 --to-exc 1024)
+output=$(./../blkar check --json dummy.ecsbx --from 0 --to-exc 1024)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -189,7 +189,7 @@ else
 fi
 
 echo -n "Checking that blkar checks all blocks"
-output=$(./../blkar check --json dummy.sbx)
+output=$(./../blkar check --json dummy.ecsbx)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1

@@ -23,7 +23,7 @@ fi
 
 echo -n "Checking dummy disk"
 
-output=$(./../blkar check --json dummy.sbx)
+output=$(./../blkar check --json dummy.ecsbx)
 if [[ $(echo $output | jq -r ".error") == "null" ]]; then
   echo -n " ==> Okay"
 else
@@ -31,9 +31,9 @@ else
   exit_code=1
 fi
 
-corrupt 0 dummy.sbx
+corrupt 0 dummy.ecsbx
 
-output=$(./../blkar check --json dummy.sbx --ref-to-inc 0)
+output=$(./../blkar check --json dummy.ecsbx --ref-to-inc 0)
 if [[ $(echo $output | jq -r ".error") == "Error : Failed to find reference block" ]]; then
   echo -n " ==> Okay"
 else
@@ -41,7 +41,7 @@ else
   exit_code=1
 fi
 
-output=$(./../blkar check --json --ref-from 512 dummy.sbx)
+output=$(./../blkar check --json --ref-from 512 dummy.ecsbx)
 if [[ $(echo $output | jq -r ".error") == "null" ]]; then
   echo " ==> Okay"
 else

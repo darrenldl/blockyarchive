@@ -12,7 +12,7 @@ rm out_test/* &>/dev/null
 
 echo -n "Testing encode output with no provided path"
 rm dummy.sbx &>/dev/null
-kcov_blkar encode dummy &>/dev/null
+kcov_blkar encode --sbx-version 1 dummy &>/dev/null
 
 if [ -f "dummy.sbx" ]; then
   echo " ==> Okay"
@@ -34,7 +34,7 @@ fi
 echo -n "Testing encode output with provided directory path"
 kcov_blkar encode dummy out_test &>/dev/null
 
-if [ -f "out_test/dummy.sbx" ]; then
+if [ -f "out_test/dummy.ecsbx" ]; then
   echo " ==> Okay"
 else
   echo " ==> NOT okay"
@@ -43,7 +43,7 @@ fi
 
 echo -n "Testing decode output with no provided path"
 rm dummy &>/dev/null
-kcov_blkar decode dummy.sbx &>/dev/null
+kcov_blkar decode dummy.ecsbx &>/dev/null
 
 if [ -f "dummy" ]; then
   echo " ==> Okay"
@@ -53,7 +53,7 @@ else
 fi
 
 echo -n "Testing decode output with provided full file path"
-kcov_blkar decode dummy.sbx out_test/decoded &>/dev/null
+kcov_blkar decode dummy.ecsbx out_test/decoded &>/dev/null
 
 if [ -f "out_test/decoded" ]; then
   echo " ==> Okay"
@@ -63,7 +63,7 @@ else
 fi
 
 echo -n "Testing decode output with provided directory path"
-kcov_blkar decode dummy.sbx out_test &>/dev/null
+kcov_blkar decode dummy.ecsbx out_test &>/dev/null
 
 if [ -f "out_test/dummy" ]; then
   echo " ==> Okay"

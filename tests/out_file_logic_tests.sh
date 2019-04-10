@@ -32,7 +32,7 @@ fi
 echo -n "Testing encode output with provided directory path"
 ./../blkar encode dummy out_test &>/dev/null
 
-if [ -f "out_test/dummy.sbx" ]; then
+if [ -f "out_test/dummy.ecsbx" ]; then
   echo " ==> Okay"
 else
   echo " ==> NOT okay"

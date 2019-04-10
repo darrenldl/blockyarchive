@@ -22,7 +22,7 @@ fi
 echo "Decoding"
 
 echo "Collecting base statistics"
-output=$(./../blkar decode --json -f dummy.sbx)
+output=$(./../blkar decode --json -f dummy.ecsbx)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -33,7 +33,7 @@ okay_data=$(echo $output | jq -r ".stats.numberOfBlocksDecodedData")
 failed_blocks=$(echo $output | jq -r ".stats.numberOfBlocksFailedToDecode")
 
 echo -n "Checking that blkar only decodes the first block"
-output=$(./../blkar decode --json -f dummy.sbx --from 0 --to-inc 511)
+output=$(./../blkar decode --json -f dummy.ecsbx --from 0 --to-inc 511)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -63,9 +63,9 @@ else
   exit_code=1
 fi
 
-corrupt 0 dummy.sbx
+corrupt 0 dummy.ecsbx
 
-output=$(./../blkar decode --json -f dummy.sbx --from 0 --to-inc 511)
+output=$(./../blkar decode --json -f dummy.ecsbx --from 0 --to-inc 511)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -96,7 +96,7 @@ else
 fi
 
 echo -n "Checking that blkar only decodes the second block"
-output=$(./../blkar decode --json -f dummy.sbx --from 512 --to-inc 512)
+output=$(./../blkar decode --json -f dummy.ecsbx --from 512 --to-inc 512)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -126,9 +126,9 @@ else
   exit_code=1
 fi
 
-corrupt 512 dummy.sbx
+corrupt 512 dummy.ecsbx
 
-output=$(./../blkar decode --json -f dummy.sbx --from 512 --to-inc 512)
+output=$(./../blkar decode --json -f dummy.ecsbx --from 512 --to-inc 512)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -159,7 +159,7 @@ else
 fi
 
 echo -n "Checking that blkar decodes both blocks"
-output=$(./../blkar decode --json -f dummy.sbx --from 0 --to-exc 1024)
+output=$(./../blkar decode --json -f dummy.ecsbx --from 0 --to-exc 1024)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -190,7 +190,7 @@ else
 fi
 
 echo -n "Checking that blkar decodes all blocks"
-output=$(./../blkar decode --json -f dummy.sbx)
+output=$(./../blkar decode --json -f dummy.ecsbx)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1

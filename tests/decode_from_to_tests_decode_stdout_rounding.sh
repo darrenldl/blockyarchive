@@ -215,7 +215,7 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
 fi
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - --from $offset --to-exc 512 --pv 0 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.ecsbx - --from $offset --to-exc 512 --pv 0 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -268,7 +268,7 @@ else
 fi
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - --from $offset --to-exc 2048 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.ecsbx - --from $offset --to-exc 2048 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -321,7 +321,7 @@ else
 fi
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - --from $[offset + 2048] --to-inc 2048 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.ecsbx - --from $[offset + 2048] --to-inc 2048 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -374,7 +374,7 @@ else
 fi
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - --from $[offset + 37376] --to-exc 112640 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.ecsbx - --from $[offset + 37376] --to-exc 112640 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1

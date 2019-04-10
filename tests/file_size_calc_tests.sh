@@ -69,7 +69,11 @@ for ver in ${VERSIONS[*]}; do
 
         encode_stats_container_size=$(echo $output | jq -r ".stats.sbxContainerSize")
 
-        actual_container_size=$(ls -l dummy.sbx | awk '{print $5}')
+        if (( $ver < 17 )); then
+            actual_container_size=$(ls -l dummy.sbx | awk '{print $5}')
+        else
+            actual_container_size=$(ls -l dummy.ecsbx | awk '{print $5}')
+        fi
 
         echo -n "Checking if encode --info-only file size matches actual file size"
         if [[ $actual_file_size == $encode_info_file_size ]]; then
