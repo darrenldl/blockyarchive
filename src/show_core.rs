@@ -173,7 +173,7 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
                     return Err(Error::with_message(&format!(
                         "Error encountered when guessing : {}",
                         e
-                    )))
+                    )));
                 }
                 Ok(None) => {
                     print_if!(not_json => json_printer => "Failed to guess level";);
