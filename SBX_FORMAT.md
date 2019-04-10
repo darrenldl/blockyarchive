@@ -1,6 +1,6 @@
 ## Technical Specification
 
-The following specification for SBX is copied directly from the official specification
+The following specification for SBX is copied directly from the official specification with minor to no modifications
 
 ECSBX is the extended version of SBX with error-correcting capability
 
