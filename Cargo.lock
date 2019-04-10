@@ -55,7 +55,7 @@ dependencies = [
 
 [[package]]
 name = "blkar"
-version = "4.0.0"
+version = "5.0.0"
 dependencies = [
  "blake2_c 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",

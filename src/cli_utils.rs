@@ -38,7 +38,7 @@ pub fn pr_verbosity_level_arg<'a, 'b>() -> Arg<'a, 'b> {
           0 (show nothing)
           1 (only show progress stats when done)
 (default) 2 (show both progress bar and progress stats)
-This only affects progress text printing.",
+This only affects progress text printing",
         )
 }
 
@@ -227,15 +227,26 @@ pub fn sbx_version_arg<'a, 'b>() -> Arg<'a, 'b> {
         .takes_value(true)
         .help(
             "SBX container version, one of :
-                    | SBX block size | Reed-Solomon | Burst error resistance |
-           1        |      512 bytes |  not enabled |          not supported |
-           2        |      128 bytes |  not enabled |          not supported |
-           3        |     4096 bytes |  not enabled |          not supported |
-(default) 17 (0x11) |      512 bytes |      enabled |              supported |
-          18 (0x12) |      128 bytes |      enabled |              supported |
-          19 (0x13) |     4096 bytes |      enabled |              supported |
+                    | SBX block size | FEC enabled | Burst error resistance |
+           1        |      512 bytes |          no |          not supported |
+           2        |      128 bytes |          no |          not supported |
+           3        |     4096 bytes |          no |          not supported |
+(default) 17 (0x11) |      512 bytes |         yes |              supported |
+          18 (0x12) |      128 bytes |         yes |              supported |
+          19 (0x13) |     4096 bytes |         yes |              supported |
 
-Details of default option : sbx-version=17, rs-data=10, rs-parity=2, burst=10",
+                    | File extension |
+           1        |           .sbx |
+           2        |           .sbx |
+           3        |           .sbx |
+(default) 17 (0x11) |         .ecsbx |
+          18 (0x12) |         .ecsbx |
+          19 (0x13) |         .ecsbx |
+
+Details of default option : sbx-version=17, rs-data=10, rs-parity=2, burst=10
+
+Note : blkar will function correctly regardless of the file extension you pick,
+       the ones listed above are just the defaults",
         )
 }
 

@@ -26,8 +26,9 @@ pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
                 .help("File to encode. Supply - to use stdin as input. Use ./- for files named -."),
         )
         .arg(out_arg().help(
-            "SBX container name (defaults to INFILE.sbx). If OUT is a directory, then the
-container is stored as OUT/INFILE.sbx (only the file part of INFILE is used).",
+            "SBX container name (defaults to INFILE.sbx or INFILE.ecsbx). If OUT is a
+directory, then the container is stored as OUT/INFILE.sbx or
+OUT/INFILE.ecsbx (only the file part of INFILE is used).",
         ))
         .arg(force_arg().help("Force overwrite even if OUT exists"))
         .arg(
@@ -95,13 +96,16 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
 
     let (version, data_par_burst) = get_ver_and_data_par_burst_w_defaults!(matches, json_printer);
 
+    let out_extension = if ver_uses_rs(version) { "ecsbx" } else { "sbx" };
+
     let in_file = get_in_file!(accept_stdin matches, json_printer);
+
     let out = match matches.value_of("out") {
         None => {
             if file_utils::check_if_file_is_stdin(in_file) {
                 exit_with_msg!(usr json_printer => "Explicit output file name is required when input is stdin");
             } else {
-                format!("{}.sbx", in_file)
+                format!("{}.{}", in_file, out_extension)
             }
         }
         Some(x) => {
@@ -111,7 +115,7 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
                 }
 
                 let in_file = file_utils::get_file_name_part_of_path(in_file);
-                misc_utils::make_path(&[x, &format!("{}.sbx", in_file)])
+                misc_utils::make_path(&[x, &format!("{}.{}", in_file, out_extension)])
             } else {
                 String::from(x)
             }

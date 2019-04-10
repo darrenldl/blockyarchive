@@ -22,7 +22,7 @@ Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming
 
 The original SeqBox implementation and format do not support repairing of data, only sector level recoverability
 
-Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format, and also allows arranging the blocks in a burst error resistant pattern
+Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format (named Error-correcting SeqBox or EC-SeqBox for short), and also allows arranging the blocks in a burst error resistant pattern
 
 Blockyarchive is also more robust compared to the original SeqBox implementation, as it does not assume the SBX container to be well formed, and makes as few assumptions about the SBX container as possible
 
@@ -32,14 +32,14 @@ blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox),
 
 - Data recovery that does not depend on file system metadata (sector level recovery)
   - This allows data recovery even when data is fragmented and out of order
-- Supports error correction (via Reed-Solomon erasure code)
-- Supports burst (sector) error resistance
+- Supports error correction (via Reed-Solomon erasure code) for EC-SeqBox
+- Supports burst (sector) error resistance for EC-SeqBox
 - JSON mode
   - Outputs information in JSON format instead of human readable text, allowing easy integration with scripts
 
 ## Limitations
 
-- Only a single file is supported for encoding as SeqBox is a single-file archive format
+- Only a single file is supported for encoding as SeqBox and EC-SeqBox are both single-file archive formats
   - However, blkar may still be usable when you have multiple files, as blkar supports taking input from stdin during encoding, and also supports outputting to stdout during decoding
   - This means if you have an archiver that supports bundling and unbundling on the fly with pipes, like tar, you can combine the use of the archiver and blkar into one encoding and decoding step
 
@@ -81,7 +81,7 @@ Feel free to join the [Gitter chat](https://gitter.im/blockyarchive/community) i
 
 ## Specifications
 
-[SBX format](SBX_FORMAT.md)
+[SBX format](SBX_FORMAT.md) (EC-SeqBox is also specified in this document)
 
 [blkar specs](BLKAR_SPECS.md)
 
@@ -91,7 +91,7 @@ Contributions are welcome. Note that by submitting contributions, you agree to l
 
 ## Acknowledgement
 
-I would like to thank [Marco](https://github.com/MarcoPon) (the official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx. I would also like to thank him for his feedback on the numbering of the error correction enabled SBX versions (versions 17, 18, 19).
+I would like to thank [Marco](https://github.com/MarcoPon) (the official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx. I would also like to thank him for his feedback on the numbering of the error correction enabled ECSBX versions (versions 17, 18, 19).
 
 I would like to thank [Ming](https://github.com/mdchia/) for his feedback on the documentation, UX design, and several other general aspects of the osbx project, of which most of the designs are carried over to blkar, and also his further feedback on this project as well
 
