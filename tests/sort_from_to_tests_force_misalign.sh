@@ -296,14 +296,14 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   exit_code=1
 fi
 
-mv dummy.sbx dummy.sbx.tmp
-touch dummy.sbx
-truncate -s $offset dummy.sbx
-cat dummy.sbx.tmp >> dummy.sbx
-rm dummy.sbx.tmp
+mv dummy.ecsbx dummy.ecsbx.tmp
+touch dummy.ecsbx
+truncate -s $offset dummy.ecsbx
+cat dummy.ecsbx.tmp >> dummy.ecsbx
+rm dummy.ecsbx.tmp
 
 echo -n "Sorting"
-output=$(./../blkar sort --json -f dummy.sbx data_chunk --from $offset --to-exc 512 --force-misalign)
+output=$(./../blkar sort --json -f dummy.ecsbx data_chunk --from $offset --to-exc 512 --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -376,7 +376,7 @@ else
 fi
 
 echo -n "Checking output blocks"
-dd if=dummy.sbx of=data_chunk_orig bs=1 count=$[3*512] skip=$offset 2>/dev/null
+dd if=dummy.ecsbx of=data_chunk_orig bs=1 count=$[3*512] skip=$offset 2>/dev/null
 cmp data_chunk data_chunk_orig
 if [[ $? == 0 ]]; then
   echo " ==> Okay"
@@ -386,7 +386,7 @@ else
 fi
 
 echo -n "Sorting"
-output=$(./../blkar sort --json -f dummy.sbx data_chunk --from $offset --to-exc 2048 --force-misalign)
+output=$(./../blkar sort --json -f dummy.ecsbx data_chunk --from $offset --to-exc 2048 --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -459,7 +459,7 @@ else
 fi
 
 echo -n "Checking output blocks"
-dd if=dummy.sbx of=data_chunk_orig bs=1 count=2048       skip=$offset seek=0 2>/dev/null
+dd if=dummy.ecsbx of=data_chunk_orig bs=1 count=2048       skip=$offset seek=0 2>/dev/null
 cmp data_chunk data_chunk_orig
 if [[ $? == 0 ]]; then
   echo " ==> Okay"
@@ -469,7 +469,7 @@ else
 fi
 
 echo -n "Sorting"
-output=$(./../blkar sort --json -f dummy.sbx data_chunk --from $[offset + 2048] --to-inc 2048 --force-misalign)
+output=$(./../blkar sort --json -f dummy.ecsbx data_chunk --from $[offset + 2048] --to-inc 2048 --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -543,7 +543,7 @@ fi
 
 echo -n "Checking output blocks"
 dd if=/dev/zero of=data_chunk_orig bs=1 count=$[5*512] skip=0 2>/dev/null
-dd if=dummy.sbx of=data_chunk_orig bs=1 count=512        skip=$[offset + 4*512] seek=$[4*512] conv=notrunc 2>/dev/null
+dd if=dummy.ecsbx of=data_chunk_orig bs=1 count=512        skip=$[offset + 4*512] seek=$[4*512] conv=notrunc 2>/dev/null
 cmp data_chunk data_chunk_orig
 if [[ $? == 0 ]]; then
   echo " ==> Okay"
@@ -553,7 +553,7 @@ else
 fi
 
 echo -n "Sorting"
-output=$(./../blkar sort --json -f dummy.sbx data_chunk --from $[offset + 37376] --to-exc 112640 --force-misalign)
+output=$(./../blkar sort --json -f dummy.ecsbx data_chunk --from $[offset + 37376] --to-exc 112640 --force-misalign)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -627,7 +627,7 @@ fi
 
 echo -n "Checking output blocks"
 dd if=/dev/zero of=data_chunk_orig bs=1 count=$[220 * 512] skip=0 2>/dev/null
-dd if=dummy.sbx of=data_chunk_orig bs=1 count=$[147 * 512]        skip=$[offset + 73 * 512] seek=$[73 * 512] conv=notrunc 2>/dev/null
+dd if=dummy.ecsbx of=data_chunk_orig bs=1 count=$[147 * 512]        skip=$[offset + 73 * 512] seek=$[73 * 512] conv=notrunc 2>/dev/null
 cmp data_chunk data_chunk_orig
 if [[ $? == 0 ]]; then
   echo " ==> Okay"

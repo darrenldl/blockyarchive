@@ -37,7 +37,7 @@ fi
 echo "Crafting dummy disk file"
 rm dummy_empty_disk &>/dev/null
 cat dummy_empty1.sbx >> dummy_empty_disk
-cat dummy_empty2.sbx >> dummy_empty_disk
+cat dummy_empty2.ecsbx >> dummy_empty_disk
 
 echo "Rescuing from dummy disk"
 

@@ -208,7 +208,7 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
 fi
 
 echo "Collecting base statistics"
-output=$(./../blkar decode --json -f dummy.sbx - 2>&1 >/dev/null)
+output=$(./../blkar decode --json -f dummy.ecsbx - 2>&1 >/dev/null)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -222,10 +222,10 @@ failed_data=$(echo $output | jq -r ".stats.numberOfBlocksFailedToDecodeData")
 failed_parity=$(echo $output | jq -r ".stats.numberOfBlocksFailedToDecodeParity")
 
 echo "Corrupting container"
-corrupt 512 dummy.sbx
+corrupt 512 dummy.ecsbx
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.ecsbx - 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -291,10 +291,10 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
 fi
 
 echo "Corrupting container"
-corrupt 4096 dummy.sbx
+corrupt 4096 dummy.ecsbx
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.ecsbx - 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -361,10 +361,10 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
 fi
 
 echo "Corrupting container"
-corrupt 5632  dummy.sbx
+corrupt 5632  dummy.ecsbx
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.ecsbx - 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -430,12 +430,12 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
 fi
 
 echo "Corrupting container"
-corrupt 4096  dummy.sbx
-corrupt 5632  dummy.sbx
-corrupt 12800 dummy.sbx
+corrupt 4096  dummy.ecsbx
+corrupt 5632  dummy.ecsbx
+corrupt 12800 dummy.ecsbx
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx - 2>&1 > data_chunk)
+output=$(./../blkar decode --json -f dummy.ecsbx - 2>&1 > data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1

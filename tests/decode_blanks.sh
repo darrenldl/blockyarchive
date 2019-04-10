@@ -189,7 +189,7 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
 fi
 
 echo "Collecting base statistics"
-output=$(./../blkar decode --json -f dummy.sbx)
+output=$(./../blkar decode --json -f dummy.ecsbx)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -201,10 +201,10 @@ okay_parity=$(echo $output | jq -r ".stats.numberOfBlocksDecodedParity")
 failed_blocks=$(echo $output | jq -r ".stats.numberOfBlocksFailedToDecode")
 
 echo "Corrupting container"
-corrupt 512 dummy.sbx
+corrupt 512 dummy.ecsbx
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx data_chunk)
+output=$(./../blkar decode --json -f dummy.ecsbx data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -258,10 +258,10 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
 fi
 
 echo "Corrupting container"
-corrupt 4096 dummy.sbx
+corrupt 4096 dummy.ecsbx
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx data_chunk)
+output=$(./../blkar decode --json -f dummy.ecsbx data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -316,10 +316,10 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
 fi
 
 echo "Corrupting container"
-corrupt 5632  dummy.sbx
+corrupt 5632  dummy.ecsbx
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx data_chunk)
+output=$(./../blkar decode --json -f dummy.ecsbx data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1
@@ -373,12 +373,12 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
 fi
 
 echo "Corrupting container"
-corrupt 4096  dummy.sbx
-corrupt 5632  dummy.sbx
-corrupt 12800 dummy.sbx
+corrupt 4096  dummy.ecsbx
+corrupt 5632  dummy.ecsbx
+corrupt 12800 dummy.ecsbx
 
 echo -n "Decoding"
-output=$(./../blkar decode --json -f dummy.sbx data_chunk)
+output=$(./../blkar decode --json -f dummy.ecsbx data_chunk)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
   echo " ==> Invalid JSON"
   exit_code=1

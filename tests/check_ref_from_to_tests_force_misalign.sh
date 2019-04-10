@@ -21,15 +21,15 @@ else
     exit_code=1
 fi
 
-mv dummy.sbx dummy.sbx.tmp
-touch dummy.sbx
-truncate -s $offset dummy.sbx
-cat dummy.sbx.tmp >> dummy.sbx
-rm dummy.sbx.tmp
+mv dummy.ecsbx dummy.ecsbx.tmp
+touch dummy.ecsbx
+truncate -s $offset dummy.ecsbx
+cat dummy.ecsbx.tmp >> dummy.ecsbx
+rm dummy.ecsbx.tmp
 
 echo -n "Checking dummy disk"
 
-output=$(./../blkar check --json --ref-from $offset --force-misalign dummy.sbx)
+output=$(./../blkar check --json --ref-from $offset --force-misalign dummy.ecsbx)
 if [[ $(echo $output | jq -r ".error") == "null" ]]; then
   echo -n " ==> Okay"
 else
@@ -37,9 +37,9 @@ else
   exit_code=1
 fi
 
-corrupt $offset dummy.sbx
+corrupt $offset dummy.ecsbx
 
-output=$(./../blkar check --json --ref-from $offset --ref-to-inc $offset --force-misalign dummy.sbx)
+output=$(./../blkar check --json --ref-from $offset --ref-to-inc $offset --force-misalign dummy.ecsbx)
 if [[ $(echo $output | jq -r ".error") == "Error : Failed to find reference block" ]]; then
   echo -n " ==> Okay"
 else
@@ -47,7 +47,7 @@ else
   exit_code=1
 fi
 
-output=$(./../blkar check --json --ref-from $[offset + 512] --force-misalign dummy.sbx)
+output=$(./../blkar check --json --ref-from $[offset + 512] --force-misalign dummy.ecsbx)
 if [[ $(echo $output | jq -r ".error") == "null" ]]; then
   echo " ==> Okay"
 else
