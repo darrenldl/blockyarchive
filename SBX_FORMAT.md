@@ -1,6 +1,8 @@
 ## Technical Specification
 
-The following specification is copied directly from the official specification with extensions
+The following specification for SBX is copied directly from the official specification
+
+ECSBX is the extended version of SBX with error-correcting capability
 
 Byte order: Big Endian
 
