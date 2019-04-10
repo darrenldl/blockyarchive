@@ -12,7 +12,7 @@ rm out_test/* &>/dev/null
 
 echo -n "Testing encode output with no provided path"
 rm dummy.sbx &>/dev/null
-kcov_blkar encode dummy &>/dev/null
+kcov_blkar encode --sbx-version 1 dummy &>/dev/null
 
 if [ -f "dummy.sbx" ]; then
   echo " ==> Okay"
