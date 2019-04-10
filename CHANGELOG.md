@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.0.0
+
+- Error-correcting versions of SeqBox are now called Error-correcting SeqBox or EC-SeqBox for short, and use the file extension `.ecsbx`
+
+  - This is done for easier differentiation between the extended versions and the original versions
+
+  - Fundamentally this does not change how blkar functions, as blkar does not take file extensions into account for all modes interacting with SBX containers
+
 ## 4.0.0
 
 - Changed "Uid" to "UID" in encode help messages for consistency
