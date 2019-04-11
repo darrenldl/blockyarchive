@@ -23,7 +23,6 @@ repository    = "https://github.com/darrenldl/blockyarchive"
 readme        = "README.md"
 
 keywords    = [
-    "SeqBox",
     "EC-SeqBox",
     "backup",
     "data-recovery",
