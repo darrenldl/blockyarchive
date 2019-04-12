@@ -19,7 +19,7 @@ blkar returns
 
 ## Output
 
-The cli argument parsing library (clap) outputs errors to stderr
+The cli argument parsing library (clap) outputs errors to stderr.
 
 If no errors are discovered by the cli argument parsing library, then
 
@@ -104,7 +104,7 @@ Metadata block is valid if
 
 ## Calc workflow
 
-Calc mode only operates at UI/UX level and does not handle any file data, thus it is not documented here
+Calc mode only operates at UI/UX level and does not handle any file data, thus it is not documented here.
 
 ## Check workflow
 
@@ -130,7 +130,7 @@ Data block is valid if and only if
 
 ### If output to file
 
-1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)# 
+1. A reference block is retrieved first and is used for guidance on alignment, version, and uid (see **Finding reference block** procedure specified above)
 2. Scan for valid blocks from start of SBX container to decode and output using reference block's block size as alignment
    - if a block is invalid, nothing is done
    - if a block is valid, and is a metadata block, nothing is done
