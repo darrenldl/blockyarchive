@@ -78,6 +78,7 @@ pub struct Stats {
     pub meta_or_par_blocks_decoded: u64,
     pub data_or_par_blocks_decoded: u64,
     pub blocks_decode_failed: u64,
+    pub okay_blank_blocks: u64,
     total_blocks: u64,
     start_time: f64,
     end_time: f64,
@@ -90,9 +91,10 @@ impl Stats {
         let total_blocks = calc_total_block_count(ref_block.get_version(), required_len);
         Stats {
             version: ref_block.get_version(),
-            blocks_decode_failed: 0,
             meta_or_par_blocks_decoded: 0,
             data_or_par_blocks_decoded: 0,
+            blocks_decode_failed: 0,
+            okay_blank_blocks: 0,
             total_blocks,
             start_time: 0.,
             end_time: 0.,
@@ -113,7 +115,8 @@ impl ProgressReport for Stats {
     fn units_so_far(&self) -> u64 {
         (self.meta_or_par_blocks_decoded
             + self.data_or_par_blocks_decoded
-            + self.blocks_decode_failed) as u64
+            + self.blocks_decode_failed
+            + self.okay_blank_blocks) as u64
     }
 
     fn total_units(&self) -> u64 {
@@ -252,29 +255,33 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
             Err(_) => {
                 // only report error if the buffer is not completely blank
                 // unless report blank is true
-                if param.report_blank
-                    || !misc_utils::buffer_is_blank(sbx_block::slice_buf(
-                        ref_block.get_version(),
-                        &buffer,
-                    ))
-                {
-                    if json_printer.json_enabled() {
-                        if param.verbose {
-                            json_printer.print_open_bracket(None, BracketType::Curly);
+                if misc_utils::buffer_is_blank(sbx_block::slice_buf(
+                    ref_block.get_version(),
+                    &buffer,
+                )) {
+                    if param.report_blank {
+                        if json_printer.json_enabled() {
+                            if param.verbose {
+                                json_printer.print_open_bracket(None, BracketType::Curly);
 
-                            print_maybe_json!(json_printer, "pos : {}", block_pos);
+                                print_maybe_json!(json_printer, "pos : {}", block_pos);
 
-                            json_printer.print_close_bracket();
+                                json_printer.print_close_bracket();
+                            }
+                        } else {
+                            print_if!(verbose => param, reporter =>
+                                      "Block failed check, version : {}, block size : {}, at byte {} (0x{:X})",
+                                      ver_usize,
+                                      block_size,
+                                      block_pos,
+                                      block_pos;);
                         }
-                    } else {
-                        print_if!(verbose => param, reporter =>
-                                  "Block failed check, version : {}, block size : {}, at byte {} (0x{:X})",
-                                  ver_usize,
-                                  block_size,
-                                  block_pos,
-                                  block_pos;);
-                    }
 
+                        stats.blocks_decode_failed += 1;
+                    } else {
+                        stats.okay_blank_blocks += 1;
+                    }
+                } else {
                     stats.blocks_decode_failed += 1;
                 }
             }
