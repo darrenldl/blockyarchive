@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.0.1
+
+- Updated `calc` mode to use the same defaults as `encode` mode
+
 ## 5.0.0
 
 - Error-correcting versions of SeqBox are now called Error-correcting SeqBox or EC-SeqBox for short, and use the file extension `.ecsbx`

@@ -35,27 +35,13 @@ pub fn calc<'a>(matches: &ArgMatches<'a>) -> i32 {
 
     json_printer.print_open_bracket(None, BracketType::Curly);
 
-    let version = get_version!(matches, json_printer);
+    let (version, data_par_burst) = get_ver_and_data_par_burst_w_defaults!(matches, json_printer);
 
     let meta_enabled = Some(get_meta_enabled!(matches));
 
     let in_file_size = match u64::from_str(matches.value_of("in_file_size").unwrap()) {
         Ok(x) => x,
         Err(_) => exit_with_msg!(usr json_printer => "Invalid file size"),
-    };
-
-    let data_par_burst = if ver_uses_rs(version) {
-        // deal with RS related options
-        let data_shards = get_data_shards!(matches, version, json_printer);
-        let parity_shards = get_parity_shards!(matches, version, json_printer);
-
-        check_data_parity_shards!(data_shards, parity_shards, json_printer);
-
-        let burst = get_burst_or_zero!(matches, json_printer);
-
-        Some((data_shards, parity_shards, burst))
-    } else {
-        None
     };
 
     let out_file_size = file_utils::from_orig_file_size::calc_container_size(
