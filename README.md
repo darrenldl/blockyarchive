@@ -34,7 +34,7 @@ blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox),
   - This allows data recovery even when data is fragmented and out of order
 - Supports error correction (via Reed-Solomon erasure code) for EC-SeqBox
 - Supports burst (sector) error resistance for EC-SeqBox
-  - This is done via an interleaving block arrangement scheme. It is mainly to address the data repair limitation of the simple archive layout
+  - This is done via an interleaving block arrangement scheme. It is mainly to address the data repair limitation of the simple archive design
   - More complex archive designs such as PAR2 can repair burst errors without any extra arrangement scheme, but they are also vastly more complex than EC-SeqBox
 - JSON mode
   - Outputs information in JSON format instead of human readable text, allowing easy integration with scripts
