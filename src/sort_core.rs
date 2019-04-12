@@ -100,6 +100,7 @@ pub struct Stats {
     pub data_blocks_decoded: u64,
     pub parity_blocks_decoded: u64,
     pub blocks_decode_failed: u64,
+    pub okay_blank_blocks: u64,
     pub meta_blocks_same_order: u64,
     pub meta_blocks_diff_order: u64,
     pub data_blocks_same_order: u64,
@@ -118,10 +119,11 @@ impl Stats {
         let total_blocks = calc_total_block_count(ref_block.get_version(), file_size);
         Stats {
             version: ref_block.get_version(),
-            blocks_decode_failed: 0,
             meta_blocks_decoded: 0,
             data_blocks_decoded: 0,
             parity_blocks_decoded: 0,
+            blocks_decode_failed: 0,
+            okay_blank_blocks: 0,
             total_blocks,
             meta_blocks_same_order: 0,
             meta_blocks_diff_order: 0,
@@ -149,7 +151,8 @@ impl ProgressReport for Stats {
         (self.meta_blocks_decoded
             + self.data_blocks_decoded
             + self.parity_blocks_decoded
-            + self.blocks_decode_failed) as u64
+            + self.blocks_decode_failed
+            + self.okay_blank_blocks) as u64
     }
 
     fn total_units(&self) -> u64 {
@@ -310,12 +313,13 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
         if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
             // only consider it failed if the buffer is not completely blank
             // unless report blank is true
-            if param.report_blank
-                || !misc_utils::buffer_is_blank(sbx_block::slice_buf(
-                    ref_block.get_version(),
-                    &buffer,
-                ))
-            {
+            if misc_utils::buffer_is_blank(sbx_block::slice_buf(ref_block.get_version(), &buffer)) {
+                if param.report_blank {
+                    stats.blocks_decode_failed += 1;
+                } else {
+                    stats.okay_blank_blocks += 1;
+                }
+            } else {
                 stats.blocks_decode_failed += 1;
             }
             continue;
