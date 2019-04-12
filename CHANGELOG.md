@@ -6,7 +6,7 @@
 
   - Bumped major version as this may break backward compatibility
 
-- Fixed `calc` and `sort` mode progress tracking when dealing with blank blocks
+- Fixed `check` and `sort` mode progress tracking when dealing with blank blocks
 
   - Previously blank blocks do not count toward progress made unless `--report-blank` is supplied
 
