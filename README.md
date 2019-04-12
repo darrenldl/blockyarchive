@@ -10,9 +10,11 @@
 
 [Documentation](https://github.com/darrenldl/blockyarchive/wiki)
 
-Blockyarchive/blkar (pronounced "bloc-kar") is a comprehensive utility for creating, rescuing, and general handling of SeqBox archives, with optional forward error correction.
+Blockyarchive/blkar (pronounced "bloc-kar") is a comprehensive utility for creating, rescuing, and general handling of SeqBox archives, with optional forward error correction via Error-correcting SeqBox.
 
 SeqBox is a single-file archive format designed by [Marco Pontello](https://github.com/MarcoPon) that facilitates sector level data recovery for when file system metadata is corrupted/missing, while the archive itself still exists as a normal file on file system.
+
+Error-correcting SeqBox (EC-SeqBox for short) is an extended version of SeqBox developed for this project, introducing forward error correction via Reed-Solomon erasure code.
 
 Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for the original implementation and technical details on this.
 
@@ -22,7 +24,7 @@ Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
 
 The original SeqBox implementation and format do not support repairing of data, only sector level recoverability.
 
-Blockyarchive allows repairs to be made by adding forward error correction (Reed-Solomon erasure code) to extended versions of SeqBox format (named Error-correcting SeqBox or EC-SeqBox for short), and also allows arranging the blocks in a burst error resistant pattern.
+Blockyarchive supports both SeqBox and EC-SeqBox, while the original implementation only supports the SeqBox specification.
 
 Blockyarchive is also more robust compared to the original SeqBox implementation, as it does not assume the SBX container to be well formed, and makes as few assumptions about the SBX container as possible.
 
@@ -34,6 +36,8 @@ blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox),
   - This allows data recovery even when data is fragmented and out of order
 - Supports error correction (via Reed-Solomon erasure code) for EC-SeqBox
 - Supports burst (sector) error resistance for EC-SeqBox
+  - This is done via an interleaving block arrangement scheme. It is mainly to address the data repair limitation of the simple archive layout
+  - More complex archive designs such as PAR2 can repair burst errors without any extra arrangement scheme, but they are also vastly more complex than EC-SeqBox
 - JSON mode
   - Outputs information in JSON format instead of human readable text, allowing easy integration with scripts
 
