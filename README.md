@@ -14,7 +14,7 @@ Blockyarchive/blkar (pronounced "bloc-kar") is a comprehensive utility for creat
 
 SeqBox is a single-file archive format designed by [Marco Pontello](https://github.com/MarcoPon) that facilitates sector level data recovery for when file system metadata is corrupted/missing, while the archive itself still exists as a normal file on file system. Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for the original implementation and technical details on this.
 
-Error-correcting SeqBox (EC-SeqBox for short) is an extended version of SeqBox developed for this project, introducing forward error correction via Reed-Solomon erasure code.
+Error-correcting SeqBox (or EC-SeqBox for short) is an extended version of SeqBox developed for this project, introducing forward error correction via Reed-Solomon erasure code.
 
 Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
 
