@@ -18,6 +18,10 @@ Error-correcting SeqBox (or EC-SeqBox for short) is an extended version of SeqBo
 
 Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
 
+## Demo
+
+[![asciicast](https://asciinema.org/a/240491.svg)](https://asciinema.org/a/240491)
+
 ## Comparison to the original SeqBox implementation/design
 
 The original SeqBox implementation and format do not support repairing of data, only sector level recoverability.
