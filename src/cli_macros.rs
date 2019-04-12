@@ -192,23 +192,6 @@ macro_rules! get_in_file {
     }};
 }
 
-macro_rules! get_version {
-    (
-        $matches:expr, $json_printer:expr
-    ) => {{
-        use crate::sbx_specs::string_to_ver;
-        match $matches.value_of("sbx_version") {
-            None    => Version::V1,
-            Some(x) => match string_to_ver(&x) {
-                Ok(v)   => v,
-                Err(()) => {
-                    exit_with_msg!(usr $json_printer => "Invalid SBX version");
-                }
-            }
-        }
-    }}
-}
-
 macro_rules! get_data_shards {
     (
         $matches:expr, $version:expr, $json_printer:expr

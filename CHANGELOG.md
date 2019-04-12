@@ -1,10 +1,17 @@
 # Changelog
 
+## 6.0.0
+
+- Updated `calc` mode to use the same defaults as `encode` mode
+
+  - Bumped major version as this may break backwards compatibility
+
 ## 5.0.0
 
 - Error-correcting versions of SeqBox are now called Error-correcting SeqBox or EC-SeqBox for short, and use the file extension `.ecsbx`
   - This is done for easier differentiation between the extended versions and the original versions
   - Fundamentally this does not change how blkar functions, as blkar does not take file extensions into account for all modes interacting with SBX containers
+  - Bumped major version as this may break backwards compatibility
 - `Cargo.lock` update via `cargo update`
 
 ## 4.0.0
@@ -12,6 +19,7 @@
 - Changed "Uid" to "UID" in encode help messages for consistency
 - Changed default archiving options
   - Changed from using SBX version 1 to using SBX version 17 with data parity ratio of 10:2 and burst error resistance level of 10 by default
+  - Bumped major version as this may break backwards compatibility
 - Slight change in wording in calc mode error correction parameters interpretation
   - Replaced the term "any" with "each" when referring to block set or super block set
 - Updated sort mode to ignore failure to sort completely blank blocks by default
