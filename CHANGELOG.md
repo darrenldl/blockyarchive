@@ -8,7 +8,7 @@
 
 - Fixed `check` and `sort` mode progress tracking when dealing with blank blocks
 
-  - Previously blank blocks do not count toward progress made unless `--report-blank` is supplied
+  - Previously, blank blocks do not count toward progress made unless `--report-blank` is supplied
 
 ## 5.0.0
 
