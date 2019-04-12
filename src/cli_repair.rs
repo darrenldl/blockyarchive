@@ -61,13 +61,13 @@ pub fn repair<'a>(matches: &ArgMatches<'a>) -> i32 {
         print_block!(
             "Warning :";
             "";
-            "    Repair mode modifies the SBX container in-place";
+            "    Repair mode modifies the SBX container in-place.";
             "";
             "    This may cause further damage to the container and prohibit further";
-            "    data recovery if incorrect automatic repairs are made";
+            "    data recovery if incorrect automatic repairs are made.";
             "";
             "    It is advisable to make a copy of the container and work on the copy";
-            "    rather than repairing the original container directly";
+            "    rather than repairing the original container directly.";
             "";
         );
 
