@@ -2,7 +2,7 @@
 
 ## 6.0.1
 
-- Minor fix for rescue mode help message
+- Minor fixes for rescue and decode mode help messages
 
 ## 6.0.0
 
