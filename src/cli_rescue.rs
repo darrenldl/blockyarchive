@@ -35,7 +35,7 @@ range specified in the initial run.",
                 .long("only-pick-block")
                 .takes_value(true)
                 .help(
-                    "Only pick BLOCK-TYPE of blocks, one of :
+                    "Only pick TYPE of blocks, one of :
     any
     meta
     data",

@@ -222,13 +222,15 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
 
-    // calulate length to read and position to seek to
+    // calulate length to read
     let RequiredLenAndSeekTo { required_len, .. } =
         misc_utils::calc_required_len_and_seek_to_from_byte_range(
             param.from_pos,
             param.to_pos,
             param.force_misalign,
             0,
+            // 0 is fine here as `bytes_so_far` doesn't affect calculation
+            // of the required length
             PositionOrLength::Len(file_size),
             None,
         );
@@ -259,12 +261,13 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
 
     let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
-    // read from log file if it exists
+    // read from log file and update stats if the log file exists
     log_handler.read_from_file()?;
 
     log_handler.start();
     reporter.start();
 
+    // now calculate the position to seek to with the final bytes processed count
     let RequiredLenAndSeekTo { seek_to, .. } =
         misc_utils::calc_required_len_and_seek_to_from_byte_range(
             param.from_pos,

@@ -73,11 +73,11 @@ pub fn decode<'a>(matches: &ArgMatches<'a>) -> i32 {
                              "    Since output is stdout, blkar can only output data chunks in the";
                              "    anticipated encoding order.";
                              "";
-                             "        For version with no RS enabled (version 1, 2, 3), this means blkar";
+                             "        For version with no FEC enabled (version 1, 2, 3), this means blkar";
                              "        reads in the sequential pattern with optional metadata block and";
                              "        outputs the data chunks.";
                              "";
-                             "        For version with RS enabled (version 17, 18, 19), this means blkar";
+                             "        For version with FEC enabled (version 17, 18, 19), this means blkar";
                              "        first guesses the burst resistance level, then reads using the block";
                              "        set interleaving pattern and outputs the data chunks.";
                              "";
