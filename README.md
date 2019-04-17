@@ -93,7 +93,7 @@ Feel free to join the [Gitter chat](https://gitter.im/blockyarchive/community) i
 
 ## Contributions
 
-Contributions are welcome. Note that by submitting contributions, you agree to license your work under the same license used by this project (MIT).
+Contributions are welcome. Note that by submitting contributions, you agree to license your work under the same license used by this project as stated in the LICENSE file.
 
 ## Acknowledgement
 
