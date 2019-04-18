@@ -57,7 +57,7 @@ deploy:
   # - Encrypt it. Go to https://ci.appveyor.com/tools/encrypt
   # - Paste the output down here
   auth_token:
-    secure: tq2gh+b4002sjWLwIOPz3JynKVLfOgxb/Xeq3s7Ht4w0i3dVZ+bYiBDXkm7/fDny
+    secure: uEVmkiJ8QU1mrO8elomcfNuGHqqtY3slXeczpQYwAWgclLRky96ypXwciLX37Q6q
   description: ''
   on:
     # In this example, there are some targets that are tested using the stable
