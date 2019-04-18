@@ -64,7 +64,7 @@ deploy:
     # and nightly channels. This condition makes sure there is only one release
     # for such targets and that's generated using the stable channel
     RUST_VERSION: stable
-    appveyor_repo_tag: true
+    APPVEYOR_REPO_TAG: true
   provider: GitHub
 
 cache:
@@ -74,11 +74,10 @@ cache:
 
 branches:
   only:
+    # Match tags
+    - /^v\d+\.\d+\.\d+.*$/
     - master
     - beta
-    # IMPORTANT Regex to match tags. Required, or appveyor may not trigger deploys when a new tag
-    # is pushed. This regex matches semantic versions like v1.2.3-rc4+2016.02.22
-    # - /^v\d+\.\d+\.\d+.*$/
 
 notifications:
   - provider: Email
