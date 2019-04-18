@@ -168,7 +168,7 @@ pub fn calc<'a>(matches: &ArgMatches<'a>) -> i32 {
                          "";
                          "    The sets of corrupted blocks may be connected as well, so the";
                          "    largest single burst error that can be tolerated in each super";
-                         "    block set is {} blocks({} bytes) in size.", par * burst, par * burst * block_size;
+                         "    block set is {} blocks ({} bytes) in size.", par * burst, par * burst * block_size;
                          "";
                          "    Note that the actual tolerance depends on the behaviour of";
                          "    the file system.";
