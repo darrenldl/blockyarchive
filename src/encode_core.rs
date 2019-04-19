@@ -290,7 +290,7 @@ fn pack_metadata(
         }
     }
     {
-        // add sbx file name
+        // add SBX file name
         let file_name = file_utils::get_file_name_part_of_path(&param.out_file);
         meta.push(Metadata::SNM(file_name));
     }
@@ -315,7 +315,7 @@ fn pack_metadata(
         }
     }
     {
-        // add sbx encoding time
+        // add SBX encoding time
         meta.push(Metadata::SDT(stats.start_time as i64));
     }
     {
