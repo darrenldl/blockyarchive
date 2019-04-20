@@ -67,7 +67,8 @@ impl Param {
 pub struct Stats {
     version: Version,
     pub meta_blocks_updated: u64,
-    pub meta_blocks_failed: u64,
+    pub meta_blocks_decode_failed: u64,
+    pub meta_blocks_update_failed: u64,
     total_meta_blocks: u64,
     start_time: f64,
     end_time: f64,
@@ -87,7 +88,8 @@ impl Stats {
         Stats {
             version: ref_block.get_version(),
             meta_blocks_updated: 0,
-            meta_blocks_failed: 0,
+            meta_blocks_decode_failed: 0,
+            meta_blocks_update_failed: 0,
             total_meta_blocks,
             start_time: 0.,
             end_time: 0.,
@@ -106,7 +108,7 @@ impl ProgressReport for Stats {
     }
 
     fn units_so_far(&self) -> u64 {
-        self.meta_blocks_updated + self.meta_blocks_failed
+        self.meta_blocks_updated + self.meta_blocks_decode_failed + self.meta_blocks_update_failed
     }
 
     fn total_units(&self) -> u64 {
@@ -130,10 +132,11 @@ impl fmt::Display for Stats {
             "SBX version                              : {}",
             ver_to_usize(self.version)
         )?;
-        write_maybe_json!(f, json_printer, "Block size used in updating              : {}", block_size                            => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of metadata blocks processed      : {}", self.units_so_far()                   => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of metadata blocks updated        : {}", self.meta_blocks_updated              => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of metadata blocks update failed  : {}", self.meta_blocks_failed               => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Block size used in updating                : {}", block_size                            => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of metadata blocks processed        : {}", self.units_so_far()                   => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of metadata blocks updated          : {}", self.meta_blocks_updated              => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of metadata blocks failed to decode : {}", self.meta_blocks_decode_failed        => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of metadata blocks failed to update : {}", self.meta_blocks_update_failed        => skip_quotes)?;
         write_maybe_json!(
             f,
             json_printer,
@@ -156,47 +159,53 @@ fn remove_metas(block: &mut Block, ids: &[MetadataID]) {
     block.remove_metas(ids).unwrap();
 }
 
-fn print_block_info_and_meta_changes(param: &Param, pos: u64, old_meta: &[Metadata]) {
+fn print_block_info_and_meta_changes(param: &Param, meta_block_count: u64, pos: u64, old_meta: &[Metadata]) {
     let json_printer = &param.json_printer;
 
     json_printer.print_open_bracket(None, BracketType::Curly);
 
-    print_maybe_json!(json_printer, "pos : {}", pos);
+    if meta_block_count > 0 {
+        print_if!(not_json => json_printer => "";);
+    }
+    print_maybe_json!(json_printer,       "Metadata block number : {}", meta_block_count => skip_quotes);
+    print_if!(not_json => json_printer => "========================================";);
+
+    print_maybe_json!(json_printer, "Found at byte : {}", pos);
     json_printer.print_open_bracket(Some("changes"), BracketType::Square);
+
+    print_if!(not_json => json_printer => "";);
+
+    let mut change_count = 0;
+
     for m in param.metas_to_update.iter() {
+        if change_count > 0 {
+            print_if!(not_json => json_printer => "";);
+        }
         let id = sbx_block::meta_to_meta_id(m);
         let old = sbx_block::get_meta_ref_by_meta_id(old_meta, id);
-        if json_printer.json_enabled() {
-            json_printer.print_open_bracket(None, BracketType::Curly);
-            print_maybe_json!(json_printer, "field : {}", sbx_block::meta_id_to_str(id));
-            match old {
-                None => print_maybe_json!(json_printer, "from : null"),
-                Some(old) => print_maybe_json!(json_printer, "from : {}", old),
-            };
-            print_maybe_json!(json_printer, "to : {}", m);
-            json_printer.print_close_bracket();
-        } else {
-            match old {
-                None => println!("N/A => {}", m),
-                Some(old) => println!("{} => {}", old, m),
-            }
-        }
+        json_printer.print_open_bracket(None, BracketType::Curly);
+        print_maybe_json!(json_printer, "Field         : {}", sbx_block::meta_id_to_str(id));
+        match old {
+            None => print_maybe_json!(json_printer, "From          : {}", null_if_json_else!(json_printer, "N/A")),
+            Some(old) => print_maybe_json!(json_printer, "From          : {}", old),
+        };
+        print_maybe_json!(json_printer, "To            : {}", m);
+        json_printer.print_close_bracket();
+        change_count += 1;
     }
     for &id in param.metas_to_remove.iter() {
-        let old = sbx_block::get_meta_ref_by_meta_id(old_meta, id);
-        if json_printer.json_enabled() {
-            if let Some(old) = old {
-                json_printer.print_open_bracket(None, BracketType::Curly);
-                print_maybe_json!(json_printer, "field : {}", sbx_block::meta_id_to_str(id));
-                print_maybe_json!(json_printer, "from : {}", old);
-                print_maybe_json!(json_printer, "to : null");
-                json_printer.print_close_bracket();
-            }
-        } else {
-            if let Some(old) = old {
-                println!("{} => N/A", old)
-            }
+        if change_count > 0 {
+            print_if!(not_json => json_printer => "";);
         }
+        let old = sbx_block::get_meta_ref_by_meta_id(old_meta, id);
+        if let Some(old) = old {
+            json_printer.print_open_bracket(None, BracketType::Curly);
+            print_maybe_json!(json_printer, "Field         : {}", sbx_block::meta_id_to_str(id));
+            print_maybe_json!(json_printer, "From          : {}", old);
+            print_maybe_json!(json_printer, "To            : {}", null_if_json_else!(json_printer, "N/A"));
+            json_printer.print_close_bracket();
+        }
+        change_count += 1;
     }
     json_printer.print_close_bracket();
 
@@ -250,6 +259,8 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
     let mut block = Block::dummy();
     let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
+    let mut meta_block_count: u64 = 0;
+
     let reporter = Arc::new(ProgressReporter::new(
         &stats,
         "SBX metadata block updating progress",
@@ -281,13 +292,26 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
             remove_metas(&mut block, &param.metas_to_remove);
 
             if param.verbose {
-                print_block_info_and_meta_changes(param, p, &old_metas);
+                pause_reporter!(reporter =>
+                                print_block_info_and_meta_changes(param, meta_block_count, p, &old_metas););
+            }
+
+            if let Err(_) = block.sync_to_buffer(None, &mut buffer) {
+                stats.lock().unwrap().meta_blocks_update_failed += 1;
+                continue;
+            }
+
+            if !param.dry_run {
+                reader.seek(SeekFrom::Start(p))?;
+                reader.write(sbx_block::slice_buf(version, &buffer))?;
             }
 
             stats.lock().unwrap().meta_blocks_updated += 1;
         } else {
-            stats.lock().unwrap().meta_blocks_failed += 1;
+            stats.lock().unwrap().meta_blocks_decode_failed += 1;
         }
+
+        meta_block_count += 1;
     }
     json_printer.print_close_bracket();
 
