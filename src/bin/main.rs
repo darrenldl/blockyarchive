@@ -27,7 +27,7 @@ fn real_main() -> i32 {
     } else if let Some(matches) = matches.subcommand_matches("decode") {
         cli_decode::decode(matches)
     } else if let Some(matches) = matches.subcommand_matches("encode") {
-                cli_encode::encode(matches)
+        cli_encode::encode(matches)
     } else if let Some(matches) = matches.subcommand_matches("repair") {
         cli_repair::repair(matches)
     } else if let Some(matches) = matches.subcommand_matches("rescue") {

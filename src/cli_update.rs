@@ -12,8 +12,7 @@ use crate::json_printer::BracketType;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("update")
         .about("Update SBX container metadata")
-        .arg(in_file_arg()
-             .help("SBX container to update"))
+        .arg(in_file_arg().help("SBX container to update"))
         .arg(pr_verbosity_level_arg())
         .arg(burst_arg().help(
             "Burst error resistance level used by the container.
@@ -43,26 +42,26 @@ This also implies --skip-warning, and changes progress report text
                 .value_name("NAME")
                 .takes_value(true)
                 .long("fnm")
-                .help("New file name")
+                .help("New file name"),
         )
         .arg(
             Arg::with_name("snm")
                 .value_name("NAME")
                 .takes_value(true)
                 .long("snm")
-                .help("New SBX container name")
+                .help("New SBX container name"),
         )
         .arg(
             Arg::with_name("no_fnm")
                 .long("no-fnm")
                 .help("Remove file name")
-                .conflicts_with("fnm")
+                .conflicts_with("fnm"),
         )
         .arg(
             Arg::with_name("no_snm")
                 .long("no-snm")
                 .help("Remove SBX container name")
-                .conflicts_with("snm")
+                .conflicts_with("snm"),
         )
 }
 
