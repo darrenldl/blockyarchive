@@ -104,6 +104,7 @@ mod repair_core;
 mod rescue_core;
 mod show_core;
 mod sort_core;
+mod update_core;
 
 mod progress_report;
 
