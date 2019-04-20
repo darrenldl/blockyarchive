@@ -597,35 +597,35 @@ fn test_get_meta_ref_mut_by_id() {
 
         assert_eq!(
             &mut Metadata::FNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::SNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::FSZ(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FSZ, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FSZ).unwrap()
         );
         assert_eq!(
             &mut Metadata::FDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::SDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
-            metadata::get_meta_ref_mut_by_id(MetadataID::HSH, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::HSH).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSD(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSD, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSD).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSP(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSP, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSP).unwrap()
         );
     }
     {
@@ -642,35 +642,35 @@ fn test_get_meta_ref_mut_by_id() {
 
         assert_eq!(
             None,
-            metadata::get_meta_ref_mut_by_id(MetadataID::FNM, &mut metas)
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FNM)
         );
         assert_eq!(
             &mut Metadata::SNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::FSZ(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FSZ, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FSZ).unwrap()
         );
         assert_eq!(
             &mut Metadata::FDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::SDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
-            metadata::get_meta_ref_mut_by_id(MetadataID::HSH, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::HSH).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSD(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSD, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSD).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSP(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSP, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSP).unwrap()
         );
     }
     {
@@ -687,35 +687,35 @@ fn test_get_meta_ref_mut_by_id() {
 
         assert_eq!(
             &mut Metadata::FNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FNM).unwrap()
         );
         assert_eq!(
             None,
-            metadata::get_meta_ref_mut_by_id(MetadataID::SNM, &mut metas)
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SNM)
         );
         assert_eq!(
             &mut Metadata::FSZ(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FSZ, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FSZ).unwrap()
         );
         assert_eq!(
             &mut Metadata::FDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::SDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
-            metadata::get_meta_ref_mut_by_id(MetadataID::HSH, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::HSH).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSD(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSD, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSD).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSP(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSP, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSP).unwrap()
         );
     }
     {
@@ -732,35 +732,35 @@ fn test_get_meta_ref_mut_by_id() {
 
         assert_eq!(
             &mut Metadata::FNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::SNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SNM).unwrap()
         );
         assert_eq!(
             None,
-            metadata::get_meta_ref_mut_by_id(MetadataID::FSZ, &mut metas)
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FSZ)
         );
         assert_eq!(
             &mut Metadata::FDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::SDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
-            metadata::get_meta_ref_mut_by_id(MetadataID::HSH, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::HSH).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSD(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSD, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSD).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSP(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSP, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSP).unwrap()
         );
     }
     {
@@ -777,35 +777,35 @@ fn test_get_meta_ref_mut_by_id() {
 
         assert_eq!(
             &mut Metadata::FNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::SNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::FSZ(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FSZ, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FSZ).unwrap()
         );
         assert_eq!(
             None,
-            metadata::get_meta_ref_mut_by_id(MetadataID::FDT, &mut metas)
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FDT)
         );
         assert_eq!(
             &mut Metadata::SDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
-            metadata::get_meta_ref_mut_by_id(MetadataID::HSH, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::HSH).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSD(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSD, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSD).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSP(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSP, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSP).unwrap()
         );
     }
     {
@@ -822,35 +822,35 @@ fn test_get_meta_ref_mut_by_id() {
 
         assert_eq!(
             &mut Metadata::FNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::SNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::FSZ(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FSZ, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FSZ).unwrap()
         );
         assert_eq!(
             &mut Metadata::FDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FDT).unwrap()
         );
         assert_eq!(
             None,
-            metadata::get_meta_ref_mut_by_id(MetadataID::SDT, &mut metas)
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SDT)
         );
         assert_eq!(
             &mut Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
-            metadata::get_meta_ref_mut_by_id(MetadataID::HSH, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::HSH).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSD(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSD, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSD).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSP(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSP, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSP).unwrap()
         );
     }
     {
@@ -867,35 +867,35 @@ fn test_get_meta_ref_mut_by_id() {
 
         assert_eq!(
             &mut Metadata::FNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::SNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::FSZ(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FSZ, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FSZ).unwrap()
         );
         assert_eq!(
             &mut Metadata::FDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::SDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SDT).unwrap()
         );
         assert_eq!(
             None,
-            metadata::get_meta_ref_mut_by_id(MetadataID::HSH, &mut metas)
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::HSH)
         );
         assert_eq!(
             &mut Metadata::RSD(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSD, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSD).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSP(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSP, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSP).unwrap()
         );
     }
     {
@@ -912,35 +912,35 @@ fn test_get_meta_ref_mut_by_id() {
 
         assert_eq!(
             &mut Metadata::FNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::SNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::FSZ(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FSZ, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FSZ).unwrap()
         );
         assert_eq!(
             &mut Metadata::FDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::SDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
-            metadata::get_meta_ref_mut_by_id(MetadataID::HSH, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::HSH).unwrap()
         );
         assert_eq!(
             None,
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSD, &mut metas)
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSD)
         );
         assert_eq!(
             &mut Metadata::RSP(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSP, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSP).unwrap()
         );
     }
     {
@@ -957,35 +957,35 @@ fn test_get_meta_ref_mut_by_id() {
 
         assert_eq!(
             &mut Metadata::FNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::SNM("".to_string()),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SNM, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SNM).unwrap()
         );
         assert_eq!(
             &mut Metadata::FSZ(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FSZ, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FSZ).unwrap()
         );
         assert_eq!(
             &mut Metadata::FDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::FDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::FDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::SDT(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::SDT, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::SDT).unwrap()
         );
         assert_eq!(
             &mut Metadata::HSH((multihash::HashType::SHA1, Box::new([]))),
-            metadata::get_meta_ref_mut_by_id(MetadataID::HSH, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::HSH).unwrap()
         );
         assert_eq!(
             &mut Metadata::RSD(0),
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSD, &mut metas).unwrap()
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSD).unwrap()
         );
         assert_eq!(
             None,
-            metadata::get_meta_ref_mut_by_id(MetadataID::RSP, &mut metas)
+            metadata::get_meta_ref_mut_by_id(&mut metas, MetadataID::RSP)
         );
     }
 }
