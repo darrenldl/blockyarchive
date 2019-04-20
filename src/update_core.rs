@@ -15,7 +15,7 @@ use std::io::SeekFrom;
 
 use crate::sbx_block;
 use crate::sbx_block::Block;
-use crate::sbx_block::Metadata;
+use crate::sbx_block::{Metadata, MetadataID};
 
 use crate::json_printer::{BracketType, JSONPrinter};
 
@@ -32,6 +32,7 @@ pub struct Param {
     in_file: String,
     dry_run: bool,
     metas_to_update: SmallVec<[Metadata; 8]>,
+    metas_to_remove: SmallVec<[MetadataID; 8]>,
     json_printer: Arc<JSONPrinter>,
     verbose: bool,
     pr_verbosity_level: PRVerbosityLevel,
@@ -43,6 +44,7 @@ impl Param {
         in_file: &str,
         dry_run: bool,
         metas_to_update: SmallVec<[Metadata; 8]>,
+        metas_to_remove: SmallVec<[MetadataID; 8]>,
         json_printer: &Arc<JSONPrinter>,
         verbose: bool,
         pr_verbosity_level: PRVerbosityLevel,
@@ -52,6 +54,7 @@ impl Param {
             in_file: String::from(in_file),
             dry_run,
             metas_to_update,
+            metas_to_remove,
             json_printer: Arc::clone(json_printer),
             verbose,
             pr_verbosity_level,
@@ -145,8 +148,11 @@ impl fmt::Display for Stats {
 }
 
 fn update_metas(block: &mut Block, metas: &[Metadata]) {
-    assert!(block.is_meta());
     block.update_metas(metas).unwrap();
+}
+
+fn remove_metas(block: &mut Block, ids: &[MetadataID]) {
+    block.remove_metas(ids).unwrap();
 }
 
 fn print_block_info_and_meta_changes(param: &Param, pos: u64, old_meta: &[Metadata]) {
@@ -255,6 +261,7 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
             let old_metas = block.metas().unwrap().clone();
 
             update_metas(&mut block, &param.metas_to_update);
+            remove_metas(&mut block, &param.metas_to_remove);
 
             if param.verbose {
                 print_block_info_and_meta_changes(param, p, &old_metas);

@@ -4,6 +4,9 @@ use crate::update_core::Param;
 use crate::cli_utils::*;
 use clap::*;
 
+use crate::sbx_block::Metadata;
+use crate::sbx_block::MetadataID;
+
 use crate::json_printer::BracketType;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
@@ -35,6 +38,32 @@ guarantee the JSON data to be well-formed if blkar is interrupted.
 This also implies --skip-warning, and changes progress report text
 (if any) to be in JSON.",
         ))
+        .arg(
+            Arg::with_name("fnm")
+                .value_name("NAME")
+                .takes_value(true)
+                .long("fnm")
+                .help("New file name")
+        )
+        .arg(
+            Arg::with_name("snm")
+                .value_name("NAME")
+                .takes_value(true)
+                .long("snm")
+                .help("New SBX container name")
+        )
+        .arg(
+            Arg::with_name("no_fnm")
+                .long("no-fnm")
+                .help("Remove file name")
+                .conflicts_with("fnm")
+        )
+        .arg(
+            Arg::with_name("no_snm")
+                .long("no-snm")
+                .help("Remove SBX container name")
+                .conflicts_with("snm")
+        )
 }
 
 pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
@@ -47,6 +76,32 @@ pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
     let burst = get_burst_opt!(matches, json_printer);
+
+    let metas_to_update = {
+        let mut res = smallvec![];
+
+        if let Some(x) = matches.value_of("fnm") {
+            res.push(Metadata::FNM(x.to_string()))
+        }
+        if let Some(x) = matches.value_of("snm") {
+            res.push(Metadata::SNM(x.to_string()))
+        }
+
+        res
+    };
+
+    let metas_to_remove = {
+        let mut res = smallvec![];
+
+        if matches.is_present("no_fnm") {
+            res.push(MetadataID::FNM)
+        }
+        if matches.is_present("no_snm") {
+            res.push(MetadataID::SNM)
+        }
+
+        res
+    };
 
     if matches.is_present("dry_run") && !json_printer.json_enabled() {
         print_block!(
@@ -78,7 +133,8 @@ pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
     let param = Param::new(
         in_file,
         matches.is_present("dry_run"),
-        smallvec![],
+        metas_to_update,
+        metas_to_remove,
         &json_printer,
         matches.is_present("verbose"),
         pr_verbosity_level,
