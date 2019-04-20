@@ -300,12 +300,12 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
             print_maybe_json!(
                 json_printer,
                 "File name              : {}",
-                block.get_FNM().unwrap().unwrap_or("N/A".to_string())
+                block.get_FNM().unwrap().unwrap_or("N/A")
             );
             print_maybe_json!(
                 json_printer,
                 "SBX container name     : {}",
-                block.get_SNM().unwrap().unwrap_or("N/A".to_string())
+                block.get_SNM().unwrap().unwrap_or("N/A")
             );
             print_maybe_json!(
                 json_printer,

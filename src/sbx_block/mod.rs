@@ -23,17 +23,29 @@ use crate::multihash;
 
 macro_rules! make_meta_getter {
     (
-        $func_name:ident => $meta_id:ident => $ret_type:ty
+        $func_name:ident => $meta_id:ident => ret_ref $ret_type:ty
+    ) => {
+        #[allow(non_snake_case)]
+        pub fn $func_name (&self) -> Result<Option<&$ret_type>, Error> {
+            match self.get_meta_ref_by_id(MetadataID::$meta_id)? {
+                None                        => Ok(None),
+                Some(Metadata::$meta_id(x)) => Ok(Some(x)),
+                _                           => panic!(),
+            }
+        }
+    };
+    (
+        $func_name:ident => $meta_id:ident => ret_val $ret_type:ty
     ) => {
         #[allow(non_snake_case)]
         pub fn $func_name (&self) -> Result<Option<$ret_type>, Error> {
             match self.get_meta_ref_by_id(MetadataID::$meta_id)? {
-                None                             => Ok(None),
-                Some(&Metadata::$meta_id(ref x)) => Ok(Some(x.clone())),
-                _                                => panic!(),
+                None                         => Ok(None),
+                Some(&Metadata::$meta_id(x)) => Ok(Some(x)),
+                _                            => panic!(),
             }
         }
-    }
+    };
 }
 
 macro_rules! check_ver_consistent_with_opt {
@@ -640,14 +652,14 @@ impl Block {
         }
     }
 
-    make_meta_getter!(get_FNM => FNM => String);
-    make_meta_getter!(get_SNM => SNM => String);
-    make_meta_getter!(get_FSZ => FSZ => u64);
-    make_meta_getter!(get_FDT => FDT => i64);
-    make_meta_getter!(get_SDT => SDT => i64);
-    make_meta_getter!(get_HSH => HSH => multihash::HashBytes);
-    make_meta_getter!(get_RSD => RSD => u8);
-    make_meta_getter!(get_RSP => RSP => u8);
+    make_meta_getter!(get_FNM => FNM => ret_ref str);
+    make_meta_getter!(get_SNM => SNM => ret_ref str);
+    make_meta_getter!(get_FSZ => FSZ => ret_val u64);
+    make_meta_getter!(get_FDT => FDT => ret_val i64);
+    make_meta_getter!(get_SDT => SDT => ret_val i64);
+    make_meta_getter!(get_HSH => HSH => ret_ref multihash::HashBytes);
+    make_meta_getter!(get_RSD => RSD => ret_val u8);
+    make_meta_getter!(get_RSP => RSP => ret_val u8);
 
     pub fn meta(&self) -> Result<&Vec<Metadata>, Error> {
         match self.data {

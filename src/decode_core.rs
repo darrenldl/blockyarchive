@@ -834,7 +834,7 @@ pub fn decode(
 
             let mut hash_ctx = match stored_hash_bytes {
                 None => None,
-                Some((ht, _)) => match hash::Ctx::new(ht) {
+                Some(&(ht, _)) => match hash::Ctx::new(ht) {
                     Err(()) => None,
                     Ok(ctx) => Some(ctx),
                 },
@@ -1084,7 +1084,10 @@ pub fn decode(
 
     let data_blocks_decoded = stats.lock().unwrap().data_blocks_decoded;
 
-    stats.lock().unwrap().recorded_hash = recorded_hash;
+    stats.lock().unwrap().recorded_hash = match recorded_hash {
+        Some(h) => Some(h.clone()),
+        None => None,
+    };
 
     stats.lock().unwrap().out_file_size = match writer.get_file_size() {
         Some(r) => r?,
@@ -1107,7 +1110,10 @@ fn hash(
     let hash_bytes: Option<HashBytes> = if ref_block.is_data() {
         None
     } else {
-        ref_block.get_HSH().unwrap()
+        match ref_block.get_HSH().unwrap() {
+            Some(h) => Some(h.clone()),
+            None => None,
+        }
     };
 
     let mut hash_ctx: hash::Ctx = match hash_bytes {
