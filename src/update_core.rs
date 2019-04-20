@@ -181,6 +181,22 @@ fn print_block_info_and_meta_changes(param: &Param, pos: u64, old_meta: &[Metada
             }
         }
     }
+    for &id in param.metas_to_remove.iter() {
+        let old = sbx_block::get_meta_ref_by_meta_id(old_meta, id);
+        if json_printer.json_enabled() {
+            if let Some(old) = old {
+                json_printer
+                    .print_open_bracket(Some(sbx_block::meta_id_to_str(id)), BracketType::Curly);
+                print_maybe_json!(json_printer, "from : {}", old);
+                print_maybe_json!(json_printer, "to : null");
+                json_printer.print_close_bracket();
+            }
+        } else {
+            if let Some(old) = old {
+                println!("{} => N/A", old)
+            }
+        }
+    }
     json_printer.print_close_bracket();
 
     json_printer.print_close_bracket();
@@ -208,8 +224,8 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let data_par_burst = if ver_uses_rs(version) {
         Some((
-            get_RSD_from_ref_block!(ref_block_pos, ref_block, "updater"),
-            get_RSP_from_ref_block!(ref_block_pos, ref_block, "updater"),
+            get_RSD_from_ref_block!(ref_block_pos, ref_block, "update"),
+            get_RSP_from_ref_block!(ref_block_pos, ref_block, "update"),
             burst,
         ))
     } else {
