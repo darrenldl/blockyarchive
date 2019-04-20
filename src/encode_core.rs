@@ -277,7 +277,7 @@ fn pack_metadata(
 ) {
     block.set_seq_num(0);
 
-    let meta = block.meta_mut().unwrap();
+    let metas = block.metas_mut().unwrap();
 
     {
         // add file name
@@ -285,19 +285,19 @@ fn pack_metadata(
             None => {}
             Some(ref f) => {
                 let file_name = file_utils::get_file_name_part_of_path(f);
-                meta.push(Metadata::FNM(file_name));
+                metas.push(Metadata::FNM(file_name));
             }
         }
     }
     {
         // add SBX file name
         let file_name = file_utils::get_file_name_part_of_path(&param.out_file);
-        meta.push(Metadata::SNM(file_name));
+        metas.push(Metadata::SNM(file_name));
     }
     {
         // add file size
         match file_size {
-            Some(f) => meta.push(Metadata::FSZ(f)),
+            Some(f) => metas.push(Metadata::FSZ(f)),
             None => {}
         }
     }
@@ -306,7 +306,7 @@ fn pack_metadata(
         match file_metadata {
             &Some(ref m) => match m.modified() {
                 Ok(t) => match t.duration_since(UNIX_EPOCH) {
-                    Ok(t) => meta.push(Metadata::FDT(t.as_secs() as i64)),
+                    Ok(t) => metas.push(Metadata::FDT(t.as_secs() as i64)),
                     Err(_) => {}
                 },
                 Err(_) => {}
@@ -316,7 +316,7 @@ fn pack_metadata(
     }
     {
         // add SBX encoding time
-        meta.push(Metadata::SDT(stats.start_time as i64));
+        metas.push(Metadata::SDT(stats.start_time as i64));
     }
     {
         // add hash
@@ -327,13 +327,13 @@ fn pack_metadata(
                 ctx.finish_into_hash_bytes()
             }
         };
-        meta.push(Metadata::HSH(hsh));
+        metas.push(Metadata::HSH(hsh));
     }
     {
         // add RS params
         if param.rs_enabled {
-            meta.push(Metadata::RSD(param.data_par_burst.unwrap().0 as u8));
-            meta.push(Metadata::RSP(param.data_par_burst.unwrap().1 as u8));
+            metas.push(Metadata::RSD(param.data_par_burst.unwrap().0 as u8));
+            metas.push(Metadata::RSP(param.data_par_burst.unwrap().1 as u8));
         }
     }
 }

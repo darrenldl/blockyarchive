@@ -5,6 +5,8 @@ use crate::progress_report::*;
 
 use smallvec::SmallVec;
 
+use crate::sbx_block::metadata;
+
 use crate::misc_utils::{RangeEnd};
 
 use crate::sbx_specs::{SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE, SBX_SCAN_BLOCK_SIZE};
@@ -33,9 +35,7 @@ pub struct Param {
     in_file: String,
     dry_run: bool,
     metas_to_update: SmallVec<[Metadata; 8]>,
-    force_misalign: bool,
     json_printer: Arc<JSONPrinter>,
-    update_all: bool,
     verbose: bool,
     pr_verbosity_level: PRVerbosityLevel,
 }
@@ -74,7 +74,7 @@ pub struct Stats {
 impl Stats {
     pub fn new(ref_block: &Block, data_par_burst: Option<(usize, usize, usize)>, json_printer: &Arc<JSONPrinter>) -> Stats {
         use crate::file_utils::from_container_size::calc_total_block_count;
-        let total_meta_blocks = sbx_block::calc_meta_block_all_write_pos_s(ref_block.get_version(), data_par_burst).length();
+        let total_meta_blocks = sbx_block::calc_meta_block_all_write_pos_s(ref_block.get_version(), data_par_burst).len() as u64;
 
         Stats {
             version: ref_block.get_version(),
@@ -190,11 +190,15 @@ pub fn update_file(param: &Param) -> Result<Stats, Error> {
 
     let burst = get_burst_or_guess!(no_offset => param, ref_block_pos, ref_block);
 
-    let data_par_burst = Some((
-        get_RSD_from_ref_block!(ref_block_pos, ref_block, "repair"),
-        get_RSP_from_ref_block!(ref_block_pos, ref_block, "repair"),
-        burst,
-    ));
+    let data_par_burst = if ver_uses_rs(version) {
+        Some((
+            get_RSD_from_ref_block!(ref_block_pos, ref_block, "updater"),
+            get_RSP_from_ref_block!(ref_block_pos, ref_block, "updater"),
+            burst,
+        ))
+    } else {
+        None
+    };
 
     let total_block_count = {
         use crate::file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps;
@@ -251,17 +255,17 @@ pub fn update_file(param: &Param) -> Result<Stats, Error> {
             block.is_meta();
 
         if block_okay {
-            let old_meta = block.meta().clone();
+            let old_metas = block.metas().unwrpa().clone();
 
-            update_metas(&block, param.metas_to_update);
+            update_metas(&mut block, &param.metas_to_update);
 
             if param.verbose {
-                print_block_info_and_meta_changes(p, param.json_printer);
+                print_block_info_and_meta_changes(param, p, old_metas);
             }
 
-            stats.lock().meta_blocks_updated += 1;
+            stats.lock().unwrap().meta_blocks_updated += 1;
         } else {
-            stats.lock().meta_blocks_failed += 1;
+            stats.lock().unwrap().meta_blocks_failed += 1;
         }
     }
     json_printer.print_close_bracket();
@@ -270,5 +274,5 @@ pub fn update_file(param: &Param) -> Result<Stats, Error> {
 
     let stats = stats.lock().unwrap().clone();
 
-    Ok(Some(stats))
+    Ok(stats)
 }

@@ -25,19 +25,19 @@ impl fmt::Display for Metadata {
         match self {
             FNM(s) => write!(f, "{}", s),
             SNM(s) => write!(f, "{}", s),
-            FSZ(x) => write!(f, "{}", x),
+            FSZ(x) => write!(f, "{}", *x),
             FDT(x) | SDT(x) => {
                 match (
-                time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::UTC),
-                time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::Local)
+                time_utils::i64_secs_to_date_time_string(*x, time_utils::TimeMode::UTC),
+                time_utils::i64_secs_to_date_time_string(*x, time_utils::TimeMode::Local)
                 ) {
                     (Some(u), Some(l)) => write!(f, "{} (UTC)  {} (Local)", u, l),
                     _ => write!(f, "Invalid recorded date time"),
                 }
             },
             HSH(h) => write!(f, "{} - {}", multihash::hash_type_to_string(h.0), misc_utils::bytes_to_lower_hex_string(h.1)),
-            RSD(x) => write!(f, "{}", x),
-            RSP(x) => write!(f, "{}", x),
+            RSD(x) => write!(f, "{}", *x),
+            RSP(x) => write!(f, "{}", *x),
         }
     }
 }

@@ -661,14 +661,14 @@ impl Block {
     make_meta_getter!(get_RSD => RSD => ret_val u8);
     make_meta_getter!(get_RSP => RSP => ret_val u8);
 
-    pub fn meta(&self) -> Result<&Vec<Metadata>, Error> {
+    pub fn metas(&self) -> Result<&Vec<Metadata>, Error> {
         match self.data {
             Data::Data => Err(Error::IncorrectBlockType),
             Data::Meta(ref meta) => Ok(meta),
         }
     }
 
-    pub fn meta_mut(&mut self) -> Result<&mut Vec<Metadata>, Error> {
+    pub fn metas_mut(&mut self) -> Result<&mut Vec<Metadata>, Error> {
         match self.data {
             Data::Data => Err(Error::IncorrectBlockType),
             Data::Meta(ref mut meta) => Ok(meta),
