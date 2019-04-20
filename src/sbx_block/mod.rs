@@ -638,7 +638,7 @@ impl Block {
     pub fn get_meta_ref_by_id(&self, id: MetadataID) -> Result<Option<&Metadata>, Error> {
         match self.data {
             Data::Data => Err(Error::IncorrectBlockType),
-            Data::Meta(ref meta) => Ok(metadata::get_meta_ref_by_id(id, meta)),
+            Data::Meta(ref metas) => Ok(metadata::get_meta_ref_by_id(metas, id)),
         }
     }
 
@@ -648,7 +648,7 @@ impl Block {
     ) -> Result<Option<&mut Metadata>, Error> {
         match self.data {
             Data::Data => Err(Error::IncorrectBlockType),
-            Data::Meta(ref mut meta) => Ok(metadata::get_meta_ref_mut_by_id(id, meta)),
+            Data::Meta(ref mut metas) => Ok(metadata::get_meta_ref_mut_by_id(metas, id)),
         }
     }
 
@@ -681,7 +681,7 @@ impl Block {
             Data::Meta(ref mut metas) => {
                 let id = metadata::meta_to_id(m);
                 let m = m.clone();
-                match metadata::get_meta_ref_mut_by_id(id, metas) {
+                match metadata::get_meta_ref_mut_by_id(metas, id) {
                     None => metas.push(m),
                     Some(x) => *x = m,
                 };
