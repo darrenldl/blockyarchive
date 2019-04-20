@@ -16,10 +16,11 @@ use crate::json_printer::{BracketType, JSONPrinter};
 pub struct Param {
     in_file: String,
     dry_run: bool,
-    metas_to_add: SmallVec<[Metadata; 8]>,
+    metas_to_update: SmallVec<[Metadata; 8]>,
     force_misalign: bool,
     json_printer: Arc<JSONPrinter>,
     update_all: bool,
+    verbose: bool,
     pr_verbosity_level: PRVerbosityLevel,
 }
 
@@ -27,28 +28,17 @@ impl Param {
     pub fn new(
         in_file: &str,
         dry_run: bool,
-        metas_to_add: SmallVec<[Metadata; 8]>,
-        from_pos: Option<u64>,
-        to_pos: Option<RangeEnd<u64>>,
-        force_misalign: bool,
+        metas_to_update: SmallVec<[Metadata; 8]>,
         json_printer: &Arc<JSONPrinter>,
-        only_pick_uid: Option<[u8; SBX_FILE_UID_LEN]>,
-        update_all: bool,
+        verbose: bool,
         pr_verbosity_level: PRVerbosityLevel,
     ) -> Param {
         Param {
             in_file: String::from(in_file),
             dry_run,
-            metas_to_add,
-            from_pos,
-            to_pos,
-            force_misalign,
+            metas_to_update,
             json_printer: Arc::clone(json_printer),
-            only_pick_uid: match only_pick_uid {
-                None => None,
-                Some(x) => Some(x.clone()),
-            },
-            update_all,
+            verbose,
             pr_verbosity_level,
         }
     }
@@ -67,7 +57,65 @@ pub struct Stats {
 impl Stats {
     pub fn new(ref_block: &Block, data_par_burst: Option<(usize, usize, usize)>, json_printer: &Arc<JSONPrinter>) -> Stats {
         use crate::file_utils::from_container_size::calc_total_block_count;
-        let total_meta_blocks = sbx_block::calc_meta_block_all_write_pos_s(ref_block.get_version(), data_par_burst);
+        let total_meta_blocks = sbx_block::calc_meta_block_all_write_pos_s(ref_block.get_version(), data_par_burst).length();
+
+        Stats {
+            meta_blocks_updated: 0,
+            meta_blocks_failed: 0,
+            total_meta_blocks,
+            start_time: 0.,
+            end_time: 0.,
+            json_printer: Arc::clone(json_printer),
+        }
+    }
+}
+
+impl ProgressReport for Stats {
+    fn start_time_mut(&mut self) -> &mut f64 {
+        &mut self.start_time
+    }
+
+    fn end_time_mut(&mut self) -> &mut f64 {
+        &mut self.end_time
+    }
+
+    fn units_so_far(&self) -> u64 {
+        self.meta_blocks_updated + self.meta_blocks_failed
+    }
+
+    fn total_units(&self) -> u64 {
+        self.total_meta_blocks
+    }
+}
+
+impl fmt::Display for Stats {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let block_size = ver_to_block_size(self.version);
+        let time_elapsed = (self.end_time - self.start_time) as i64;
+        let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
+
+        let json_printer = &self.json_printer;
+
+        json_printer.write_open_bracket(f, Some("stats"), BracketType::Curly)?;
+
+        write_maybe_json!(
+            f,
+            json_printer,
+            "SBX version                              : {}",
+            ver_to_usize(self.version)
+        )?;
+        write_maybe_json!(f, json_printer, "Block size used in updating              : {}", block_size                            => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of metadata blocks processed      : {}", self.units_so_far()                   => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of metadata blocks updated        : {}", self.meta_blocks_updated              => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of metadata blocks update failed  : {}", self.meta_blocks_failed               => skip_quotes)?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Time elapsed                             : {:02}:{:02}:{:02}",
+            hour,
+            minute,
+            second
+        )?;
     }
 }
 
@@ -141,6 +189,7 @@ pub fn update_file(param: &Param) -> Result<Stats, Error> {
 
     reporter.start();
 
+    json_printer.print_open_bracket(Some("metadata updates"), BracketType::Square);
     for &p in sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst).iter() {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
@@ -157,11 +206,18 @@ pub fn update_file(param: &Param) -> Result<Stats, Error> {
             block.is_meta();
 
         if block_okay {
-            update_metas(&block, param.metas_to_add);
+            update_metas(&block, param.metas_to_update);
 
             stats.lock().meta_blocks_updated += 1;
         } else {
             stats.lock().meta_blocks_failed += 1;
         }
     }
+    json_printer.print_close_bracket();
+
+    reporter.stop();
+
+    let stats = stats.lock().unwrap().clone();
+
+    Ok(Some(stats))
 }
