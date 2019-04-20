@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.1.0
+
+- Updated `--pv` help message to state the default in JSON mode
+
+- Added `update` mode for updating metadata
+
 ## 6.0.1
 
 - Minor fixes for rescue and decode mode help messages
