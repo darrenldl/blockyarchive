@@ -12,6 +12,7 @@ extern crate rand;
 extern crate chrono;
 
 extern crate ctrlc;
+#[macro_use]
 extern crate smallvec;
 
 extern crate reed_solomon_erasure;
@@ -21,27 +22,6 @@ extern crate sha1;
 extern crate sha2;
 
 mod crc_ccitt;
-
-macro_rules! smallvec {
-    [
-        $arr:ty => $val:expr; $len:expr
-    ] => {{
-        let mut v : SmallVec<$arr> = SmallVec::with_capacity($len);
-        for _ in 0..$len {
-            v.push($val);
-        }
-        v
-    }};
-    [
-        $val:expr; $len:expr
-    ] => {{
-        let mut v = SmallVec::with_capacity($len);
-        for _ in 0..$len {
-            v.push($val);
-        }
-        v
-    }}
-}
 
 macro_rules! break_if_eof_seen {
     (
@@ -123,3 +103,4 @@ pub mod cli_repair;
 pub mod cli_rescue;
 pub mod cli_show;
 pub mod cli_sort;
+pub mod cli_update;
