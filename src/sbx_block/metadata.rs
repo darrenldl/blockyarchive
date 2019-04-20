@@ -333,7 +333,7 @@ pub fn from_bytes(bytes: &[u8]) -> Result<Vec<Metadata>, Error> {
     }
 }
 
-pub fn get_meta_ref_by_id(id: MetadataID, metas: &[Metadata]) -> Option<&Metadata> {
+pub fn get_meta_ref_by_id(metas: &[Metadata], id: MetadataID) -> Option<&Metadata> {
     for m in metas.iter() {
         if meta_to_id(m) == id {
             return Some(m);
@@ -342,7 +342,7 @@ pub fn get_meta_ref_by_id(id: MetadataID, metas: &[Metadata]) -> Option<&Metadat
     None
 }
 
-pub fn get_meta_ref_mut_by_id(id: MetadataID, metas: &mut [Metadata]) -> Option<&mut Metadata> {
+pub fn get_meta_ref_mut_by_id(metas: &mut [Metadata], id: MetadataID) -> Option<&mut Metadata> {
     for m in metas.iter_mut() {
         if meta_to_id(m) == id {
             return Some(m);
