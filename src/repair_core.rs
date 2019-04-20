@@ -74,12 +74,11 @@ impl ProgressReport for Stats {
     }
 
     fn units_so_far(&self) -> u64 {
-        (self.meta_blocks_decoded + self.data_or_par_blocks_decoded + self.blocks_decode_failed)
-            as u64
+        self.meta_blocks_decoded + self.data_or_par_blocks_decoded + self.blocks_decode_failed
     }
 
     fn total_units(&self) -> u64 {
-        self.total_blocks as u64
+        self.total_blocks
     }
 }
 
