@@ -291,22 +291,40 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
             update_metas(&mut block, &param.metas_to_update);
             remove_metas(&mut block, &param.metas_to_remove);
 
-            if let Err(_) = block.sync_to_buffer(None, &mut buffer) {
-                stats.lock().unwrap().meta_blocks_update_failed += 1;
-                continue;
-            }
+            match block.sync_to_buffer(None, &mut buffer) {
+                Ok(()) => {
+                    if param.verbose {
+                        pause_reporter!(reporter =>
+                                        print_block_info_and_meta_changes(param, meta_block_count, p, &old_metas););
+                    }
 
-            if param.verbose {
-                pause_reporter!(reporter =>
-                                print_block_info_and_meta_changes(param, meta_block_count, p, &old_metas););
-            }
+                    if !param.dry_run {
+                        reader.seek(SeekFrom::Start(p))?;
+                        reader.write(sbx_block::slice_buf(version, &buffer))?;
+                    }
 
-            if !param.dry_run {
-                reader.seek(SeekFrom::Start(p))?;
-                reader.write(sbx_block::slice_buf(version, &buffer))?;
+                    stats.lock().unwrap().meta_blocks_updated += 1;
+                }
+                Err(e) => {
+                    use sbx_block::Error;
+                    match e {
+                        Error::TooMuchMetadata(m) => {
+                            if !json_printer.json_enabled() {
+                                reporter.pause();
+                                if meta_block_count > 0 {
+                                    println!("");
+                                }
+                                println!("Failed to update metadata block number {} at {} (0x{:X}) due to too much metadata", meta_block_count, p, p);
+                                println!("Info length distribution is as follows :");
+                                println!("{}", sbx_block::make_distribution_string(version, &m));
+                                reporter.resume();
+                            }
+                        },
+                        _ => unreachable!(),
+                    }
+                    stats.lock().unwrap().meta_blocks_update_failed += 1;
+                },
             }
-
-            stats.lock().unwrap().meta_blocks_updated += 1;
         } else {
             stats.lock().unwrap().meta_blocks_decode_failed += 1;
         }
