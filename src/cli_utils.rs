@@ -35,8 +35,8 @@ pub fn pr_verbosity_level_arg<'a, 'b>() -> Arg<'a, 'b> {
         .takes_value(true)
         .help(
             "Progress report verbosity level, one of :
-                           0 (show nothing)
-(default in JSON mode)     1 (only show progress stats when done)
+(default in JSON mode)     0 (show nothing)
+                           1 (only show progress stats when done)
 (default in non-JSON mode) 2 (show both progress bar and progress stats)
 This only affects progress text printing",
         )
