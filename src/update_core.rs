@@ -186,8 +186,8 @@ fn print_block_info_and_meta_changes(param: &Param, pos: u64, old_meta: &[Metada
         let old = sbx_block::get_meta_ref_by_meta_id(old_meta, id);
         if json_printer.json_enabled() {
             if let Some(old) = old {
-                json_printer
-                    .print_open_bracket(Some(sbx_block::meta_id_to_str(id)), BracketType::Curly);
+                json_printer.print_open_bracket(None, BracketType::Curly);
+                print_maybe_json!(json_printer, "field : {}", sbx_block::meta_id_to_str(id));
                 print_maybe_json!(json_printer, "from : {}", old);
                 print_maybe_json!(json_printer, "to : null");
                 json_printer.print_close_bracket();
