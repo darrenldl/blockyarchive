@@ -203,7 +203,7 @@ pub fn make_too_much_meta_err_string(version: Version, meta: &[Metadata]) -> Str
 
 pub fn make_distribution_string(version: Version, metas: &[Metadata]) -> String {
     let mut string = String::with_capacity(1000);
-    string.push_str("|  ID | Length | Total length |\n");
+    string.push_str("|  ID | Info length | Total length |\n");
 
     let mut overall_total = 0;
     let max_size = ver_to_data_size(version);
@@ -216,7 +216,7 @@ pub fn make_distribution_string(version: Version, metas: &[Metadata]) -> String 
         overall_total += total_size;
 
         string.push_str(&format!(
-            "| {} | {:6} |       {:6} |\n",
+            "| {} |      {:6} |       {:6} |\n",
             id_str, info_size, total_size
         ));
     }
