@@ -124,6 +124,15 @@ fn update_metas(block: &mut Block, metas: &[Metadata]) {
     block.update_metas(metas).unwrap();
 }
 
+fn print_block_info_and_meta_changes(json_printer: &Arc<JSONPrinter>) {
+    json_printer.print_open_bracket(None, BracketType::Curly);
+
+    print_maybe_json!(param.json_printer, "pos : {}", p);
+    json_printer.print_open_bracket(Some(""))
+
+    json_printer.print_close_bracket();
+}
+
 pub fn update_file(param: &Param) -> Result<Stats, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
@@ -206,7 +215,13 @@ pub fn update_file(param: &Param) -> Result<Stats, Error> {
             block.is_meta();
 
         if block_okay {
+            let old_meta = block.meta().clone();
+
             update_metas(&block, param.metas_to_update);
+
+            if param.verbose {
+                print_block_info_and_meta_changes
+            }
 
             stats.lock().meta_blocks_updated += 1;
         } else {
