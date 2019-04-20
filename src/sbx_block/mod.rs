@@ -718,6 +718,16 @@ impl Block {
         Ok(())
     }
 
+    pub fn remove_metas(&mut self, ids: &[MetadataID]) -> Result<(), Error> {
+        match self.data {
+            Data::Data => Err(Error::IncorrectBlockType),
+            Data::Meta(ref mut metas) => {
+                metas.retain(|m| !ids.contains(&metadata::meta_to_id(m)));
+                Ok(())
+            }
+        }
+    }
+
     pub fn calc_crc(&self, buffer: &[u8]) -> u16 {
         check_buffer!(self, buffer);
 
