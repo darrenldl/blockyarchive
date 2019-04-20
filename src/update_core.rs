@@ -142,6 +142,7 @@ impl fmt::Display for Stats {
             minute,
             second
         )?;
+        json_printer.print_close_bracket();
 
         Ok(())
     }
@@ -167,7 +168,8 @@ fn print_block_info_and_meta_changes(param: &Param, pos: u64, old_meta: &[Metada
         let old = sbx_block::get_meta_ref_by_meta_id(old_meta, id);
         if json_printer.json_enabled() {
             json_printer
-                .print_open_bracket(Some(sbx_block::meta_id_to_str(id)), BracketType::Curly);
+                .print_open_bracket(None, BracketType::Curly);
+            print_maybe_json!(json_printer, "field : {}", sbx_block::meta_id_to_str(id));
             match old {
                 None => print_maybe_json!(json_printer, "from : null"),
                 Some(old) => print_maybe_json!(json_printer, "from : {}", old),
