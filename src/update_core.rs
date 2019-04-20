@@ -291,14 +291,14 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
             update_metas(&mut block, &param.metas_to_update);
             remove_metas(&mut block, &param.metas_to_remove);
 
-            if param.verbose {
-                pause_reporter!(reporter =>
-                                print_block_info_and_meta_changes(param, meta_block_count, p, &old_metas););
-            }
-
             if let Err(_) = block.sync_to_buffer(None, &mut buffer) {
                 stats.lock().unwrap().meta_blocks_update_failed += 1;
                 continue;
+            }
+
+            if param.verbose {
+                pause_reporter!(reporter =>
+                                print_block_info_and_meta_changes(param, meta_block_count, p, &old_metas););
             }
 
             if !param.dry_run {
