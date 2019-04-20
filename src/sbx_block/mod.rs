@@ -680,9 +680,10 @@ impl Block {
             Data::Data => Err(Error::IncorrectBlockType),
             Data::Meta(ref mut metas) => {
                 let id = metadata::meta_to_id(m);
+                let m = m.clone();
                 match metadata::get_meta_ref_mut_by_id(id, metas) {
-                    None => metas.push(m.clone()),
-                    Some(x) => *x = m.clone(),
+                    None => metas.push(m),
+                    Some(x) => *x = m,
                 };
                 Ok(())
             }
