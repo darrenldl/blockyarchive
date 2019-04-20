@@ -675,6 +675,20 @@ impl Block {
         }
     }
 
+    pub fn update_meta(&mut self, m: &Metadata) -> Result<(), Error> {
+        match self.data {
+            Data::Data => Err(Error::IncorrectBlockType),
+            Data::Meta(ref mut metas) => {
+                let id = metadata::meta_to_id(m);
+                match metadata::get_meta_ref_mut_by_id(id, metas) {
+                    None => metas.push(m.clone()),
+                    Some(x) => *x = m.clone(),
+                };
+                Ok(())
+            }
+        }
+    }
+
     pub fn calc_crc(&self, buffer: &[u8]) -> u16 {
         check_buffer!(self, buffer);
 
