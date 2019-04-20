@@ -74,6 +74,7 @@ macro_rules! get_ref_block {
         $param:expr, $ref_block_from_pos:expr, $ref_block_to_pos:expr, $force_misalign:expr, $json_printer:expr, $ref_block_choice:expr, $stop_flag:expr
     ) => {{
         use std::sync::atomic::Ordering;
+        use crate::cli_utils::report_ref_block_info;
 
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&$param.in_file,
@@ -137,6 +138,9 @@ macro_rules! get_RSD_from_ref_block {
     (
         $ref_block_pos:expr, $ref_block:expr, $purpose:expr
     ) => {{
+        use crate::sbx_specs::ver_to_usize;
+        use crate::general_error::Error;
+
         let ver_usize = ver_to_usize($ref_block.get_version());
         match $ref_block.get_RSD().unwrap() {
             None    => {
@@ -155,6 +159,8 @@ macro_rules! get_RSP_from_ref_block {
     (
         $ref_block_pos:expr, $ref_block:expr, $purpose:expr
     ) => {{
+        use crate::sbx_specs::ver_to_usize;
+
         let ver_usize = ver_to_usize($ref_block.get_version());
         match $ref_block.get_RSP().unwrap() {
             None    => {
@@ -228,6 +234,8 @@ macro_rules! get_burst_or_guess {
     (
         $param:expr, $from_pos:expr, $force_misalign:expr, $ref_block_pos:expr, $ref_block:expr
     ) => {{
+        use crate::sbx_specs::*;
+
         let burst = unwrap_or!($param.burst,
                                if ver_uses_rs($ref_block.get_version()) {
                                    return_if_ref_not_meta!($ref_block_pos,

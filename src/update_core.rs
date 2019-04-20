@@ -7,11 +7,18 @@ use smallvec::SmallVec;
 use crate::misc_utils::{RangeEnd};
 
 use crate::sbx_specs::{SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE, SBX_SCAN_BLOCK_SIZE};
+use crate::sbx_specs::{ver_to_block_size, ver_to_usize};
+
+use crate::cli_utils::setup_ctrlc_handler;
 
 use crate::sbx_block::{Block};
 use crate::sbx_block::Metadata;
 
 use crate::json_printer::{BracketType, JSONPrinter};
+
+use crate::file_reader::{FileReader, FileReaderParam};
+
+use crate::general_error::Error;
 
 pub struct Param {
     in_file: String,
@@ -124,11 +131,26 @@ fn update_metas(block: &mut Block, metas: &[Metadata]) {
     block.update_metas(metas).unwrap();
 }
 
-fn print_block_info_and_meta_changes(json_printer: &Arc<JSONPrinter>) {
+fn print_block_info_and_meta_changes(param: &Param, pos: u64, old_meta: &[Metadata]) {
+    let json_printer = param.json_printer;
+
     json_printer.print_open_bracket(None, BracketType::Curly);
 
-    print_maybe_json!(param.json_printer, "pos : {}", p);
-    json_printer.print_open_bracket(Some(""))
+    print_maybe_json!(json_printer, "pos : {}", pos);
+    json_printer.print_open_bracket(Some("changes"), BracketType::Square);
+    for m in param.metas_to_update {
+        let id = metadata::meta_to_id(m);
+        let old = metadata::get_meta_ref_by_id(old_meta, id);
+        if json_printer.json_enabled() {
+            json_printer.print_open_bracket(Some(metadata::id_to_str(id)), BracketType::Curly);
+            print_maybe_json!(json_printer, "from : {}", old);
+            print_maybe_json!(json_printer, "to : {}", m);
+            json_printer.print_close_bracket();
+        } else {
+            println!("{} => {}", old, m);
+        }
+    }
+    json_printer.print_close_bracket();
 
     json_printer.print_close_bracket();
 }
@@ -187,6 +209,7 @@ pub fn update_file(param: &Param) -> Result<Stats, Error> {
     )?;
 
     let mut block = Block::dummy();
+    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
     let reporter = Arc::new(ProgressReporter::new(
         &stats,
@@ -220,7 +243,7 @@ pub fn update_file(param: &Param) -> Result<Stats, Error> {
             update_metas(&block, param.metas_to_update);
 
             if param.verbose {
-                print_block_info_and_meta_changes
+                print_block_info_and_meta_changes(p, param.json_printer);
             }
 
             stats.lock().meta_blocks_updated += 1;

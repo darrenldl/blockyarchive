@@ -23,8 +23,6 @@ use crate::misc_utils::{PositionOrLength, RangeEnd};
 use crate::multihash;
 use crate::multihash::*;
 
-use crate::cli_utils::report_ref_block_info;
-
 use crate::general_error::Error;
 use crate::sbx_specs::Version;
 

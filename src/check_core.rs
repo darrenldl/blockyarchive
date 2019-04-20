@@ -26,8 +26,6 @@ use crate::time_utils;
 use crate::block_utils::RefBlockChoice;
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
-use crate::cli_utils::report_ref_block_info;
-
 pub struct Param {
     ref_block_choice: RefBlockChoice,
     ref_block_from_pos: Option<u64>,
