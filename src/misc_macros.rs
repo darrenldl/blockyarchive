@@ -75,6 +75,7 @@ macro_rules! get_ref_block {
     ) => {{
         use std::sync::atomic::Ordering;
         use crate::cli_utils::report_ref_block_info;
+        use crate::block_utils;
 
         let (ref_block_pos, ref_block) =
             match block_utils::get_ref_block(&$param.in_file,
@@ -235,6 +236,7 @@ macro_rules! get_burst_or_guess {
         $param:expr, $from_pos:expr, $force_misalign:expr, $ref_block_pos:expr, $ref_block:expr
     ) => {{
         use crate::sbx_specs::*;
+        use crate::block_utils;
 
         let burst = unwrap_or!($param.burst,
                                if ver_uses_rs($ref_block.get_version()) {

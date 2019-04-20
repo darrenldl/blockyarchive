@@ -1,4 +1,5 @@
-use std::sync::{Arc};
+use std::sync::{Arc, Mutex};
+use std::fmt;
 
 use crate::progress_report::*;
 
@@ -11,14 +12,22 @@ use crate::sbx_specs::{ver_to_block_size, ver_to_usize};
 
 use crate::cli_utils::setup_ctrlc_handler;
 
+use std::io::SeekFrom;
+
+use crate::sbx_block;
 use crate::sbx_block::{Block};
 use crate::sbx_block::Metadata;
 
 use crate::json_printer::{BracketType, JSONPrinter};
 
+use crate::file_utils;
+
 use crate::file_reader::{FileReader, FileReaderParam};
 
 use crate::general_error::Error;
+
+use crate::block_utils::RefBlockChoice;
+use crate::sbx_block::BlockType;
 
 pub struct Param {
     in_file: String,
@@ -53,6 +62,7 @@ impl Param {
 
 #[derive(Clone)]
 pub struct Stats {
+    version: Version,
     pub meta_blocks_updated: u64,
     pub meta_blocks_failed: u64,
     total_meta_blocks: u64,
@@ -67,6 +77,7 @@ impl Stats {
         let total_meta_blocks = sbx_block::calc_meta_block_all_write_pos_s(ref_block.get_version(), data_par_burst).length();
 
         Stats {
+            version: ref_block.get_version(),
             meta_blocks_updated: 0,
             meta_blocks_failed: 0,
             total_meta_blocks,
@@ -123,6 +134,8 @@ impl fmt::Display for Stats {
             minute,
             second
         )?;
+
+        Ok(())
     }
 }
 
