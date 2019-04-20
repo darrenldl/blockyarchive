@@ -689,6 +689,15 @@ impl Block {
         }
     }
 
+    pub fn update_metas(&mut self, ms: &[Metadata]) -> Result<(), Error> {
+        for m in ms {
+            if let Err(e) = self.update_meta(m) {
+                return Err(e)
+            }
+        }
+        Ok(())
+    }
+
     pub fn calc_crc(&self, buffer: &[u8]) -> u16 {
         check_buffer!(self, buffer);
 
