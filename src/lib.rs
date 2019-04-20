@@ -12,6 +12,7 @@ extern crate rand;
 extern crate chrono;
 
 extern crate ctrlc;
+
 #[macro_use]
 extern crate smallvec;
 

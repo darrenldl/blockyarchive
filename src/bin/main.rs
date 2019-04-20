@@ -19,22 +19,24 @@ fn real_main() -> i32 {
         .subcommand(cli_calc::sub_command())
         .get_matches();
 
-    if let Some(matches) = matches.subcommand_matches("encode") {
-        cli_encode::encode(matches)
+    if let Some(matches) = matches.subcommand_matches("calc") {
+        cli_calc::calc(matches)
+    } else if let Some(matches) = matches.subcommand_matches("check") {
+        cli_check::check(matches)
     } else if let Some(matches) = matches.subcommand_matches("decode") {
         cli_decode::decode(matches)
+    } else if let Some(matches) = matches.subcommand_matches("encode") {
+                cli_encode::encode(matches)
+    } else if let Some(matches) = matches.subcommand_matches("repair") {
+        cli_repair::repair(matches)
     } else if let Some(matches) = matches.subcommand_matches("rescue") {
         cli_rescue::rescue(matches)
     } else if let Some(matches) = matches.subcommand_matches("show") {
         cli_show::show(matches)
-    } else if let Some(matches) = matches.subcommand_matches("repair") {
-        cli_repair::repair(matches)
-    } else if let Some(matches) = matches.subcommand_matches("check") {
-        cli_check::check(matches)
     } else if let Some(matches) = matches.subcommand_matches("sort") {
         cli_sort::sort(matches)
-    } else if let Some(matches) = matches.subcommand_matches("calc") {
-        cli_calc::calc(matches)
+    } else if let Some(matches) = matches.subcommand_matches("update") {
+        cli_update::update(matches)
     } else {
         exit_with_msg!(ok json_printer::JSONPrinter::new(false, output_channel::OutputChannel::Stdout)
                        => "Invoke with -h or --help for help message\n");
