@@ -13,6 +13,22 @@ pub use self::metadata::Metadata;
 pub use self::metadata::MetadataID;
 use smallvec::SmallVec;
 
+pub fn meta_to_meta_id(meta: &Metadata) -> MetadataID {
+    self::metadata::meta_to_id(meta)
+}
+
+pub fn meta_id_to_str(id: MetadataID) -> &'static str {
+    self::metadata::id_to_str(id)
+}
+
+pub fn get_meta_ref_by_meta_id(metas: &[Metadata], id: MetadataID) -> Option<&Metadata> {
+    self::metadata::get_meta_ref_by_id(metas, id)
+}
+
+pub fn get_meta_ref_mut_by_meta_id(metas: &mut [Metadata], id: MetadataID) -> Option<&mut Metadata> {
+    self::metadata::get_meta_ref_mut_by_id(metas, id)
+}
+
 use self::crc::*;
 use crate::sbx_specs::{
     ver_to_block_size, ver_to_data_size, ver_uses_rs, Version, SBX_FILE_UID_LEN,

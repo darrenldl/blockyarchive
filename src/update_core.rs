@@ -5,12 +5,7 @@ use crate::progress_report::*;
 
 use smallvec::SmallVec;
 
-use crate::sbx_block::metadata;
-
-use crate::misc_utils::{RangeEnd};
-
-use crate::sbx_specs::{SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE, SBX_SCAN_BLOCK_SIZE};
-use crate::sbx_specs::{ver_to_block_size, ver_to_usize};
+use crate::sbx_specs::{SBX_LARGEST_BLOCK_SIZE, ver_uses_rs, ver_to_block_size, ver_to_usize, Version};
 
 use crate::cli_utils::setup_ctrlc_handler;
 
@@ -22,14 +17,14 @@ use crate::sbx_block::Metadata;
 
 use crate::json_printer::{BracketType, JSONPrinter};
 
-use crate::file_utils;
-
 use crate::file_reader::{FileReader, FileReaderParam};
 
 use crate::general_error::Error;
 
 use crate::block_utils::RefBlockChoice;
 use crate::sbx_block::BlockType;
+
+use crate::time_utils;
 
 pub struct Param {
     in_file: String,
@@ -38,6 +33,7 @@ pub struct Param {
     json_printer: Arc<JSONPrinter>,
     verbose: bool,
     pr_verbosity_level: PRVerbosityLevel,
+    burst: Option<usize>,
 }
 
 impl Param {
@@ -48,6 +44,7 @@ impl Param {
         json_printer: &Arc<JSONPrinter>,
         verbose: bool,
         pr_verbosity_level: PRVerbosityLevel,
+        burst: Option<usize>,
     ) -> Param {
         Param {
             in_file: String::from(in_file),
@@ -56,6 +53,7 @@ impl Param {
             json_printer: Arc::clone(json_printer),
             verbose,
             pr_verbosity_level,
+            burst,
         }
     }
 }
@@ -73,7 +71,6 @@ pub struct Stats {
 
 impl Stats {
     pub fn new(ref_block: &Block, data_par_burst: Option<(usize, usize, usize)>, json_printer: &Arc<JSONPrinter>) -> Stats {
-        use crate::file_utils::from_container_size::calc_total_block_count;
         let total_meta_blocks = sbx_block::calc_meta_block_all_write_pos_s(ref_block.get_version(), data_par_burst).len() as u64;
 
         Stats {
@@ -145,22 +142,28 @@ fn update_metas(block: &mut Block, metas: &[Metadata]) {
 }
 
 fn print_block_info_and_meta_changes(param: &Param, pos: u64, old_meta: &[Metadata]) {
-    let json_printer = param.json_printer;
+    let json_printer = &param.json_printer;
 
     json_printer.print_open_bracket(None, BracketType::Curly);
 
     print_maybe_json!(json_printer, "pos : {}", pos);
     json_printer.print_open_bracket(Some("changes"), BracketType::Square);
-    for m in param.metas_to_update {
-        let id = metadata::meta_to_id(m);
-        let old = metadata::get_meta_ref_by_id(old_meta, id);
+    for m in param.metas_to_update.iter() {
+        let id = sbx_block::meta_to_meta_id(m);
+        let old = sbx_block::get_meta_ref_by_meta_id(old_meta, id);
         if json_printer.json_enabled() {
-            json_printer.print_open_bracket(Some(metadata::id_to_str(id)), BracketType::Curly);
-            print_maybe_json!(json_printer, "from : {}", old);
+            json_printer.print_open_bracket(Some(sbx_block::meta_id_to_str(id)), BracketType::Curly);
+            match old {
+                None => print_maybe_json!(json_printer, "from : null"),
+                Some(old) => print_maybe_json!(json_printer, "from : {}", old),
+            };
             print_maybe_json!(json_printer, "to : {}", m);
             json_printer.print_close_bracket();
         } else {
-            println!("{} => {}", old, m);
+            match old {
+                None => println!("N/A => {}", m),
+                Some(old) => println!("{} => {}", old, m),
+            }
         }
     }
     json_printer.print_close_bracket();
@@ -168,23 +171,21 @@ fn print_block_info_and_meta_changes(param: &Param, pos: u64, old_meta: &[Metada
     json_printer.print_close_bracket();
 }
 
-pub fn update_file(param: &Param) -> Result<Stats, Error> {
+pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
     let json_printer = &param.json_printer;
 
-    let (ref_block_pos, mut ref_block) = get_ref_block!( no_force_misalign =>
-                                                         param,
-                                                         None,
-                                                         None,
-                                                         json_printer,
-                                                         RefBlockChoice::MustBe(BlockType::Meta),
-                                                         ctrlc_stop_flag
+    let (ref_block_pos, ref_block) = get_ref_block!(no_force_misalign =>
+                                                    param,
+                                                    None,
+                                                    None,
+                                                    json_printer,
+                                                    RefBlockChoice::MustBe(BlockType::Meta),
+                                                    ctrlc_stop_flag
     );
 
     let version = ref_block.get_version();
-
-    let block_size = ver_to_block_size(version);
 
     let pred = block_pred_same_ver_uid!(ref_block);
 
@@ -200,20 +201,9 @@ pub fn update_file(param: &Param) -> Result<Stats, Error> {
         None
     };
 
-    let total_block_count = {
-        use crate::file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps;
-        match ref_block.get_FSZ().unwrap() {
-            Some(x) => calc_total_block_count_exc_burst_gaps(version, None, data_par_burst, x),
-            None => {
-                let file_size = file_utils::get_file_size(&param.in_file)?;
-                file_size / block_size as u64
-            }
-        }
-    };
-
     let stats = Arc::new(Mutex::new(Stats::new(
         &ref_block,
-        total_block_count,
+        data_par_burst,
         json_printer,
     )));
 
@@ -255,12 +245,12 @@ pub fn update_file(param: &Param) -> Result<Stats, Error> {
             block.is_meta();
 
         if block_okay {
-            let old_metas = block.metas().unwrpa().clone();
+            let old_metas = block.metas().unwrap().clone();
 
             update_metas(&mut block, &param.metas_to_update);
 
             if param.verbose {
-                print_block_info_and_meta_changes(param, p, old_metas);
+                print_block_info_and_meta_changes(param, p, &old_metas);
             }
 
             stats.lock().unwrap().meta_blocks_updated += 1;
@@ -274,5 +264,5 @@ pub fn update_file(param: &Param) -> Result<Stats, Error> {
 
     let stats = stats.lock().unwrap().clone();
 
-    Ok(stats)
+    Ok(Some(stats))
 }

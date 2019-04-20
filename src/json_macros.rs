@@ -34,7 +34,7 @@ macro_rules! print_json_field {
         $output_channel:expr => $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
     ) => {{
         use crate::misc_utils::{escape_quotes,
-                         to_camelcase};
+                                to_camelcase};
 
         if !$no_comma {
             print_at_output_channel!($output_channel => ",");
