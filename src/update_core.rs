@@ -1,18 +1,20 @@
-use std::sync::{Arc, Mutex};
 use std::fmt;
+use std::sync::{Arc, Mutex};
 
 use crate::progress_report::*;
 
 use smallvec::SmallVec;
 
-use crate::sbx_specs::{SBX_LARGEST_BLOCK_SIZE, ver_uses_rs, ver_to_block_size, ver_to_usize, Version};
+use crate::sbx_specs::{
+    ver_to_block_size, ver_to_usize, ver_uses_rs, Version, SBX_LARGEST_BLOCK_SIZE,
+};
 
 use crate::cli_utils::setup_ctrlc_handler;
 
 use std::io::SeekFrom;
 
 use crate::sbx_block;
-use crate::sbx_block::{Block};
+use crate::sbx_block::Block;
 use crate::sbx_block::Metadata;
 
 use crate::json_printer::{BracketType, JSONPrinter};
@@ -70,8 +72,14 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(ref_block: &Block, data_par_burst: Option<(usize, usize, usize)>, json_printer: &Arc<JSONPrinter>) -> Stats {
-        let total_meta_blocks = sbx_block::calc_meta_block_all_write_pos_s(ref_block.get_version(), data_par_burst).len() as u64;
+    pub fn new(
+        ref_block: &Block,
+        data_par_burst: Option<(usize, usize, usize)>,
+        json_printer: &Arc<JSONPrinter>,
+    ) -> Stats {
+        let total_meta_blocks =
+            sbx_block::calc_meta_block_all_write_pos_s(ref_block.get_version(), data_par_burst)
+                .len() as u64;
 
         Stats {
             version: ref_block.get_version(),
@@ -152,7 +160,8 @@ fn print_block_info_and_meta_changes(param: &Param, pos: u64, old_meta: &[Metada
         let id = sbx_block::meta_to_meta_id(m);
         let old = sbx_block::get_meta_ref_by_meta_id(old_meta, id);
         if json_printer.json_enabled() {
-            json_printer.print_open_bracket(Some(sbx_block::meta_id_to_str(id)), BracketType::Curly);
+            json_printer
+                .print_open_bracket(Some(sbx_block::meta_id_to_str(id)), BracketType::Curly);
             match old {
                 None => print_maybe_json!(json_printer, "from : null"),
                 Some(old) => print_maybe_json!(json_printer, "from : {}", old),
@@ -237,12 +246,10 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
 
         break_if_eof_seen!(read_res);
 
-        let block_okay =
-            match block.sync_from_buffer(&buffer, Some(&pred)) {
-                Ok(()) => true,
-                Err(_) => false,
-            } &&
-            block.is_meta();
+        let block_okay = match block.sync_from_buffer(&buffer, Some(&pred)) {
+            Ok(()) => true,
+            Err(_) => false,
+        } && block.is_meta();
 
         if block_okay {
             let old_metas = block.metas().unwrap().clone();

@@ -25,7 +25,10 @@ pub fn get_meta_ref_by_meta_id(metas: &[Metadata], id: MetadataID) -> Option<&Me
     self::metadata::get_meta_ref_by_id(metas, id)
 }
 
-pub fn get_meta_ref_mut_by_meta_id(metas: &mut [Metadata], id: MetadataID) -> Option<&mut Metadata> {
+pub fn get_meta_ref_mut_by_meta_id(
+    metas: &mut [Metadata],
+    id: MetadataID,
+) -> Option<&mut Metadata> {
     self::metadata::get_meta_ref_mut_by_id(metas, id)
 }
 
@@ -709,7 +712,7 @@ impl Block {
     pub fn update_metas(&mut self, ms: &[Metadata]) -> Result<(), Error> {
         for m in ms {
             if let Err(e) = self.update_meta(m) {
-                return Err(e)
+                return Err(e);
             }
         }
         Ok(())

@@ -2,10 +2,10 @@ use std;
 use std::fmt;
 
 use super::Error;
+use crate::misc_utils;
 use crate::multihash;
 use crate::sbx_specs::{ver_to_data_size, Version};
 use crate::time_utils;
-use crate::misc_utils;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Metadata {
@@ -29,14 +29,19 @@ impl fmt::Display for Metadata {
             FSZ(x) => write!(f, "{}", *x),
             FDT(x) | SDT(x) => {
                 match (
-                time_utils::i64_secs_to_date_time_string(*x, time_utils::TimeMode::UTC),
-                time_utils::i64_secs_to_date_time_string(*x, time_utils::TimeMode::Local)
+                    time_utils::i64_secs_to_date_time_string(*x, time_utils::TimeMode::UTC),
+                    time_utils::i64_secs_to_date_time_string(*x, time_utils::TimeMode::Local),
                 ) {
                     (Some(u), Some(l)) => write!(f, "{} (UTC)  {} (Local)", u, l),
                     _ => write!(f, "Invalid recorded date time"),
                 }
-            },
-            HSH(h) => write!(f, "{} - {}", multihash::hash_type_to_string(h.0), misc_utils::bytes_to_lower_hex_string(&h.1)),
+            }
+            HSH(h) => write!(
+                f,
+                "{} - {}",
+                multihash::hash_type_to_string(h.0),
+                misc_utils::bytes_to_lower_hex_string(&h.1)
+            ),
             RSD(x) => write!(f, "{}", *x),
             RSP(x) => write!(f, "{}", *x),
         }
