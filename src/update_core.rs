@@ -271,9 +271,15 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     reporter.start();
 
+    let mut err = None;
+
     json_printer.print_open_bracket(Some("metadata updates"), BracketType::Square);
     for &p in sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst).iter() {
         break_if_atomic_bool!(ctrlc_stop_flag);
+
+        if let Some(_) = err {
+            break;
+        }
 
         reader.seek(SeekFrom::Start(p))?;
         let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
@@ -306,19 +312,13 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
                     stats.lock().unwrap().meta_blocks_updated += 1;
                 }
                 Err(e) => {
-                    use sbx_block::Error;
                     match e {
-                        Error::TooMuchMetadata(m) => {
-                            if !json_printer.json_enabled() {
-                                reporter.pause();
-                                if meta_block_count > 0 {
-                                    println!("");
-                                }
-                                println!("Failed to update metadata block number {} at {} (0x{:X}) due to too much metadata", meta_block_count, p, p);
-                                println!("Info length distribution is as follows :");
-                                println!("{}", sbx_block::make_distribution_string(version, &m));
-                                reporter.resume();
-                            }
+                        sbx_block::Error::TooMuchMetadata(m) => {
+                            let err_msg = format!("Failed to update metadata block number {} at {} (0x{:X}) due to too much metadata
+Info length distribution is as follows :
+{}",
+                                                  meta_block_count, p, p,sbx_block::make_distribution_string(version, &m));
+                            err = Some(Error::with_message(&err_msg));
                         },
                         _ => unreachable!(),
                     }
@@ -337,5 +337,8 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let stats = stats.lock().unwrap().clone();
 
-    Ok(Some(stats))
+    match err {
+        None => Ok(Some(stats)),
+        Some(e) => Err(e),
+    }
 }
