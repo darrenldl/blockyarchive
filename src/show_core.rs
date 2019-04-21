@@ -300,12 +300,18 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
             print_maybe_json!(
                 json_printer,
                 "File name              : {}",
-                block.get_FNM().unwrap().unwrap_or(null_if_json_else_NA!(json_printer))
+                block
+                    .get_FNM()
+                    .unwrap()
+                    .unwrap_or(null_if_json_else_NA!(json_printer))
             );
             print_maybe_json!(
                 json_printer,
                 "SBX container name     : {}",
-                block.get_SNM().unwrap().unwrap_or(null_if_json_else_NA!(json_printer))
+                block
+                    .get_SNM()
+                    .unwrap()
+                    .unwrap_or(null_if_json_else_NA!(json_printer))
             );
             print_maybe_json!(
                 json_printer,

@@ -117,5 +117,5 @@ macro_rules! null_if_json_else_NA {
         $json_printer:expr
     ) => {{
         null_if_json_else!($json_printer, "N/A")
-    }}
+    }};
 }
