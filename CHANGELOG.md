@@ -12,6 +12,14 @@
   
     - Bumped major version as this may break backward compatibility
 
+- Updated JSON code to output all numbers without quotes for consistency
+  
+    - Previously, version numbers were quoted
+  
+    - Previously, there may have been inconsistency as well
+  
+    - Bumped major version as this may break backward compatibility
+
 ## 6.0.1
 
 - Minor fixes for rescue and decode mode help messages
