@@ -102,6 +102,10 @@ tests=(
   "show_guess_burst_force_misalign"
   "decode_guess_burst_force_misalign"
   "sort_guess_burst_force_misalign"
+  "update_fnm_tests"
+  "update_no_fnm_tests"
+  "update_snm_tests"
+  "update_no_snm_tests"
 )
 
 test_count=${#tests[@]}
