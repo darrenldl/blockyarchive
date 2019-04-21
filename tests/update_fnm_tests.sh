@@ -48,7 +48,7 @@ new_fnm={}
 # Change file name
 for ver in ${VERSIONS[*]}; do
     echo -n "Changing file name of "dummy$ver.sbx
-    new_fnm[$ver]=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 10 | head -n 1)
+    new_fnm[$ver]=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 5 | head -n 1)
     output=$(./../blkar update --json -y --fnm ${new_fnm[$ver]} -v dummy$ver.sbx)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
         echo " ==> Invalid JSON"
