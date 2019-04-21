@@ -68,7 +68,6 @@ pub struct Stats {
     version: Version,
     pub meta_blocks_updated: u64,
     pub meta_blocks_decode_failed: u64,
-    pub meta_blocks_update_failed: u64,
     total_meta_blocks: u64,
     start_time: f64,
     end_time: f64,
@@ -89,7 +88,6 @@ impl Stats {
             version: ref_block.get_version(),
             meta_blocks_updated: 0,
             meta_blocks_decode_failed: 0,
-            meta_blocks_update_failed: 0,
             total_meta_blocks,
             start_time: 0.,
             end_time: 0.,
@@ -108,7 +106,7 @@ impl ProgressReport for Stats {
     }
 
     fn units_so_far(&self) -> u64 {
-        self.meta_blocks_updated + self.meta_blocks_decode_failed + self.meta_blocks_update_failed
+        self.meta_blocks_updated + self.meta_blocks_decode_failed
     }
 
     fn total_units(&self) -> u64 {
@@ -136,7 +134,6 @@ impl fmt::Display for Stats {
         write_maybe_json!(f, json_printer, "Number of metadata blocks processed        : {}", self.units_so_far()                   => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of metadata blocks updated          : {}", self.meta_blocks_updated              => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of metadata blocks failed to decode : {}", self.meta_blocks_decode_failed        => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of metadata blocks failed to update : {}", self.meta_blocks_update_failed        => skip_quotes)?;
         write_maybe_json!(
             f,
             json_printer,
@@ -332,17 +329,14 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
 
                     stats.lock().unwrap().meta_blocks_updated += 1;
                 }
-                Err(e) => {
-                    match e {
-                        sbx_block::Error::TooMuchMetadata(_) => {
-                            let err_msg = format!("Failed to update metadata block number {} at {} (0x{:X}) due to too much metadata",
+                Err(e) => match e {
+                    sbx_block::Error::TooMuchMetadata(_) => {
+                        let err_msg = format!("Failed to update metadata block number {} at {} (0x{:X}) due to too much metadata",
                                                   meta_block_count, p, p);
-                            err = Some(Error::with_msg(&err_msg));
-                        }
-                        _ => unreachable!(),
+                        err = Some(Error::with_msg(&err_msg));
                     }
-                    stats.lock().unwrap().meta_blocks_update_failed += 1;
-                }
+                    _ => unreachable!(),
+                },
             }
         } else {
             stats.lock().unwrap().meta_blocks_decode_failed += 1;
