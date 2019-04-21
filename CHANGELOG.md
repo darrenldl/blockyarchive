@@ -6,9 +6,9 @@
 
 - Added `update` mode for updating metadata
 
-- Updated output text of following modes to use null instead of "N/A" in JSON mode for consistency
+- Updated output text of following modes to use null instead of "N/A" for missing fields in JSON mode for consistency
   
-    - Encode mode `--info-only`, show mode
+    - Encode and show mode
   
     - Bumped major version as this may break backward compatibility
 
