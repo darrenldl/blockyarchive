@@ -1,10 +1,14 @@
 # Changelog
 
-## 6.1.0
+## 7.0.0
 
 - Updated `--pv` help message to state the default in JSON mode
 
 - Added `update` mode for updating metadata
+
+- Updated show mode output text to use null instead of "N/A" in JSON mode for consistency
+  
+    - Bumped major version as this may break backward compatibility
 
 ## 6.0.1
 
