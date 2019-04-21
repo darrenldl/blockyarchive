@@ -23,8 +23,6 @@ use crate::misc_utils::{PositionOrLength, RangeEnd};
 use crate::multihash;
 use crate::multihash::*;
 
-use crate::cli_utils::report_ref_block_info;
-
 use crate::general_error::Error;
 use crate::sbx_specs::Version;
 
@@ -159,7 +157,7 @@ impl fmt::Display for Stats {
                 "Recorded hash                          {}: {}",
                 padding,
                 match *recorded_hash {
-                    None => null_if_json_else!(json_printer, "N/A").to_string(),
+                    None => null_if_json_else_NA!(json_printer).to_string(),
                     Some(ref h) => format!(
                         "{} - {}",
                         hash_type_to_string(h.0),
@@ -173,7 +171,7 @@ impl fmt::Display for Stats {
                 "Hash of output file                    {}: {}",
                 padding,
                 match (recorded_hash, computed_hash) {
-                    (&None, &None) => null_if_json_else!(json_printer, "N/A").to_string(),
+                    (&None, &None) => null_if_json_else_NA!(json_printer).to_string(),
                     (&Some(_), &None) => null_if_json_else!(
                         json_printer,
                         "N/A - recorded hash type is not supported by blkar"
@@ -236,7 +234,7 @@ impl fmt::Display for Stats {
                 "Recorded hash                       {}: {}",
                 padding,
                 match *recorded_hash {
-                    None => null_if_json_else!(json_printer, "N/A").to_string(),
+                    None => null_if_json_else_NA!(json_printer).to_string(),
                     Some(ref h) => format!(
                         "{} - {}",
                         hash_type_to_string(h.0),
@@ -250,7 +248,7 @@ impl fmt::Display for Stats {
                 "Hash of output file                 {}: {}",
                 padding,
                 match (recorded_hash, computed_hash) {
-                    (&None, &None) => null_if_json_else!(json_printer, "N/A").to_string(),
+                    (&None, &None) => null_if_json_else_NA!(json_printer).to_string(),
                     (&Some(_), &None) => null_if_json_else!(
                         json_printer,
                         "N/A - recorded hash type is not supported by blkar"
@@ -834,7 +832,7 @@ pub fn decode(
 
             let mut hash_ctx = match stored_hash_bytes {
                 None => None,
-                Some((ht, _)) => match hash::Ctx::new(ht) {
+                Some(&(ht, _)) => match hash::Ctx::new(ht) {
                     Err(()) => None,
                     Ok(ctx) => Some(ctx),
                 },
@@ -1084,7 +1082,10 @@ pub fn decode(
 
     let data_blocks_decoded = stats.lock().unwrap().data_blocks_decoded;
 
-    stats.lock().unwrap().recorded_hash = recorded_hash;
+    stats.lock().unwrap().recorded_hash = match recorded_hash {
+        Some(h) => Some(h.clone()),
+        None => None,
+    };
 
     stats.lock().unwrap().out_file_size = match writer.get_file_size() {
         Some(r) => r?,
@@ -1107,7 +1108,10 @@ fn hash(
     let hash_bytes: Option<HashBytes> = if ref_block.is_data() {
         None
     } else {
-        ref_block.get_HSH().unwrap()
+        match ref_block.get_HSH().unwrap() {
+            Some(h) => Some(h.clone()),
+            None => None,
+        }
     };
 
     let mut hash_ctx: hash::Ctx = match hash_bytes {
@@ -1189,7 +1193,7 @@ pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
     let out_file_path: Option<String> = match param.out_file {
         None => match recorded_file_name {
             None => {
-                return Err(Error::with_message("No original file name was found in SBX container and no output file name/path was provided"));
+                return Err(Error::with_msg("No original file name was found in SBX container and no output file name/path was provided"));
             }
             Some(ref x) => Some(file_utils::get_file_name_part_of_path(x)),
         },
@@ -1199,7 +1203,7 @@ pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
             } else if file_utils::check_if_file_is_dir(out) {
                 match recorded_file_name {
                     None => {
-                        return Err(Error::with_message(&format!("No original file name was found in SBX container and \"{}\" is a directory",
+                        return Err(Error::with_msg(&format!("No original file name was found in SBX container and \"{}\" is a directory",
                                                                          &out)));
                     }
                     Some(x) => Some(misc_utils::make_path(&[out, &x])),
@@ -1214,7 +1218,7 @@ pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
     if let Some(ref out_file_path) = out_file_path {
         if !param.force_write && param.multi_pass == None {
             if file_utils::check_if_file_exists(out_file_path) {
-                return Err(Error::with_message(&format!(
+                return Err(Error::with_msg(&format!(
                     "File \"{}\" already exists",
                     out_file_path
                 )));

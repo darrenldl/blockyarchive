@@ -22,10 +22,8 @@ use crate::sbx_block::Block;
 use crate::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use crate::sbx_specs::{ver_to_block_size, ver_to_usize, ver_uses_rs};
 
-use crate::cli_utils::report_ref_block_info;
 use crate::cli_utils::setup_ctrlc_handler;
 
-use crate::block_utils;
 use crate::time_utils;
 
 use crate::misc_utils::MultiPassType;

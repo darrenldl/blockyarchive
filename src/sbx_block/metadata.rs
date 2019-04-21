@@ -1,8 +1,11 @@
 use std;
+use std::fmt;
 
 use super::Error;
+use crate::misc_utils;
 use crate::multihash;
 use crate::sbx_specs::{ver_to_data_size, Version};
+use crate::time_utils;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Metadata {
@@ -16,6 +19,35 @@ pub enum Metadata {
     RSP(u8),
 }
 
+impl fmt::Display for Metadata {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Metadata::*;
+
+        match self {
+            FNM(s) => write!(f, "{}", s),
+            SNM(s) => write!(f, "{}", s),
+            FSZ(x) => write!(f, "{}", *x),
+            FDT(x) | SDT(x) => {
+                match (
+                    time_utils::i64_secs_to_date_time_string(*x, time_utils::TimeMode::UTC),
+                    time_utils::i64_secs_to_date_time_string(*x, time_utils::TimeMode::Local),
+                ) {
+                    (Some(u), Some(l)) => write!(f, "{} (UTC)  {} (Local)", u, l),
+                    _ => write!(f, "Invalid recorded date time"),
+                }
+            }
+            HSH(h) => write!(
+                f,
+                "{} - {}",
+                multihash::hash_type_to_string(h.0),
+                misc_utils::bytes_to_lower_hex_string(&h.1)
+            ),
+            RSD(x) => write!(f, "{}", *x),
+            RSP(x) => write!(f, "{}", *x),
+        }
+    }
+}
+
 pub enum UncheckedMetadata {
     FNM(Vec<u8>),
     SNM(Vec<u8>),
@@ -27,7 +59,7 @@ pub enum UncheckedMetadata {
     RSP(u8),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum MetadataID {
     FNM,
     SNM,
@@ -171,7 +203,7 @@ pub fn make_too_much_meta_err_string(version: Version, meta: &[Metadata]) -> Str
 
 pub fn make_distribution_string(version: Version, metas: &[Metadata]) -> String {
     let mut string = String::with_capacity(1000);
-    string.push_str("|  ID | Length | Total length |\n");
+    string.push_str("|  ID | Info length | Total length |\n");
 
     let mut overall_total = 0;
     let max_size = ver_to_data_size(version);
@@ -184,7 +216,7 @@ pub fn make_distribution_string(version: Version, metas: &[Metadata]) -> String 
         overall_total += total_size;
 
         string.push_str(&format!(
-            "| {} | {:6} |       {:6} |\n",
+            "| {} |      {:6} |       {:6} |\n",
             id_str, info_size, total_size
         ));
     }
@@ -333,7 +365,7 @@ pub fn from_bytes(bytes: &[u8]) -> Result<Vec<Metadata>, Error> {
     }
 }
 
-pub fn get_meta_ref_by_id(id: MetadataID, metas: &[Metadata]) -> Option<&Metadata> {
+pub fn get_meta_ref_by_id(metas: &[Metadata], id: MetadataID) -> Option<&Metadata> {
     for m in metas.iter() {
         if meta_to_id(m) == id {
             return Some(m);
@@ -342,7 +374,7 @@ pub fn get_meta_ref_by_id(id: MetadataID, metas: &[Metadata]) -> Option<&Metadat
     None
 }
 
-pub fn get_meta_ref_mut_by_id(id: MetadataID, metas: &mut [Metadata]) -> Option<&mut Metadata> {
+pub fn get_meta_ref_mut_by_id(metas: &mut [Metadata], id: MetadataID) -> Option<&mut Metadata> {
     for m in metas.iter_mut() {
         if meta_to_id(m) == id {
             return Some(m);

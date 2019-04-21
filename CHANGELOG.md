@@ -1,5 +1,25 @@
 # Changelog
 
+## 7.0.0
+
+- Updated `--pv` help message to state the default in JSON mode
+
+- Added `update` mode for updating metadata
+
+- Updated output text of following modes to use null instead of "N/A" for missing fields in JSON mode for consistency
+  
+    - Encode and show mode
+  
+    - Bumped major version as this may break backward compatibility
+
+- Updated JSON code to output all numbers without quotes for consistency
+  
+    - Previously, version numbers were quoted
+  
+    - Previously, there may have been inconsistency as well
+  
+    - Bumped major version as this may break backward compatibility
+
 ## 6.0.1
 
 - Minor fixes for rescue and decode mode help messages

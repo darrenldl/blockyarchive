@@ -18,11 +18,8 @@ use crate::sbx_specs::Version;
 use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-use crate::sbx_specs::{ver_to_block_size, ver_to_usize, ver_uses_rs};
+use crate::sbx_specs::{ver_to_block_size, ver_to_usize};
 
-use crate::cli_utils::report_ref_block_info;
-
-use crate::block_utils;
 use crate::time_utils;
 
 use crate::rs_codec::RSCodecState;
@@ -74,12 +71,11 @@ impl ProgressReport for Stats {
     }
 
     fn units_so_far(&self) -> u64 {
-        (self.meta_blocks_decoded + self.data_or_par_blocks_decoded + self.blocks_decode_failed)
-            as u64
+        self.meta_blocks_decoded + self.data_or_par_blocks_decoded + self.blocks_decode_failed
     }
 
     fn total_units(&self) -> u64 {
-        self.total_blocks as u64
+        self.total_blocks
     }
 }
 

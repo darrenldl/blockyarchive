@@ -20,13 +20,10 @@ use crate::sbx_specs::Version;
 use crate::sbx_block;
 use crate::sbx_specs::{ver_to_block_size, ver_to_usize, SBX_LARGEST_BLOCK_SIZE};
 
-use crate::block_utils;
 use crate::time_utils;
 
 use crate::block_utils::RefBlockChoice;
 use crate::misc_utils::{PositionOrLength, RangeEnd};
-
-use crate::cli_utils::report_ref_block_info;
 
 pub struct Param {
     ref_block_choice: RefBlockChoice,

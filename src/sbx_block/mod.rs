@@ -13,6 +13,25 @@ pub use self::metadata::Metadata;
 pub use self::metadata::MetadataID;
 use smallvec::SmallVec;
 
+pub fn meta_to_meta_id(meta: &Metadata) -> MetadataID {
+    self::metadata::meta_to_id(meta)
+}
+
+pub fn meta_id_to_str(id: MetadataID) -> &'static str {
+    self::metadata::id_to_str(id)
+}
+
+pub fn get_meta_ref_by_meta_id(metas: &[Metadata], id: MetadataID) -> Option<&Metadata> {
+    self::metadata::get_meta_ref_by_id(metas, id)
+}
+
+pub fn get_meta_ref_mut_by_meta_id(
+    metas: &mut [Metadata],
+    id: MetadataID,
+) -> Option<&mut Metadata> {
+    self::metadata::get_meta_ref_mut_by_id(metas, id)
+}
+
 use self::crc::*;
 use crate::sbx_specs::{
     ver_to_block_size, ver_to_data_size, ver_uses_rs, Version, SBX_FILE_UID_LEN,
@@ -23,17 +42,29 @@ use crate::multihash;
 
 macro_rules! make_meta_getter {
     (
-        $func_name:ident => $meta_id:ident => $ret_type:ty
+        $func_name:ident => $meta_id:ident => ret_ref $ret_type:ty
+    ) => {
+        #[allow(non_snake_case)]
+        pub fn $func_name (&self) -> Result<Option<&$ret_type>, Error> {
+            match self.get_meta_ref_by_id(MetadataID::$meta_id)? {
+                None                        => Ok(None),
+                Some(Metadata::$meta_id(x)) => Ok(Some(x)),
+                _                           => panic!(),
+            }
+        }
+    };
+    (
+        $func_name:ident => $meta_id:ident => ret_val $ret_type:ty
     ) => {
         #[allow(non_snake_case)]
         pub fn $func_name (&self) -> Result<Option<$ret_type>, Error> {
             match self.get_meta_ref_by_id(MetadataID::$meta_id)? {
-                None                             => Ok(None),
-                Some(&Metadata::$meta_id(ref x)) => Ok(Some(x.clone())),
-                _                                => panic!(),
+                None                         => Ok(None),
+                Some(&Metadata::$meta_id(x)) => Ok(Some(x)),
+                _                            => panic!(),
             }
         }
-    }
+    };
 }
 
 macro_rules! check_ver_consistent_with_opt {
@@ -626,7 +657,7 @@ impl Block {
     pub fn get_meta_ref_by_id(&self, id: MetadataID) -> Result<Option<&Metadata>, Error> {
         match self.data {
             Data::Data => Err(Error::IncorrectBlockType),
-            Data::Meta(ref meta) => Ok(metadata::get_meta_ref_by_id(id, meta)),
+            Data::Meta(ref metas) => Ok(metadata::get_meta_ref_by_id(metas, id)),
         }
     }
 
@@ -636,30 +667,64 @@ impl Block {
     ) -> Result<Option<&mut Metadata>, Error> {
         match self.data {
             Data::Data => Err(Error::IncorrectBlockType),
-            Data::Meta(ref mut meta) => Ok(metadata::get_meta_ref_mut_by_id(id, meta)),
+            Data::Meta(ref mut metas) => Ok(metadata::get_meta_ref_mut_by_id(metas, id)),
         }
     }
 
-    make_meta_getter!(get_FNM => FNM => String);
-    make_meta_getter!(get_SNM => SNM => String);
-    make_meta_getter!(get_FSZ => FSZ => u64);
-    make_meta_getter!(get_FDT => FDT => i64);
-    make_meta_getter!(get_SDT => SDT => i64);
-    make_meta_getter!(get_HSH => HSH => multihash::HashBytes);
-    make_meta_getter!(get_RSD => RSD => u8);
-    make_meta_getter!(get_RSP => RSP => u8);
+    make_meta_getter!(get_FNM => FNM => ret_ref str);
+    make_meta_getter!(get_SNM => SNM => ret_ref str);
+    make_meta_getter!(get_FSZ => FSZ => ret_val u64);
+    make_meta_getter!(get_FDT => FDT => ret_val i64);
+    make_meta_getter!(get_SDT => SDT => ret_val i64);
+    make_meta_getter!(get_HSH => HSH => ret_ref multihash::HashBytes);
+    make_meta_getter!(get_RSD => RSD => ret_val u8);
+    make_meta_getter!(get_RSP => RSP => ret_val u8);
 
-    pub fn meta(&self) -> Result<&Vec<Metadata>, Error> {
+    pub fn metas(&self) -> Result<&Vec<Metadata>, Error> {
         match self.data {
             Data::Data => Err(Error::IncorrectBlockType),
             Data::Meta(ref meta) => Ok(meta),
         }
     }
 
-    pub fn meta_mut(&mut self) -> Result<&mut Vec<Metadata>, Error> {
+    pub fn metas_mut(&mut self) -> Result<&mut Vec<Metadata>, Error> {
         match self.data {
             Data::Data => Err(Error::IncorrectBlockType),
             Data::Meta(ref mut meta) => Ok(meta),
+        }
+    }
+
+    pub fn update_meta(&mut self, m: &Metadata) -> Result<(), Error> {
+        match self.data {
+            Data::Data => Err(Error::IncorrectBlockType),
+            Data::Meta(ref mut metas) => {
+                let id = metadata::meta_to_id(m);
+                let m = m.clone();
+                match metadata::get_meta_ref_mut_by_id(metas, id) {
+                    None => metas.push(m),
+                    Some(x) => *x = m,
+                };
+                Ok(())
+            }
+        }
+    }
+
+    pub fn update_metas(&mut self, ms: &[Metadata]) -> Result<(), Error> {
+        for m in ms {
+            if let Err(e) = self.update_meta(m) {
+                return Err(e);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn remove_metas(&mut self, ids: &[MetadataID]) -> Result<(), Error> {
+        match self.data {
+            Data::Data => Err(Error::IncorrectBlockType),
+            Data::Meta(ref mut metas) => {
+                metas.retain(|m| !ids.contains(&metadata::meta_to_id(m)));
+                Ok(())
+            }
         }
     }
 

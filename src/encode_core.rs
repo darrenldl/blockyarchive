@@ -103,7 +103,7 @@ impl fmt::Display for Stats {
                 json_printer,
                 "Hash                                   : {}",
                 match self.hash_bytes {
-                    None => "N/A".to_string(),
+                    None => null_if_json_else_NA!(json_printer).to_string(),
                     Some(ref h) => format!(
                         "{} - {}",
                         multihash::hash_type_to_string(h.0),
@@ -145,7 +145,7 @@ impl fmt::Display for Stats {
                 json_printer,
                 "Hash                                : {}",
                 match self.hash_bytes {
-                    None => "N/A".to_string(),
+                    None => null_if_json_else_NA!(json_printer).to_string(),
                     Some(ref h) => format!(
                         "{} - {}",
                         multihash::hash_type_to_string(h.0),
@@ -277,7 +277,7 @@ fn pack_metadata(
 ) {
     block.set_seq_num(0);
 
-    let meta = block.meta_mut().unwrap();
+    let metas = block.metas_mut().unwrap();
 
     {
         // add file name
@@ -285,19 +285,19 @@ fn pack_metadata(
             None => {}
             Some(ref f) => {
                 let file_name = file_utils::get_file_name_part_of_path(f);
-                meta.push(Metadata::FNM(file_name));
+                metas.push(Metadata::FNM(file_name));
             }
         }
     }
     {
-        // add sbx file name
+        // add SBX file name
         let file_name = file_utils::get_file_name_part_of_path(&param.out_file);
-        meta.push(Metadata::SNM(file_name));
+        metas.push(Metadata::SNM(file_name));
     }
     {
         // add file size
         match file_size {
-            Some(f) => meta.push(Metadata::FSZ(f)),
+            Some(f) => metas.push(Metadata::FSZ(f)),
             None => {}
         }
     }
@@ -306,7 +306,7 @@ fn pack_metadata(
         match file_metadata {
             &Some(ref m) => match m.modified() {
                 Ok(t) => match t.duration_since(UNIX_EPOCH) {
-                    Ok(t) => meta.push(Metadata::FDT(t.as_secs() as i64)),
+                    Ok(t) => metas.push(Metadata::FDT(t.as_secs() as i64)),
                     Err(_) => {}
                 },
                 Err(_) => {}
@@ -315,8 +315,8 @@ fn pack_metadata(
         }
     }
     {
-        // add sbx encoding time
-        meta.push(Metadata::SDT(stats.start_time as i64));
+        // add SBX encoding time
+        metas.push(Metadata::SDT(stats.start_time as i64));
     }
     {
         // add hash
@@ -327,13 +327,13 @@ fn pack_metadata(
                 ctx.finish_into_hash_bytes()
             }
         };
-        meta.push(Metadata::HSH(hsh));
+        metas.push(Metadata::HSH(hsh));
     }
     {
         // add RS params
         if param.rs_enabled {
-            meta.push(Metadata::RSD(param.data_par_burst.unwrap().0 as u8));
-            meta.push(Metadata::RSP(param.data_par_burst.unwrap().1 as u8));
+            metas.push(Metadata::RSD(param.data_par_burst.unwrap().0 as u8));
+            metas.push(Metadata::RSP(param.data_par_burst.unwrap().1 as u8));
         }
     }
 }
@@ -362,7 +362,7 @@ fn write_meta_blocks(
     match block.sync_to_buffer(None, buffer) {
         Ok(()) => {}
         Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
-            return Err(Error::with_message(&make_too_much_meta_err_string(
+            return Err(Error::with_msg(&make_too_much_meta_err_string(
                 block.get_version(),
                 m,
             )));
@@ -413,7 +413,7 @@ fn block_sync_and_write(
     match block.sync_to_buffer(None, buffer) {
         Ok(()) => {}
         Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
-            return Err(Error::with_message(&make_too_much_meta_err_string(
+            return Err(Error::with_msg(&make_too_much_meta_err_string(
                 block.get_version(),
                 m,
             )));
@@ -427,7 +427,7 @@ fn block_sync_and_write(
 
     match block.add1_seq_num() {
         Ok(_)  => Ok(()),
-        Err(_) => Err(Error::with_message("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"))
+        Err(_) => Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"))
     }
 }
 
@@ -493,7 +493,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 let max_in_file_size = ver_to_max_data_file_size(param.version);
 
                 if required_len > max_in_file_size {
-                    return Err(Error::with_message(&format!("Encoding range specified for \"{}\" exceeds the maximum supported file size, size to be encoded: {}, max : {}",
+                    return Err(Error::with_msg(&format!("Encoding range specified for \"{}\" exceeds the maximum supported file size, size to be encoded: {}, max : {}",
                                                             param.in_file.as_ref().unwrap(),
                                                             required_len,
                                                             max_in_file_size)));

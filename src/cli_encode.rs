@@ -165,7 +165,7 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
         };
 
         let in_file_mod_time_str = match in_file_mod_time {
-            None => "N/A".to_string(),
+            None => null_if_json_else_NA!(json_printer).to_string(),
             Some(x) => match (
                 time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::UTC),
                 time_utils::i64_secs_to_date_time_string(x, time_utils::TimeMode::Local),

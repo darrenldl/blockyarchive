@@ -1,8 +1,16 @@
-macro_rules! skip_quote_for_term {
+macro_rules! skip_quotes_for_term {
     (
         $val:expr
     ) => {{
         $val == "null" || $val == "true" || $val == "false"
+    }};
+}
+
+macro_rules! determine_if_skip_quotes {
+    (
+        $skip_quotes:expr, $val:expr
+    ) => {{
+        $skip_quotes || skip_quotes_for_term!($val) || $val.parse::<u64>().is_ok()
     }};
 }
 
@@ -16,7 +24,7 @@ macro_rules! write_json_field {
             write!($f, ",")?;
         }
 
-        if $skip_quotes || skip_quote_for_term!($val) {
+        if determine_if_skip_quotes!($skip_quotes, $val) {
             writeln!($f, "\"{}\": {}", to_camelcase($key), escape_quotes(&$val))
         } else {
             writeln!(
@@ -34,13 +42,13 @@ macro_rules! print_json_field {
         $output_channel:expr => $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
     ) => {{
         use crate::misc_utils::{escape_quotes,
-                         to_camelcase};
+                                to_camelcase};
 
         if !$no_comma {
             print_at_output_channel!($output_channel => ",");
         }
 
-        if $skip_quotes || skip_quote_for_term!($val) {
+        if determine_if_skip_quotes!($skip_quotes, $val) {
             println_at_output_channel!($output_channel => "\"{}\": {}", to_camelcase($key), escape_quotes(&$val));
         } else {
             println_at_output_channel!($output_channel => "\"{}\": \"{}\"", to_camelcase($key), escape_quotes(&$val));
@@ -109,5 +117,13 @@ macro_rules! null_if_json_else {
         } else {
             $val
         }
+    }};
+}
+
+macro_rules! null_if_json_else_NA {
+    (
+        $json_printer:expr
+    ) => {{
+        null_if_json_else!($json_printer, "N/A")
     }};
 }

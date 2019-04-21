@@ -21,8 +21,8 @@ use crate::integer_utils::IntegerUtils;
 use std::collections::HashMap;
 
 use crate::sbx_specs::{
-    ver_to_block_size, ver_to_usize, ver_uses_rs, SBX_LARGEST_BLOCK_SIZE,
-    SBX_MAX_BURST_ERR_RESISTANCE, SBX_SCAN_BLOCK_SIZE,
+    ver_to_block_size, ver_uses_rs, SBX_LARGEST_BLOCK_SIZE, SBX_MAX_BURST_ERR_RESISTANCE,
+    SBX_SCAN_BLOCK_SIZE,
 };
 
 use crate::progress_report::*;
