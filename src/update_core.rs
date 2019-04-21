@@ -298,7 +298,7 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
     let mut err = None;
 
     if param.verbose {
-        json_printer.print_open_bracket(Some("metadata updates"), BracketType::Square)
+        json_printer.print_open_bracket(Some("metadata changes"), BracketType::Square)
     };
     for &p in sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst).iter() {
         break_if_atomic_bool!(ctrlc_stop_flag);
