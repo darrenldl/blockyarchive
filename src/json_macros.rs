@@ -16,7 +16,10 @@ macro_rules! write_json_field {
             write!($f, ",")?;
         }
 
-        if $skip_quotes || skip_quote_for_term!($val) {
+        let skip_quotes = $skip_quotes || skip_quote_for_term!($val) || $val.parse::<u64>().is_ok()
+            ;
+
+        if skip_quotes {
             writeln!($f, "\"{}\": {}", to_camelcase($key), escape_quotes(&$val))
         } else {
             writeln!(
@@ -40,7 +43,9 @@ macro_rules! print_json_field {
             print_at_output_channel!($output_channel => ",");
         }
 
-        if $skip_quotes || skip_quote_for_term!($val) {
+        let skip_quotes = $skip_quotes || skip_quote_for_term!($val) || $val.parse::<u64>().is_ok();
+
+        if skip_quotes {
             println_at_output_channel!($output_channel => "\"{}\": {}", to_camelcase($key), escape_quotes(&$val));
         } else {
             println_at_output_channel!($output_channel => "\"{}\": \"{}\"", to_camelcase($key), escape_quotes(&$val));
