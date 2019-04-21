@@ -157,7 +157,7 @@ impl fmt::Display for Stats {
                 "Recorded hash                          {}: {}",
                 padding,
                 match *recorded_hash {
-                    None => null_if_json_else!(json_printer, "N/A").to_string(),
+                    None => null_if_json_else_NA!(json_printer).to_string(),
                     Some(ref h) => format!(
                         "{} - {}",
                         hash_type_to_string(h.0),
@@ -171,7 +171,7 @@ impl fmt::Display for Stats {
                 "Hash of output file                    {}: {}",
                 padding,
                 match (recorded_hash, computed_hash) {
-                    (&None, &None) => null_if_json_else!(json_printer, "N/A").to_string(),
+                    (&None, &None) => null_if_json_else_NA!(json_printer).to_string(),
                     (&Some(_), &None) => null_if_json_else!(
                         json_printer,
                         "N/A - recorded hash type is not supported by blkar"
@@ -234,7 +234,7 @@ impl fmt::Display for Stats {
                 "Recorded hash                       {}: {}",
                 padding,
                 match *recorded_hash {
-                    None => null_if_json_else!(json_printer, "N/A").to_string(),
+                    None => null_if_json_else_NA!(json_printer).to_string(),
                     Some(ref h) => format!(
                         "{} - {}",
                         hash_type_to_string(h.0),
@@ -248,7 +248,7 @@ impl fmt::Display for Stats {
                 "Hash of output file                 {}: {}",
                 padding,
                 match (recorded_hash, computed_hash) {
-                    (&None, &None) => null_if_json_else!(json_printer, "N/A").to_string(),
+                    (&None, &None) => null_if_json_else_NA!(json_printer).to_string(),
                     (&Some(_), &None) => null_if_json_else!(
                         json_printer,
                         "N/A - recorded hash type is not supported by blkar"

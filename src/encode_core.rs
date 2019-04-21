@@ -103,7 +103,7 @@ impl fmt::Display for Stats {
                 json_printer,
                 "Hash                                   : {}",
                 match self.hash_bytes {
-                    None => "N/A".to_string(),
+                    None => null_if_json_else_NA!(json_printer).to_string(),
                     Some(ref h) => format!(
                         "{} - {}",
                         multihash::hash_type_to_string(h.0),
@@ -145,7 +145,7 @@ impl fmt::Display for Stats {
                 json_printer,
                 "Hash                                : {}",
                 match self.hash_bytes {
-                    None => "N/A".to_string(),
+                    None => null_if_json_else_NA!(json_printer).to_string(),
                     Some(ref h) => format!(
                         "{} - {}",
                         multihash::hash_type_to_string(h.0),

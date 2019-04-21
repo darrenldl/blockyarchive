@@ -195,7 +195,7 @@ fn print_block_info_and_meta_changes(
             None => print_maybe_json!(
                 json_printer,
                 "From          : {}",
-                null_if_json_else!(json_printer, "N/A")
+                null_if_json_else_NA!(json_printer)
             ),
             Some(old) => print_maybe_json!(json_printer, "From          : {}", old),
         };
@@ -219,7 +219,7 @@ fn print_block_info_and_meta_changes(
             print_maybe_json!(
                 json_printer,
                 "To            : {}",
-                null_if_json_else!(json_printer, "N/A")
+                null_if_json_else_NA!(json_printer)
             );
             json_printer.print_close_bracket();
         }

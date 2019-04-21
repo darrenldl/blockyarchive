@@ -112,7 +112,7 @@ macro_rules! null_if_json_else {
     }};
 }
 
-macro_rules! null_or_NA {
+macro_rules! null_if_json_else_NA {
     (
         $json_printer:expr
     ) => {{
