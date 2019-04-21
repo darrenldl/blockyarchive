@@ -220,11 +220,12 @@ fn print_block_info_and_meta_changes(
         }
     }
     for &id in param.metas_to_remove.iter() {
-        if change_count > 0 {
-            print_if!(not_json => json_printer => "";);
-        }
         let old = sbx_block::get_meta_ref_by_meta_id(old_meta, id);
         if let Some(old) = old {
+            if change_count > 0 {
+                print_if!(not_json => json_printer => "";);
+            }
+
             json_printer.print_open_bracket(None, BracketType::Curly);
             print_maybe_json!(
                 json_printer,
@@ -238,8 +239,9 @@ fn print_block_info_and_meta_changes(
                 null_if_json_else_NA!(json_printer)
             );
             json_printer.print_close_bracket();
+
+            change_count += 1;
         }
-        change_count += 1;
     }
     json_printer.print_close_bracket();
 
