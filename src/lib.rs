@@ -74,6 +74,8 @@ pub mod sbx_block;
 pub mod sbx_specs;
 mod sbx_specs_tests;
 
+mod encode_defaults;
+
 mod log;
 
 mod rs_codec;

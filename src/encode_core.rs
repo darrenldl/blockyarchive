@@ -493,7 +493,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 let max_in_file_size = ver_to_max_data_file_size(param.version);
 
                 if required_len > max_in_file_size {
-                    return Err(Error::with_msg(&format!("Encoding range specified for \"{}\" exceeds the maximum supported file size, size to be encoded: {}, max : {}",
+                    return Err(Error::with_msg(&format!("Encoding range specified for \"{}\" exceeds the maximum supported file size, size to be encoded : {}, max : {}",
                                                             param.in_file.as_ref().unwrap(),
                                                             required_len,
                                                             max_in_file_size)));

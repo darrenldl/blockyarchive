@@ -245,6 +245,8 @@ macro_rules! get_ver_and_data_par_burst_w_defaults {
         $matches:expr, $json_printer:expr
     ) => {{
         use crate::sbx_specs::string_to_ver;
+        use crate::encode_defaults;
+
         match $matches.value_of("sbx_version") {
             None => {
                 if let Some(_) = $matches.value_of("rs_data") {
@@ -257,7 +259,7 @@ macro_rules! get_ver_and_data_par_burst_w_defaults {
                     exit_with_msg!(usr $json_printer => "Please state the SBX version explicitly if you want to use a custom burst error resistance level");
                 }
 
-                (Version::V17, Some((10, 2, 10)))
+                (Version::V17, Some(encode_defaults::DATA_PAR_BURST))
             },
             Some(x) => {
                 let version =
