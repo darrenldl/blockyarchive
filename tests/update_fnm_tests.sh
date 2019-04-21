@@ -73,6 +73,18 @@ for ver in ${VERSIONS[*]}; do
         exit_code=1
     fi
     if [[ $(echo $output | jq -r ".metadataChanges[0].changes[0].to") == ${new_fnm[$ver]} ]]; then
+        echo -n " ==> Okay"
+    else
+        echo -n " ==> NOT okay"
+        exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".metadataChanges[3]") == "null" ]]; then
+        echo -n " ==> Okay"
+    else
+        echo -n " ==> NOT okay"
+        exit_code=1
+    fi
+    if [[ $(echo $output | jq -r ".metadataChanges[0].changes[1]") == "null" ]]; then
         echo " ==> Okay"
     else
         echo " ==> NOT okay"
