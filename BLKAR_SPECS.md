@@ -355,13 +355,14 @@ Metadata block is valid if
 2. Read metadata block from input file using the calculated positions
    
      - The burst error resistance level by default is guessed using the **Guessing burst error resistance level** procedure specified above
-     - Metadata update/addition and removal is considered individually for each metadata block rather than overwriting other medatablocks with the first metadata block
+     - Metadata update/addition and removal is considered individually for each metadata block rather than overwriting other medatablocks using the first metadata block
      - For metadata update/addition
          - If the metadata field already exists, then it is replaced and stays in the same position (i.e. if the field is the $i$th field, then it remains as the $i$th field
          - If metadata field does not exist, then it is added as the last field
      - For metdata removal
          - If the metadata field exists, then it is removed and the remaining fields shift up in their positions
          - If the metadata field does not exist, then nothing is changed
+     - Metadata update/addition process is done before removal process takes place
      - Field processing order in both update/addition and removal process
          - FNM
          - SNM
