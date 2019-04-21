@@ -159,7 +159,12 @@ fn remove_metas(block: &mut Block, ids: &[MetadataID]) {
     block.remove_metas(ids).unwrap();
 }
 
-fn print_block_info_and_meta_changes(param: &Param, meta_block_count: u64, pos: u64, old_meta: &[Metadata]) {
+fn print_block_info_and_meta_changes(
+    param: &Param,
+    meta_block_count: u64,
+    pos: u64,
+    old_meta: &[Metadata],
+) {
     let json_printer = &param.json_printer;
 
     json_printer.print_open_bracket(None, BracketType::Curly);
@@ -184,9 +189,17 @@ fn print_block_info_and_meta_changes(param: &Param, meta_block_count: u64, pos: 
         let id = sbx_block::meta_to_meta_id(m);
         let old = sbx_block::get_meta_ref_by_meta_id(old_meta, id);
         json_printer.print_open_bracket(None, BracketType::Curly);
-        print_maybe_json!(json_printer, "Field         : {}", sbx_block::meta_id_to_str(id));
+        print_maybe_json!(
+            json_printer,
+            "Field         : {}",
+            sbx_block::meta_id_to_str(id)
+        );
         match old {
-            None => print_maybe_json!(json_printer, "From          : {}", null_if_json_else!(json_printer, "N/A")),
+            None => print_maybe_json!(
+                json_printer,
+                "From          : {}",
+                null_if_json_else!(json_printer, "N/A")
+            ),
             Some(old) => print_maybe_json!(json_printer, "From          : {}", old),
         };
         print_maybe_json!(json_printer, "To            : {}", m);
@@ -200,9 +213,17 @@ fn print_block_info_and_meta_changes(param: &Param, meta_block_count: u64, pos: 
         let old = sbx_block::get_meta_ref_by_meta_id(old_meta, id);
         if let Some(old) = old {
             json_printer.print_open_bracket(None, BracketType::Curly);
-            print_maybe_json!(json_printer, "Field         : {}", sbx_block::meta_id_to_str(id));
+            print_maybe_json!(
+                json_printer,
+                "Field         : {}",
+                sbx_block::meta_id_to_str(id)
+            );
             print_maybe_json!(json_printer, "From          : {}", old);
-            print_maybe_json!(json_printer, "To            : {}", null_if_json_else!(json_printer, "N/A"));
+            print_maybe_json!(
+                json_printer,
+                "To            : {}",
+                null_if_json_else!(json_printer, "N/A")
+            );
             json_printer.print_close_bracket();
         }
         change_count += 1;
@@ -319,11 +340,11 @@ Info length distribution is as follows :
 {}",
                                                   meta_block_count, p, p,sbx_block::make_distribution_string(version, &m));
                             err = Some(Error::with_msg(&err_msg));
-                        },
+                        }
                         _ => unreachable!(),
                     }
                     stats.lock().unwrap().meta_blocks_update_failed += 1;
-                },
+                }
             }
         } else {
             stats.lock().unwrap().meta_blocks_decode_failed += 1;
