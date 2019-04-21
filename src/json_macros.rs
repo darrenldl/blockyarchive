@@ -11,7 +11,7 @@ macro_rules! determine_if_skip_quotes {
         $skip_quotes:expr, $val:expr
     ) => {{
         $skip_quotes || skip_quotes_for_term!($val) || $val.parse::<u64>().is_ok()
-    }}
+    }};
 }
 
 macro_rules! write_json_field {

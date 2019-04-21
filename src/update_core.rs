@@ -191,23 +191,11 @@ fn print_block_info_and_meta_changes(
                 print_if!(not_json => json_printer => "";);
             }
 
-            let field_str =
-                format!(
-                    "Field         : {}",
-                    sbx_block::meta_id_to_str(id)
-                );
-            let from_str =
-                match old {
-                    None =>
-                        format!(
-                            "From          : {}",
-                            null_if_json_else_NA!(json_printer)
-                        )
-                        ,
-                    Some(old) =>
-                        format!("From          : {}", old)
-                        ,
-                };
+            let field_str = format!("Field         : {}", sbx_block::meta_id_to_str(id));
+            let from_str = match old {
+                None => format!("From          : {}", null_if_json_else_NA!(json_printer)),
+                Some(old) => format!("From          : {}", old),
+            };
             let to_str = format!("To            : {}", m);
 
             json_printer.print_open_bracket(None, BracketType::Curly);
