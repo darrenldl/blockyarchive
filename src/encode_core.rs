@@ -362,7 +362,7 @@ fn write_meta_blocks(
     match block.sync_to_buffer(None, buffer) {
         Ok(()) => {}
         Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
-            return Err(Error::with_message(&make_too_much_meta_err_string(
+            return Err(Error::with_msg(&make_too_much_meta_err_string(
                 block.get_version(),
                 m,
             )));
@@ -413,7 +413,7 @@ fn block_sync_and_write(
     match block.sync_to_buffer(None, buffer) {
         Ok(()) => {}
         Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
-            return Err(Error::with_message(&make_too_much_meta_err_string(
+            return Err(Error::with_msg(&make_too_much_meta_err_string(
                 block.get_version(),
                 m,
             )));
@@ -427,7 +427,7 @@ fn block_sync_and_write(
 
     match block.add1_seq_num() {
         Ok(_)  => Ok(()),
-        Err(_) => Err(Error::with_message("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"))
+        Err(_) => Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"))
     }
 }
 
@@ -493,7 +493,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 let max_in_file_size = ver_to_max_data_file_size(param.version);
 
                 if required_len > max_in_file_size {
-                    return Err(Error::with_message(&format!("Encoding range specified for \"{}\" exceeds the maximum supported file size, size to be encoded: {}, max : {}",
+                    return Err(Error::with_msg(&format!("Encoding range specified for \"{}\" exceeds the maximum supported file size, size to be encoded: {}, max : {}",
                                                             param.in_file.as_ref().unwrap(),
                                                             required_len,
                                                             max_in_file_size)));

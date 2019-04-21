@@ -90,7 +90,7 @@ macro_rules! get_ref_block {
                     if $stop_flag.load(Ordering::SeqCst) {
                         return Ok(None)
                     } else {
-                        return Err(Error::with_message("Failed to find reference block"));
+                        return Err(Error::with_msg("Failed to find reference block"));
                     }
                 },
                 Some(x) => x,
@@ -145,7 +145,7 @@ macro_rules! get_RSD_from_ref_block {
         let ver_usize = ver_to_usize($ref_block.get_version());
         match $ref_block.get_RSD().unwrap() {
             None    => {
-                return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSD field(must be present to {} for version {})",
+                return Err(Error::with_msg(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSD field(must be present to {} for version {})",
                                                         $ref_block_pos,
                                                         $ref_block_pos,
                                                         $purpose,
@@ -165,7 +165,7 @@ macro_rules! get_RSP_from_ref_block {
         let ver_usize = ver_to_usize($ref_block.get_version());
         match $ref_block.get_RSP().unwrap() {
             None    => {
-                return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field({} for version {})",
+                return Err(Error::with_msg(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field({} for version {})",
                                                         $ref_block_pos,
                                                         $ref_block_pos,
                                                         $purpose,
@@ -194,7 +194,7 @@ macro_rules! return_if_ref_not_meta {
     ) => {{
         if $ref_block.is_data() {
             let ver_usize = ver_to_usize($ref_block.get_version());
-            return Err(Error::with_message(&format!("Reference block at byte {} (0x{:X}) is not a metadata block (metadata block must be used to {} for version {})",
+            return Err(Error::with_msg(&format!("Reference block at byte {} (0x{:X}) is not a metadata block (metadata block must be used to {} for version {})",
                                                     $ref_block_pos,
                                                     $ref_block_pos,
                                                     $purpose,
@@ -251,7 +251,7 @@ macro_rules! get_burst_or_guess {
                                                                                             &$ref_block)?,
                                               {
                                                   return Err(
-                                                      Error::with_message(
+                                                      Error::with_msg(
                                                           "Failed to guess burst resistance level, please specify via --burst option"));
                                               })
                                } else {

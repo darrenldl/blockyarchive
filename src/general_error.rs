@@ -23,7 +23,7 @@ impl Error {
         Error { kind }
     }
 
-    pub fn with_message(msg: &str) -> Error {
+    pub fn with_msg(msg: &str) -> Error {
         Error {
             kind: ErrorKind::MessageOnly(String::from(msg)),
         }

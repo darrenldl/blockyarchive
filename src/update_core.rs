@@ -318,7 +318,7 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
 Info length distribution is as follows :
 {}",
                                                   meta_block_count, p, p,sbx_block::make_distribution_string(version, &m));
-                            err = Some(Error::with_message(&err_msg));
+                            err = Some(Error::with_msg(&err_msg));
                         },
                         _ => unreachable!(),
                     }

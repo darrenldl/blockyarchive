@@ -1193,7 +1193,7 @@ pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
     let out_file_path: Option<String> = match param.out_file {
         None => match recorded_file_name {
             None => {
-                return Err(Error::with_message("No original file name was found in SBX container and no output file name/path was provided"));
+                return Err(Error::with_msg("No original file name was found in SBX container and no output file name/path was provided"));
             }
             Some(ref x) => Some(file_utils::get_file_name_part_of_path(x)),
         },
@@ -1203,7 +1203,7 @@ pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
             } else if file_utils::check_if_file_is_dir(out) {
                 match recorded_file_name {
                     None => {
-                        return Err(Error::with_message(&format!("No original file name was found in SBX container and \"{}\" is a directory",
+                        return Err(Error::with_msg(&format!("No original file name was found in SBX container and \"{}\" is a directory",
                                                                          &out)));
                     }
                     Some(x) => Some(misc_utils::make_path(&[out, &x])),
@@ -1218,7 +1218,7 @@ pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
     if let Some(ref out_file_path) = out_file_path {
         if !param.force_write && param.multi_pass == None {
             if file_utils::check_if_file_exists(out_file_path) {
-                return Err(Error::with_message(&format!(
+                return Err(Error::with_msg(&format!(
                     "File \"{}\" already exists",
                     out_file_path
                 )));

@@ -152,7 +152,7 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
             &ctrlc_stop_flag,
         )? {
             None => {
-                return Err(Error::with_message("Failed to find reference block"));
+                return Err(Error::with_msg("Failed to find reference block"));
             }
             Some(x) => x,
         };
@@ -170,7 +170,7 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
                 &ref_block,
             ) {
                 Err(e) => {
-                    return Err(Error::with_message(&format!(
+                    return Err(Error::with_msg(&format!(
                         "Error encountered when guessing : {}",
                         e
                     )));
