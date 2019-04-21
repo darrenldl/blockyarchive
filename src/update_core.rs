@@ -180,28 +180,44 @@ fn print_block_info_and_meta_changes(
     let mut change_count = 0;
 
     for m in param.metas_to_update.iter() {
-        if change_count > 0 {
-            print_if!(not_json => json_printer => "";);
-        }
         let id = sbx_block::meta_to_meta_id(m);
         let old = sbx_block::get_meta_ref_by_meta_id(old_meta, id);
-        json_printer.print_open_bracket(None, BracketType::Curly);
-        print_maybe_json!(
-            json_printer,
-            "Field         : {}",
-            sbx_block::meta_id_to_str(id)
-        );
-        match old {
-            None => print_maybe_json!(
-                json_printer,
-                "From          : {}",
-                null_if_json_else_NA!(json_printer)
-            ),
-            Some(old) => print_maybe_json!(json_printer, "From          : {}", old),
+        let changed = match old {
+            None => true,
+            Some(old) => old != m,
         };
-        print_maybe_json!(json_printer, "To            : {}", m);
-        json_printer.print_close_bracket();
-        change_count += 1;
+        if changed {
+            if change_count > 0 {
+                print_if!(not_json => json_printer => "";);
+            }
+
+            let field_str =
+                format!(
+                    "Field         : {}",
+                    sbx_block::meta_id_to_str(id)
+                );
+            let from_str =
+                match old {
+                    None =>
+                        format!(
+                            "From          : {}",
+                            null_if_json_else_NA!(json_printer)
+                        )
+                        ,
+                    Some(old) =>
+                        format!("From          : {}", old)
+                        ,
+                };
+            let to_str = format!("To            : {}", m);
+
+            json_printer.print_open_bracket(None, BracketType::Curly);
+            print_maybe_json!(json_printer, "{}", field_str);
+            print_maybe_json!(json_printer, "{}", from_str);
+            print_maybe_json!(json_printer, "{}", to_str);
+            json_printer.print_close_bracket();
+
+            change_count += 1;
+        }
     }
     for &id in param.metas_to_remove.iter() {
         if change_count > 0 {
@@ -291,7 +307,9 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let mut err = None;
 
-    json_printer.print_open_bracket(Some("metadata updates"), BracketType::Square);
+    if param.verbose {
+        json_printer.print_open_bracket(Some("metadata updates"), BracketType::Square)
+    };
     for &p in sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst).iter() {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
@@ -344,7 +362,9 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
 
         meta_block_count += 1;
     }
-    json_printer.print_close_bracket();
+    if param.verbose {
+        json_printer.print_close_bracket()
+    };
 
     reporter.stop();
 
