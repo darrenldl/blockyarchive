@@ -16,7 +16,7 @@
   
     - Previously, version numbers were quoted
   
-    - Previously, there may have been inconsistency as well
+    - Previously, there may have been inconsistencies in general as well
   
     - Bumped major version as this may break backward compatibility
 
