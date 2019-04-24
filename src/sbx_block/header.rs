@@ -28,7 +28,6 @@ impl Header {
     pub fn to_bytes(&self, buffer: &mut [u8]) {
         if buffer.len() != 16 {
             panic!("Incorrect buffer size");
-            //return Err(Error::IncorrectBufferSize);
         }
 
         {
