@@ -10,7 +10,7 @@
 
 [Documentation](https://github.com/darrenldl/blockyarchive/wiki)
 
-Blockyarchive/blkar (pronounced "bloc-kar") is a comprehensive utility for creating, rescuing, and general handling of SeqBox archives, with optional forward error correction via Error-correcting SeqBox.
+Blockyarchive/blkar (pronounced "bloc-kar") is a comprehensive utility written in Rust for creating, rescuing, and general handling of SeqBox archives, with optional forward error correction via Error-correcting SeqBox.
 
 ### What are SeqBox and EC-SeqBox?
 
