@@ -12,56 +12,38 @@
 
 Blockyarchive/blkar (pronounced "bloc-kar") is a comprehensive utility for creating, rescuing, and general handling of SeqBox archives, with optional forward error correction via Error-correcting SeqBox.
 
+### What are SeqBox and EC-SeqBox?
+
 SeqBox is a single-file archive format designed by [Marco Pontello](https://github.com/MarcoPon) that facilitates sector level data recovery for when file system metadata is corrupted/missing, while the archive itself still exists as a normal file on file system. Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for the original implementation and technical details on this.
 
 Error-correcting SeqBox (or EC-SeqBox for short) is an extended version of SeqBox developed for this project, introducing forward error correction via Reed-Solomon erasure code.
 
 Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
 
-## Demo
+### Features overall
+
+- Data recovery that does not depend on file system metadata (sector level recovery)
+    - This allows data recovery even when data is fragmented and out of order
+- Supports error correction (via Reed-Solomon erasure code) for EC-SeqBox
+- Supports burst (sector) error resistance for EC-SeqBox
+    - This is done via an interleaving block arrangement scheme. It is mainly to address the data repair limitation of the simple archive design
+    - More complex archive designs such as PAR2 can repair burst errors without any extra arrangement scheme, but they are also vastly more complex than EC-SeqBox
+- JSON mode
+    - Outputs information in JSON format instead of human readable text, allowing easy integration with scripts
+
+### Limitations
+
+- Only a single file is supported for encoding as SeqBox and EC-SeqBox are both single-file archive formats
+    - However, blkar may still be usable when you have multiple files, as blkar supports taking input from stdin during encoding, and also supports outputting to stdout during decoding
+    - This means if you have an archiver that supports bundling and unbundling on the fly with pipes, like tar, you can combine the use of the archiver and blkar into one encoding and decoding step
+
+### Demo
 
 [![asciicast](https://asciinema.org/a/240491.svg)](https://asciinema.org/a/240491)
 
-## Comparison to the original SeqBox implementation/design
+### Getting started
 
-The original SeqBox implementation and format do not support repairing of data, only sector level recoverability.
-
-Blockyarchive supports both SeqBox and EC-SeqBox, while the original implementation only supports the SeqBox specification.
-
-Blockyarchive is also more robust compared to the original SeqBox implementation, as it does not assume the SBX container to be well formed, and makes as few assumptions about the SBX container as possible.
-
-blkar is overall based around [osbx](https://github.com/darrenldl/ocaml-SeqBox), but much more optimized.
-
-## Features overall
-
-- Data recovery that does not depend on file system metadata (sector level recovery)
-  - This allows data recovery even when data is fragmented and out of order
-- Supports error correction (via Reed-Solomon erasure code) for EC-SeqBox
-- Supports burst (sector) error resistance for EC-SeqBox
-  - This is done via an interleaving block arrangement scheme. It is mainly to address the data repair limitation of the simple archive design
-  - More complex archive designs such as PAR2 can repair burst errors without any extra arrangement scheme, but they are also vastly more complex than EC-SeqBox
-- JSON mode
-  - Outputs information in JSON format instead of human readable text, allowing easy integration with scripts
-
-## Limitations
-
-- Only a single file is supported for encoding as SeqBox and EC-SeqBox are both single-file archive formats
-  - However, blkar may still be usable when you have multiple files, as blkar supports taking input from stdin during encoding, and also supports outputting to stdout during decoding
-  - This means if you have an archiver that supports bundling and unbundling on the fly with pipes, like tar, you can combine the use of the archiver and blkar into one encoding and decoding step
-
-## Goals
-
-As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
-
-## Status
-
-This project has reached its intended feature completeness, so no active development for new features will occur. However, this project is still actively looked after, i.e. I will respond to PRs, issues, and emails, will consider feature requests, respond to bug reports quickly, and so on.
-
-In other words, this is a completed project with respect to its original scope, but it is not abandoned.
-
-## Getting started
-
-#### Installation
+**Installation**
 
 `blkar` is available via [AUR](https://aur.archlinux.org/packages/blkar), [GitHub releases](https://github.com/darrenldl/blockyarchive/releases) or `cargo`
 
@@ -69,33 +51,33 @@ In other words, this is a completed project with respect to its original scope, 
 cargo install blkar
 ```
 
-#### Usage guides & screencasts & other resources
+**Usage guides & screencasts & other resources**
 
 The [wiki](https://github.com/darrenldl/blockyarchive/wiki) contains comprehensive guides and resources.
 
-## Note on Rust to Bash ratio
+### Goals and status
 
-Just to avoid confusion, blkar is written purely in Rust, Bash is only used to write tests.
+As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
 
-## Got a question?
+This project has reached its intended feature completeness, so no active development for new features will occur. However, this project is still actively looked after, i.e. I will respond to PRs, issues, and emails, will consider feature requests, respond to bug reports quickly, and so on.
 
-Feel free to join the [Gitter chat](https://gitter.im/blockyarchive/community) if you've got a question. You can email me directly as well.
+In other words, this is a completed project with respect to its original scope, but it is not abandoned.
 
-## Changelog
+### Links
+
+[Comparison to the original SeqBox implementation/design](COMPARISON.md)
 
 [Changelog](CHANGELOG.md)
-
-## Specifications
 
 [SBX format](SBX_FORMAT.md) (EC-SeqBox is also specified in this document)
 
 [blkar specs](BLKAR_SPECS.md)
 
-## Contributions
+### Contributions
 
 Contributions are welcome. Note that by submitting contributions, you agree to license your work under the same license used by this project as stated in the LICENSE file.
 
-## Acknowledgement
+### Acknowledgement
 
 I would like to thank [Marco](https://github.com/MarcoPon) (the official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx. I would also like to thank him for his feedback on the numbering of the error correction enabled ECSBX versions (versions 17, 18, 19).
 
@@ -105,19 +87,19 @@ The design of the readable rate in progress report text is copied from [Arch Lin
 
 The design of block set interleaving arrangement in RS enabled versions is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html). The interleaving provides resistance against burst sector errors.
 
-## Donation
+### Donation
 
 **Note** : Donation will **NOT** fuel development of new features. As mentioned above, this project is meant to be stable, well tested and well maintained, but normally I am not actively adding new features to it.
 
 If blockyarchive has been useful to you, and you would like to donate to me for the development effort, you can donate through [here](http://ko-fi.com/darrenldl).
 
-## License
+### License
 
-#### Libcrc code
+**Libcrc code**
 
 The crcccitt code is translated from the C implementation in [libcrc](https://github.com/lammertb/libcrc) and are under the same MIT License as used by libcrc and as stated in libcrc source code, the license text of the crcccitt.c is copied over to `crc-ccitt/build.rs`, `crc-ccitt/src/lib.rs`, `build.rs` and `src/crc_ccitt.rs` as well.
 
-#### Official SeqBox code
+**Official SeqBox code**
 
 The following files in tests folder copied from official SeqBox are under its license, which is MIT as of time of writing
 
