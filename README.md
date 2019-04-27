@@ -12,11 +12,11 @@
 
 Blockyarchive/blkar (pronounced "bloc-kar") is a comprehensive utility for creating, rescuing, and general handling of SeqBox archives, with optional forward error correction via Error-correcting SeqBox.
 
-## Demo
+#### Demo
 
 [![asciicast](https://asciinema.org/a/240491.svg)](https://asciinema.org/a/240491)
 
-## What are SeqBox and EC-SeqBox?
+#### What are SeqBox and EC-SeqBox?
 
 SeqBox is a single-file archive format designed by [Marco Pontello](https://github.com/MarcoPon) that facilitates sector level data recovery for when file system metadata is corrupted/missing, while the archive itself still exists as a normal file on file system. Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for the original implementation and technical details on this.
 
@@ -24,7 +24,7 @@ Error-correcting SeqBox (or EC-SeqBox for short) is an extended version of SeqBo
 
 Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
 
-## Features overall
+#### Features overall
 
 - Data recovery that does not depend on file system metadata (sector level recovery)
     - This allows data recovery even when data is fragmented and out of order
@@ -35,29 +35,15 @@ Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
 - JSON mode
     - Outputs information in JSON format instead of human readable text, allowing easy integration with scripts
 
-## Limitations
+#### Limitations
 
 - Only a single file is supported for encoding as SeqBox and EC-SeqBox are both single-file archive formats
     - However, blkar may still be usable when you have multiple files, as blkar supports taking input from stdin during encoding, and also supports outputting to stdout during decoding
     - This means if you have an archiver that supports bundling and unbundling on the fly with pipes, like tar, you can combine the use of the archiver and blkar into one encoding and decoding step
 
-## Comparison to the original SeqBox implementation/design
+#### Getting started
 
-See [comparison](COMPARISON.md).
-
-## Goals
-
-As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
-
-## Status
-
-This project has reached its intended feature completeness, so no active development for new features will occur. However, this project is still actively looked after, i.e. I will respond to PRs, issues, and emails, will consider feature requests, respond to bug reports quickly, and so on.
-
-In other words, this is a completed project with respect to its original scope, but it is not abandoned.
-
-## Getting started
-
-#### Installation
+**Installation**
 
 `blkar` is available via [AUR](https://aur.archlinux.org/packages/blkar), [GitHub releases](https://github.com/darrenldl/blockyarchive/releases) or `cargo`
 
@@ -65,23 +51,33 @@ In other words, this is a completed project with respect to its original scope, 
 cargo install blkar
 ```
 
-#### Usage guides & screencasts & other resources
+**Usage guides & screencasts & other resources**
 
 The [wiki](https://github.com/darrenldl/blockyarchive/wiki) contains comprehensive guides and resources.
 
-## Note on Rust to Bash ratio
+#### Comparison to the original SeqBox implementation/design
+
+See [comparison](COMPARISON.md).
+
+#### Goals and status
+
+As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
+
+This project has reached its intended feature completeness, so no active development for new features will occur. However, this project is still actively looked after, i.e. I will respond to PRs, issues, and emails, will consider feature requests, respond to bug reports quickly, and so on.
+
+In other words, this is a completed project with respect to its original scope, but it is not abandoned.
+
+#### Note on Rust to Bash ratio
 
 Just to avoid confusion, blkar is written purely in Rust, Bash is only used to write tests.
 
-## Got a question?
+#### Got a question?
 
 Feel free to join the [Gitter chat](https://gitter.im/blockyarchive/community) if you've got a question. You can email me directly as well.
 
-## Changelog
+#### Changelog and specifications
 
 [Changelog](CHANGELOG.md)
-
-## Specifications
 
 [SBX format](SBX_FORMAT.md) (EC-SeqBox is also specified in this document)
 
