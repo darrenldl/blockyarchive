@@ -12,7 +12,7 @@
 
 Blockyarchive/blkar (pronounced "bloc-kar") is a comprehensive utility for creating, rescuing, and general handling of SeqBox archives, with optional forward error correction via Error-correcting SeqBox.
 
-#### Demo
+### Demo
 
 [![asciicast](https://asciinema.org/a/240491.svg)](https://asciinema.org/a/240491)
 
