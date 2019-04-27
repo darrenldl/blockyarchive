@@ -55,10 +55,6 @@ cargo install blkar
 
 The [wiki](https://github.com/darrenldl/blockyarchive/wiki) contains comprehensive guides and resources.
 
-### Links
-
-See [comparison to the original SeqBox implementation/design](COMPARISON.md).
-
 ### Goals and status
 
 As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
@@ -67,15 +63,9 @@ This project has reached its intended feature completeness, so no active develop
 
 In other words, this is a completed project with respect to its original scope, but it is not abandoned.
 
-#### Note on Rust to Bash ratio
+### Links
 
-Just to avoid confusion, blkar is written purely in Rust, Bash is only used to write tests.
-
-#### Got a question?
-
-Feel free to join the [Gitter chat](https://gitter.im/blockyarchive/community) if you've got a question. You can email me directly as well.
-
-#### Changelog and specifications
+[Comparison to the original SeqBox implementation/design](COMPARISON.md)
 
 [Changelog](CHANGELOG.md)
 
@@ -83,7 +73,7 @@ Feel free to join the [Gitter chat](https://gitter.im/blockyarchive/community) i
 
 [blkar specs](BLKAR_SPECS.md)
 
-## Contributions
+### Contributions
 
 Contributions are welcome. Note that by submitting contributions, you agree to license your work under the same license used by this project as stated in the LICENSE file.
 
@@ -97,19 +87,19 @@ The design of the readable rate in progress report text is copied from [Arch Lin
 
 The design of block set interleaving arrangement in RS enabled versions is heavily inspired by [Thanassis Tsiodras's design of RockFAT](https://www.thanassis.space/RockFAT.html). The interleaving provides resistance against burst sector errors.
 
-## Donation
+### Donation
 
 **Note** : Donation will **NOT** fuel development of new features. As mentioned above, this project is meant to be stable, well tested and well maintained, but normally I am not actively adding new features to it.
 
 If blockyarchive has been useful to you, and you would like to donate to me for the development effort, you can donate through [here](http://ko-fi.com/darrenldl).
 
-## License
+### License
 
-#### Libcrc code
+**Libcrc code**
 
 The crcccitt code is translated from the C implementation in [libcrc](https://github.com/lammertb/libcrc) and are under the same MIT License as used by libcrc and as stated in libcrc source code, the license text of the crcccitt.c is copied over to `crc-ccitt/build.rs`, `crc-ccitt/src/lib.rs`, `build.rs` and `src/crc_ccitt.rs` as well.
 
-#### Official SeqBox code
+**Official SeqBox code**
 
 The following files in tests folder copied from official SeqBox are under its license, which is MIT as of time of writing
 
