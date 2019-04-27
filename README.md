@@ -16,7 +16,7 @@ Blockyarchive/blkar (pronounced "bloc-kar") is a comprehensive utility for creat
 
 [![asciicast](https://asciinema.org/a/240491.svg)](https://asciinema.org/a/240491)
 
-#### What are SeqBox and EC-SeqBox?
+### What are SeqBox and EC-SeqBox?
 
 SeqBox is a single-file archive format designed by [Marco Pontello](https://github.com/MarcoPon) that facilitates sector level data recovery for when file system metadata is corrupted/missing, while the archive itself still exists as a normal file on file system. Please visit the official [SeqBox](https://github.com/MarcoPon/SeqBox) repo for the original implementation and technical details on this.
 
@@ -24,7 +24,7 @@ Error-correcting SeqBox (or EC-SeqBox for short) is an extended version of SeqBo
 
 Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
 
-#### Features overall
+### Features overall
 
 - Data recovery that does not depend on file system metadata (sector level recovery)
     - This allows data recovery even when data is fragmented and out of order
@@ -35,13 +35,13 @@ Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
 - JSON mode
     - Outputs information in JSON format instead of human readable text, allowing easy integration with scripts
 
-#### Limitations
+### Limitations
 
 - Only a single file is supported for encoding as SeqBox and EC-SeqBox are both single-file archive formats
     - However, blkar may still be usable when you have multiple files, as blkar supports taking input from stdin during encoding, and also supports outputting to stdout during decoding
     - This means if you have an archiver that supports bundling and unbundling on the fly with pipes, like tar, you can combine the use of the archiver and blkar into one encoding and decoding step
 
-#### Getting started
+### Getting started
 
 **Installation**
 
@@ -55,11 +55,11 @@ cargo install blkar
 
 The [wiki](https://github.com/darrenldl/blockyarchive/wiki) contains comprehensive guides and resources.
 
-#### Comparison to the original SeqBox implementation/design
+### Links
 
-See [comparison](COMPARISON.md).
+See [comparison to the original SeqBox implementation/design](COMPARISON.md).
 
-#### Goals and status
+### Goals and status
 
 As blkar is to be used largely as a backup utility, security/robustness of the code will be prioritised over apparent performance.
 
@@ -87,7 +87,7 @@ Feel free to join the [Gitter chat](https://gitter.im/blockyarchive/community) i
 
 Contributions are welcome. Note that by submitting contributions, you agree to license your work under the same license used by this project as stated in the LICENSE file.
 
-## Acknowledgement
+### Acknowledgement
 
 I would like to thank [Marco](https://github.com/MarcoPon) (the official SeqBox author) for discussing and clarifying aspects of his project, and also providing of test data during development of osbx. I would also like to thank him for his feedback on the numbering of the error correction enabled ECSBX versions (versions 17, 18, 19).
 
