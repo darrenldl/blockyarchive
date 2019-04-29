@@ -424,7 +424,7 @@ fn make_message(
     let avg_rate = units_so_far as f64 / time_used;
     let cur_rate = (units_so_far - context.last_reported_units) as f64 / time_since_last_report;
     let cur_rate = if cur_rate <= 0.001 {
-        0.000000001
+        0.000_000_001
     } else {
         cur_rate
     };
