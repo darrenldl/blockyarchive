@@ -23,6 +23,8 @@
 - Switched to using tilde requirements for dependencies
   
     - This is to ensure build stability for users who install blkar via crates.io, as `Cargo.lock` is not currently published along with the package on crates.io
+- Updated progress reporting code
+    - Encode stdin mode now reports current rate and time used during encoding, and shows normal progress stats at the end
 
 ## 6.0.1
 
