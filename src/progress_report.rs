@@ -241,7 +241,7 @@ pub trait ProgressReport {
 
     fn units_so_far(&self) -> u64;
 
-    fn total_units(&self) -> u64;
+    fn total_units(&self) -> Option<u64>;
 
     fn set_start_time(&mut self) {
         *self.start_time_mut() = time_utils::get_time_now(time_utils::TimeMode::UTC);

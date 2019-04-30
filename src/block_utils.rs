@@ -81,8 +81,8 @@ impl ProgressReport for ScanStats {
         self.bytes_processed
     }
 
-    fn total_units(&self) -> u64 {
-        self.total_bytes
+    fn total_units(&self) -> Option<u64> {
+        Some(self.total_bytes)
     }
 }
 

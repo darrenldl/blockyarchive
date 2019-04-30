@@ -109,8 +109,8 @@ impl ProgressReport for Stats {
         self.meta_blocks_updated + self.meta_blocks_decode_failed
     }
 
-    fn total_units(&self) -> u64 {
-        self.total_meta_blocks
+    fn total_units(&self) -> Option<u64> {
+        Some(self.total_meta_blocks)
     }
 }
 
