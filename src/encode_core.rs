@@ -231,8 +231,8 @@ impl Stats {
             parity_blocks_written: 0,
             data_padding_bytes: 0,
             total_data_blocks: match required_len {
-                Some(len) => calc_data_chunk_count(param.version, len) as u32,
-                None => 0,
+                Some(len) => Some(calc_data_chunk_count(param.version, len)),
+                None => None,
             },
             in_file_size: 0,
             out_file_size: 0,
