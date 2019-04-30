@@ -241,7 +241,7 @@ pub trait ProgressReport {
 
     fn units_so_far(&self) -> u64;
 
-    fn total_units(&self) -> u64;
+    fn total_units(&self) -> Option<u64>;
 
     fn set_start_time(&mut self) {
         *self.start_time_mut() = time_utils::get_time_now(time_utils::TimeMode::UTC);
@@ -284,9 +284,14 @@ where
     let units_so_far = stats.units_so_far();
     let total_units = stats.total_units();
 
-    let percent = helper::calc_percent(units_so_far, total_units);
+    let progress_complete = match total_units {
+        None => pretend_finish,
+        Some(total_units) => {
+            let percent = helper::calc_percent(units_so_far, total_units);
 
-    let progress_complete = percent == 100 || pretend_finish;
+            percent == 100 || pretend_finish
+        }
+    };
 
     if ((verbose_while_active && !progress_complete) || (verbose_when_done && progress_complete))
         && !(context.finish_printed && progress_complete)
@@ -363,72 +368,111 @@ fn make_message(
     start_time: f64,
     end_time: f64,
     units_so_far: u64,
-    total_units: u64,
+    total_units: Option<u64>,
     elements: &[ProgressElement],
 ) -> String {
     fn make_string_for_element(
-        percent: usize,
+        percent: Option<usize>,
         cur_rate: f64,
         avg_rate: f64,
         unit: String,
         time_used: f64,
-        time_left: f64,
+        time_left: Option<f64>,
         element: &ProgressElement,
-    ) -> String {
+    ) -> Option<String> {
         use self::ProgressElement::*;
         match *element {
-            Percentage => format!("{:3}%", percent),
-            ProgressBar => helper::make_progress_bar(percent),
-            CurrentRateShort => format!("cur : {}", helper::make_readable_rate(cur_rate, unit)),
-            CurrentRateLong => format!(
+            Percentage => match percent {
+                None => None,
+                Some(percent) => Some(format!("{:3}%", percent)),
+            },
+            ProgressBar => match percent {
+                None => None,
+                Some(percent) => Some(helper::make_progress_bar(percent)),
+            },
+            CurrentRateShort => Some(format!(
+                "cur : {}",
+                helper::make_readable_rate(cur_rate, unit)
+            )),
+            CurrentRateLong => Some(format!(
                 "Current rate : {}",
                 helper::make_readable_rate(cur_rate, unit)
-            ),
-            AverageRateShort => format!("avg : {}", helper::make_readable_rate(avg_rate, unit)),
-            AverageRateLong => format!(
+            )),
+            AverageRateShort => Some(format!(
+                "avg : {}",
+                helper::make_readable_rate(avg_rate, unit)
+            )),
+            AverageRateLong => Some(format!(
                 "Average rate : {}",
                 helper::make_readable_rate(avg_rate, unit)
-            ),
+            )),
             TimeUsedShort => {
                 let (hour, minute, second) = time_utils::seconds_to_hms(time_used as i64);
-                format!("used : {:02}:{:02}:{:02}", hour, minute, second)
+                Some(format!("used : {:02}:{:02}:{:02}", hour, minute, second))
             }
             TimeUsedLong => {
                 let (hour, minute, second) = time_utils::seconds_to_hms(time_used as i64);
-                format!("Time elapsed : {:02}:{:02}:{:02}", hour, minute, second)
+                Some(format!(
+                    "Time elapsed : {:02}:{:02}:{:02}",
+                    hour, minute, second
+                ))
             }
-            TimeLeftShort => {
-                let (hour, minute, second) = time_utils::seconds_to_hms(time_left as i64);
-                format!("left : {:02}:{:02}:{:02}", hour, minute, second)
-            }
-            TimeLeftLong => {
-                let (hour, minute, second) = time_utils::seconds_to_hms(time_left as i64);
-                format!("Time remaining : {:02}:{:02}:{:02}", hour, minute, second)
-            }
+            TimeLeftShort => match time_left {
+                None => None,
+                Some(time_left) => {
+                    let (hour, minute, second) = time_utils::seconds_to_hms(time_left as i64);
+                    Some(format!("left : {:02}:{:02}:{:02}", hour, minute, second))
+                }
+            },
+            TimeLeftLong => match time_left {
+                None => None,
+                Some(time_left) => {
+                    let (hour, minute, second) = time_utils::seconds_to_hms(time_left as i64);
+                    Some(format!(
+                        "Time remaining : {:02}:{:02}:{:02}",
+                        hour, minute, second
+                    ))
+                }
+            },
         }
     }
 
-    let units_remaining = if total_units >= units_so_far {
-        total_units - units_so_far
-    } else {
-        0
-    };
-    let percent = helper::calc_percent(units_so_far, total_units);
     let cur_time = time_utils::get_time_now(time_utils::TimeMode::UTC);
-    let time_used = if percent < 100 {
-        f64_max(cur_time - start_time, 0.1)
-    } else {
-        f64_max(end_time - start_time, 0.1)
-    };
     let time_since_last_report = f64_max(cur_time - context.last_report_time, 0.1);
-    let avg_rate = units_so_far as f64 / time_used;
     let cur_rate = (units_so_far - context.last_reported_units) as f64 / time_since_last_report;
     let cur_rate = if cur_rate <= 0.001 {
-        0.000000001
+        0.000_000_001
     } else {
         cur_rate
     };
-    let time_left = units_remaining as f64 / cur_rate;
+    let (percent, time_left) = match total_units {
+        None => (None, None),
+        Some(total_units) => {
+            let percent = helper::calc_percent(units_so_far, total_units);
+
+            let units_remaining = if total_units >= units_so_far {
+                total_units - units_so_far
+            } else {
+                0
+            };
+
+            let time_left = units_remaining as f64 / cur_rate;
+
+            (Some(percent), Some(time_left))
+        }
+    };
+    let time_used = match percent {
+        None => f64_max(cur_time - start_time, 0.1),
+        Some(percent) => {
+            if percent < 100 {
+                f64_max(cur_time - start_time, 0.1)
+            } else {
+                f64_max(end_time - start_time, 0.1)
+            }
+        }
+    };
+    let avg_rate = units_so_far as f64 / time_used;
+
     let mut res = String::with_capacity(150);
     if context.verbosity_settings.json_enabled {
         res.push_str(&format!(
@@ -441,11 +485,13 @@ fn make_message(
             to_camelcase("units so far"),
             units_so_far
         ));
-        res.push_str(&format!(
-            ",\"{}\": {} ",
-            to_camelcase("total units"),
-            total_units
-        ));
+        if let Some(total_units) = total_units {
+            res.push_str(&format!(
+                ",\"{}\": {} ",
+                to_camelcase("total units"),
+                total_units
+            ))
+        };
         res.push_str(&format!(
             ",\"{}\": {} ",
             to_camelcase("cur per sec"),
@@ -461,14 +507,16 @@ fn make_message(
             to_camelcase("time used"),
             time_used
         ));
-        res.push_str(&format!(
-            ",\"{}\": {} ",
-            to_camelcase("time left"),
-            time_left
-        ));
+        if let Some(time_left) = time_left {
+            res.push_str(&format!(
+                ",\"{}\": {} ",
+                to_camelcase("time left"),
+                time_left
+            ))
+        };
     } else {
         for e in elements.iter() {
-            res.push_str(&make_string_for_element(
+            if let Some(s) = make_string_for_element(
                 percent,
                 cur_rate,
                 avg_rate,
@@ -476,8 +524,10 @@ fn make_message(
                 time_used,
                 time_left,
                 e,
-            ));
-            res.push_str("  ");
+            ) {
+                res.push_str(&s);
+                res.push_str("  ");
+            }
         }
     }
     res

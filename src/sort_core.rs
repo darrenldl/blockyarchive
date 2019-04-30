@@ -153,8 +153,8 @@ impl ProgressReport for Stats {
             + self.okay_blank_blocks) as u64
     }
 
-    fn total_units(&self) -> u64 {
-        self.total_blocks as u64
+    fn total_units(&self) -> Option<u64> {
+        Some(self.total_blocks)
     }
 }
 

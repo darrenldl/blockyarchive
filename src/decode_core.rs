@@ -470,8 +470,8 @@ impl ProgressReport for HashStats {
         self.bytes_processed
     }
 
-    fn total_units(&self) -> u64 {
-        self.total_bytes
+    fn total_units(&self) -> Option<u64> {
+        Some(self.total_bytes)
     }
 }
 
@@ -499,8 +499,8 @@ impl ProgressReport for Stats {
             + blocks_decode_failed) as u64
     }
 
-    fn total_units(&self) -> u64 {
-        self.total_blocks as u64
+    fn total_units(&self) -> Option<u64> {
+        Some(self.total_blocks)
     }
 }
 

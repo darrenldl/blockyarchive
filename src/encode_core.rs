@@ -48,7 +48,7 @@ pub struct Stats {
     pub data_padding_bytes: usize,
     pub in_file_size: u64,
     pub out_file_size: u64,
-    total_data_blocks: u32,
+    total_data_blocks: Option<u64>,
     start_time: f64,
     end_time: f64,
     json_printer: Arc<JSONPrinter>,
@@ -231,8 +231,8 @@ impl Stats {
             parity_blocks_written: 0,
             data_padding_bytes: 0,
             total_data_blocks: match required_len {
-                Some(len) => calc_data_chunk_count(param.version, len) as u32,
-                None => 0,
+                Some(len) => Some(calc_data_chunk_count(param.version, len)),
+                None => None,
             },
             in_file_size: 0,
             out_file_size: 0,
@@ -262,8 +262,8 @@ impl ProgressReport for Stats {
         self.data_blocks_written as u64
     }
 
-    fn total_units(&self) -> u64 {
-        self.total_data_blocks as u64
+    fn total_units(&self) -> Option<u64> {
+        self.total_data_blocks
     }
 }
 
