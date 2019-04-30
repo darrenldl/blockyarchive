@@ -20,6 +20,10 @@
   
     - Bumped major version as this may break backward compatibility
 
+- Switched to using tilde requirements for dependencies
+  
+    - This is to ensure build stability for users who install blkar via crates.io, as `Cargo.lock` is not currently published along with the package on crates.io
+
 ## 6.0.1
 
 - Minor fixes for rescue and decode mode help messages
