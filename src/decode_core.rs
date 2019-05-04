@@ -126,7 +126,7 @@ impl fmt::Display for Stats {
                 ver_to_usize(self.version)
             )?;
             write_maybe_json!(f, json_printer, "Block size used in decoding            {}: {}", padding, block_size => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks processed             {}: {}", padding, self.units_so_far() => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks processed             {}: {}", padding, self.blocks_so_far() => skip_quotes)?;
             write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata)    {}: {}", padding, self.meta_blocks_decoded => skip_quotes)?;
             write_maybe_json!(f, json_printer, "Number of blocks decoded (data)        {}: {}", padding, self.data_blocks_decoded => skip_quotes)?;
             write_maybe_json!(f, json_printer, "Number of blocks decoded (parity)      {}: {}", padding, self.parity_blocks_decoded => skip_quotes)?;
@@ -205,7 +205,7 @@ impl fmt::Display for Stats {
                 ver_to_usize(self.version)
             )?;
             write_maybe_json!(f, json_printer, "Block size used in decoding         {}: {}", padding, block_size                  => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks processed          {}: {}", padding, self.units_so_far()         => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks processed          {}: {}", padding, self.blocks_so_far()         => skip_quotes)?;
             write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata) {}: {}", padding, self.meta_blocks_decoded    => skip_quotes)?;
             write_maybe_json!(f, json_printer, "Number of blocks decoded (data)     {}: {}", padding, self.data_blocks_decoded    => skip_quotes)?;
             match self.blocks_decode_failed {
@@ -455,6 +455,21 @@ impl Stats {
             DecodeFailStats::Total(_) => panic!(),
         }
     }
+
+    fn blocks_so_far(&self) -> u64 {
+        let blocks_decode_failed = match self.blocks_decode_failed {
+            DecodeFailStats::Total(x) => x,
+            DecodeFailStats::Breakdown(ref x) => {
+                x.meta_blocks_decode_failed
+                    + x.data_blocks_decode_failed
+                    + x.parity_blocks_decode_failed
+            }
+        };
+        self.meta_blocks_decoded
+            + self.data_blocks_decoded
+            + self.parity_blocks_decoded
+            + blocks_decode_failed
+    }
 }
 
 impl ProgressReport for HashStats {
@@ -485,19 +500,7 @@ impl ProgressReport for Stats {
     }
 
     fn units_so_far(&self) -> u64 {
-        let blocks_decode_failed = match self.blocks_decode_failed {
-            DecodeFailStats::Total(x) => x,
-            DecodeFailStats::Breakdown(ref x) => {
-                x.meta_blocks_decode_failed
-                    + x.data_blocks_decode_failed
-                    + x.parity_blocks_decode_failed
-            }
-        };
-        (self.meta_blocks_decoded
-            + self.data_blocks_decoded
-            + self.parity_blocks_decoded
-            + blocks_decode_failed)
-            * ver_to_block_size(self.version) as u64
+        self.blocks_so_far() * ver_to_block_size(self.version) as u64
     }
 
     fn total_units(&self) -> Option<u64> {
