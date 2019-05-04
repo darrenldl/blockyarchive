@@ -259,11 +259,14 @@ impl ProgressReport for Stats {
     }
 
     fn units_so_far(&self) -> u64 {
-        self.data_blocks_written as u64
+        self.data_blocks_written as u64 * ver_to_data_size(self.version) as u64
     }
 
     fn total_units(&self) -> Option<u64> {
-        self.total_data_blocks
+        match self.total_data_blocks {
+            None => None,
+            Some(x) => Some(x * ver_to_data_size(self.version) as u64),
+        }
     }
 }
 
@@ -509,7 +512,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let reporter = ProgressReporter::new(
         &stats,
         "Data encoding progress",
-        "chunks",
+        "bytes",
         param.pr_verbosity_level,
         param.json_printer.json_enabled(),
     );

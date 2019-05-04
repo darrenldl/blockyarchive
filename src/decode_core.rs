@@ -496,11 +496,12 @@ impl ProgressReport for Stats {
         (self.meta_blocks_decoded
             + self.data_blocks_decoded
             + self.parity_blocks_decoded
-            + blocks_decode_failed) as u64
+            + blocks_decode_failed)
+            * ver_to_block_size(self.version) as u64
     }
 
     fn total_units(&self) -> Option<u64> {
-        Some(self.total_blocks)
+        Some(self.total_blocks * ver_to_block_size(self.version) as u64)
     }
 }
 
@@ -702,7 +703,7 @@ pub fn decode(
             reporter = ProgressReporter::new(
                 &stats,
                 "Data decoding progress",
-                "blocks",
+                "bytes",
                 param.pr_verbosity_level,
                 param.json_printer.json_enabled(),
             );
@@ -819,7 +820,7 @@ pub fn decode(
             reporter = ProgressReporter::new(
                 &stats,
                 "Data decoding progress",
-                "blocks",
+                "bytes",
                 param.pr_verbosity_level,
                 param.json_printer.json_enabled(),
             );
