@@ -150,11 +150,12 @@ impl ProgressReport for Stats {
             + self.data_blocks_decoded
             + self.parity_blocks_decoded
             + self.blocks_decode_failed
-            + self.okay_blank_blocks) as u64
+            + self.okay_blank_blocks)
+            * ver_to_block_size(self.version) as u64
     }
 
     fn total_units(&self) -> Option<u64> {
-        Some(self.total_blocks)
+        Some(self.total_blocks * ver_to_block_size(self.version) as u64)
     }
 }
 
@@ -258,7 +259,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
     let reporter = Arc::new(ProgressReporter::new(
         &stats,
         "SBX block sorting progress",
-        "blocks",
+        "bytes",
         param.pr_verbosity_level,
         param.json_printer.json_enabled(),
     ));
