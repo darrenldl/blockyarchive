@@ -71,11 +71,12 @@ impl ProgressReport for Stats {
     }
 
     fn units_so_far(&self) -> u64 {
-        self.meta_blocks_decoded + self.data_or_par_blocks_decoded + self.blocks_decode_failed
+        (self.meta_blocks_decoded + self.data_or_par_blocks_decoded + self.blocks_decode_failed)
+            * ver_to_block_size(self.version) as u64
     }
 
     fn total_units(&self) -> Option<u64> {
-        Some(self.total_blocks)
+        Some(self.total_blocks * ver_to_block_size(self.version) as u64)
     }
 }
 
@@ -295,7 +296,7 @@ pub fn repair_file(param: &Param) -> Result<Option<Stats>, Error> {
     let reporter = Arc::new(ProgressReporter::new(
         &stats,
         "SBX block repairing progress",
-        "blocks",
+        "bytes",
         param.pr_verbosity_level,
         param.json_printer.json_enabled(),
     ));
