@@ -119,7 +119,7 @@ impl Stats {
         let version = ref_block.get_version();
         Stats {
             version,
-            block_size: ver_to_block_size(version),
+            block_size: ver_to_block_size(version) as u64,
             meta_blocks_decoded: 0,
             data_blocks_decoded: 0,
             parity_blocks_decoded: 0,
