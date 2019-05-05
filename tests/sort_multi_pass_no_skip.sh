@@ -4,9 +4,7 @@ exit_code=0
 
 VERSIONS=(1 2 3 17 18 19)
 
-corrupt() {
-  dd if=/dev/zero of=$2 bs=10 count=1 seek=$1 conv=notrunc &>/dev/null
-}
+source functions.sh
 
 file_size=$(ls -l dummy | awk '{ print $5 }')
 

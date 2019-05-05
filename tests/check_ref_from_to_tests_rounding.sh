@@ -2,9 +2,7 @@
 
 exit_code=0
 
-corrupt() {
-  dd if=/dev/zero of=$2 bs=10 count=1 seek=$1 conv=notrunc &>/dev/null
-}
+source functions.sh
 
 offset=$[1 + RANDOM % 100]
 

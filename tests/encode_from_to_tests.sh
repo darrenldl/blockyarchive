@@ -2,9 +2,7 @@
 
 exit_code=0
 
-corrupt() {
-  dd if=/dev/zero of=$2 bs=10 count=1 seek=$1 conv=notrunc &>/dev/null
-}
+source functions.sh
 
 for (( i=0; i < 10; i++ )); do
   from=$[RANDOM % 1000]
