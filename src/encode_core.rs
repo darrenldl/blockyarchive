@@ -41,10 +41,11 @@ use crate::misc_utils::{PositionOrLength, RangeEnd};
 pub struct Stats {
     uid: [u8; SBX_FILE_UID_LEN],
     version: Version,
+    chunk_size: u64,
     hash_bytes: Option<multihash::HashBytes>,
-    pub meta_blocks_written: u32,
-    pub data_blocks_written: u32,
-    pub parity_blocks_written: u32,
+    pub meta_blocks_written: u64,
+    pub data_blocks_written: u64,
+    pub parity_blocks_written: u64,
     pub data_padding_bytes: usize,
     pub in_file_size: u64,
     pub out_file_size: u64,
@@ -225,6 +226,7 @@ impl Stats {
         Stats {
             uid: param.uid,
             version: param.version,
+            chunk_size: ver_to_data_size(param.version) as u64,
             hash_bytes: None,
             meta_blocks_written: 0,
             data_blocks_written: 0,
@@ -259,13 +261,13 @@ impl ProgressReport for Stats {
     }
 
     fn units_so_far(&self) -> u64 {
-        self.data_blocks_written as u64 * ver_to_data_size(self.version) as u64
+        self.data_blocks_written * self.chunk_size
     }
 
     fn total_units(&self) -> Option<u64> {
         match self.total_data_blocks {
             None => None,
-            Some(x) => Some(x * ver_to_data_size(self.version) as u64),
+            Some(x) => Some(x * self.chunk_size),
         }
     }
 }

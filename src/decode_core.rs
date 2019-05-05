@@ -71,6 +71,7 @@ pub enum DecodeFailStats {
 pub struct Stats {
     uid: [u8; SBX_FILE_UID_LEN],
     version: Version,
+    block_size: u64,
     pub meta_blocks_decoded: u64,
     pub data_blocks_decoded: u64,
     pub parity_blocks_decoded: u64,
@@ -376,9 +377,11 @@ impl Stats {
                 parity_blocks_decode_failed: 0,
             }),
         };
+        let version = ref_block.get_version();
         Stats {
             uid: ref_block.get_uid(),
-            version: ref_block.get_version(),
+            version,
+            block_size: ver_to_block_size(version) as u64,
             blocks_decode_failed,
             meta_blocks_decoded: 0,
             data_blocks_decoded: 0,
@@ -500,11 +503,11 @@ impl ProgressReport for Stats {
     }
 
     fn units_so_far(&self) -> u64 {
-        self.blocks_so_far() * ver_to_block_size(self.version) as u64
+        self.blocks_so_far() * self.block_size
     }
 
     fn total_units(&self) -> Option<u64> {
-        Some(self.total_blocks * ver_to_block_size(self.version) as u64)
+        Some(self.total_blocks * self.block_size)
     }
 }
 
