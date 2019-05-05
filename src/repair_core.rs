@@ -31,6 +31,7 @@ use crate::sbx_block::BlockType;
 #[derive(Clone, Debug)]
 pub struct Stats {
     version: Version,
+    block_size: u64,
     pub meta_blocks_decoded: u64,
     pub data_or_par_blocks_decoded: u64,
     pub blocks_decode_failed: u64,
@@ -45,8 +46,10 @@ pub struct Stats {
 
 impl Stats {
     pub fn new(ref_block: &Block, total_blocks: u64, json_printer: &Arc<JSONPrinter>) -> Stats {
+        let version = ref_block.get_version();
         Stats {
-            version: ref_block.get_version(),
+            version,
+            block_size: ver_to_block_size(version),
             blocks_decode_failed: 0,
             meta_blocks_decoded: 0,
             data_or_par_blocks_decoded: 0,
@@ -75,11 +78,11 @@ impl ProgressReport for Stats {
     }
 
     fn units_so_far(&self) -> u64 {
-        self.blocks_so_far() * ver_to_block_size(self.version) as u64
+        self.blocks_so_far() * self.block_size
     }
 
     fn total_units(&self) -> Option<u64> {
-        Some(self.total_blocks * ver_to_block_size(self.version) as u64)
+        Some(self.total_blocks * self.block_size)
     }
 }
 
