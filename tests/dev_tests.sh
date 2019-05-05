@@ -56,6 +56,7 @@ while (( $i < $test_count )); do
       mkdir $t/
       cd $t
       ./../gen_dummy.sh
+      cp ../functions.sh .
       ./../$t.sh > log 2> stderr_log &
       cd ..
 
