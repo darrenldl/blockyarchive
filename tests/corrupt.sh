@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function corrupt() {
+corrupt() {
     byte_orig=$(mktemp)
     byte_cur=$(mktemp)
     dd if=$2 of=$byte_orig bs=1 count=1 skip=$1 &>/dev/null
