@@ -3,7 +3,7 @@
 exit_code=0
 
 corrupt() {
-  dd if=/dev/zero of=$2 bs=1 count=1 seek=$1 conv=notrunc &>/dev/null
+  dd if=/dev/zero of=$2 bs=10 count=1 seek=$1 conv=notrunc &>/dev/null
 }
 
 echo "Testing version 1"

@@ -5,7 +5,7 @@ exit_code=0
 offset=$[1 + RANDOM % 100]
 
 corrupt() {
-  dd if=/dev/zero of=$2 bs=1 count=1 seek=$1 conv=notrunc &>/dev/null
+  dd if=/dev/zero of=$2 bs=10 count=1 seek=$1 conv=notrunc &>/dev/null
 }
 
 file_size=$(ls -l dummy | awk '{ print $5 }')
