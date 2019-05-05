@@ -94,6 +94,7 @@ impl Param {
 #[derive(Clone, Debug)]
 pub struct Stats {
     version: Version,
+    block_size: u64,
     pub meta_blocks_decoded: u64,
     pub data_blocks_decoded: u64,
     pub parity_blocks_decoded: u64,
@@ -115,8 +116,10 @@ impl Stats {
     pub fn new(ref_block: &Block, file_size: u64, json_printer: &Arc<JSONPrinter>) -> Stats {
         use crate::file_utils::from_container_size::calc_total_block_count;
         let total_blocks = calc_total_block_count(ref_block.get_version(), file_size);
+        let version = ref_block.get_version();
         Stats {
-            version: ref_block.get_version(),
+            version,
+            block_size: ver_to_block_size(version),
             meta_blocks_decoded: 0,
             data_blocks_decoded: 0,
             parity_blocks_decoded: 0,
@@ -154,11 +157,11 @@ impl ProgressReport for Stats {
     }
 
     fn units_so_far(&self) -> u64 {
-        self.blocks_so_far() * ver_to_block_size(self.version) as u64
+        self.blocks_so_far() * self.block_size
     }
 
     fn total_units(&self) -> Option<u64> {
-        Some(self.total_blocks * ver_to_block_size(self.version) as u64)
+        Some(self.total_blocks * self.block_size)
     }
 }
 
