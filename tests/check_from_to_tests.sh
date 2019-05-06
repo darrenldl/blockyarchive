@@ -2,9 +2,7 @@
 
 exit_code=0
 
-corrupt() {
-  dd if=/dev/zero of=$2 bs=1 count=1 seek=$1 conv=notrunc &>/dev/null
-}
+source functions.sh
 
 echo -n "Encoding"
 output=$(./../blkar encode --json -f dummy --uid DEADBEEF0001)
