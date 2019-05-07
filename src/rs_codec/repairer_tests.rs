@@ -122,7 +122,7 @@ fn test_repairer_repair_properly_simple_cases() {
             assert_eq!(pos, blocks[0].0);
             let mut block = Block::dummy();
 
-            block.sync_from_buffer(blocks[0].1, None).unwrap();
+            block.sync_from_buffer(blocks[0].1, None, None).unwrap();
             assert_eq!(1 + 0, block.get_seq_num());
             assert_eq!([0; 6], block.get_uid());
             assert_eq!(Version::V17, block.get_version());
@@ -133,7 +133,7 @@ fn test_repairer_repair_properly_simple_cases() {
             assert_eq!(pos, blocks[1].0);
             let mut block = Block::dummy();
 
-            block.sync_from_buffer(blocks[1].1, None).unwrap();
+            block.sync_from_buffer(blocks[1].1, None, None).unwrap();
             assert_eq!(1 + 5, block.get_seq_num());
             assert_eq!([0; 6], block.get_uid());
             assert_eq!(Version::V17, block.get_version());
@@ -144,7 +144,7 @@ fn test_repairer_repair_properly_simple_cases() {
             assert_eq!(pos, blocks[2].0);
             let mut block = Block::dummy();
 
-            block.sync_from_buffer(blocks[2].1, None).unwrap();
+            block.sync_from_buffer(blocks[2].1, None, None).unwrap();
             assert_eq!(1 + 11, block.get_seq_num());
             assert_eq!([0; 6], block.get_uid());
             assert_eq!(Version::V17, block.get_version());
@@ -372,7 +372,7 @@ quickcheck! {
 
                     let mut block = Block::dummy();
 
-                    block.sync_from_buffer(b, None).unwrap();
+                    block.sync_from_buffer(b, None, None).unwrap();
                     if !(block.get_seq_num() == start_seq_num + corrupt_pos_s[i] as u32
                          && block.get_uid() == uid
                          && block.get_version() == version) {
