@@ -32,7 +32,9 @@
         - Encode
         - Repair
         - Sort
+
 - Fixed crashing bug in repair mode
+  
     - In repair mode, if the version number of any data block is using a version number which size exceeds the one associated with version number of reference block, then blkar panics and crashes
         - For example, for a EC-SeqBox archive of version 17, if any of the data block is changed to version 19 in its header, then blkar will crash, as version 17 is of block size 512 bytes, while version 19 is of block size 4096 bytes
     - The reason is that the buffer size in the RS codec is fixed at the beginning based on the version number of reference block (the buffer is used for all later decoding of blocks), and even though a predicate was already provided in repair mode for tackling this, predicate checking in `sbx_block::sync_from_buffer` at the time only occurs after header parsing and reading from buffer as the predicate is a block predicate
