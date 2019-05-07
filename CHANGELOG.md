@@ -33,7 +33,7 @@
         - Repair
         - Sort
 
-- Fixed crashing bug in repair mode (see issue [#191](https://github.com/darrenldl/blockyarchive/issues/191)) in PR [#192](https://github.com/darrenldl/blockyarchive/pull/192)
+- Fixed crashing bug in repair mode (issue [#191](https://github.com/darrenldl/blockyarchive/issues/191)) in PR [#192](https://github.com/darrenldl/blockyarchive/pull/192)
   
     - In repair mode, if the version number of any data block is using a version number which size exceeds the one associated with version number of reference block, then blkar panics and crashes
         - For example, for a EC-SeqBox archive of version 17, if any of the data block is changed to version 19 in its header, then blkar will crash, as version 17 is of block size 512 bytes, while version 19 is of block size 4096 bytes
