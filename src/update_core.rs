@@ -252,7 +252,7 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let version = ref_block.get_version();
 
-    let pred = block_pred_same_ver_uid!(ref_block);
+    let header_pred = header_pred_same_ver_uid!(ref_block);
 
     let burst = get_burst_or_guess!(no_offset => param, ref_block_pos, ref_block);
 
@@ -312,7 +312,7 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
 
         break_if_eof_seen!(read_res);
 
-        let block_okay = match block.sync_from_buffer(&buffer, Some(&pred)) {
+        let block_okay = match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
             Ok(()) => true,
             Err(_) => false,
         } && block.is_meta();

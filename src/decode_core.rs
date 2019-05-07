@@ -680,7 +680,7 @@ pub fn decode(
 
     let version = ref_block.get_version();
 
-    let pred = block_pred_same_ver_uid!(ref_block);
+    let header_pred = header_pred_same_ver_uid!(ref_block);
 
     // calulate length to read and position to seek to
     let RequiredLenAndSeekTo {
@@ -738,7 +738,7 @@ pub fn decode(
 
                 break_if_eof_seen!(read_res);
 
-                if let Err(_) = block.sync_from_buffer(&buffer, Some(&pred)) {
+                if let Err(_) = block.sync_from_buffer(&buffer, Some(&header_pred), None) {
                     stats.incre_blocks_failed();
                     continue;
                 }
@@ -877,7 +877,7 @@ pub fn decode(
                             reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
                         let decode_successful = !read_res.eof_seen
-                            && match block.sync_from_buffer(&buffer, Some(&pred)) {
+                            && match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
                                 Ok(()) => true,
                                 Err(_) => false,
                             };
@@ -912,7 +912,7 @@ pub fn decode(
                         ))?;
 
                         let decode_successful = !read_res.eof_seen
-                            && match block.sync_from_buffer(&buffer, Some(&pred)) {
+                            && match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
                                 Ok(_) => block.get_seq_num() == seq_num,
                                 _ => false,
                             };
@@ -997,10 +997,11 @@ pub fn decode(
                             data_par_burst,
                         );
 
-                        let block_okay = match block.sync_from_buffer(&buffer, Some(&pred)) {
-                            Ok(_) => block.get_seq_num() == seq_num,
-                            Err(_) => false,
-                        };
+                        let block_okay =
+                            match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
+                                Ok(_) => block.get_seq_num() == seq_num,
+                                Err(_) => false,
+                            };
 
                         if block_okay {
                             let block_seq_num = block.get_seq_num();

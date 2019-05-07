@@ -17,6 +17,7 @@ use crate::sbx_specs::Version;
 
 use crate::sbx_block;
 use crate::sbx_block::Block;
+use crate::sbx_block::Header;
 use crate::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use crate::sbx_specs::{ver_to_block_size, ver_to_usize};
 
@@ -171,7 +172,7 @@ impl Param {
 
 fn update_rs_codec_and_stats(
     version: Version,
-    pred: &Fn(&Block) -> bool,
+    header_pred: &Fn(&Header) -> bool,
     read_res: &ReadResult,
     block: &mut Block,
     cur_seq_num: u32,
@@ -184,7 +185,9 @@ fn update_rs_codec_and_stats(
         // read an incomplete block
         stats.blocks_decode_failed += 1;
         rs_codec.mark_missing()
-    } else if let Err(_) = block.sync_from_buffer(rs_codec.get_block_buffer(), Some(pred)) {
+    } else if let Err(_) =
+        block.sync_from_buffer(rs_codec.get_block_buffer(), Some(header_pred), None)
+    {
         stats.blocks_decode_failed += 1;
         rs_codec.mark_missing()
     } else {
@@ -307,7 +310,7 @@ pub fn repair_file(param: &Param) -> Result<Option<Stats>, Error> {
         param.json_printer.json_enabled(),
     ));
 
-    let pred = block_pred_same_ver_uid!(ref_block);
+    let header_pred = header_pred_same_ver_uid!(ref_block);
 
     let mut rs_codec = RSRepairer::new(
         &param.json_printer,
@@ -335,7 +338,7 @@ pub fn repair_file(param: &Param) -> Result<Option<Stats>, Error> {
             let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
             let block_broken = read_res.eof_seen
-                || match block.sync_from_buffer(&buffer, Some(&pred)) {
+                || match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
                     Ok(()) => false,
                     Err(_) => true,
                 };
@@ -396,7 +399,7 @@ pub fn repair_file(param: &Param) -> Result<Option<Stats>, Error> {
 
         let codec_state = update_rs_codec_and_stats(
             version,
-            &pred,
+            &header_pred,
             &read_res,
             &mut block,
             seq_num,
