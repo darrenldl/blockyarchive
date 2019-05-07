@@ -997,10 +997,11 @@ pub fn decode(
                             data_par_burst,
                         );
 
-                        let block_okay = match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
-                            Ok(_) => block.get_seq_num() == seq_num,
-                            Err(_) => false,
-                        };
+                        let block_okay =
+                            match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
+                                Ok(_) => block.get_seq_num() == seq_num,
+                                Err(_) => false,
+                            };
 
                         if block_okay {
                             let block_seq_num = block.get_seq_num();

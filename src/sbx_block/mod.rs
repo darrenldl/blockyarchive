@@ -811,7 +811,7 @@ impl Block {
 
         if let Some(pred) = header_pred {
             if !pred(&self.header) {
-                return Err(Error::FailedPred)
+                return Err(Error::FailedPred);
             }
         }
 

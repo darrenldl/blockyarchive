@@ -16,8 +16,8 @@ use crate::general_error::Error;
 use crate::sbx_specs::Version;
 
 use crate::sbx_block;
-use crate::sbx_block::Header;
 use crate::sbx_block::Block;
+use crate::sbx_block::Header;
 use crate::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use crate::sbx_specs::{ver_to_block_size, ver_to_usize};
 
@@ -185,7 +185,9 @@ fn update_rs_codec_and_stats(
         // read an incomplete block
         stats.blocks_decode_failed += 1;
         rs_codec.mark_missing()
-    } else if let Err(_) = block.sync_from_buffer(rs_codec.get_block_buffer(), Some(header_pred), None) {
+    } else if let Err(_) =
+        block.sync_from_buffer(rs_codec.get_block_buffer(), Some(header_pred), None)
+    {
         stats.blocks_decode_failed += 1;
         rs_codec.mark_missing()
     } else {

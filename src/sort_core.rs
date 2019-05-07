@@ -351,7 +351,11 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                 read_res.eof_seen || {
                                     // if block at output position is a valid metadata block,
                                     // then don't overwrite
-                                    match check_block.sync_from_buffer(&check_buffer, Some(&header_pred), None) {
+                                    match check_block.sync_from_buffer(
+                                        &check_buffer,
+                                        Some(&header_pred),
+                                        None,
+                                    ) {
                                         Ok(()) => check_block.get_seq_num() != 0,
                                         Err(_) => true,
                                     }
@@ -414,7 +418,11 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                         read_res.eof_seen || {
                             // if block at output position is a valid block and has same seq number,
                             // then don't overwrite
-                            match check_block.sync_from_buffer(&check_buffer, Some(&header_pred), None) {
+                            match check_block.sync_from_buffer(
+                                &check_buffer,
+                                Some(&header_pred),
+                                None,
+                            ) {
                                 Ok(()) => check_block.get_seq_num() != block.get_seq_num(),
                                 Err(_) => true,
                             }
