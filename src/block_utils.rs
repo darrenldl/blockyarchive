@@ -366,7 +366,7 @@ pub fn guess_burst_err_resistance_level(
 
     let mut blocks_processed = 0;
 
-    let pred = block_pred_same_ver_uid!(ref_block);
+    let header_pred = header_pred_same_ver_uid!(ref_block);
 
     reader.seek(SeekFrom::Start(from_pos))?;
 
@@ -383,7 +383,7 @@ pub fn guess_burst_err_resistance_level(
             break;
         }
 
-        seq_nums[blocks_processed] = match block.sync_from_buffer(&buffer, Some(&pred)) {
+        seq_nums[blocks_processed] = match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
             Ok(()) => Some(block.get_seq_num()),
             Err(_) => None,
         };
@@ -473,7 +473,7 @@ pub fn guess_starting_block_index(
 
     let mut block_index_count: HashMap<u64, usize, _> = HashMap::with_capacity(block_indices.len());
 
-    let pred = block_pred_same_ver_uid!(ref_block);
+    let header_pred = header_pred_same_ver_uid!(ref_block);
 
     reader.seek(SeekFrom::Start(from_pos))?;
 
@@ -491,7 +491,7 @@ pub fn guess_starting_block_index(
             break;
         }
 
-        block_indices[blocks_processed] = match block.sync_from_buffer(&buffer, Some(&pred)) {
+        block_indices[blocks_processed] = match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
             Ok(()) => {
                 if block.is_meta() {
                     None
