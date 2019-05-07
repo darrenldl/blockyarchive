@@ -133,7 +133,7 @@ pub fn read_block_lazily(
             });
         }
 
-        match block.sync_from_buffer(&buffer[0..block_size], None) {
+        match block.sync_from_buffer(&buffer[0..block_size], None, None) {
             Ok(()) => {}
             Err(_) => {
                 return Ok(LazyReadResult {

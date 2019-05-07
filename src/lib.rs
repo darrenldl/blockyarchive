@@ -52,6 +52,9 @@ mod misc_macros;
 mod cli_macros;
 
 #[macro_use]
+mod header_preds;
+
+#[macro_use]
 mod block_preds;
 
 mod block_utils;

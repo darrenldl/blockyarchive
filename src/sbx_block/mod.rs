@@ -6,7 +6,7 @@ mod metadata;
 mod metadata_tests;
 mod tests;
 
-use self::header::Header;
+pub use self::header::Header;
 pub use self::metadata::make_distribution_string;
 pub use self::metadata::make_too_much_meta_err_string;
 pub use self::metadata::Metadata;
@@ -205,7 +205,7 @@ pub fn slice_data_buf_mut(version: Version, buffer: &mut [u8]) -> &mut [u8] {
 pub fn check_if_buffer_valid(buffer: &[u8]) -> bool {
     let mut block = Block::new(Version::V1, b"\x00\x00\x00\x00\x00\x00", BlockType::Data);
 
-    match block.sync_from_buffer(buffer, None) {
+    match block.sync_from_buffer(buffer, None, None) {
         Ok(()) => {}
         Err(_) => {
             return false;
@@ -805,9 +805,16 @@ impl Block {
     pub fn sync_from_buffer(
         &mut self,
         buffer: &[u8],
+        header_pred: Option<&Fn(&Header) -> bool>,
         pred: Option<&Fn(&Block) -> bool>,
     ) -> Result<(), Error> {
         self.sync_from_buffer_header_only(buffer)?;
+
+        if let Some(pred) = header_pred {
+            if !pred(&self.header) {
+                return Err(Error::FailedPred)
+            }
+        }
 
         check_buffer!(self, buffer);
 

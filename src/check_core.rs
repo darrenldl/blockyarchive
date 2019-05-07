@@ -214,6 +214,8 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
     let mut block_pos: u64;
     let mut bytes_processed: u64 = 0;
 
+    let header_pred = header_pred_same_ver_uid!(ref_block);
+
     reporter.start();
 
     // seek to calculated position
@@ -240,7 +242,7 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
 
         break_if_eof_seen!(read_res);
 
-        match block.sync_from_buffer(&buffer, None) {
+        match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
             Ok(_) => match block.block_type() {
                 BlockType::Meta => {
                     stats.meta_or_par_blocks_decoded += 1;
