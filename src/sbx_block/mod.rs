@@ -146,7 +146,6 @@ macro_rules! check_buffer {
     ) => {
         if $buf.len() < block_size!($self) {
             panic!("Insufficient buffer size");
-            //return Err(Error::InsufficientBufferSize);
         }
     };
 }
