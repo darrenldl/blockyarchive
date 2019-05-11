@@ -42,6 +42,16 @@
     - This is fixed by adding a `header_pred` parameter for `sbx_block::sync_from_buffer`, and changing all predicates supplied to `sbx_block::sync_from_buffer` from block predicates to header predicates when possible
         - In repair mode case, this means now the block is filtered before reading from buffer takes place, if the block is not of the correct version, thus mitigating the issue
 
+- Changed encoding defaults
+  
+    - From `sbx-version=17, rs-data=10, rs-parity=2, burst=10`
+  
+    - To `sbx-version=17, rs-data=10, rs-parity=2, burst=12`
+  
+    - This means by default the archive can survive burst sector error of size 3 on modern disks where sector size is 4096 bytes
+  
+    - Bumped major version as this may break backward compatibility
+
 ## 6.0.1
 
 - Minor fixes for rescue and decode mode help messages
