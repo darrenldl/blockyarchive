@@ -48,7 +48,7 @@
   
     - To `sbx-version=17, rs-data=10, rs-parity=2, burst=12`
   
-    - This means by default the archive can survive burst sector error of size 3 on modern disks where sector size is 4096 bytes
+    - This means now by default the archive can survive burst sector error of size 3 on modern disks where the sector size is 4096 bytes
   
     - Bumped major version as this may break backward compatibility
 
