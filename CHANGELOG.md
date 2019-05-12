@@ -28,6 +28,7 @@
   
     - Encode stdin mode now reports current rate and time used during encoding, and shows normal progress stats at the end
     - The following modes now use "bytes" as units for progress reporting instead of "chunks" or "blocks"
+        - Check
         - Decode
         - Encode
         - Repair
