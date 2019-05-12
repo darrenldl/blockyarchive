@@ -284,6 +284,17 @@ fn check_blocks(
     Ok(())
 }
 
+fn check_hash(
+    param: &Param,
+    ctrlc_stop_flag: &Arc<AtomicBool>,
+    required_len: u64,
+    seek_to: u64,
+    ref_block: &Block,
+    stats: &Arc<Mutex<HashStats>>,
+) -> Result<(), Error> {
+    Ok(())
+}
+
 pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
