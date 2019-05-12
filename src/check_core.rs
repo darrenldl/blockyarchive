@@ -3,8 +3,8 @@ use crate::misc_utils;
 use crate::progress_report::*;
 use std::fmt;
 use std::io::SeekFrom;
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, Mutex};
 
 use crate::misc_utils::RequiredLenAndSeekTo;
 
@@ -162,7 +162,14 @@ impl fmt::Display for Stats {
     }
 }
 
-fn check_blocks(param: &Param, ctrlc_stop_flag: &Arc<AtomicBool>, required_len: u64, seek_to: u64, ref_block: &Block, stats: &Arc<Mutex<Stats>>) -> Result<(), Error> {
+fn check_blocks(
+    param: &Param,
+    ctrlc_stop_flag: &Arc<AtomicBool>,
+    required_len: u64,
+    seek_to: u64,
+    ref_block: &Block,
+    stats: &Arc<Mutex<Stats>>,
+) -> Result<(), Error> {
     let json_printer = &param.json_printer;
 
     let version = ref_block.get_version();
@@ -212,10 +219,7 @@ fn check_blocks(param: &Param, ctrlc_stop_flag: &Arc<AtomicBool>, required_len: 
 
         break_if_reached_required_len!(bytes_processed, required_len);
 
-        let read_res = reader.read(sbx_block::slice_buf_mut(
-            version,
-            &mut buffer,
-        ))?;
+        let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
         block_pos = bytes_processed;
         bytes_processed += read_res.len_read as u64;
@@ -234,10 +238,7 @@ fn check_blocks(param: &Param, ctrlc_stop_flag: &Arc<AtomicBool>, required_len: 
             Err(_) => {
                 // only report error if the buffer is not completely blank
                 // unless report blank is true
-                if misc_utils::buffer_is_blank(sbx_block::slice_buf(
-                    version,
-                    &buffer,
-                )) {
+                if misc_utils::buffer_is_blank(sbx_block::slice_buf(version, &buffer)) {
                     if param.report_blank {
                         if json_printer.json_enabled() {
                             if param.verbose {
@@ -306,7 +307,14 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
         &param.json_printer,
     )));
 
-    check_blocks(param, &ctrlc_stop_flag, required_len, seek_to, &ref_block, &stats)?;
+    check_blocks(
+        param,
+        &ctrlc_stop_flag,
+        required_len,
+        seek_to,
+        &ref_block,
+        &stats,
+    )?;
 
     let stats = stats.lock().unwrap().clone();
 
