@@ -4,6 +4,7 @@ use crate::progress_report::*;
 use std::fmt;
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::AtomicBool;
 
 use crate::misc_utils::RequiredLenAndSeekTo;
 
@@ -161,35 +162,10 @@ impl fmt::Display for Stats {
     }
 }
 
-pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
-    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
-
+fn check_blocks(param: &Param, ctrlc_stop_flag: &Arc<AtomicBool>, required_len: u64, seek_to: u64, ref_block: &Block, stats: &Arc<Mutex<Stats>>) -> Result<(), Error> {
     let json_printer = &param.json_printer;
 
-    let (_, ref_block) = get_ref_block!(param, json_printer, ctrlc_stop_flag);
-
-    let file_size = file_utils::get_file_size(&param.in_file)?;
-
     let version = ref_block.get_version();
-
-    // calulate length to read and position to seek to
-    let RequiredLenAndSeekTo {
-        required_len,
-        seek_to,
-    } = misc_utils::calc_required_len_and_seek_to_from_byte_range(
-        param.from_pos,
-        param.to_pos,
-        param.force_misalign,
-        0,
-        PositionOrLength::Len(file_size),
-        Some(ver_to_block_size(version) as u64),
-    );
-
-    let stats = Arc::new(Mutex::new(Stats::new(
-        &ref_block,
-        required_len,
-        &param.json_printer,
-    )));
 
     let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
@@ -211,9 +187,9 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
         param.json_printer.json_enabled(),
     ));
 
-    let ver_usize = ver_to_usize(ref_block.get_version());
+    let ver_usize = ver_to_usize(version);
 
-    let block_size = ver_to_block_size(ref_block.get_version());
+    let block_size = ver_to_block_size(version);
 
     let mut block_pos: u64;
     let mut bytes_processed: u64 = 0;
@@ -237,7 +213,7 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
         break_if_reached_required_len!(bytes_processed, required_len);
 
         let read_res = reader.read(sbx_block::slice_buf_mut(
-            ref_block.get_version(),
+            version,
             &mut buffer,
         ))?;
 
@@ -259,7 +235,7 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
                 // only report error if the buffer is not completely blank
                 // unless report blank is true
                 if misc_utils::buffer_is_blank(sbx_block::slice_buf(
-                    ref_block.get_version(),
+                    version,
                     &buffer,
                 )) {
                     if param.report_blank {
@@ -300,6 +276,37 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
     }
 
     reporter.stop();
+
+    Ok(())
+}
+
+pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
+    let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
+
+    let (_, ref_block) = get_ref_block!(param, &param.json_printer, ctrlc_stop_flag);
+
+    let file_size = file_utils::get_file_size(&param.in_file)?;
+
+    // calulate length to read and position to seek to
+    let RequiredLenAndSeekTo {
+        required_len,
+        seek_to,
+    } = misc_utils::calc_required_len_and_seek_to_from_byte_range(
+        param.from_pos,
+        param.to_pos,
+        param.force_misalign,
+        0,
+        PositionOrLength::Len(file_size),
+        Some(ver_to_block_size(ref_block.get_version()) as u64),
+    );
+
+    let stats = Arc::new(Mutex::new(Stats::new(
+        &ref_block,
+        required_len,
+        &param.json_printer,
+    )));
+
+    check_blocks(param, &ctrlc_stop_flag, required_len, seek_to, &ref_block, &stats)?;
 
     let stats = stats.lock().unwrap().clone();
 
