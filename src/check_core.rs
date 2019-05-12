@@ -102,6 +102,13 @@ impl Stats {
             json_printer: Arc::clone(json_printer),
         }
     }
+
+    fn blocks_so_far(&self) -> u64 {
+        self.meta_or_par_blocks_decoded
+            + self.data_or_par_blocks_decoded
+            + self.blocks_decode_failed
+            + self.okay_blank_blocks
+    }
 }
 
 impl ProgressReport for Stats {
@@ -114,11 +121,7 @@ impl ProgressReport for Stats {
     }
 
     fn units_so_far(&self) -> u64 {
-        (self.meta_or_par_blocks_decoded
-            + self.data_or_par_blocks_decoded
-            + self.blocks_decode_failed
-            + self.okay_blank_blocks)
-            * self.block_size
+        self.blocks_so_far() * self.block_size
     }
 
     fn total_units(&self) -> Option<u64> {
@@ -143,7 +146,7 @@ impl fmt::Display for Stats {
             ver_to_usize(self.version)
         )?;
         write_maybe_json!(f, json_printer, "Block size used in checking              : {}", block_size                         => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks processed               : {}", self.units_so_far()                => skip_quotes)?;
+        write_maybe_json!(f, json_printer, "Number of blocks processed               : {}", self.blocks_so_far()                => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks passed check (metadata) : {}", self.meta_or_par_blocks_decoded    => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks passed check (data)     : {}", self.data_or_par_blocks_decoded    => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks failed check            : {}", self.blocks_decode_failed          => skip_quotes)?;
