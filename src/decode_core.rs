@@ -587,32 +587,15 @@ pub fn decode(
         None
     };
 
-    let data_par_burst = if ver_uses_rs(ref_block.get_version()) && ref_block.is_meta() {
-        match (ref_block.get_RSD(), ref_block.get_RSP()) {
-            (Ok(Some(data)), Ok(Some(parity))) => {
-                let data = data as usize;
-                let parity = parity as usize;
-
-                // try to obtain burst error resistance level
-                match param.burst {
-                    Some(l) => Some((data, parity, l)),
-                    None => match block_utils::guess_burst_err_resistance_level(
-                        &param.in_file,
-                        get_guess_burst_from_pos_from_param!(param),
-                        param.force_misalign,
-                        ref_block_pos,
-                        &ref_block,
-                    ) {
-                        Ok(Some(l)) => Some((data, parity, l)),
-                        _ => Some((data, parity, 0)), // assume burst resistance level is 0
-                    },
-                }
-            }
-            _ => None,
-        }
-    } else {
-        None
-    };
+    let data_par_burst = block_utils::get_data_par_burst_from_ref_block_and_in_file(
+        ref_block_pos,
+        ref_block,
+        param.burst,
+        param.from_pos,
+        param.guess_burst_from_pos,
+        param.force_misalign,
+        &param.in_file,
+    );
 
     let data_size = ver_to_data_size(ref_block.get_version());
     let data_size_of_last_data_block = match orig_file_size {
