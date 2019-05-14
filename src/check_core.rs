@@ -18,8 +18,10 @@ use crate::sbx_block::{Block, BlockType};
 use crate::general_error::Error;
 use crate::sbx_specs::Version;
 
+use crate::multihash::*;
+
 use crate::sbx_block;
-use crate::sbx_specs::{ver_to_block_size, ver_to_usize, SBX_LARGEST_BLOCK_SIZE};
+use crate::sbx_specs::{ver_to_block_size, ver_to_data_size, ver_to_usize, SBX_LARGEST_BLOCK_SIZE};
 
 use crate::block_utils;
 use crate::time_utils;
@@ -320,6 +322,7 @@ fn check_hash(
     ref_block_pos: u64,
     ref_block: &Block,
     stats: &Arc<Mutex<HashStats>>,
+    hash_ctx: hash::Ctx,
 ) -> Result<(), Error> {
     let data_par_burst = block_utils::get_data_par_burst_from_ref_block_and_in_file(
         ref_block_pos,
@@ -334,6 +337,8 @@ fn check_hash(
     let json_printer = &param.json_printer;
 
     let version = ref_block.get_version();
+
+    let data_chunk_size = ver_to_data_size(version) as u64;
 
     let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
@@ -359,11 +364,73 @@ fn check_hash(
 
     let read_pattern = ReadPattern::new(param.from_pos, param.to_pos, data_par_burst);
 
+    let stored_hash_bytes = ref_block.get_HSH().unwrap().unwrap();
+
+    let mut bytes_hashed = 0u64;
+
     reporter.start();
 
-    // go through data and parity blocks
-    let mut seq_num = 1;
-    loop {
+    match read_pattern {
+        ReadPattern::BurstErrorResistant(data, parity, _) => {
+            // go through data and parity blocks
+            let mut seq_num = 1;
+            loop {
+                let mut stats = stats.lock().unwrap();
+
+                break_if_atomic_bool!(ctrlc_stop_flag);
+
+                let pos = sbx_block::calc_data_block_write_pos(
+                    ref_block.get_version(),
+                    seq_num,
+                    None,
+                    data_par_burst,
+                );
+
+                reader.seek(SeekFrom::Start(pos + seek_to))?;
+
+                // read at reference block block size
+                let read_res = reader.read(sbx_block::slice_buf_mut(
+                    ref_block.get_version(),
+                    &mut buffer,
+                ))?;
+
+                let decode_successful = !read_res.eof_seen
+                    && match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
+                        Ok(_) => block.get_seq_num() == seq_num,
+                        _ => false,
+                    };
+
+                let bytes_remaining = stats.total_bytes - stats.bytes_processed;
+
+                let is_last_data_block = bytes_remaining <= data_chunk_size;
+
+                if !sbx_block::seq_num_is_meta(seq_num)
+                    && !sbx_block::seq_num_is_parity(seq_num, data, parity) {
+                    if decode_successful {
+                        let slice = if is_last_data_block {
+                            &sbx_block::slice_data_buf(version, &buffer)
+                                [0..bytes_remaining as usize]
+
+                        } else {
+                            sbx_block::slice_data_buf(version, &buffer)
+                        };
+
+                        // hash data chunk
+                        hash_ctx.update(slice);
+
+                        stats.bytes_processed += slice.len() as u64;
+                    } else {
+                        return Err(Error::with_msg("Failed to decode data block"));
+                    }
+                }
+
+                if is_last_data_block {
+                    break;
+                }
+
+                incre_or_break_if_last!(seq_num => seq_num);
+            }
+        }
     }
 
     reporter.stop();
@@ -407,6 +474,31 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
         _ => true,
     };
 
+    let (orig_file_size, hash_ctx) =
+        if do_hash {
+            if ref_block.is_data() {
+                return Err(Error::with_msg("Reference block is not a metadata block"));
+            } else {
+                let orig_file_size = match ref_block.get_FSZ().unwrap() {
+                    None => return Err(Error::with_msg("Reference block does not have a file size field")),
+                    Some(x) => x
+                };
+
+                let hash_ctx =
+                    match ref_block.get_HSH().unwrap() {
+                        None => return Err(Error::with_msg("Reference block does not have a hash field")),
+                        Some(&(ht, _)) => match hash::Ctx::new(ht) {
+                            Err(()) => return Err(Error::with_msg("Unsupported hash algorithm")),
+                            Ok(ctx) => ctx
+                        }
+                    };
+
+                (Some(orig_file_size), Some(hash_ctx))
+            }
+        } else {
+            (None, None)
+        };
+
     if do_check {
         check_blocks(
             param,
@@ -421,7 +513,7 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
     let mut stats = stats.lock().unwrap().clone();
 
     if do_hash {
-        let hash_stats = Arc::new(Mutex::new(HashStats::new(file_size)));
+        let hash_stats = Arc::new(Mutex::new(HashStats::new(orig_file_size.unwrap())));
 
         check_hash(
             param,
@@ -431,6 +523,7 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
             ref_block_pos,
             &ref_block,
             &hash_stats,
+            hash_ctx.unwrap(),
         )?;
 
         stats.hash_stats = Some(hash_stats.lock().unwrap().clone());
