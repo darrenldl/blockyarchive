@@ -1,5 +1,6 @@
 use crate::check_core;
 use crate::check_core::Param;
+use crate::check_core::HashAction;
 
 use crate::cli_utils::*;
 use clap::*;
@@ -57,6 +58,14 @@ pub fn check<'a>(matches: &ArgMatches<'a>) -> i32 {
     let ref_from_pos = get_ref_from_pos!(matches, json_printer);
     let ref_to_pos = get_ref_to_pos!(matches, json_printer);
 
+    let hash_action = if matches.is_present("hash") {
+        HashAction::HashAfterCheck
+    } else if matches.is_present("hash_only") {
+        HashAction::HashOnly
+    } else {
+        HashAction::NoHash
+    };
+
     let param = Param::new(
         get_ref_block_choice!(matches),
         ref_from_pos,
@@ -66,6 +75,7 @@ pub fn check<'a>(matches: &ArgMatches<'a>) -> i32 {
         from_pos,
         to_pos,
         matches.is_present("force_misalign"),
+        hash_action,
         in_file,
         matches.is_present("verbose"),
         pr_verbosity_level,

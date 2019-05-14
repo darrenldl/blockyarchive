@@ -26,6 +26,12 @@ use crate::time_utils;
 use crate::block_utils::RefBlockChoice;
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
+pub enum HashAction {
+    NoHash,
+    HashAfterCheck,
+    HashOnly,
+}
+
 pub struct Param {
     ref_block_choice: RefBlockChoice,
     ref_block_from_pos: Option<u64>,
@@ -35,6 +41,7 @@ pub struct Param {
     from_pos: Option<u64>,
     to_pos: Option<RangeEnd<u64>>,
     force_misalign: bool,
+    hash_action: HashAction,
     in_file: String,
     verbose: bool,
     pr_verbosity_level: PRVerbosityLevel,
@@ -50,6 +57,7 @@ impl Param {
         from_pos: Option<u64>,
         to_pos: Option<RangeEnd<u64>>,
         force_misalign: bool,
+        hash_action: HashAction,
         in_file: &str,
         verbose: bool,
         pr_verbosity_level: PRVerbosityLevel,
@@ -63,6 +71,7 @@ impl Param {
             from_pos,
             to_pos,
             force_misalign,
+            hash_action,
             in_file: String::from(in_file),
             verbose,
             pr_verbosity_level,
