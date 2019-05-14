@@ -38,6 +38,8 @@ use crate::sbx_specs::{
 use crate::block_utils;
 use crate::time_utils;
 
+use crate::hash_stats::HashStats;
+
 use crate::block_utils::RefBlockChoice;
 
 const HASH_FILE_BLOCK_SIZE: usize = 4096;
@@ -84,13 +86,6 @@ pub struct Stats {
     pub recorded_hash: Option<multihash::HashBytes>,
     pub computed_hash: Option<multihash::HashBytes>,
     json_printer: Arc<JSONPrinter>,
-}
-
-struct HashStats {
-    pub bytes_processed: u64,
-    pub total_bytes: u64,
-    start_time: f64,
-    end_time: f64,
 }
 
 impl fmt::Display for Stats {
@@ -348,17 +343,6 @@ impl Param {
     }
 }
 
-impl HashStats {
-    pub fn new(file_size: u64) -> HashStats {
-        HashStats {
-            bytes_processed: 0,
-            total_bytes: file_size,
-            start_time: 0.,
-            end_time: 0.,
-        }
-    }
-}
-
 impl Stats {
     pub fn new(
         ref_block: &Block,
@@ -472,24 +456,6 @@ impl Stats {
             + self.data_blocks_decoded
             + self.parity_blocks_decoded
             + blocks_decode_failed
-    }
-}
-
-impl ProgressReport for HashStats {
-    fn start_time_mut(&mut self) -> &mut f64 {
-        &mut self.start_time
-    }
-
-    fn end_time_mut(&mut self) -> &mut f64 {
-        &mut self.end_time
-    }
-
-    fn units_so_far(&self) -> u64 {
-        self.bytes_processed
-    }
-
-    fn total_units(&self) -> Option<u64> {
-        Some(self.total_bytes)
     }
 }
 

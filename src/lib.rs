@@ -94,6 +94,8 @@ mod update_core;
 
 mod progress_report;
 
+mod hash_stats;
+
 mod file_reader;
 mod file_writer;
 mod reader;
