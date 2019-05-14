@@ -321,6 +321,7 @@ fn check_hash(
     seek_to: u64,
     ref_block_pos: u64,
     ref_block: &Block,
+    orig_file_size: u64,
     stats: &Arc<Mutex<HashStats>>,
     mut hash_ctx: hash::Ctx,
 ) -> Result<(), Error> {
@@ -372,6 +373,7 @@ fn check_hash(
         ReadPattern::BurstErrorResistant(data, parity, _) => {
             // go through data and parity blocks
             let mut seq_num = 1;
+            let mut data_blocks_processed = 0;
             loop {
                 let mut stats = stats.lock().unwrap();
 
@@ -384,7 +386,7 @@ fn check_hash(
                     data_par_burst,
                 );
 
-                reader.seek(SeekFrom::Start(pos + seek_to))?;
+                reader.seek(SeekFrom::Start(pos))?;
 
                 // read at reference block block size
                 let read_res = reader.read(sbx_block::slice_buf_mut(
@@ -397,8 +399,6 @@ fn check_hash(
                         Ok(_) => block.get_seq_num() == seq_num,
                         _ => false,
                     };
-
-                let bytes_remaining = stats.total_bytes - stats.bytes_processed;
 
                 let is_last_data_block = bytes_remaining <= data_chunk_size;
 
@@ -430,7 +430,57 @@ fn check_hash(
             }
         },
         ReadPattern::Sequential(data_par_burst) => {
+            let mut raw_bytes_processed: u64 = 0;
 
+            // seek to calculated position
+            reader.seek(SeekFrom::Start(seek_to))?;
+
+            let mut block_index = block_utils::guess_starting_block_index(
+                &param.in_file,
+                param.from_pos,
+                param.force_misalign,
+                &ref_block,
+                data_par_burst,
+            )?;
+
+            loop {
+                let mut stats = stats.lock().unwrap();
+
+                break_if_atomic_bool!(ctrlc_stop_flag);
+
+                break_if_reached_required_len!(raw_bytes_processed, required_len);
+
+                // read at reference block block size
+                let read_res = reader.read(sbx_block::slice_buf_mut(
+                    version,
+                    &mut buffer,
+                ))?;
+
+                raw_bytes_processed += read_res.len_read as u64;
+
+                break_if_eof_seen!(read_res);
+
+                let seq_num = sbx_block::calc_seq_num_at_index(
+                    block_index,
+                    Some(true),
+                    data_par_burst,
+                );
+
+                let block_okay =
+                    match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
+                        Ok(_) => block.get_seq_num() == seq_num,
+                        Err(_) => false,
+                    };
+
+                if block_okay {
+                    if !sbx_block::seq_num_is_meta(seq_num)
+                        && !sbx_block::seq_num_is_parity(seq_num, data, parity)
+                    {
+                    }
+                } else {
+                    return Err(Error::with_msg("Failed to decode data block"));
+                }
+            }
         }
     }
 
