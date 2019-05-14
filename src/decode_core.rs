@@ -349,7 +349,8 @@ impl Stats {
         json_printer: &Arc<JSONPrinter>,
     ) -> Stats {
         use crate::file_utils::from_container_size::calc_total_block_count;
-        let total_blocks = calc_total_block_count(ref_block.get_version(), required_len);
+        let version = ref_block.get_version();
+        let total_blocks = calc_total_block_count(version, required_len);
         let blocks_decode_failed = match write_to {
             WriteTo::File => DecodeFailStats::Total(0),
             WriteTo::Stdout => DecodeFailStats::Breakdown(DecodeFailsBreakdown {
@@ -358,7 +359,6 @@ impl Stats {
                 parity_blocks_decode_failed: 0,
             }),
         };
-        let version = ref_block.get_version();
         Stats {
             uid: ref_block.get_uid(),
             version,
@@ -923,7 +923,7 @@ pub fn decode(
 
                         // read at reference block block size
                         let read_res = reader.read(sbx_block::slice_buf_mut(
-                            ref_block.get_version(),
+                            version,,
                             &mut buffer,
                         ))?;
 
@@ -1039,7 +1039,7 @@ pub fn decode(
         Some(r) => r?,
         None => match orig_file_size {
             Some(x) => x,
-            None => data_blocks_decoded * ver_to_data_size(ref_block.get_version()) as u64,
+            None => data_blocks_decoded * ver_to_data_size(version) as u64,
         },
     };
 
