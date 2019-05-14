@@ -4,8 +4,8 @@ use crate::progress_report::ProgressReport;
 pub struct HashStats {
     pub bytes_processed: u64,
     pub total_bytes: u64,
-    start_time: f64,
-    end_time: f64,
+    pub start_time: f64,
+    pub end_time: f64,
 }
 
 impl HashStats {

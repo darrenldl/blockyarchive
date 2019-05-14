@@ -145,7 +145,13 @@ impl ProgressReport for Stats {
 impl fmt::Display for Stats {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let block_size = ver_to_block_size(self.version);
-        let time_elapsed = (self.end_time - self.start_time) as i64;
+        let check_time_elapsed = (self.end_time - self.start_time) as i64;
+        let hash_time_elapsed = match &self.hash_stats {
+            None => 0i64,
+            Some(stats) => (stats.end_time - stats.start_time) as i64,
+        };
+        let time_elapsed = check_time_elapsed + hash_time_elapsed;
+
         let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
 
         let json_printer = &self.json_printer;
@@ -305,6 +311,42 @@ fn check_hash(
     ref_block: &Block,
     stats: &Arc<Mutex<HashStats>>,
 ) -> Result<(), Error> {
+    let json_printer = &param.json_printer;
+
+    let version = ref_block.get_version();
+
+    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
+    let mut reader = FileReader::new(
+        &param.in_file,
+        FileReaderParam {
+            write: false,
+            buffered: true,
+        },
+    )?;
+
+    let mut block = Block::dummy();
+
+    let reporter = Arc::new(ProgressReporter::new(
+        &stats,
+        "SBX data chunk hashing progress",
+        "bytes",
+        param.pr_verbosity_level,
+        param.json_printer.json_enabled(),
+    ));
+
+    let header_pred = header_pred_same_ver_uid!(ref_block);
+
+    reporter.start();
+
+    // go through data and parity blocks
+    let mut seq_num = 1;
+    loop {
+        
+    }
+
+    reporter.stop();
+
     Ok(())
 }
 
