@@ -812,7 +812,7 @@ pub fn decode(
 
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
-                        reader.seek(SeekFrom::Start(p + seek_to))?;
+                        reader.seek(SeekFrom::Start(p))?;
                         let read_res =
                             reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
@@ -843,7 +843,7 @@ pub fn decode(
                             data_par_burst,
                         );
 
-                        reader.seek(SeekFrom::Start(pos + seek_to))?;
+                        reader.seek(SeekFrom::Start(pos))?;
 
                         // read at reference block block size
                         let read_res = reader.read(sbx_block::slice_buf_mut(
