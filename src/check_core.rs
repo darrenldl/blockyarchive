@@ -26,6 +26,8 @@ use crate::time_utils;
 use crate::block_utils::RefBlockChoice;
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
+use crate::hash_stats::HashStats;
+
 pub enum HashAction {
     NoHash,
     HashAfterCheck,
@@ -91,6 +93,7 @@ pub struct Stats {
     start_time: f64,
     end_time: f64,
     json_printer: Arc<JSONPrinter>,
+    pub hash_stats: Option<HashStats>,
 }
 
 impl Stats {
@@ -109,6 +112,7 @@ impl Stats {
             start_time: 0.,
             end_time: 0.,
             json_printer: Arc::clone(json_printer),
+            hash_stats: None,
         }
     }
 
@@ -293,16 +297,16 @@ fn check_blocks(
     Ok(())
 }
 
-// fn check_hash(
-//     param: &Param,
-//     ctrlc_stop_flag: &Arc<AtomicBool>,
-//     required_len: u64,
-//     seek_to: u64,
-//     ref_block: &Block,
-//     stats: &Arc<Mutex<HashStats>>,
-// ) -> Result<(), Error> {
-//     Ok(())
-// }
+fn check_hash(
+    param: &Param,
+    ctrlc_stop_flag: &Arc<AtomicBool>,
+    required_len: u64,
+    seek_to: u64,
+    ref_block: &Block,
+    stats: &Arc<Mutex<HashStats>>,
+) -> Result<(), Error> {
+    Ok(())
+}
 
 pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
@@ -330,16 +334,43 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
         &param.json_printer,
     )));
 
-    check_blocks(
-        param,
-        &ctrlc_stop_flag,
-        required_len,
-        seek_to,
-        &ref_block,
-        &stats,
-    )?;
+    let do_check = match param.hash_action {
+        HashAction::HashOnly => false,
+        _ => true,
+    };
 
-    let stats = stats.lock().unwrap().clone();
+    let do_hash = match param.hash_action {
+        HashAction::NoHash => false,
+        _ => true,
+    };
+
+    if do_check {
+        check_blocks(
+            param,
+            &ctrlc_stop_flag,
+            required_len,
+            seek_to,
+            &ref_block,
+            &stats,
+        )?;
+    }
+
+    let mut stats = stats.lock().unwrap().clone();
+
+    if do_hash {
+        let hash_stats = Arc::new(Mutex::new(HashStats::new(file_size)));
+
+        check_hash(
+            param,
+            &ctrlc_stop_flag,
+            required_len,
+            seek_to,
+            &ref_block,
+            &hash_stats,
+        )?;
+
+        stats.hash_stats = Some(hash_stats.lock().unwrap().clone());
+    }
 
     Ok(Some(stats))
 }

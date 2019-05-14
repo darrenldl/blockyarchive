@@ -1,5 +1,6 @@
 use crate::progress_report::ProgressReport;
 
+#[derive(Clone, Debug)]
 pub struct HashStats {
     pub bytes_processed: u64,
     pub total_bytes: u64,
