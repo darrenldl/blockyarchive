@@ -40,6 +40,8 @@ use crate::time_utils;
 
 use crate::hash_stats::HashStats;
 
+use crate::read_pattern::ReadPattern;
+
 use crate::block_utils::RefBlockChoice;
 
 const HASH_FILE_BLOCK_SIZE: usize = 4096;
@@ -49,11 +51,6 @@ const BLANK_BUFFER: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 pub enum WriteTo {
     File,
     Stdout,
-}
-
-pub enum ReadPattern {
-    Sequential(Option<(usize, usize, usize)>),
-    BurstErrorResistant(usize, usize, usize),
 }
 
 #[derive(Clone, Debug)]
@@ -801,13 +798,7 @@ pub fn decode(
                 None => None,
             };
 
-            let read_pattern = match data_par_burst {
-                Some((data, parity, burst)) => match (param.from_pos, param.to_pos) {
-                    (None, None) => ReadPattern::BurstErrorResistant(data, parity, burst),
-                    _ => ReadPattern::Sequential(Some((data, parity, burst))),
-                },
-                None => ReadPattern::Sequential(None),
-            };
+            let read_pattern = ReadPattern::new(param.from_pos, param.to_pos, data_par_burst);
 
             reporter.start();
 

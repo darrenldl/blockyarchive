@@ -1,6 +1,6 @@
 use crate::check_core;
-use crate::check_core::Param;
 use crate::check_core::HashAction;
+use crate::check_core::Param;
 
 use crate::cli_utils::*;
 use clap::*;

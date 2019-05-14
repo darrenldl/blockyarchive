@@ -341,9 +341,7 @@ fn check_hash(
 
     // go through data and parity blocks
     let mut seq_num = 1;
-    loop {
-        
-    }
+    loop {}
 
     reporter.stop();
 

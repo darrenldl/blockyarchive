@@ -96,6 +96,8 @@ mod progress_report;
 
 mod hash_stats;
 
+mod read_pattern;
+
 mod file_reader;
 mod file_writer;
 mod reader;
