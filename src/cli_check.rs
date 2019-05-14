@@ -25,6 +25,7 @@ Specify this if you want blkar to report blank blocks as well.",
         .arg(ref_from_byte_arg())
         .arg(ref_to_byte_inc_arg())
         .arg(ref_to_byte_exc_arg())
+        .arg(guess_burst_from_byte_arg())
         .arg(Arg::with_name("hash").long("hash").help(
             "Hash stored data after individual block checking. This is done
 only if the reference block is a metadata block and has the hash
@@ -58,6 +59,8 @@ pub fn check<'a>(matches: &ArgMatches<'a>) -> i32 {
     let ref_from_pos = get_ref_from_pos!(matches, json_printer);
     let ref_to_pos = get_ref_to_pos!(matches, json_printer);
 
+    let guess_burst_from_pos = get_guess_burst_from_pos!(matches, json_printer);
+
     let hash_action = if matches.is_present("hash") {
         HashAction::HashAfterCheck
     } else if matches.is_present("hash_only") {
@@ -66,16 +69,20 @@ pub fn check<'a>(matches: &ArgMatches<'a>) -> i32 {
         HashAction::NoHash
     };
 
+    let burst = get_burst_opt!(matches, json_printer);
+
     let param = Param::new(
         get_ref_block_choice!(matches),
         ref_from_pos,
         ref_to_pos,
+        guess_burst_from_pos,
         matches.is_present("report_blank"),
         &json_printer,
         from_pos,
         to_pos,
         matches.is_present("force_misalign"),
         hash_action,
+        burst,
         in_file,
         matches.is_present("verbose"),
         pr_verbosity_level,

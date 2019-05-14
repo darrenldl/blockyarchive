@@ -21,12 +21,15 @@ use crate::sbx_specs::Version;
 use crate::sbx_block;
 use crate::sbx_specs::{ver_to_block_size, ver_to_usize, SBX_LARGEST_BLOCK_SIZE};
 
+use crate::block_utils;
 use crate::time_utils;
 
 use crate::block_utils::RefBlockChoice;
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 use crate::hash_stats::HashStats;
+
+use crate::read_pattern::ReadPattern;
 
 pub enum HashAction {
     NoHash,
@@ -38,12 +41,14 @@ pub struct Param {
     ref_block_choice: RefBlockChoice,
     ref_block_from_pos: Option<u64>,
     ref_block_to_pos: Option<RangeEnd<u64>>,
+    guess_burst_from_pos: Option<u64>,
     report_blank: bool,
     json_printer: Arc<JSONPrinter>,
     from_pos: Option<u64>,
     to_pos: Option<RangeEnd<u64>>,
     force_misalign: bool,
     hash_action: HashAction,
+    burst: Option<usize>,
     in_file: String,
     verbose: bool,
     pr_verbosity_level: PRVerbosityLevel,
@@ -54,12 +59,14 @@ impl Param {
         ref_block_choice: RefBlockChoice,
         ref_block_from_pos: Option<u64>,
         ref_block_to_pos: Option<RangeEnd<u64>>,
+        guess_burst_from_pos: Option<u64>,
         report_blank: bool,
         json_printer: &Arc<JSONPrinter>,
         from_pos: Option<u64>,
         to_pos: Option<RangeEnd<u64>>,
         force_misalign: bool,
         hash_action: HashAction,
+        burst: Option<usize>,
         in_file: &str,
         verbose: bool,
         pr_verbosity_level: PRVerbosityLevel,
@@ -68,12 +75,14 @@ impl Param {
             ref_block_choice,
             ref_block_from_pos,
             ref_block_to_pos,
+            guess_burst_from_pos,
             report_blank,
             json_printer: Arc::clone(json_printer),
             from_pos,
             to_pos,
             force_misalign,
             hash_action,
+            burst,
             in_file: String::from(in_file),
             verbose,
             pr_verbosity_level,
@@ -308,9 +317,20 @@ fn check_hash(
     ctrlc_stop_flag: &Arc<AtomicBool>,
     required_len: u64,
     seek_to: u64,
+    ref_block_pos: u64,
     ref_block: &Block,
     stats: &Arc<Mutex<HashStats>>,
 ) -> Result<(), Error> {
+    let data_par_burst = block_utils::get_data_par_burst_from_ref_block_and_in_file(
+        ref_block_pos,
+        ref_block,
+        param.burst,
+        param.from_pos,
+        param.guess_burst_from_pos,
+        param.force_misalign,
+        &param.in_file,
+    );
+
     let json_printer = &param.json_printer;
 
     let version = ref_block.get_version();
@@ -337,11 +357,14 @@ fn check_hash(
 
     let header_pred = header_pred_same_ver_uid!(ref_block);
 
+    let read_pattern = ReadPattern::new(param.from_pos, param.to_pos, data_par_burst);
+
     reporter.start();
 
     // go through data and parity blocks
     let mut seq_num = 1;
-    loop {}
+    loop {
+    }
 
     reporter.stop();
 
@@ -351,7 +374,7 @@ fn check_hash(
 pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
-    let (_, ref_block) = get_ref_block!(param, &param.json_printer, ctrlc_stop_flag);
+    let (ref_block_pos, ref_block) = get_ref_block!(param, &param.json_printer, ctrlc_stop_flag);
 
     let file_size = file_utils::get_file_size(&param.in_file)?;
 
@@ -405,6 +428,7 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
             &ctrlc_stop_flag,
             required_len,
             seek_to,
+            ref_block_pos,
             &ref_block,
             &hash_stats,
         )?;
