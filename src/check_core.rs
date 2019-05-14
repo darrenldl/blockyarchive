@@ -322,7 +322,7 @@ fn check_hash(
     ref_block_pos: u64,
     ref_block: &Block,
     stats: &Arc<Mutex<HashStats>>,
-    hash_ctx: hash::Ctx,
+    mut hash_ctx: hash::Ctx,
 ) -> Result<(), Error> {
     let data_par_burst = block_utils::get_data_par_burst_from_ref_block_and_in_file(
         ref_block_pos,
@@ -365,8 +365,6 @@ fn check_hash(
     let read_pattern = ReadPattern::new(param.from_pos, param.to_pos, data_par_burst);
 
     let stored_hash_bytes = ref_block.get_HSH().unwrap().unwrap();
-
-    let mut bytes_hashed = 0u64;
 
     reporter.start();
 
@@ -430,6 +428,9 @@ fn check_hash(
 
                 incre_or_break_if_last!(seq_num => seq_num);
             }
+        },
+        ReadPattern::Sequential(data_par_burst) => {
+
         }
     }
 
