@@ -101,6 +101,7 @@ pub struct Stats {
     end_time: f64,
     pub recorded_hash: Option<multihash::HashBytes>,
     pub computed_hash: Option<multihash::HashBytes>,
+    hash_stats: Option<HashStats>,
     json_printer: Arc<JSONPrinter>,
 }
 
@@ -1023,6 +1024,7 @@ pub fn decode(
             }
         }
     }
+
     reporter.stop();
 
     // truncate file possibly
