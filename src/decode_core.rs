@@ -40,8 +40,6 @@ use crate::time_utils;
 
 use crate::hash_stats::HashStats;
 
-use crate::read_pattern::ReadPattern;
-
 use crate::block_utils::RefBlockChoice;
 
 const HASH_FILE_BLOCK_SIZE: usize = 4096;
