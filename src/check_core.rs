@@ -91,9 +91,7 @@ impl Param {
 }
 
 #[derive(Clone, Debug)]
-pub struct Stats {
-    version: Version,
-    block_size: u64,
+struct CheckStats {
     pub meta_or_par_blocks_decoded: u64,
     pub data_or_par_blocks_decoded: u64,
     pub blocks_decode_failed: u64,
@@ -101,6 +99,29 @@ pub struct Stats {
     total_blocks: u64,
     start_time: f64,
     end_time: f64,
+}
+
+impl CheckStats {
+    pub fn new(ref_block: &Block, required_len: u64) -> Self {
+        use crate::file_utils::from_container_size::calc_total_block_count;
+        let total_blocks = calc_total_block_count(ref_block.get_version(), required_len);
+        CheckStats {
+            meta_or_par_blocks_decoded: 0,
+            data_or_par_blocks_decoded: 0,
+            blocks_decode_failed: 0,
+            okay_blank_blocks: 0,
+            total_blocks,
+            start_time: 0.,
+            end_time: 0.,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Stats {
+    version: Version,
+    block_size: u64,
+    pub check_stats: Option<CheckStats>,
     pub recorded_hash: Option<HashBytes>,
     pub computed_hash: Option<HashBytes>,
     json_printer: Arc<JSONPrinter>,
@@ -109,19 +130,12 @@ pub struct Stats {
 
 impl Stats {
     pub fn new(ref_block: &Block, required_len: u64, json_printer: &Arc<JSONPrinter>) -> Stats {
-        use crate::file_utils::from_container_size::calc_total_block_count;
-        let total_blocks = calc_total_block_count(ref_block.get_version(), required_len);
         let version = ref_block.get_version();
         Stats {
             version,
             block_size: ver_to_block_size(version) as u64,
-            meta_or_par_blocks_decoded: 0,
-            data_or_par_blocks_decoded: 0,
-            blocks_decode_failed: 0,
-            okay_blank_blocks: 0,
             total_blocks,
-            start_time: 0.,
-            end_time: 0.,
+            check_stats: None,
             recorded_hash: None,
             computed_hash: None,
             json_printer: Arc::clone(json_printer),
@@ -137,7 +151,7 @@ impl Stats {
     }
 }
 
-impl ProgressReport for Stats {
+impl ProgressReport for CheckStats {
     fn start_time_mut(&mut self) -> &mut f64 {
         &mut self.start_time
     }
@@ -165,8 +179,6 @@ impl fmt::Display for Stats {
         };
         let time_elapsed = check_time_elapsed + hash_time_elapsed;
 
-        let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
-
         let json_printer = &self.json_printer;
 
         json_printer.write_open_bracket(f, Some("stats"), BracketType::Curly)?;
@@ -182,14 +194,42 @@ impl fmt::Display for Stats {
         write_maybe_json!(f, json_printer, "Number of blocks passed check (metadata) : {}", self.meta_or_par_blocks_decoded    => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks passed check (data)     : {}", self.data_or_par_blocks_decoded    => skip_quotes)?;
         write_maybe_json!(f, json_printer, "Number of blocks failed check            : {}", self.blocks_decode_failed          => skip_quotes)?;
-        write_maybe_json!(
-            f,
-            json_printer,
-            "Time elapsed                             : {:02}:{:02}:{:02}",
-            hour,
-            minute,
-            second
-        )?;
+        if let Some(stats) = &self.hash_stats {
+            {
+                let (hour, minute, second) = time_utils::seconds_to_hms(check_time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed for block check             : {:02}:{:02}:{:02}",
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
+            {
+                let (hour, minute, second) = time_utils::seconds_to_hms(hash_time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed for data hash               : {:02}:{:02}:{:02}",
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
+        }
+        {
+            let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
+
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Time elapsed                             : {:02}:{:02}:{:02}",
+                hour,
+                minute,
+                second
+            )?;
+        }
 
         json_printer.write_close_bracket(f)?;
 
@@ -203,8 +243,9 @@ fn check_blocks(
     required_len: u64,
     seek_to: u64,
     ref_block: &Block,
-    stats: &Arc<Mutex<Stats>>,
-) -> Result<(), Error> {
+) -> Result<CheckStats, Error> {
+    let stats = Arc::new(Mutex::new(CheckStats::new()));
+
     let json_printer = &param.json_printer;
 
     let version = ref_block.get_version();
@@ -313,7 +354,9 @@ fn check_blocks(
 
     reporter.stop();
 
-    Ok(())
+    let stats = stats.lock().unwrap();
+
+    Ok(stats)
 }
 
 fn hash(
