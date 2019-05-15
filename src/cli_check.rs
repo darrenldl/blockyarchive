@@ -26,11 +26,18 @@ Specify this if you want blkar to report blank blocks as well.",
         .arg(ref_to_byte_inc_arg())
         .arg(ref_to_byte_exc_arg())
         .arg(guess_burst_from_byte_arg())
-        .arg(Arg::with_name("hash").long("hash").help(
-            "Hash stored data after individual block checking. This is done
+        .arg(
+            Arg::with_name("hash")
+                .long("hash")
+                .help(
+                    "Hash stored data after individual block checking. This is done
 only if the reference block is a metadata block and has the hash
 field.",
-        ))
+                )
+                .conflicts_with("from_pos")
+                .conflicts_with("to_pos_inc")
+                .conflicts_with("to_pos_exc"),
+        )
         .arg(
             Arg::with_name("hash_only")
                 .long("hash-only")
@@ -39,6 +46,9 @@ field.",
 done only if the reference block is a metadata block and has
 the hash field.",
                 )
+                .conflicts_with("from_pos")
+                .conflicts_with("to_pos_inc")
+                .conflicts_with("to_pos_exc")
                 .conflicts_with("hash"),
         )
         .arg(json_arg())
