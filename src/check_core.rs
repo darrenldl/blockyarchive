@@ -362,8 +362,6 @@ fn hash(
 
     let header_pred = header_pred_same_ver_uid!(ref_block);
 
-    let stored_hash_bytes = ref_block.get_HSH().unwrap().unwrap();
-
     reporter.start();
 
     // go through data and parity blocks
