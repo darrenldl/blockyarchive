@@ -131,11 +131,11 @@ impl CheckStats {
 #[derive(Clone, Debug)]
 pub struct Stats {
     version: Version,
-    pub check_stats: Option<CheckStats>,
-    pub recorded_hash: Option<HashBytes>,
-    pub computed_hash: Option<HashBytes>,
+    check_stats: Option<CheckStats>,
+    recorded_hash: Option<HashBytes>,
+    computed_hash: Option<HashBytes>,
     json_printer: Arc<JSONPrinter>,
-    pub hash_stats: Option<HashStats>,
+    hash_stats: Option<HashStats>,
 }
 
 impl Stats {
