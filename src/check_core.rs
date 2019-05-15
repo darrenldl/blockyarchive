@@ -101,8 +101,8 @@ pub struct Stats {
     total_blocks: u64,
     start_time: f64,
     end_time: f64,
-    pub recorded_hash: Option<multihash::HashBytes>,
-    pub computed_hash: Option<multihash::HashBytes>,
+    pub recorded_hash: Option<HashBytes>,
+    pub computed_hash: Option<HashBytes>,
     json_printer: Arc<JSONPrinter>,
     pub hash_stats: Option<HashStats>,
 }
@@ -122,6 +122,8 @@ impl Stats {
             total_blocks,
             start_time: 0.,
             end_time: 0.,
+            recorded_hash: None,
+            computed_hash: None,
             json_printer: Arc::clone(json_printer),
             hash_stats: None,
         }
@@ -317,11 +319,13 @@ fn check_blocks(
 fn hash(
     param: &Param,
     ctrlc_stop_flag: &Arc<AtomicBool>,
+    orig_file_size: u64,
     ref_block_pos: u64,
     ref_block: &Block,
-    stats: &Arc<Mutex<HashStats>>,
     mut hash_ctx: hash::Ctx,
-) -> Result<(), Error> {
+) -> Result<HashStats, Error> {
+    let stats = Arc::new(Mutex::new(HashStats::new(orig_file_size)));
+
     let data_par_burst = block_utils::get_data_par_burst_from_ref_block_and_in_file(
         ref_block_pos,
         ref_block,
@@ -423,7 +427,9 @@ fn hash(
 
     reporter.stop();
 
-    Ok(())
+    let stats = stats.lock().unwrap().clone();
+
+    Ok(stats)
 }
 
 pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
@@ -475,9 +481,9 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
                 let hash_ctx =
                     match ref_block.get_HSH().unwrap() {
                         None => return Err(Error::with_msg("Reference block does not have a hash field")),
-                        Some(&(ht, hsh)) => match hash::Ctx::new(ht) {
+                        Some((ht, hsh)) => match hash::Ctx::new(*ht) {
                             Err(()) => return Err(Error::with_msg("Unsupported hash algorithm")),
-                            Ok(ctx) => { stats.recorded_hash = Some((ht, hsh)); ctx }
+                            Ok(ctx) => { stats.lock().unwrap().recorded_hash = Some((*ht, hsh.clone())); ctx }
                         }
                     };
 
@@ -501,18 +507,16 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
     let mut stats = stats.lock().unwrap().clone();
 
     if do_hash {
-        let hash_stats = Arc::new(Mutex::new(HashStats::new(orig_file_size.unwrap())));
-
-        check_hash(
+        let hash_stats = hash(
             param,
             &ctrlc_stop_flag,
+            orig_file_size.unwrap(),
             ref_block_pos,
             &ref_block,
-            &hash_stats,
             hash_ctx.unwrap(),
         )?;
 
-        stats.hash_stats = Some(hash_stats.lock().unwrap().clone());
+        stats.hash_stats = Some(hash_stats);
     }
 
     Ok(Some(stats))

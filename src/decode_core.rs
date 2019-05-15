@@ -394,6 +394,7 @@ impl Stats {
             end_time: 0.,
             recorded_hash: None,
             computed_hash: None,
+            hash_stats: None,
             json_printer: Arc::clone(json_printer),
         }
     }
