@@ -115,6 +115,13 @@ impl CheckStats {
             end_time: 0.,
         }
     }
+
+    fn blocks_so_far(&self) -> u64 {
+        self.meta_or_par_blocks_decoded
+            + self.data_or_par_blocks_decoded
+            + self.blocks_decode_failed
+            + self.okay_blank_blocks
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -141,13 +148,6 @@ impl Stats {
             hash_stats: None,
         }
     }
-
-    fn blocks_so_far(&self) -> u64 {
-        self.meta_or_par_blocks_decoded
-            + self.data_or_par_blocks_decoded
-            + self.blocks_decode_failed
-            + self.okay_blank_blocks
-    }
 }
 
 impl ProgressReport for CheckStats {
@@ -171,7 +171,10 @@ impl ProgressReport for CheckStats {
 impl fmt::Display for Stats {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let block_size = ver_to_block_size(self.version);
-        let check_time_elapsed = (self.end_time - self.start_time) as i64;
+        let check_time_elapsed = match &self.check_stats {
+            None => 0i64,
+            Some(stats) => (stats.end_time - stats.start_time) as i64,
+        };
         let hash_time_elapsed = match &self.hash_stats {
             None => 0i64,
             Some(stats) => (stats.end_time - stats.start_time) as i64,
@@ -188,11 +191,13 @@ impl fmt::Display for Stats {
             "SBX version                              : {}",
             ver_to_usize(self.version)
         )?;
-        write_maybe_json!(f, json_printer, "Block size used in checking              : {}", block_size                         => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks processed               : {}", self.blocks_so_far()                => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks passed check (metadata) : {}", self.meta_or_par_blocks_decoded    => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks passed check (data)     : {}", self.data_or_par_blocks_decoded    => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks failed check            : {}", self.blocks_decode_failed          => skip_quotes)?;
+        if let Some(check_stats) = &self.check_stats {
+            write_maybe_json!(f, json_printer, "Block size used in checking              : {}", block_size                             => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks processed               : {}", check_stats.blocks_so_far()            => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks passed check (metadata) : {}", check_stats.meta_or_par_blocks_decoded => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks passed check (data)     : {}", check_stats.data_or_par_blocks_decoded => skip_quotes)?;
+            write_maybe_json!(f, json_printer, "Number of blocks failed check            : {}", check_stats.blocks_decode_failed       => skip_quotes)?;
+        }
         if let Some(stats) = &self.hash_stats {
             {
                 let (hour, minute, second) = time_utils::seconds_to_hms(check_time_elapsed);
@@ -243,7 +248,7 @@ fn check_blocks(
     seek_to: u64,
     ref_block: &Block,
 ) -> Result<CheckStats, Error> {
-    let stats = Arc::new(Mutex::new(CheckStats::new()));
+    let stats = Arc::new(Mutex::new(CheckStats::new(ref_block, required_len)));
 
     let json_printer = &param.json_printer;
 
@@ -353,7 +358,7 @@ fn check_blocks(
 
     reporter.stop();
 
-    let stats = stats.lock().unwrap();
+    let stats = stats.lock().unwrap().clone();
 
     Ok(stats)
 }
@@ -492,7 +497,7 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
         Some(ver_to_block_size(ref_block.get_version()) as u64),
     );
 
-    let stats = Stats::new(
+    let mut stats = Stats::new(
         &ref_block,
         &param.json_printer,
     );
@@ -531,8 +536,6 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
         } else {
             (None, None)
         };
-
-    let mut stats = stats.lock().unwrap().clone();
 
     if do_check {
         stats.check_stats =
