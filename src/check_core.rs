@@ -129,12 +129,11 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(ref_block: &Block, required_len: u64, json_printer: &Arc<JSONPrinter>) -> Stats {
+    pub fn new(ref_block: &Block, json_printer: &Arc<JSONPrinter>, ) -> Stats {
         let version = ref_block.get_version();
         Stats {
             version,
             block_size: ver_to_block_size(version) as u64,
-            total_blocks,
             check_stats: None,
             recorded_hash: None,
             computed_hash: None,
@@ -493,11 +492,10 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
         Some(ver_to_block_size(ref_block.get_version()) as u64),
     );
 
-    let stats = Arc::new(Mutex::new(Stats::new(
+    let stats = Stats::new(
         &ref_block,
-        required_len,
         &param.json_printer,
-    )));
+    );
 
     let do_check = match param.hash_action {
         HashAction::HashOnly => false,
@@ -524,7 +522,7 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
                         None => return Err(Error::with_msg("Reference block does not have a hash field")),
                         Some((ht, hsh)) => match hash::Ctx::new(*ht) {
                             Err(()) => return Err(Error::with_msg("Unsupported hash algorithm")),
-                            Ok(ctx) => { stats.lock().unwrap().recorded_hash = Some((*ht, hsh.clone())); ctx }
+                            Ok(ctx) => { stats.recorded_hash = Some((*ht, hsh.clone())); ctx }
                         }
                     };
 
@@ -534,30 +532,28 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
             (None, None)
         };
 
-    if do_check {
-        check_blocks(
-            param,
-            &ctrlc_stop_flag,
-            required_len,
-            seek_to,
-            &ref_block,
-            &stats,
-        )?;
-    }
-
     let mut stats = stats.lock().unwrap().clone();
 
+    if do_check {
+        stats.check_stats =
+            Some(check_blocks(
+                param,
+                &ctrlc_stop_flag,
+                required_len,
+                seek_to,
+                &ref_block,
+            )?)
+    }
+
     if do_hash {
-        let hash_stats = hash(
+        stats.hash_stats = Some(hash(
             param,
             &ctrlc_stop_flag,
             orig_file_size.unwrap(),
             ref_block_pos,
             &ref_block,
             hash_ctx.unwrap(),
-        )?;
-
-        stats.hash_stats = Some(hash_stats);
+        )?)
     }
 
     Ok(Some(stats))
