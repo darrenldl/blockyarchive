@@ -31,8 +31,6 @@ use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 use crate::hash_stats::HashStats;
 
-use crate::read_pattern::ReadPattern;
-
 pub enum HashAction {
     NoHash,
     HashAfterCheck,
@@ -103,6 +101,8 @@ pub struct Stats {
     total_blocks: u64,
     start_time: f64,
     end_time: f64,
+    pub recorded_hash: Option<multihash::HashBytes>,
+    pub computed_hash: Option<multihash::HashBytes>,
     json_printer: Arc<JSONPrinter>,
     pub hash_stats: Option<HashStats>,
 }
@@ -314,14 +314,11 @@ fn check_blocks(
     Ok(())
 }
 
-fn check_hash(
+fn hash(
     param: &Param,
     ctrlc_stop_flag: &Arc<AtomicBool>,
-    required_len: u64,
-    seek_to: u64,
     ref_block_pos: u64,
     ref_block: &Block,
-    orig_file_size: u64,
     stats: &Arc<Mutex<HashStats>>,
     mut hash_ctx: hash::Ctx,
 ) -> Result<(), Error> {
@@ -334,8 +331,6 @@ fn check_hash(
         param.force_misalign,
         &param.in_file,
     );
-
-    let json_printer = &param.json_printer;
 
     let version = ref_block.get_version();
 
@@ -400,7 +395,7 @@ fn check_hash(
         let is_last_data_block = bytes_remaining <= data_chunk_size;
 
         if !sbx_block::seq_num_is_meta(seq_num)
-            && !sbx_block::seq_num_is_parity(seq_num, data, parity) {
+            && !sbx_block::seq_num_is_parity_w_data_par_burst(seq_num, data_par_burst) {
                 if decode_successful {
                     let slice = if is_last_data_block {
                         &sbx_block::slice_data_buf(version, &buffer)
@@ -480,9 +475,9 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
                 let hash_ctx =
                     match ref_block.get_HSH().unwrap() {
                         None => return Err(Error::with_msg("Reference block does not have a hash field")),
-                        Some(&(ht, _)) => match hash::Ctx::new(ht) {
+                        Some(&(ht, hsh)) => match hash::Ctx::new(ht) {
                             Err(()) => return Err(Error::with_msg("Unsupported hash algorithm")),
-                            Ok(ctx) => ctx
+                            Ok(ctx) => { stats.recorded_hash = Some((ht, hsh)); ctx }
                         }
                     };
 
@@ -511,8 +506,6 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
         check_hash(
             param,
             &ctrlc_stop_flag,
-            required_len,
-            seek_to,
             ref_block_pos,
             &ref_block,
             &hash_stats,
