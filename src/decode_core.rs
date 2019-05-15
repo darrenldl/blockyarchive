@@ -923,7 +923,7 @@ pub fn decode(
 
                         // read at reference block block size
                         let read_res = reader.read(sbx_block::slice_buf_mut(
-                            version,,
+                            version,
                             &mut buffer,
                         ))?;
 
