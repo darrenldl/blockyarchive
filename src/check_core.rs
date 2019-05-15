@@ -92,6 +92,7 @@ impl Param {
 
 #[derive(Clone, Debug)]
 struct CheckStats {
+    block_size: u64,
     pub meta_or_par_blocks_decoded: u64,
     pub data_or_par_blocks_decoded: u64,
     pub blocks_decode_failed: u64,
@@ -104,8 +105,11 @@ struct CheckStats {
 impl CheckStats {
     pub fn new(ref_block: &Block, required_len: u64) -> Self {
         use crate::file_utils::from_container_size::calc_total_block_count;
+
         let total_blocks = calc_total_block_count(ref_block.get_version(), required_len);
+
         CheckStats {
+            block_size: ver_to_block_size(ref_block.get_version()) as u64,
             meta_or_par_blocks_decoded: 0,
             data_or_par_blocks_decoded: 0,
             blocks_decode_failed: 0,
@@ -127,7 +131,6 @@ impl CheckStats {
 #[derive(Clone, Debug)]
 pub struct Stats {
     version: Version,
-    block_size: u64,
     pub check_stats: Option<CheckStats>,
     pub recorded_hash: Option<HashBytes>,
     pub computed_hash: Option<HashBytes>,
@@ -137,10 +140,8 @@ pub struct Stats {
 
 impl Stats {
     pub fn new(ref_block: &Block, json_printer: &Arc<JSONPrinter>, ) -> Stats {
-        let version = ref_block.get_version();
         Stats {
-            version,
-            block_size: ver_to_block_size(version) as u64,
+            version: ref_block.get_version(),
             check_stats: None,
             recorded_hash: None,
             computed_hash: None,
