@@ -198,43 +198,58 @@ impl fmt::Display for Stats {
             write_maybe_json!(f, json_printer, "Number of blocks passed check (metadata) : {}", check_stats.meta_or_par_blocks_decoded => skip_quotes)?;
             write_maybe_json!(f, json_printer, "Number of blocks passed check (data)     : {}", check_stats.data_or_par_blocks_decoded => skip_quotes)?;
             write_maybe_json!(f, json_printer, "Number of blocks failed check            : {}", check_stats.blocks_decode_failed       => skip_quotes)?;
-        }
-        if let Some(stats) = &self.hash_stats {
-            {
-                let (hour, minute, second) = time_utils::seconds_to_hms(check_time_elapsed);
-                write_maybe_json!(
-                    f,
-                    json_printer,
-                    "Time elapsed for block check             : {:02}:{:02}:{:02}",
-                    hour,
-                    minute,
-                    second
-                )?;
-            }
-            {
-                let (hour, minute, second) = time_utils::seconds_to_hms(hash_time_elapsed);
-                write_maybe_json!(
-                    f,
-                    json_printer,
-                    "Time elapsed for data hash               : {:02}:{:02}:{:02}",
-                    hour,
-                    minute,
-                    second
-                )?;
-            }
-        }
-        {
-            let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
 
+            let (hour, minute, second) = time_utils::seconds_to_hms(check_time_elapsed);
             write_maybe_json!(
                 f,
                 json_printer,
-                "Time elapsed                             : {:02}:{:02}:{:02}",
+                "Time elapsed for block check             : {:02}:{:02}:{:02}",
                 hour,
                 minute,
                 second
             )?;
         }
+        if let Some(_) = &self.hash_stats {
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Hash of output file                      : {}",
+                match (&self.recorded_hash, &self.computed_hash) {
+                    (None, None) => null_if_json_else_NA!(json_printer).to_string(),
+                    (Some(_), None) => null_if_json_else!(
+                        json_printer,
+                        "N/A - recorded hash type is not supported by blkar"
+                    )
+                        .to_string(),
+                    (_, Some(h)) => format!(
+                        "{} - {}",
+                        hash_type_to_string(h.0),
+                        misc_utils::bytes_to_lower_hex_string(&h.1)
+                    ),
+                }
+            )?;
+
+            let (hour, minute, second) = time_utils::seconds_to_hms(hash_time_elapsed);
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Time elapsed for data hash               : {:02}:{:02}:{:02}",
+                hour,
+                minute,
+                second
+            )?;
+        }
+
+        let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
+
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Time elapsed                             : {:02}:{:02}:{:02}",
+            hour,
+            minute,
+            second
+        )?;
 
         json_printer.write_close_bracket(f)?;
 
