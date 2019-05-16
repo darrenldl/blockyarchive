@@ -276,20 +276,20 @@ impl fmt::Display for Stats {
             )?;
         }
         match (recorded_hash, computed_hash) {
-            (&Some(ref recorded_hash), &Some(ref computed_hash)) => {
+            (Some(recorded_hash), Some(computed_hash)) => {
                 if recorded_hash.1 == computed_hash.1 {
                     write_if!(not_json => f, json_printer => "The output file hash matches the recorded hash";)?;
                 } else {
                     write_if!(not_json => f, json_printer => "The output file hash does NOT match the recorded hash";)?;
                 }
             }
-            (&Some(_), &None) => {
+            (Some(_), None) => {
                 write_if!(not_json => f, json_printer => "No hash is available for output file";)?;
             }
-            (&None, &Some(_)) => {
+            (None, Some(_)) => {
                 write_if!(not_json => f, json_printer => "No recorded hash is available";)?;
             }
-            (&None, &None) => {
+            (None, None) => {
                 write_if!(not_json => f, json_printer => "Neither recorded hash nor output file hash is available";)?;
             }
         }
