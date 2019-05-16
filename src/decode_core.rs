@@ -184,13 +184,13 @@ impl fmt::Display for Stats {
                 "Hash of output file                    {}: {}",
                 padding,
                 match (recorded_hash, computed_hash) {
-                    (&None, &None) => null_if_json_else_NA!(json_printer).to_string(),
-                    (&Some(_), &None) => null_if_json_else!(
+                    (None, None) => null_if_json_else_NA!(json_printer).to_string(),
+                    (Some(_), None) => null_if_json_else!(
                         json_printer,
                         "N/A - recorded hash type is not supported by blkar"
                     )
                     .to_string(),
-                    (_, &Some(ref h)) => format!(
+                    (_, Some(h)) => format!(
                         "{} - {}",
                         hash_type_to_string(h.0),
                         misc_utils::bytes_to_lower_hex_string(&h.1)
