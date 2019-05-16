@@ -386,7 +386,7 @@ fn hash(
     ref_block_pos: u64,
     ref_block: &Block,
     mut hash_ctx: hash::Ctx,
-) -> Result<HashStats, Error> {
+) -> Result<(HashStats, HashBytes), Error> {
     let stats = Arc::new(Mutex::new(HashStats::new(orig_file_size)));
 
     let data_par_burst = block_utils::get_data_par_burst_from_ref_block_and_in_file(
@@ -489,7 +489,7 @@ fn hash(
 
     let stats = stats.lock().unwrap().clone();
 
-    Ok(stats)
+    Ok((stats, hash_ctx.finish_into_hash_bytes()))
 }
 
 pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
@@ -569,14 +569,17 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
     }
 
     if do_hash {
-        stats.hash_stats = Some(hash(
+        let (hash_stats, computed_hash) = hash(
             param,
             &ctrlc_stop_flag,
             orig_file_size.unwrap(),
             ref_block_pos,
             &ref_block,
             hash_ctx.unwrap(),
-        )?)
+        )?;
+
+        stats.hash_stats = Some(hash_stats);
+        stats.computed_hash = Some(computed_hash);
     }
 
     Ok(Some(stats))
