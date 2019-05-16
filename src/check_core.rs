@@ -466,7 +466,7 @@ fn hash(
         break_if_atomic_bool!(ctrlc_stop_flag);
 
         let pos = sbx_block::calc_data_block_write_pos(
-            ref_block.get_version(),
+            version,
             seq_num,
             None,
             data_par_burst,
