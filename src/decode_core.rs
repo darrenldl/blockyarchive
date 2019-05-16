@@ -563,6 +563,8 @@ pub fn decode(
     ref_block: &Block,
     ctrlc_stop_flag: &Arc<AtomicBool>,
 ) -> Result<(Stats, Option<HashBytes>), Error> {
+    let version = ref_block.get_version();
+
     let in_file_size = file_utils::get_file_size(&param.in_file)?;
 
     let orig_file_size = if ref_block.is_meta() {
@@ -581,7 +583,7 @@ pub fn decode(
         &param.in_file,
     );
 
-    let data_size = ver_to_data_size(ref_block.get_version());
+    let data_size = ver_to_data_size(version);
     let data_size_of_last_data_block = match orig_file_size {
         Some(orig_file_size) => match orig_file_size % data_size as u64 {
             0 => Some(data_size as u64),
@@ -633,7 +635,7 @@ pub fn decode(
     };
 
     // deal with RS related stuff
-    let rs_enabled = ver_uses_rs(ref_block.get_version());
+    let rs_enabled = ver_uses_rs(version);
 
     if rs_enabled {
         // must be metadata block, and must contain fields `RSD`, `RSP`
@@ -644,8 +646,6 @@ pub fn decode(
         Some((data, parity, _)) => Some((data, parity)),
         None => None,
     };
-
-    let version = ref_block.get_version();
 
     let header_pred = header_pred_same_ver_uid!(ref_block);
 
@@ -697,7 +697,7 @@ pub fn decode(
 
                 // read at reference block block size
                 let read_res = reader.read(sbx_block::slice_buf_mut(
-                    ref_block.get_version(),
+                    version,
                     &mut buffer,
                 ))?;
 
@@ -729,7 +729,7 @@ pub fn decode(
 
                     // write data block
                     if let Some(write_pos) = sbx_block::calc_data_chunk_write_pos(
-                        ref_block.get_version(),
+                        version,
                         block.get_seq_num(),
                         data_par_shards,
                     ) {
@@ -858,7 +858,7 @@ pub fn decode(
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
                         let pos = sbx_block::calc_data_block_write_pos(
-                            ref_block.get_version(),
+                            version,
                             seq_num,
                             None,
                             data_par_burst,
@@ -868,7 +868,7 @@ pub fn decode(
 
                         // read at reference block block size
                         let read_res = reader.read(sbx_block::slice_buf_mut(
-                            ref_block.get_version(),
+                            version,
                             &mut buffer,
                         ))?;
 

@@ -476,7 +476,7 @@ fn hash(
 
         // read at reference block block size
         let read_res = reader.read(sbx_block::slice_buf_mut(
-            ref_block.get_version(),
+            version,
             &mut buffer,
         ))?;
 
