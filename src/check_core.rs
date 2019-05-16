@@ -246,7 +246,7 @@ impl fmt::Display for Stats {
             write_maybe_json!(
                 f,
                 json_printer,
-                "Time elapsed for data hash               : {:02}:{:02}:{:02}",
+                "Time elapsed for hashing stored data     : {:02}:{:02}:{:02}",
                 hour,
                 minute,
                 second
@@ -448,7 +448,7 @@ fn hash(
 
     let reporter = Arc::new(ProgressReporter::new(
         &stats,
-        "SBX data chunk hashing progress",
+        "Stored data hashing progress",
         "bytes",
         param.pr_verbosity_level,
         param.json_printer.json_enabled(),
