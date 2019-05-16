@@ -943,10 +943,8 @@ pub fn decode(
                         break_if_reached_required_len!(bytes_processed, required_len);
 
                         // read at reference block block size
-                        let read_res = reader.read(sbx_block::slice_buf_mut(
-                            version,
-                            &mut buffer,
-                        ))?;
+                        let read_res =
+                            reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
                         bytes_processed += read_res.len_read as u64;
 

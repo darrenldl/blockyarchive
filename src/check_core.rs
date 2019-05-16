@@ -139,7 +139,7 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(ref_block: &Block, json_printer: &Arc<JSONPrinter>, ) -> Stats {
+    pub fn new(ref_block: &Block, json_printer: &Arc<JSONPrinter>) -> Stats {
         Stats {
             version: ref_block.get_version(),
             check_stats: None,
@@ -220,7 +220,7 @@ impl fmt::Display for Stats {
                         json_printer,
                         "N/A - recorded hash type is not supported by blkar"
                     )
-                        .to_string(),
+                    .to_string(),
                     (_, Some(h)) => format!(
                         "{} - {}",
                         hash_type_to_string(h.0),
@@ -460,24 +460,23 @@ fn hash(
         let is_last_data_block = bytes_remaining <= data_chunk_size;
 
         if !sbx_block::seq_num_is_meta(seq_num)
-            && !sbx_block::seq_num_is_parity_w_data_par_burst(seq_num, data_par_burst) {
-                if decode_successful {
-                    let slice = if is_last_data_block {
-                        &sbx_block::slice_data_buf(version, &buffer)
-                            [0..bytes_remaining as usize]
-
-                    } else {
-                        sbx_block::slice_data_buf(version, &buffer)
-                    };
-
-                    // hash data chunk
-                    hash_ctx.update(slice);
-
-                    stats.bytes_processed += slice.len() as u64;
+            && !sbx_block::seq_num_is_parity_w_data_par_burst(seq_num, data_par_burst)
+        {
+            if decode_successful {
+                let slice = if is_last_data_block {
+                    &sbx_block::slice_data_buf(version, &buffer)[0..bytes_remaining as usize]
                 } else {
-                    return Err(Error::with_msg("Failed to decode data block"));
-                }
+                    sbx_block::slice_data_buf(version, &buffer)
+                };
+
+                // hash data chunk
+                hash_ctx.update(slice);
+
+                stats.bytes_processed += slice.len() as u64;
+            } else {
+                return Err(Error::with_msg("Failed to decode data block"));
             }
+        }
 
         if is_last_data_block {
             break;
@@ -513,10 +512,7 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
         Some(ver_to_block_size(ref_block.get_version()) as u64),
     );
 
-    let mut stats = Stats::new(
-        &ref_block,
-        &param.json_printer,
-    );
+    let mut stats = Stats::new(&ref_block, &param.json_printer);
 
     let do_check = match param.hash_action {
         HashAction::HashOnly => false,
@@ -528,40 +524,48 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
         _ => true,
     };
 
-    let (orig_file_size, hash_ctx) =
-        if do_hash {
-            if ref_block.is_data() {
-                return Err(Error::with_msg("Reference block is not a metadata block"));
-            } else {
-                let orig_file_size = match ref_block.get_FSZ().unwrap() {
-                    None => return Err(Error::with_msg("Reference block does not have a file size field")),
-                    Some(x) => x
-                };
-
-                let hash_ctx =
-                    match ref_block.get_HSH().unwrap() {
-                        None => return Err(Error::with_msg("Reference block does not have a hash field")),
-                        Some((ht, hsh)) => match hash::Ctx::new(*ht) {
-                            Err(()) => return Err(Error::with_msg("Unsupported hash algorithm")),
-                            Ok(ctx) => { stats.recorded_hash = Some((*ht, hsh.clone())); ctx }
-                        }
-                    };
-
-                (Some(orig_file_size), Some(hash_ctx))
-            }
+    let (orig_file_size, hash_ctx) = if do_hash {
+        if ref_block.is_data() {
+            return Err(Error::with_msg("Reference block is not a metadata block"));
         } else {
-            (None, None)
-        };
+            let orig_file_size = match ref_block.get_FSZ().unwrap() {
+                None => {
+                    return Err(Error::with_msg(
+                        "Reference block does not have a file size field",
+                    ))
+                }
+                Some(x) => x,
+            };
+
+            let hash_ctx = match ref_block.get_HSH().unwrap() {
+                None => {
+                    return Err(Error::with_msg(
+                        "Reference block does not have a hash field",
+                    ))
+                }
+                Some((ht, hsh)) => match hash::Ctx::new(*ht) {
+                    Err(()) => return Err(Error::with_msg("Unsupported hash algorithm")),
+                    Ok(ctx) => {
+                        stats.recorded_hash = Some((*ht, hsh.clone()));
+                        ctx
+                    }
+                },
+            };
+
+            (Some(orig_file_size), Some(hash_ctx))
+        }
+    } else {
+        (None, None)
+    };
 
     if do_check {
-        stats.check_stats =
-            Some(check_blocks(
-                param,
-                &ctrlc_stop_flag,
-                required_len,
-                seek_to,
-                &ref_block,
-            )?)
+        stats.check_stats = Some(check_blocks(
+            param,
+            &ctrlc_stop_flag,
+            required_len,
+            seek_to,
+            &ref_block,
+        )?)
     }
 
     if do_hash {
