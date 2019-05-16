@@ -263,6 +263,24 @@ impl fmt::Display for Stats {
             minute,
             second
         )?;
+        match (&self.recorded_hash, &self.computed_hash) {
+            (Some(recorded_hash), Some(computed_hash)) => {
+                if recorded_hash.1 == computed_hash.1 {
+                    write_if!(not_json => f, json_printer => "The hash of stored data matches the recorded hash";)?;
+                } else {
+                    write_if!(not_json => f, json_printer => "The hash of stored data does NOT match the recorded hash";)?;
+                }
+            }
+            (Some(_), None) => {
+                write_if!(not_json => f, json_printer => "No hash is available for stored data";)?;
+            }
+            (None, Some(_)) => {
+                write_if!(not_json => f, json_printer => "No recorded hash is available";)?;
+            }
+            (None, None) => {
+                write_if!(not_json => f, json_printer => "Neither recorded hash nor hash of stored data is available";)?;
+            }
+        }
 
         json_printer.write_close_bracket(f)?;
 
