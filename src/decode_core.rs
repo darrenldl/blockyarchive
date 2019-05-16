@@ -111,8 +111,11 @@ impl fmt::Display for Stats {
         let block_size = ver_to_block_size(self.version);
         let recorded_hash = &self.recorded_hash;
         let computed_hash = &self.computed_hash;
+        let hash_time_elapsed = match &self.hash_stats {
+            None => 0i64,
+            Some(stats) => (stats.end_time - stats.start_time) as i64,
+        };
         let time_elapsed = (self.end_time - self.start_time) as i64;
-        let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
 
         let json_printer = &self.json_printer;
 
@@ -155,15 +158,30 @@ impl fmt::Display for Stats {
             };
             write_maybe_json!(f, json_printer, "File size                              {}: {}", padding, self.out_file_size => skip_quotes)?;
             write_maybe_json!(f, json_printer, "SBX container size                     {}: {}", padding, self.in_file_size => skip_quotes)?;
-            write_maybe_json!(
-                f,
-                json_printer,
-                "Time elapsed                           {}: {:02}:{:02}:{:02}",
-                padding,
-                hour,
-                minute,
-                second
-            )?;
+            {
+                let (hour, minute, second) = time_utils::seconds_to_hms(hash_time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed for hashing               {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
+            {
+                let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed                           {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
             write_maybe_json!(
                 f,
                 json_printer,
@@ -232,15 +250,30 @@ impl fmt::Display for Stats {
             };
             write_maybe_json!(f, json_printer, "File size                           {}: {}", padding, self.out_file_size          => skip_quotes)?;
             write_maybe_json!(f, json_printer, "SBX container size                  {}: {}", padding, self.in_file_size           => skip_quotes)?;
-            write_maybe_json!(
-                f,
-                json_printer,
-                "Time elapsed                        {}: {:02}:{:02}:{:02}",
-                padding,
-                hour,
-                minute,
-                second
-            )?;
+            {
+                let (hour, minute, second) = time_utils::seconds_to_hms(hash_time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed for hashing               {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
+            {
+                let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed                           {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
             write_maybe_json!(
                 f,
                 json_printer,
