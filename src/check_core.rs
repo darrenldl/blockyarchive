@@ -213,7 +213,7 @@ impl fmt::Display for Stats {
             write_maybe_json!(
                 f,
                 json_printer,
-                "Hash of output file                      : {}",
+                "Hash of stored data                      : {}",
                 match (&self.recorded_hash, &self.computed_hash) {
                     (None, None) => null_if_json_else_NA!(json_printer).to_string(),
                     (Some(_), None) => null_if_json_else!(
