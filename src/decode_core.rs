@@ -1100,7 +1100,7 @@ fn hash(
     param: &Param,
     ref_block: &Block,
     ctrlc_stop_flag: &Arc<AtomicBool>,
-) -> Result<Option<HashBytes>, Error> {
+) -> Result<Option<(HashStats, HashBytes)>, Error> {
     let hash_bytes: Option<HashBytes> = if ref_block.is_data() {
         None
     } else {
@@ -1165,7 +1165,9 @@ fn hash(
 
     reporter.stop();
 
-    Ok(Some(hash_ctx.finish_into_hash_bytes()))
+    let stats = stats.lock().unwrap().clone();
+
+    Ok(Some((stats, hash_ctx.finish_into_hash_bytes())))
 }
 
 pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
@@ -1248,9 +1250,16 @@ pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let (mut stats, hash_res) = decode(&param, ref_block_pos, &ref_block, &ctrlc_stop_flag)?;
 
-    stats.computed_hash = match hash_res {
-        Some(r) => Some(r),
-        None => hash(&param, &ref_block, &ctrlc_stop_flag)?,
+    match hash_res {
+        Some(r) => {
+            stats.computed_hash = Some(r);
+        }
+        None => {
+            if let Some((hash_stats, computed_hash)) = hash(&param, &ref_block, &ctrlc_stop_flag)? {
+                stats.hash_stats = Some(hash_stats);
+                stats.computed_hash = Some(computed_hash);
+            }
+        }
     };
 
     Ok(Some(stats))
