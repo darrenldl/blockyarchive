@@ -53,6 +53,14 @@
   
     - Bumped major version as this may break backward compatibility
 
+- Added options for hashing stored data in check mode
+  
+    - This can be triggered via `--hash` or `--hash-only`
+  
+    - Both are incompatible with range options, as opposed to decode mode where hashing is still done with range options
+      
+        - This is to reduce complexity, especially since ranged hashing isn't very useful in general
+
 ## 6.0.1
 
 - Minor fixes for rescue and decode mode help messages
