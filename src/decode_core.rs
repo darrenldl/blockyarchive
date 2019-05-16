@@ -246,9 +246,9 @@ impl fmt::Display for Stats {
                 json_printer,
                 "Recorded hash                       {}: {}",
                 padding,
-                match *recorded_hash {
+                match recorded_hash {
                     None => null_if_json_else_NA!(json_printer).to_string(),
-                    Some(ref h) => format!(
+                    Some(h) => format!(
                         "{} - {}",
                         hash_type_to_string(h.0),
                         misc_utils::bytes_to_lower_hex_string(&h.1)
