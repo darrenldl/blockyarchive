@@ -280,7 +280,7 @@ impl fmt::Display for Stats {
                 if recorded_hash.1 == computed_hash.1 {
                     write_if!(not_json => f, json_printer => "The output file hash matches the recorded hash";)?;
                 } else {
-                    write_if!(not_json => f, json_printer => "The output file does NOT match the recorded hash";)?;
+                    write_if!(not_json => f, json_printer => "The output file hash does NOT match the recorded hash";)?;
                 }
             }
             (&Some(_), &None) => {
