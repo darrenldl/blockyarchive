@@ -132,6 +132,7 @@ impl CheckStats {
 pub struct Stats {
     version: Version,
     check_stats: Option<CheckStats>,
+    do_hash: bool,
     recorded_hash: Option<HashBytes>,
     computed_hash: Option<HashBytes>,
     json_printer: Arc<JSONPrinter>,
@@ -139,10 +140,11 @@ pub struct Stats {
 }
 
 impl Stats {
-    pub fn new(ref_block: &Block, json_printer: &Arc<JSONPrinter>) -> Stats {
+    pub fn new(ref_block: &Block, do_hash: bool, json_printer: &Arc<JSONPrinter>) -> Stats {
         Stats {
             version: ref_block.get_version(),
             check_stats: None,
+            do_hash,
             recorded_hash: None,
             computed_hash: None,
             json_printer: Arc::clone(json_printer),
@@ -263,22 +265,24 @@ impl fmt::Display for Stats {
             minute,
             second
         )?;
-        match (&self.recorded_hash, &self.computed_hash) {
-            (Some(recorded_hash), Some(computed_hash)) => {
-                if recorded_hash.1 == computed_hash.1 {
-                    write_if!(not_json => f, json_printer => "The hash of stored data matches the recorded hash";)?;
-                } else {
-                    write_if!(not_json => f, json_printer => "The hash of stored data does NOT match the recorded hash";)?;
+        if self.do_hash {
+            match (&self.recorded_hash, &self.computed_hash) {
+                (Some(recorded_hash), Some(computed_hash)) => {
+                    if recorded_hash.1 == computed_hash.1 {
+                        write_if!(not_json => f, json_printer => "The hash of stored data matches the recorded hash";)?;
+                    } else {
+                        write_if!(not_json => f, json_printer => "The hash of stored data does NOT match the recorded hash";)?;
+                    }
                 }
-            }
-            (Some(_), None) => {
-                write_if!(not_json => f, json_printer => "No hash is available for stored data";)?;
-            }
-            (None, Some(_)) => {
-                write_if!(not_json => f, json_printer => "No recorded hash is available";)?;
-            }
-            (None, None) => {
-                write_if!(not_json => f, json_printer => "Neither recorded hash nor hash of stored data is available";)?;
+                (Some(_), None) => {
+                    write_if!(not_json => f, json_printer => "No hash is available for stored data";)?;
+                }
+                (None, Some(_)) => {
+                    write_if!(not_json => f, json_printer => "No recorded hash is available";)?;
+                }
+                (None, None) => {
+                    write_if!(not_json => f, json_printer => "Neither recorded hash nor hash of stored data is available";)?;
+                }
             }
         }
 
@@ -535,8 +539,6 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
         Some(ver_to_block_size(ref_block.get_version()) as u64),
     );
 
-    let mut stats = Stats::new(&ref_block, &param.json_printer);
-
     let do_check = match param.hash_action {
         HashAction::HashOnly => false,
         _ => true,
@@ -546,6 +548,8 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
         HashAction::NoHash => false,
         _ => true,
     };
+
+    let mut stats = Stats::new(&ref_block, do_hash, &param.json_printer);
 
     let (orig_file_size, hash_ctx) = if do_hash {
         if ref_block.is_data() {
