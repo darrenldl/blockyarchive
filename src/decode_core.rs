@@ -158,30 +158,6 @@ impl fmt::Display for Stats {
             };
             write_maybe_json!(f, json_printer, "File size                              {}: {}", padding, self.out_file_size => skip_quotes)?;
             write_maybe_json!(f, json_printer, "SBX container size                     {}: {}", padding, self.in_file_size => skip_quotes)?;
-            {
-                let (hour, minute, second) = time_utils::seconds_to_hms(hash_time_elapsed);
-                write_maybe_json!(
-                    f,
-                    json_printer,
-                    "Time elapsed for hashing               {}: {:02}:{:02}:{:02}",
-                    padding,
-                    hour,
-                    minute,
-                    second
-                )?;
-            }
-            {
-                let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
-                write_maybe_json!(
-                    f,
-                    json_printer,
-                    "Time elapsed                           {}: {:02}:{:02}:{:02}",
-                    padding,
-                    hour,
-                    minute,
-                    second
-                )?;
-            }
             write_maybe_json!(
                 f,
                 json_printer,
@@ -215,6 +191,30 @@ impl fmt::Display for Stats {
                     ),
                 }
             )?;
+            {
+                let (hour, minute, second) = time_utils::seconds_to_hms(hash_time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed for hashing               {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
+            {
+                let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed                           {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
         } else {
             let padding = match self.blocks_decode_failed {
                 DecodeFailStats::Total(_) => "",
@@ -250,30 +250,6 @@ impl fmt::Display for Stats {
             };
             write_maybe_json!(f, json_printer, "File size                           {}: {}", padding, self.out_file_size          => skip_quotes)?;
             write_maybe_json!(f, json_printer, "SBX container size                  {}: {}", padding, self.in_file_size           => skip_quotes)?;
-            {
-                let (hour, minute, second) = time_utils::seconds_to_hms(hash_time_elapsed);
-                write_maybe_json!(
-                    f,
-                    json_printer,
-                    "Time elapsed for hashing            {}: {:02}:{:02}:{:02}",
-                    padding,
-                    hour,
-                    minute,
-                    second
-                )?;
-            }
-            {
-                let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
-                write_maybe_json!(
-                    f,
-                    json_printer,
-                    "Time elapsed                        {}: {:02}:{:02}:{:02}",
-                    padding,
-                    hour,
-                    minute,
-                    second
-                )?;
-            }
             write_maybe_json!(
                 f,
                 json_printer,
@@ -307,6 +283,30 @@ impl fmt::Display for Stats {
                     ),
                 }
             )?;
+            {
+                let (hour, minute, second) = time_utils::seconds_to_hms(hash_time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed for hashing            {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
+            {
+                let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed                        {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
         }
         match (recorded_hash, computed_hash) {
             (Some(recorded_hash), Some(computed_hash)) => {
