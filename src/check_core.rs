@@ -465,20 +465,12 @@ fn hash(
 
         break_if_atomic_bool!(ctrlc_stop_flag);
 
-        let pos = sbx_block::calc_data_block_write_pos(
-            version,
-            seq_num,
-            None,
-            data_par_burst,
-        );
+        let pos = sbx_block::calc_data_block_write_pos(version, seq_num, None, data_par_burst);
 
         reader.seek(SeekFrom::Start(pos))?;
 
         // read at reference block block size
-        let read_res = reader.read(sbx_block::slice_buf_mut(
-            version,
-            &mut buffer,
-        ))?;
+        let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
         let decode_successful = !read_res.eof_seen
             && match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
