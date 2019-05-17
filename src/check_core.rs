@@ -248,7 +248,7 @@ impl fmt::Display for Stats {
             write_maybe_json!(
                 f,
                 json_printer,
-                "Time elapsed for hashing stored data     : {:02}:{:02}:{:02}",
+                "Time elapsed for hashing                 : {:02}:{:02}:{:02}",
                 hour,
                 minute,
                 second
