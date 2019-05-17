@@ -81,3 +81,5 @@ for ver in ${VERSIONS[*]}; do
         exit_code=1
     fi
 done
+
+echo $exit_code > exit_code
