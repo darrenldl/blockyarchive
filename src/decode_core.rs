@@ -204,7 +204,7 @@ impl fmt::Display for Stats {
                     ),
                 }
             )?;
-            {
+            if let Some(_) = &self.hash_stats {
                 let (hour, minute, second) = time_utils::seconds_to_hms(hash_time_elapsed);
                 write_maybe_json!(
                     f,
@@ -308,7 +308,7 @@ impl fmt::Display for Stats {
                     ),
                 }
             )?;
-            {
+            if let Some(_) = &self.hash_stats {
                 let (hour, minute, second) = time_utils::seconds_to_hms(hash_time_elapsed);
                 write_maybe_json!(
                     f,
