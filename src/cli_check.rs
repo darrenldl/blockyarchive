@@ -1,4 +1,5 @@
 use crate::check_core;
+use crate::check_core::HashAction;
 use crate::check_core::Param;
 
 use crate::cli_utils::*;
@@ -24,6 +25,32 @@ Specify this if you want blkar to report blank blocks as well.",
         .arg(ref_from_byte_arg())
         .arg(ref_to_byte_inc_arg())
         .arg(ref_to_byte_exc_arg())
+        .arg(guess_burst_from_byte_arg())
+        .arg(
+            Arg::with_name("hash")
+                .long("hash")
+                .help(
+                    "Hash stored data after individual block checking. This is done
+only if the reference block is a metadata block and has the hash
+field.",
+                )
+                .conflicts_with("from_pos")
+                .conflicts_with("to_pos_inc")
+                .conflicts_with("to_pos_exc"),
+        )
+        .arg(
+            Arg::with_name("hash_only")
+                .long("hash-only")
+                .help(
+                    "Hash stored data and skip individual block checking. This is
+done only if the reference block is a metadata block and has
+the hash field.",
+                )
+                .conflicts_with("from_pos")
+                .conflicts_with("to_pos_inc")
+                .conflicts_with("to_pos_exc")
+                .conflicts_with("hash"),
+        )
         .arg(json_arg())
 }
 
@@ -42,15 +69,30 @@ pub fn check<'a>(matches: &ArgMatches<'a>) -> i32 {
     let ref_from_pos = get_ref_from_pos!(matches, json_printer);
     let ref_to_pos = get_ref_to_pos!(matches, json_printer);
 
+    let guess_burst_from_pos = get_guess_burst_from_pos!(matches, json_printer);
+
+    let hash_action = if matches.is_present("hash") {
+        HashAction::HashAfterCheck
+    } else if matches.is_present("hash_only") {
+        HashAction::HashOnly
+    } else {
+        HashAction::NoHash
+    };
+
+    let burst = get_burst_opt!(matches, json_printer);
+
     let param = Param::new(
         get_ref_block_choice!(matches),
         ref_from_pos,
         ref_to_pos,
+        guess_burst_from_pos,
         matches.is_present("report_blank"),
         &json_printer,
         from_pos,
         to_pos,
         matches.is_present("force_misalign"),
+        hash_action,
+        burst,
         in_file,
         matches.is_present("verbose"),
         pr_verbosity_level,

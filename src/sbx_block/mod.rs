@@ -49,7 +49,7 @@ macro_rules! make_meta_getter {
             match self.get_meta_ref_by_id(MetadataID::$meta_id)? {
                 None                        => Ok(None),
                 Some(Metadata::$meta_id(x)) => Ok(Some(x)),
-                _                           => panic!(),
+                _                           => unreachable!(),
             }
         }
     };

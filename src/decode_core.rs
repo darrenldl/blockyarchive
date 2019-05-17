@@ -38,6 +38,8 @@ use crate::sbx_specs::{
 use crate::block_utils;
 use crate::time_utils;
 
+use crate::hash_stats::HashStats;
+
 use crate::block_utils::RefBlockChoice;
 
 const HASH_FILE_BLOCK_SIZE: usize = 4096;
@@ -49,16 +51,32 @@ pub enum WriteTo {
     Stdout,
 }
 
-pub enum ReadPattern {
-    Sequential(Option<(usize, usize, usize)>),
-    BurstErrorResistant(usize, usize, usize),
-}
-
 #[derive(Clone, Debug)]
 pub struct DecodeFailsBreakdown {
     pub meta_blocks_decode_failed: u64,
     pub data_blocks_decode_failed: u64,
     pub parity_blocks_decode_failed: u64,
+}
+
+pub enum ReadPattern {
+    Sequential(Option<(usize, usize, usize)>),
+    BurstErrorResistant(usize, usize, usize),
+}
+
+impl ReadPattern {
+    pub fn new(
+        from_pos: Option<u64>,
+        to_pos: Option<RangeEnd<u64>>,
+        data_par_burst: Option<(usize, usize, usize)>,
+    ) -> Self {
+        match data_par_burst {
+            Some((data, parity, burst)) => match (from_pos, to_pos) {
+                (None, None) => ReadPattern::BurstErrorResistant(data, parity, burst),
+                _ => ReadPattern::Sequential(Some((data, parity, burst))),
+            },
+            None => ReadPattern::Sequential(None),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -83,14 +101,8 @@ pub struct Stats {
     end_time: f64,
     pub recorded_hash: Option<multihash::HashBytes>,
     pub computed_hash: Option<multihash::HashBytes>,
+    hash_stats: Option<HashStats>,
     json_printer: Arc<JSONPrinter>,
-}
-
-struct HashStats {
-    pub bytes_processed: u64,
-    pub total_bytes: u64,
-    start_time: f64,
-    end_time: f64,
 }
 
 impl fmt::Display for Stats {
@@ -99,8 +111,12 @@ impl fmt::Display for Stats {
         let block_size = ver_to_block_size(self.version);
         let recorded_hash = &self.recorded_hash;
         let computed_hash = &self.computed_hash;
-        let time_elapsed = (self.end_time - self.start_time) as i64;
-        let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
+        let decode_time_elapsed = (self.end_time - self.start_time) as i64;
+        let hash_time_elapsed = match &self.hash_stats {
+            None => 0i64,
+            Some(stats) => (stats.end_time - stats.start_time) as i64,
+        };
+        let time_elapsed = decode_time_elapsed + hash_time_elapsed;
 
         let json_printer = &self.json_printer;
 
@@ -143,15 +159,18 @@ impl fmt::Display for Stats {
             };
             write_maybe_json!(f, json_printer, "File size                              {}: {}", padding, self.out_file_size => skip_quotes)?;
             write_maybe_json!(f, json_printer, "SBX container size                     {}: {}", padding, self.in_file_size => skip_quotes)?;
-            write_maybe_json!(
-                f,
-                json_printer,
-                "Time elapsed                           {}: {:02}:{:02}:{:02}",
-                padding,
-                hour,
-                minute,
-                second
-            )?;
+            if let Some(_) = &self.hash_stats {
+                let (hour, minute, second) = time_utils::seconds_to_hms(decode_time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed for decoding              {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
             write_maybe_json!(
                 f,
                 json_printer,
@@ -172,19 +191,43 @@ impl fmt::Display for Stats {
                 "Hash of output file                    {}: {}",
                 padding,
                 match (recorded_hash, computed_hash) {
-                    (&None, &None) => null_if_json_else_NA!(json_printer).to_string(),
-                    (&Some(_), &None) => null_if_json_else!(
+                    (None, None) => null_if_json_else_NA!(json_printer).to_string(),
+                    (Some(_), None) => null_if_json_else!(
                         json_printer,
                         "N/A - recorded hash type is not supported by blkar"
                     )
                     .to_string(),
-                    (_, &Some(ref h)) => format!(
+                    (_, Some(h)) => format!(
                         "{} - {}",
                         hash_type_to_string(h.0),
                         misc_utils::bytes_to_lower_hex_string(&h.1)
                     ),
                 }
             )?;
+            if let Some(_) = &self.hash_stats {
+                let (hour, minute, second) = time_utils::seconds_to_hms(hash_time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed for hashing               {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
+            {
+                let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed                           {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
         } else {
             let padding = match self.blocks_decode_failed {
                 DecodeFailStats::Total(_) => "",
@@ -220,23 +263,26 @@ impl fmt::Display for Stats {
             };
             write_maybe_json!(f, json_printer, "File size                           {}: {}", padding, self.out_file_size          => skip_quotes)?;
             write_maybe_json!(f, json_printer, "SBX container size                  {}: {}", padding, self.in_file_size           => skip_quotes)?;
-            write_maybe_json!(
-                f,
-                json_printer,
-                "Time elapsed                        {}: {:02}:{:02}:{:02}",
-                padding,
-                hour,
-                minute,
-                second
-            )?;
+            if let Some(_) = &self.hash_stats {
+                let (hour, minute, second) = time_utils::seconds_to_hms(decode_time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed for decoding           {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
             write_maybe_json!(
                 f,
                 json_printer,
                 "Recorded hash                       {}: {}",
                 padding,
-                match *recorded_hash {
+                match recorded_hash {
                     None => null_if_json_else_NA!(json_printer).to_string(),
-                    Some(ref h) => format!(
+                    Some(h) => format!(
                         "{} - {}",
                         hash_type_to_string(h.0),
                         misc_utils::bytes_to_lower_hex_string(&h.1)
@@ -262,22 +308,46 @@ impl fmt::Display for Stats {
                     ),
                 }
             )?;
+            if let Some(_) = &self.hash_stats {
+                let (hour, minute, second) = time_utils::seconds_to_hms(hash_time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed for hashing            {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
+            {
+                let (hour, minute, second) = time_utils::seconds_to_hms(time_elapsed);
+                write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Time elapsed                        {}: {:02}:{:02}:{:02}",
+                    padding,
+                    hour,
+                    minute,
+                    second
+                )?;
+            }
         }
         match (recorded_hash, computed_hash) {
-            (&Some(ref recorded_hash), &Some(ref computed_hash)) => {
+            (Some(recorded_hash), Some(computed_hash)) => {
                 if recorded_hash.1 == computed_hash.1 {
                     write_if!(not_json => f, json_printer => "The output file hash matches the recorded hash";)?;
                 } else {
-                    write_if!(not_json => f, json_printer => "The output file does NOT match the recorded hash";)?;
+                    write_if!(not_json => f, json_printer => "The output file hash does NOT match the recorded hash";)?;
                 }
             }
-            (&Some(_), &None) => {
+            (Some(_), None) => {
                 write_if!(not_json => f, json_printer => "No hash is available for output file";)?;
             }
-            (&None, &Some(_)) => {
+            (None, Some(_)) => {
                 write_if!(not_json => f, json_printer => "No recorded hash is available";)?;
             }
-            (&None, &None) => {
+            (None, None) => {
                 write_if!(not_json => f, json_printer => "Neither recorded hash nor output file hash is available";)?;
             }
         }
@@ -348,17 +418,6 @@ impl Param {
     }
 }
 
-impl HashStats {
-    pub fn new(file_size: u64) -> HashStats {
-        HashStats {
-            bytes_processed: 0,
-            total_bytes: file_size,
-            start_time: 0.,
-            end_time: 0.,
-        }
-    }
-}
-
 impl Stats {
     pub fn new(
         ref_block: &Block,
@@ -368,7 +427,8 @@ impl Stats {
         json_printer: &Arc<JSONPrinter>,
     ) -> Stats {
         use crate::file_utils::from_container_size::calc_total_block_count;
-        let total_blocks = calc_total_block_count(ref_block.get_version(), required_len);
+        let version = ref_block.get_version();
+        let total_blocks = calc_total_block_count(version, required_len);
         let blocks_decode_failed = match write_to {
             WriteTo::File => DecodeFailStats::Total(0),
             WriteTo::Stdout => DecodeFailStats::Breakdown(DecodeFailsBreakdown {
@@ -377,7 +437,6 @@ impl Stats {
                 parity_blocks_decode_failed: 0,
             }),
         };
-        let version = ref_block.get_version();
         Stats {
             uid: ref_block.get_uid(),
             version,
@@ -393,6 +452,7 @@ impl Stats {
             end_time: 0.,
             recorded_hash: None,
             computed_hash: None,
+            hash_stats: None,
             json_printer: Arc::clone(json_printer),
         }
     }
@@ -472,24 +532,6 @@ impl Stats {
             + self.data_blocks_decoded
             + self.parity_blocks_decoded
             + blocks_decode_failed
-    }
-}
-
-impl ProgressReport for HashStats {
-    fn start_time_mut(&mut self) -> &mut f64 {
-        &mut self.start_time
-    }
-
-    fn end_time_mut(&mut self) -> &mut f64 {
-        &mut self.end_time
-    }
-
-    fn units_so_far(&self) -> u64 {
-        self.bytes_processed
-    }
-
-    fn total_units(&self) -> Option<u64> {
-        Some(self.total_bytes)
     }
 }
 
@@ -579,6 +621,8 @@ pub fn decode(
     ref_block: &Block,
     ctrlc_stop_flag: &Arc<AtomicBool>,
 ) -> Result<(Stats, Option<HashBytes>), Error> {
+    let version = ref_block.get_version();
+
     let in_file_size = file_utils::get_file_size(&param.in_file)?;
 
     let orig_file_size = if ref_block.is_meta() {
@@ -587,34 +631,17 @@ pub fn decode(
         None
     };
 
-    let data_par_burst = if ver_uses_rs(ref_block.get_version()) && ref_block.is_meta() {
-        match (ref_block.get_RSD(), ref_block.get_RSP()) {
-            (Ok(Some(data)), Ok(Some(parity))) => {
-                let data = data as usize;
-                let parity = parity as usize;
+    let data_par_burst = block_utils::get_data_par_burst_from_ref_block_and_in_file(
+        ref_block_pos,
+        ref_block,
+        param.burst,
+        param.from_pos,
+        param.guess_burst_from_pos,
+        param.force_misalign,
+        &param.in_file,
+    );
 
-                // try to obtain burst error resistance level
-                match param.burst {
-                    Some(l) => Some((data, parity, l)),
-                    None => match block_utils::guess_burst_err_resistance_level(
-                        &param.in_file,
-                        get_guess_burst_from_pos_from_param!(param),
-                        param.force_misalign,
-                        ref_block_pos,
-                        &ref_block,
-                    ) {
-                        Ok(Some(l)) => Some((data, parity, l)),
-                        _ => Some((data, parity, 0)), // assume burst resistance level is 0
-                    },
-                }
-            }
-            _ => None,
-        }
-    } else {
-        None
-    };
-
-    let data_size = ver_to_data_size(ref_block.get_version());
+    let data_size = ver_to_data_size(version);
     let data_size_of_last_data_block = match orig_file_size {
         Some(orig_file_size) => match orig_file_size % data_size as u64 {
             0 => Some(data_size as u64),
@@ -666,7 +693,7 @@ pub fn decode(
     };
 
     // deal with RS related stuff
-    let rs_enabled = ver_uses_rs(ref_block.get_version());
+    let rs_enabled = ver_uses_rs(version);
 
     if rs_enabled {
         // must be metadata block, and must contain fields `RSD`, `RSP`
@@ -677,8 +704,6 @@ pub fn decode(
         Some((data, parity, _)) => Some((data, parity)),
         None => None,
     };
-
-    let version = ref_block.get_version();
 
     let header_pred = header_pred_same_ver_uid!(ref_block);
 
@@ -729,10 +754,7 @@ pub fn decode(
                 break_if_reached_required_len!(bytes_processed, required_len);
 
                 // read at reference block block size
-                let read_res = reader.read(sbx_block::slice_buf_mut(
-                    ref_block.get_version(),
-                    &mut buffer,
-                ))?;
+                let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
                 bytes_processed += read_res.len_read as u64;
 
@@ -762,7 +784,7 @@ pub fn decode(
 
                     // write data block
                     if let Some(write_pos) = sbx_block::calc_data_chunk_write_pos(
-                        ref_block.get_version(),
+                        version,
                         block.get_seq_num(),
                         data_par_shards,
                     ) {
@@ -801,19 +823,19 @@ pub fn decode(
                 }
             }
 
-            fn read_enough_blocks(stats: &mut Stats) -> bool {
-                let blocks_decode_failed = match stats.blocks_decode_failed {
-                    DecodeFailStats::Breakdown(ref x) => {
-                        x.meta_blocks_decode_failed
-                            + x.data_blocks_decode_failed
-                            + x.parity_blocks_decode_failed
-                    }
-                    DecodeFailStats::Total(x) => x,
-                };
+            // fn read_enough_blocks(stats: &mut Stats) -> bool {
+            //     let blocks_decode_failed = match stats.blocks_decode_failed {
+            //         DecodeFailStats::Breakdown(ref x) => {
+            //             x.meta_blocks_decode_failed
+            //                 + x.data_blocks_decode_failed
+            //                 + x.parity_blocks_decode_failed
+            //         }
+            //         DecodeFailStats::Total(x) => x,
+            //     };
 
-                (stats.meta_blocks_decoded + stats.data_blocks_decoded + blocks_decode_failed)
-                    == stats.total_blocks
-            }
+            //     (stats.meta_blocks_decoded + stats.data_blocks_decoded + blocks_decode_failed)
+            //         == stats.total_blocks
+            // }
 
             stats = Arc::new(Mutex::new(Stats::new(
                 &ref_block,
@@ -852,13 +874,7 @@ pub fn decode(
                 None => None,
             };
 
-            let read_pattern = match data_par_burst {
-                Some((data, parity, burst)) => match (param.from_pos, param.to_pos) {
-                    (None, None) => ReadPattern::BurstErrorResistant(data, parity, burst),
-                    _ => ReadPattern::Sequential(Some((data, parity, burst))),
-                },
-                None => ReadPattern::Sequential(None),
-            };
+            let read_pattern = ReadPattern::new(param.from_pos, param.to_pos, data_par_burst);
 
             reporter.start();
 
@@ -872,7 +888,7 @@ pub fn decode(
 
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
-                        reader.seek(SeekFrom::Start(p + seek_to))?;
+                        reader.seek(SeekFrom::Start(p))?;
                         let read_res =
                             reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
@@ -897,19 +913,17 @@ pub fn decode(
                         break_if_atomic_bool!(ctrlc_stop_flag);
 
                         let pos = sbx_block::calc_data_block_write_pos(
-                            ref_block.get_version(),
+                            version,
                             seq_num,
                             None,
                             data_par_burst,
                         );
 
-                        reader.seek(SeekFrom::Start(pos + seek_to))?;
+                        reader.seek(SeekFrom::Start(pos))?;
 
                         // read at reference block block size
-                        let read_res = reader.read(sbx_block::slice_buf_mut(
-                            ref_block.get_version(),
-                            &mut buffer,
-                        ))?;
+                        let read_res =
+                            reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
                         let decode_successful = !read_res.eof_seen
                             && match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
@@ -982,10 +996,8 @@ pub fn decode(
                         break_if_reached_required_len!(bytes_processed, required_len);
 
                         // read at reference block block size
-                        let read_res = reader.read(sbx_block::slice_buf_mut(
-                            ref_block.get_version(),
-                            &mut buffer,
-                        ))?;
+                        let read_res =
+                            reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
                         bytes_processed += read_res.len_read as u64;
 
@@ -1064,6 +1076,7 @@ pub fn decode(
             }
         }
     }
+
     reporter.stop();
 
     // truncate file possibly
@@ -1099,7 +1112,7 @@ pub fn decode(
         Some(r) => r?,
         None => match orig_file_size {
             Some(x) => x,
-            None => data_blocks_decoded * ver_to_data_size(ref_block.get_version()) as u64,
+            None => data_blocks_decoded * ver_to_data_size(version) as u64,
         },
     };
 
@@ -1112,7 +1125,7 @@ fn hash(
     param: &Param,
     ref_block: &Block,
     ctrlc_stop_flag: &Arc<AtomicBool>,
-) -> Result<Option<HashBytes>, Error> {
+) -> Result<Option<(HashStats, HashBytes)>, Error> {
     let hash_bytes: Option<HashBytes> = if ref_block.is_data() {
         None
     } else {
@@ -1177,7 +1190,9 @@ fn hash(
 
     reporter.stop();
 
-    Ok(Some(hash_ctx.finish_into_hash_bytes()))
+    let stats = stats.lock().unwrap().clone();
+
+    Ok(Some((stats, hash_ctx.finish_into_hash_bytes())))
 }
 
 pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
@@ -1260,9 +1275,16 @@ pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let (mut stats, hash_res) = decode(&param, ref_block_pos, &ref_block, &ctrlc_stop_flag)?;
 
-    stats.computed_hash = match hash_res {
-        Some(r) => Some(r),
-        None => hash(&param, &ref_block, &ctrlc_stop_flag)?,
+    match hash_res {
+        Some(r) => {
+            stats.computed_hash = Some(r);
+        }
+        None => {
+            if let Some((hash_stats, computed_hash)) = hash(&param, &ref_block, &ctrlc_stop_flag)? {
+                stats.hash_stats = Some(hash_stats);
+                stats.computed_hash = Some(computed_hash);
+            }
+        }
     };
 
     Ok(Some(stats))

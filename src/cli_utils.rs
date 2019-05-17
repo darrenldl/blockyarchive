@@ -75,6 +75,7 @@ pub fn multi_pass_no_skip_arg<'a, 'b>() -> Arg<'a, 'b> {
 the location. This allows writing to OUT multiple times to update
 it gradually.",
         )
+        .conflicts_with("multi_pass")
 }
 
 pub fn only_pick_uid_arg<'a, 'b>() -> Arg<'a, 'b> {
@@ -143,6 +144,7 @@ defaults to the end of file. Negative values are rejected. If TO-BYTE
 is smaller than FROM-BYTE, then it will be treated as
 FROM-BYTE.",
         )
+        .conflicts_with("to_pos_inc")
 }
 
 pub fn guess_burst_from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
@@ -199,6 +201,7 @@ pub fn ref_to_byte_exc_arg<'a, 'b>() -> Arg<'a, 'b> {
 If not specified, defaults to the end of file. Negative values are
 rejected.",
         )
+        .conflicts_with("ref_to_pos_inc")
 }
 
 pub fn no_meta_arg<'a, 'b>() -> Arg<'a, 'b> {

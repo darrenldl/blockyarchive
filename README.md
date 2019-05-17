@@ -97,7 +97,7 @@ If blockyarchive has been useful to you, and you would like to donate to me for 
 
 **Libcrc code**
 
-The crcccitt code is translated from the C implementation in [libcrc](https://github.com/lammertb/libcrc) and are under the same MIT License as used by libcrc and as stated in libcrc source code, the license text of the crcccitt.c is copied over to `crc-ccitt/build.rs`, `crc-ccitt/src/lib.rs`, `build.rs` and `src/crc_ccitt.rs` as well.
+The crcccitt code is translated from the C implementation in [libcrc](https://github.com/lammertb/libcrc) and is under the same MIT License as used by libcrc and as stated in libcrc source code. The license text of the crcccitt.c is copied over to `crc-ccitt/build.rs`, `crc-ccitt/src/lib.rs`, `build.rs` and `src/crc_ccitt.rs` as well.
 
 **Official SeqBox code**
 

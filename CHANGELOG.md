@@ -28,6 +28,7 @@
   
     - Encode stdin mode now reports current rate and time used during encoding, and shows normal progress stats at the end
     - The following modes now use "bytes" as units for progress reporting instead of "chunks" or "blocks"
+        - Check
         - Decode
         - Encode
         - Repair
@@ -51,6 +52,16 @@
     - This means now by default the archive can survive burst sector error of size 3 on modern disks where the sector size is 4096 bytes
   
     - Bumped major version as this may break backward compatibility
+
+- Added options for hashing stored data in check mode
+  
+    - This can be triggered via `--hash` or `--hash-only`
+  
+    - Both are incompatible with range options, as opposed to decode mode where hashing is still done with range options
+      
+        - This is to reduce complexity, especially since ranged hashing isn't very useful in general
+- Time elapsed fields display update for decode mode
+    - Now decoding time and hashing time are displayed separately
 
 ## 6.0.1
 

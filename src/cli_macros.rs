@@ -106,7 +106,7 @@ macro_rules! get_to_pos {
                     Err(_) => exit_with_msg!(usr $json_printer => "Invalid to exc position")
                 },
             (Some(_), Some(_)) =>
-                exit_with_msg!(usr $json_printer => "Cannot specify both --to-inc and --to-exc"),
+                unreachable!(),
         }
     }}
 }
@@ -163,7 +163,7 @@ macro_rules! get_ref_to_pos {
                     Err(_) => exit_with_msg!(usr $json_printer => "Invalid ref to exc position")
                 },
             (Some(_), Some(_)) =>
-                exit_with_msg!(usr $json_printer => "Cannot specify both --ref-to-inc and --ref-to-exc"),
+                unreachable!()
         }
     }}
 }
@@ -494,11 +494,14 @@ macro_rules! get_multi_pass {
     ) => {{
         use crate::misc_utils::MultiPassType;
 
-        match ($matches.is_present("multi_pass"), $matches.is_present("multi_pass_no_skip")) {
+        match (
+            $matches.is_present("multi_pass"),
+            $matches.is_present("multi_pass_no_skip"),
+        ) {
             (false, false) => None,
             (true, false) => Some(MultiPassType::SkipGood),
             (false, true) => Some(MultiPassType::OverwriteAll),
-            (true, true) => exit_with_msg!(usr $json_printer => "Cannot specify both --multi-pass and --multi-pass-no-skip"),
+            (true, true) => unreachable!(),
         }
     }};
 }
