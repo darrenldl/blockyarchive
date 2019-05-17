@@ -159,7 +159,7 @@ impl fmt::Display for Stats {
             };
             write_maybe_json!(f, json_printer, "File size                              {}: {}", padding, self.out_file_size => skip_quotes)?;
             write_maybe_json!(f, json_printer, "SBX container size                     {}: {}", padding, self.in_file_size => skip_quotes)?;
-            {
+            if let Some(_) = &self.hash_stats {
                 let (hour, minute, second) = time_utils::seconds_to_hms(decode_time_elapsed);
                 write_maybe_json!(
                     f,
@@ -263,7 +263,7 @@ impl fmt::Display for Stats {
             };
             write_maybe_json!(f, json_printer, "File size                           {}: {}", padding, self.out_file_size          => skip_quotes)?;
             write_maybe_json!(f, json_printer, "SBX container size                  {}: {}", padding, self.in_file_size           => skip_quotes)?;
-            {
+            if let Some(_) = &self.hash_stats {
                 let (hour, minute, second) = time_utils::seconds_to_hms(decode_time_elapsed);
                 write_maybe_json!(
                     f,
