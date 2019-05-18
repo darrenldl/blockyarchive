@@ -177,14 +177,54 @@ impl fmt::Display for Stats {
                 "SBX version                         : {}",
                 ver_to_usize(self.version)
             )?;
-            write_maybe_json!(f, json_printer, "Block size used in encoding         : {}", block_size          => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Data  size used in encoding         : {}", data_size           => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks written            : {}", blocks_written      => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks written (metadata) : {}", meta_blocks_written => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks written (data)     : {}", data_blocks_written => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Amount of data encoded (bytes)      : {}", data_bytes_encoded  => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "File size                           : {}", in_file_size        => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "SBX container size                  : {}", out_file_size       => skip_quotes)?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Block size used in encoding         : {}",
+                block_size
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Data  size used in encoding         : {}",
+                data_size
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks written            : {}",
+                blocks_written
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks written (metadata) : {}",
+                meta_blocks_written
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks written (data)     : {}",
+                data_blocks_written
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Amount of data encoded (bytes)      : {}",
+                data_bytes_encoded
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "File size                           : {}",
+                in_file_size
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "SBX container size                  : {}",
+                out_file_size
+            )?;
             write_maybe_json!(
                 f,
                 json_printer,

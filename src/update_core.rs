@@ -189,7 +189,7 @@ fn print_block_info_and_meta_changes(
     if meta_block_count > 0 {
         print_if!(not_json => json_printer => "";);
     }
-    print_maybe_json!(json_printer,       "Metadata block number : {}", meta_block_count => skip_quotes);
+    print_maybe_json!(json_printer, "Metadata block number : {}", meta_block_count);
     print_if!(not_json => json_printer => "========================================";);
 
     print_maybe_json!(json_printer, "Found at byte : {}", pos);
