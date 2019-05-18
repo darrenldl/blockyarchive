@@ -65,9 +65,6 @@ impl fmt::Display for Stats {
         let parity_blocks_written = self.parity_blocks_written;
         let blocks_written = meta_blocks_written + data_blocks_written + parity_blocks_written;
         let data_bytes_encoded = self.data_bytes_encoded();
-        // self.data_blocks_written as u64
-        // * data_size as u64
-        // - self.data_padding_bytes as u64;
         let in_file_size = self.in_file_size;
         let out_file_size = self.out_file_size;
         let time_elapsed = (self.end_time - self.start_time) as i64;
