@@ -80,13 +80,13 @@ impl fmt::Display for Stats {
                 json_printer,
                 "File UID                               : {}",
                 misc_utils::bytes_to_upper_hex_string(&self.uid)
+                    => force_quotes
             )?;
             write_maybe_json!(
                 f,
                 json_printer,
                 "SBX version                            : {}",
                 ver_to_usize(self.version)
-                    => force_quotes
             )?;
             write_maybe_json!(f, json_printer, "Block size used in encoding            : {}", block_size)?;
             write_maybe_json!(f, json_printer, "Data  size used in encoding            : {}", data_size)?;
@@ -124,6 +124,7 @@ impl fmt::Display for Stats {
                 json_printer,
                 "File UID                            : {}",
                 misc_utils::bytes_to_upper_hex_string(&self.uid)
+                    => force_quotes
             )?;
             write_maybe_json!(
                 f,
