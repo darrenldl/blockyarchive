@@ -134,6 +134,7 @@ impl fmt::Display for Stats {
                 "File UID                               {}: {}",
                 padding,
                 misc_utils::bytes_to_upper_hex_string(&self.uid)
+                    => force_quotes
             )?;
             write_maybe_json!(
                 f,
@@ -142,23 +143,83 @@ impl fmt::Display for Stats {
                 padding,
                 ver_to_usize(self.version)
             )?;
-            write_maybe_json!(f, json_printer, "Block size used in decoding            {}: {}", padding, block_size => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks processed             {}: {}", padding, self.blocks_so_far() => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata)    {}: {}", padding, self.meta_blocks_decoded => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (data)        {}: {}", padding, self.data_blocks_decoded => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (parity)      {}: {}", padding, self.parity_blocks_decoded => skip_quotes)?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Block size used in decoding            {}: {}",
+                padding,
+                block_size
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks processed             {}: {}",
+                padding,
+                self.blocks_so_far()
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks decoded (metadata)    {}: {}",
+                padding,
+                self.meta_blocks_decoded
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks decoded (data)        {}: {}",
+                padding,
+                self.data_blocks_decoded
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks decoded (parity)      {}: {}",
+                padding,
+                self.parity_blocks_decoded
+            )?;
             match self.blocks_decode_failed {
-                DecodeFailStats::Total(x) => {
-                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode      : {}", x => skip_quotes)?
-                }
+                DecodeFailStats::Total(x) => write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Number of blocks failed to decode      : {}",
+                    x
+                )?,
                 DecodeFailStats::Breakdown(ref x) => {
-                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (metadata)    : {}", x.meta_blocks_decode_failed => skip_quotes)?;
-                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (data)        : {}", x.data_blocks_decode_failed => skip_quotes)?;
-                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (parity)      : {}", x.parity_blocks_decode_failed => skip_quotes)?;
+                    write_maybe_json!(
+                        f,
+                        json_printer,
+                        "Number of blocks failed to decode (metadata)    : {}",
+                        x.meta_blocks_decode_failed
+                    )?;
+                    write_maybe_json!(
+                        f,
+                        json_printer,
+                        "Number of blocks failed to decode (data)        : {}",
+                        x.data_blocks_decode_failed
+                    )?;
+                    write_maybe_json!(
+                        f,
+                        json_printer,
+                        "Number of blocks failed to decode (parity)      : {}",
+                        x.parity_blocks_decode_failed
+                    )?;
                 }
             };
-            write_maybe_json!(f, json_printer, "File size                              {}: {}", padding, self.out_file_size => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "SBX container size                     {}: {}", padding, self.in_file_size => skip_quotes)?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "File size                              {}: {}",
+                padding,
+                self.out_file_size
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "SBX container size                     {}: {}",
+                padding,
+                self.in_file_size
+            )?;
             if let Some(_) = &self.hash_stats {
                 let (hour, minute, second) = time_utils::seconds_to_hms(decode_time_elapsed);
                 write_maybe_json!(
@@ -240,6 +301,7 @@ impl fmt::Display for Stats {
                 "File UID                            {}: {}",
                 padding,
                 misc_utils::bytes_to_upper_hex_string(&self.uid)
+                    => force_quotes
             )?;
             write_maybe_json!(
                 f,
@@ -248,21 +310,70 @@ impl fmt::Display for Stats {
                 padding,
                 ver_to_usize(self.version)
             )?;
-            write_maybe_json!(f, json_printer, "Block size used in decoding         {}: {}", padding, block_size                  => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks processed          {}: {}", padding, self.blocks_so_far()         => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (metadata) {}: {}", padding, self.meta_blocks_decoded    => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks decoded (data)     {}: {}", padding, self.data_blocks_decoded    => skip_quotes)?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Block size used in decoding         {}: {}",
+                padding,
+                block_size
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks processed          {}: {}",
+                padding,
+                self.blocks_so_far()
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks decoded (metadata) {}: {}",
+                padding,
+                self.meta_blocks_decoded
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks decoded (data)     {}: {}",
+                padding,
+                self.data_blocks_decoded
+            )?;
             match self.blocks_decode_failed {
-                DecodeFailStats::Total(x) => {
-                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode   : {}", x   => skip_quotes)?
-                }
+                DecodeFailStats::Total(x) => write_maybe_json!(
+                    f,
+                    json_printer,
+                    "Number of blocks failed to decode   : {}",
+                    x
+                )?,
                 DecodeFailStats::Breakdown(ref x) => {
-                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (metadata) : {}", x.meta_blocks_decode_failed => skip_quotes)?;
-                    write_maybe_json!(f, json_printer, "Number of blocks failed to decode (data)     : {}", x.data_blocks_decode_failed => skip_quotes)?;
+                    write_maybe_json!(
+                        f,
+                        json_printer,
+                        "Number of blocks failed to decode (metadata) : {}",
+                        x.meta_blocks_decode_failed
+                    )?;
+                    write_maybe_json!(
+                        f,
+                        json_printer,
+                        "Number of blocks failed to decode (data)     : {}",
+                        x.data_blocks_decode_failed
+                    )?;
                 }
             };
-            write_maybe_json!(f, json_printer, "File size                           {}: {}", padding, self.out_file_size          => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "SBX container size                  {}: {}", padding, self.in_file_size           => skip_quotes)?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "File size                           {}: {}",
+                padding,
+                self.out_file_size
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "SBX container size                  {}: {}",
+                padding,
+                self.in_file_size
+            )?;
             if let Some(_) = &self.hash_stats {
                 let (hour, minute, second) = time_utils::seconds_to_hms(decode_time_elapsed);
                 write_maybe_json!(
