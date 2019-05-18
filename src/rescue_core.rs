@@ -201,15 +201,30 @@ impl fmt::Display for Stats {
 
         json_printer.write_open_bracket(f, Some("stats"), BracketType::Curly)?;
 
-        write_maybe_json!(f, json_printer, "Number of bytes processed             : {}",
-                          self.bytes_processed                                          => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks processed            : {}",
-                          self.meta_or_par_blocks_processed
-                          + self.data_or_par_blocks_processed                           => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks processed (metadata) : {}",
-                          self.meta_or_par_blocks_processed                             => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks processed (data)     : {}",
-                          self.data_or_par_blocks_processed                             => skip_quotes)?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of bytes processed             : {}",
+            self.bytes_processed
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks processed            : {}",
+            self.meta_or_par_blocks_processed + self.data_or_par_blocks_processed
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks processed (metadata) : {}",
+            self.meta_or_par_blocks_processed
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks processed (data)     : {}",
+            self.data_or_par_blocks_processed
+        )?;
 
         json_printer.write_close_bracket(f)?;
 
