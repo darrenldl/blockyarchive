@@ -130,10 +130,30 @@ impl fmt::Display for Stats {
             "SBX version                              : {}",
             ver_to_usize(self.version)
         )?;
-        write_maybe_json!(f, json_printer, "Block size used in updating                : {}", block_size)?;
-        write_maybe_json!(f, json_printer, "Number of metadata blocks processed        : {}", self.units_so_far())?;
-        write_maybe_json!(f, json_printer, "Number of metadata blocks updated          : {}", self.meta_blocks_updated)?;
-        write_maybe_json!(f, json_printer, "Number of metadata blocks failed to decode : {}", self.meta_blocks_decode_failed)?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Block size used in updating                : {}",
+            block_size
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of metadata blocks processed        : {}",
+            self.units_so_far()
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of metadata blocks updated          : {}",
+            self.meta_blocks_updated
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of metadata blocks failed to decode : {}",
+            self.meta_blocks_decode_failed
+        )?;
         write_maybe_json!(
             f,
             json_printer,

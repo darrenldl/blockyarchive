@@ -181,22 +181,82 @@ impl fmt::Display for Stats {
             "SBX version                               : {}",
             ver_to_usize(self.version)
         )?;
-        write_maybe_json!(f, json_printer, "Block size used in checking               : {}", block_size)?;
-        write_maybe_json!(f, json_printer, "Number of blocks processed                : {}", self.blocks_so_far())?;
-        write_maybe_json!(f, json_printer, "Number of blocks sorted (metadata)        : {}", self.meta_blocks_decoded)?;
-        write_maybe_json!(f, json_printer, "Number of blocks sorted (data)            : {}", self.data_blocks_decoded)?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Block size used in checking               : {}",
+            block_size
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks processed                : {}",
+            self.blocks_so_far()
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks sorted (metadata)        : {}",
+            self.meta_blocks_decoded
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks sorted (data)            : {}",
+            self.data_blocks_decoded
+        )?;
         if ver_uses_rs(self.version) {
-            write_maybe_json!(f, json_printer, "Number of blocks sorted (parity)          : {}", self.parity_blocks_decoded)?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks sorted (parity)          : {}",
+                self.parity_blocks_decoded
+            )?;
         }
-        write_maybe_json!(f, json_printer, "Number of blocks in same order (metadata) : {}", self.meta_blocks_same_order)?;
-        write_maybe_json!(f, json_printer, "Number of blocks in diff order (metadata) : {}", self.meta_blocks_diff_order)?;
-        write_maybe_json!(f, json_printer, "Number of blocks in same order (data)     : {}", self.data_blocks_same_order)?;
-        write_maybe_json!(f, json_printer, "Number of blocks in diff order (data)     : {}", self.data_blocks_diff_order)?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks in same order (metadata) : {}",
+            self.meta_blocks_same_order
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks in diff order (metadata) : {}",
+            self.meta_blocks_diff_order
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks in same order (data)     : {}",
+            self.data_blocks_same_order
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks in diff order (data)     : {}",
+            self.data_blocks_diff_order
+        )?;
         if ver_uses_rs(self.version) {
-            write_maybe_json!(f, json_printer, "Number of blocks in same order (parity)   : {}", self.parity_blocks_same_order)?;
-            write_maybe_json!(f, json_printer, "Number of blocks in diff order (parity)   : {}", self.parity_blocks_diff_order)?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks in same order (parity)   : {}",
+                self.parity_blocks_same_order
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks in diff order (parity)   : {}",
+                self.parity_blocks_diff_order
+            )?;
         }
-        write_maybe_json!(f, json_printer, "Number of blocks failed to sort           : {}", self.blocks_decode_failed)?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks failed to sort           : {}",
+            self.blocks_decode_failed
+        )?;
         write_maybe_json!(
             f,
             json_printer,
