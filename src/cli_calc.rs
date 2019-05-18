@@ -86,22 +86,58 @@ pub fn calc<'a>(matches: &ArgMatches<'a>) -> i32 {
             ver_to_usize(version)
         );
     }
-    print_maybe_json!(json_printer,     "    SBX container block size     : {}", ver_to_block_size(version) => skip_quotes);
-    print_maybe_json!(json_printer,     "    SBX container data  size     : {}", ver_to_data_size(version)  => skip_quotes);
+    print_maybe_json!(
+        json_printer,
+        "    SBX container block size     : {}",
+        ver_to_block_size(version)
+    );
+    print_maybe_json!(
+        json_printer,
+        "    SBX container data  size     : {}",
+        ver_to_data_size(version)
+    );
 
     print_if!(not_json => json_printer => "";);
 
     print_if!(not_json => json_printer => "SBX block distribution";);
     print_if!(not_json => json_printer => "========================================";);
     if ver_uses_rs(version) {
-        print_maybe_json!(json_printer,   "    Metadata    block count      : {}", meta_block_count      => skip_quotes);
-        print_maybe_json!(json_printer,   "    Data only   block count      : {}", data_only_block_count => skip_quotes);
-        print_maybe_json!(json_printer,   "    Data parity block count      : {}", parity_block_count    => skip_quotes);
-        print_maybe_json!(json_printer,   "    Total       block count      : {}", total_block_count     => skip_quotes);
+        print_maybe_json!(
+            json_printer,
+            "    Metadata    block count      : {}",
+            meta_block_count
+        );
+        print_maybe_json!(
+            json_printer,
+            "    Data only   block count      : {}",
+            data_only_block_count
+        );
+        print_maybe_json!(
+            json_printer,
+            "    Data parity block count      : {}",
+            parity_block_count
+        );
+        print_maybe_json!(
+            json_printer,
+            "    Total       block count      : {}",
+            total_block_count
+        );
     } else {
-        print_maybe_json!(json_printer,   "    Metadata block count         : {}", meta_block_count      => skip_quotes);
-        print_maybe_json!(json_printer,   "    Data     block count         : {}", data_only_block_count => skip_quotes);
-        print_maybe_json!(json_printer,   "    Total    block count         : {}", total_block_count     => skip_quotes);
+        print_maybe_json!(
+            json_printer,
+            "    Metadata block count         : {}",
+            meta_block_count
+        );
+        print_maybe_json!(
+            json_printer,
+            "    Data     block count         : {}",
+            data_only_block_count
+        );
+        print_maybe_json!(
+            json_printer,
+            "    Total    block count         : {}",
+            total_block_count
+        );
     }
 
     print_if!(not_json => json_printer => "";);
@@ -109,16 +145,40 @@ pub fn calc<'a>(matches: &ArgMatches<'a>) -> i32 {
     print_if!(not_json => json_printer => "Error correction info";);
     print_if!(not_json => json_printer => "========================================";);
     if ver_uses_rs(version) {
-        print_maybe_json!(json_printer,   "    RS data   shard count        : {}", data_par_burst.unwrap().0  => skip_quotes);
-        print_maybe_json!(json_printer,   "    RS parity shard count        : {}", data_par_burst.unwrap().1  => skip_quotes);
-        print_maybe_json!(json_printer,   "    Burst error resistance level : {}", data_par_burst.unwrap().2  => skip_quotes);
+        print_maybe_json!(
+            json_printer,
+            "    RS data   shard count        : {}",
+            data_par_burst.unwrap().0
+        );
+        print_maybe_json!(
+            json_printer,
+            "    RS parity shard count        : {}",
+            data_par_burst.unwrap().1
+        );
+        print_maybe_json!(
+            json_printer,
+            "    Burst error resistance level : {}",
+            data_par_burst.unwrap().2
+        );
     } else {
-        print_maybe_json!(json_printer,   "    RS data   shard count        : {}",
-                          null_if_json_else!(json_printer, "version does not use RS")                         => skip_quotes);
-        print_maybe_json!(json_printer,   "    RS parity shard count        : {}",
-                          null_if_json_else!(json_printer, "version does not use RS")                         => skip_quotes);
-        print_maybe_json!(json_printer,   "    Burst error resistance level : {}",
-                          null_if_json_else!(json_printer, "version does not support burst error resistance") => skip_quotes);
+        print_maybe_json!(
+            json_printer,
+            "    RS data   shard count        : {}",
+            null_if_json_else!(json_printer, "version does not use RS")
+        );
+        print_maybe_json!(
+            json_printer,
+            "    RS parity shard count        : {}",
+            null_if_json_else!(json_printer, "version does not use RS")
+        );
+        print_maybe_json!(
+            json_printer,
+            "    Burst error resistance level : {}",
+            null_if_json_else!(
+                json_printer,
+                "version does not support burst error resistance"
+            )
+        );
     }
 
     print_if!(not_json => json_printer => "";);
@@ -180,8 +240,16 @@ pub fn calc<'a>(matches: &ArgMatches<'a>) -> i32 {
 
     print_if!(not_json => json_printer => "File and container size";);
     print_if!(not_json => json_printer => "========================================";);
-    print_maybe_json!(json_printer,       "    File size                    : {}", in_file_size  => skip_quotes);
-    print_maybe_json!(json_printer,       "    SBX container size           : {}", out_file_size => skip_quotes);
+    print_maybe_json!(
+        json_printer,
+        "    File size                    : {}",
+        in_file_size
+    );
+    print_maybe_json!(
+        json_printer,
+        "    SBX container size           : {}",
+        out_file_size
+    );
 
     json_printer.print_close_bracket();
 
