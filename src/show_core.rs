@@ -183,12 +183,12 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
                     );
                 }
                 Ok(Some(x)) => {
-                    print_maybe_json!(json_printer, "Best guess for burst error resistance level : {}", x => skip_quotes)
+                    print_maybe_json!(json_printer, "Best guess for burst error resistance level : {}", x)
                 }
             }
         } else {
             print_if!(not_json => json_printer => "Reference block version does not use Reed-Solomon erasure code";);
-            print_field_if_json!(json_printer, "Best guess for burst error resistance level : null" => skip_quotes);
+            print_field_if_json!(json_printer, "Best guess for burst error resistance level : null");
         }
 
         print_if!(not_json => json_printer => "";);
@@ -278,17 +278,17 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
                 if meta_block_count > 0 {
                     print_if!(not_json => json_printer => "";);
                 }
-                print_maybe_json!(json_printer,       "Metadata block number : {}", meta_block_count => skip_quotes);
+                print_maybe_json!(json_printer,       "Metadata block number : {}", meta_block_count);
                 print_if!(not_json => json_printer => "========================================";);
             } else {
-                print_field_if_json!(json_printer,    "Metadata block number : {}", meta_block_count => skip_quotes);
+                print_field_if_json!(json_printer,    "Metadata block number : {}", meta_block_count);
             }
 
             print_if!(not_json => json_printer =>     "Found at byte          : {} (0x{:X})",
                       block_pos + seek_to,
                       block_pos + seek_to;);
             print_field_if_json!(json_printer,        "Found at byte          : {}",
-                                 block_pos + seek_to => skip_quotes);
+                                 block_pos + seek_to);
 
             print_if!(not_json => json_printer =>     "";);
 
@@ -296,6 +296,7 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
                 json_printer,
                 "File UID               : {}",
                 misc_utils::bytes_to_upper_hex_string(&block.get_uid())
+                    => force_quotes
             );
             print_maybe_json!(
                 json_printer,
@@ -334,7 +335,7 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
                                   }
                               } else {
                                   null_if_json_else!(json_printer, "version does not use RS").to_string()
-                              }                                                    => skip_quotes);
+                              }                                                   );
             print_maybe_json!(json_printer,           "RS parity shard count  : {}",
                               if ver_uses_rs(block.get_version()) {
                                   match block.get_RSP().unwrap() {
@@ -343,11 +344,11 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
                                   }
                               } else {
                                   null_if_json_else!(json_printer, "version does not use RS").to_string()
-                              }                                                    => skip_quotes);
+                              }                                                   );
             print_maybe_json!(json_printer,           "File size              : {}", match block.get_FSZ().unwrap() {
                 None    => null_if_json_else_NA!(json_printer).to_string(),
                 Some(x) => x.to_string()
-            }                                                                      => skip_quotes);
+            }                                                                     );
             print_maybe_json!(
                 json_printer,
                 "File modification time : {}",
