@@ -6,7 +6,7 @@ ECSBX is the extended version of SBX with error-correcting capability.
 
 Byte order: Big Endian
 
-## For SBX versions : 1, 2, 3
+## For SBX versions: 1, 2, 3
 
 ### Common blocks header:
 
@@ -75,11 +75,11 @@ Supported crypto hashes since 1.0.0 are
 
 Metadata block (block 0) can be disabled.
 
-## For ECSBX versions : 17 (0x11), 18 (0x12), 19 (0x13)
+## For ECSBX versions: 17 (0x11), 18 (0x12), 19 (0x13)
 
 ECSBX specification is overall similar to the SBX specification above.
 
-Block categories : `Meta`, `Data`, `Parity`
+Block categories: `Meta`, `Data`, `Parity`
 
 `Meta` and `Data` are mutually exclusive, and `Meta` and `Parity` are mutually exclusive. A block can be both `Data` and `Parity`.
 
@@ -124,7 +124,7 @@ For **N** continuous blocks
 | --- | -------- | ---- | ------ |
 | 16  | blockend | var  | parity |
 
-RS arrangement : M blocks (M data shards) N blocks (N parity shards)
+RS arrangement: M blocks (M data shards) N blocks (N parity shards)
 
 The M blocks are `Data` only.
 
@@ -159,7 +159,7 @@ For **N** continuous blocks
 | --- | -------- | ---- | ------ |
 | 16  | blockend | var  | parity |
 
-RS arrangement : M blocks (X data shards + (M - X) padding blocks) N blocks.
+RS arrangement: M blocks (X data shards + (M - X) padding blocks) N blocks.
 
 The M blocks are `Data` only.
 
@@ -237,7 +237,7 @@ Let base block set size = **B**
 
 First **1 + N** block sets have size = 1 + base block set size, the rest have size = base block set size
 
-First **1 + N** block sets :
+First **1 + N** block sets:
 
 | 0   | 1     | 2                 | 3                     | ... | B                           |
 | --- | ----- | ----------------- | --------------------- | --- | --------------------------- |
@@ -246,9 +246,9 @@ First **1 + N** block sets :
 | ... | ...   | ...               | ...                   | ... | ...                         |
 | 00  | 1 + N | (1 + N) + (M + N) | (1 + N) + 2 * (M + N) | ... | (1 + N) + (B - 1) * (M + N) |
 
-Rest of the block sets :
+Rest of the block sets:
 
-Let **K > 1 + N** :
+Let **K > 1 + N**:
 
 | 0   | 1           | 2               | 3               | ... | B - 1                 |
 | --- | ----------- | --------------- | --------------- | --- | --------------------- |
