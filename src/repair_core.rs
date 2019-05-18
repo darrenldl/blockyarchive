@@ -103,14 +103,54 @@ impl fmt::Display for Stats {
             "SBX version                              : {}",
             ver_to_usize(self.version)
         )?;
-        write_maybe_json!(f, json_printer, "Block size used in checking              : {}", block_size                            => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks processed               : {}", self.blocks_so_far()                  => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks passed check (metadata) : {}", self.meta_blocks_decoded              => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks passed check (data)     : {}", self.data_or_par_blocks_decoded       => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks failed check            : {}", self.blocks_decode_failed             => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks repaired (metadata)     : {}", self.meta_blocks_repaired             => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks repaired (data)         : {}", self.data_or_par_blocks_repaired      => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of blocks failed to repair (data) : {}", self.data_or_par_blocks_repair_failed => skip_quotes)?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Block size used in checking              : {}",
+            block_size
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks processed               : {}",
+            self.blocks_so_far()
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks passed check (metadata) : {}",
+            self.meta_blocks_decoded
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks passed check (data)     : {}",
+            self.data_or_par_blocks_decoded
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks failed check            : {}",
+            self.blocks_decode_failed
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks repaired (metadata)     : {}",
+            self.meta_blocks_repaired
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks repaired (data)         : {}",
+            self.data_or_par_blocks_repaired
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of blocks failed to repair (data) : {}",
+            self.data_or_par_blocks_repair_failed
+        )?;
         write_maybe_json!(
             f,
             json_printer,

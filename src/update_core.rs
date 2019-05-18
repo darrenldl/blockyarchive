@@ -130,10 +130,30 @@ impl fmt::Display for Stats {
             "SBX version                              : {}",
             ver_to_usize(self.version)
         )?;
-        write_maybe_json!(f, json_printer, "Block size used in updating                : {}", block_size                            => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of metadata blocks processed        : {}", self.units_so_far()                   => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of metadata blocks updated          : {}", self.meta_blocks_updated              => skip_quotes)?;
-        write_maybe_json!(f, json_printer, "Number of metadata blocks failed to decode : {}", self.meta_blocks_decode_failed        => skip_quotes)?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Block size used in updating                : {}",
+            block_size
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of metadata blocks processed        : {}",
+            self.units_so_far()
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of metadata blocks updated          : {}",
+            self.meta_blocks_updated
+        )?;
+        write_maybe_json!(
+            f,
+            json_printer,
+            "Number of metadata blocks failed to decode : {}",
+            self.meta_blocks_decode_failed
+        )?;
         write_maybe_json!(
             f,
             json_printer,
@@ -169,7 +189,7 @@ fn print_block_info_and_meta_changes(
     if meta_block_count > 0 {
         print_if!(not_json => json_printer => "";);
     }
-    print_maybe_json!(json_printer,       "Metadata block number : {}", meta_block_count => skip_quotes);
+    print_maybe_json!(json_printer, "Metadata block number : {}", meta_block_count);
     print_if!(not_json => json_printer => "========================================";);
 
     print_maybe_json!(json_printer, "Found at byte : {}", pos);

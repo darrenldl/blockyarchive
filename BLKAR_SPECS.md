@@ -303,7 +303,7 @@ Data block is valid if and only if
    
      - the log file will be updated on every ~1.0 second
    
-     - each block is appended to OUTDIR/UID, where :
+     - each block is appended to OUTDIR/UID, where:
        
          - OUTDIR = output directory specified
          - UID = uid of the block in hex (uppercase)

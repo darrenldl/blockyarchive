@@ -37,7 +37,7 @@ dd if=/dev/urandom of=filler3 bs=512   count=1 &>/dev/null
 
 # String everything together
 echo "Crafting dummy disk file"
-rm dummy_disk &>/dev/null
+rm -f dummy_disk &>/dev/null
 cat filler1      >> dummy_disk
 cat rescue3.sbx  >> dummy_disk
 cat filler2      >> dummy_disk
@@ -122,7 +122,7 @@ for f in $FILES; do
   fi
 done
 
-echo -n "Comparing decoded data to original"
+echo "Comparing decoded data to original"
 FILES=rescued_data/*.decoded
 for f in $FILES; do
   echo -n "Comparing file $f to original"

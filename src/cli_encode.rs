@@ -190,13 +190,41 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
                 "SBX container version        : {}",
                 ver_to_usize(version)
             );
-            print_maybe_json!(json_printer, "SBX container block size     : {}", ver_to_block_size(version) => skip_quotes);
-            print_maybe_json!(json_printer, "SBX container data  size     : {}", ver_to_data_size(version)  => skip_quotes);
-            print_maybe_json!(json_printer, "RS data   shard count        : {}", data_par_burst.unwrap().0  => skip_quotes);
-            print_maybe_json!(json_printer, "RS parity shard count        : {}", data_par_burst.unwrap().1  => skip_quotes);
-            print_maybe_json!(json_printer, "Burst error resistance level : {}", data_par_burst.unwrap().2  => skip_quotes);
-            print_maybe_json!(json_printer, "File size                    : {}", in_file_size               => skip_quotes);
-            print_maybe_json!(json_printer, "SBX container size           : {}", out_file_size              => skip_quotes);
+            print_maybe_json!(
+                json_printer,
+                "SBX container block size     : {}",
+                ver_to_block_size(version)
+            );
+            print_maybe_json!(
+                json_printer,
+                "SBX container data  size     : {}",
+                ver_to_data_size(version)
+            );
+            print_maybe_json!(
+                json_printer,
+                "RS data   shard count        : {}",
+                data_par_burst.unwrap().0
+            );
+            print_maybe_json!(
+                json_printer,
+                "RS parity shard count        : {}",
+                data_par_burst.unwrap().1
+            );
+            print_maybe_json!(
+                json_printer,
+                "Burst error resistance level : {}",
+                data_par_burst.unwrap().2
+            );
+            print_maybe_json!(
+                json_printer,
+                "File size                    : {}",
+                in_file_size
+            );
+            print_maybe_json!(
+                json_printer,
+                "SBX container size           : {}",
+                out_file_size
+            );
             print_maybe_json!(
                 json_printer,
                 "File modification time       : {}",
@@ -210,10 +238,18 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
                 "SBX container version    : {}",
                 ver_to_usize(version)
             );
-            print_maybe_json!(json_printer, "SBX container block size : {}", ver_to_block_size(version) => skip_quotes);
-            print_maybe_json!(json_printer, "SBX container data  size : {}", ver_to_data_size(version)  => skip_quotes);
-            print_maybe_json!(json_printer, "File size                : {}", in_file_size               => skip_quotes);
-            print_maybe_json!(json_printer, "SBX container size       : {}", out_file_size              => skip_quotes);
+            print_maybe_json!(
+                json_printer,
+                "SBX container block size : {}",
+                ver_to_block_size(version)
+            );
+            print_maybe_json!(
+                json_printer,
+                "SBX container data  size : {}",
+                ver_to_data_size(version)
+            );
+            print_maybe_json!(json_printer, "File size                : {}", in_file_size);
+            print_maybe_json!(json_printer, "SBX container size       : {}", out_file_size);
             print_maybe_json!(
                 json_printer,
                 "File modification time   : {}",

@@ -8,15 +8,15 @@ macro_rules! skip_quotes_for_term {
 
 macro_rules! determine_if_skip_quotes {
     (
-        $skip_quotes:expr, $val:expr
+        $force_quotes:expr, $val:expr
     ) => {{
-        $skip_quotes || skip_quotes_for_term!($val) || $val.parse::<u64>().is_ok()
+        !$force_quotes && (skip_quotes_for_term!($val) || $val.parse::<u64>().is_ok())
     }};
 }
 
 macro_rules! write_json_field {
     (
-        $f:expr, $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
+        $f:expr, $key:expr, $val:expr, $force_quotes:expr, $no_comma:expr
     ) => {{
         use crate::misc_utils::escape_quotes;
 
@@ -24,7 +24,7 @@ macro_rules! write_json_field {
             write!($f, ",")?;
         }
 
-        if determine_if_skip_quotes!($skip_quotes, $val) {
+        if determine_if_skip_quotes!($force_quotes, $val) {
             writeln!($f, "\"{}\": {}", to_camelcase($key), escape_quotes(&$val))
         } else {
             writeln!(
@@ -39,7 +39,7 @@ macro_rules! write_json_field {
 
 macro_rules! print_json_field {
     (
-        $output_channel:expr => $key:expr, $val:expr, $skip_quotes:expr, $no_comma:expr
+        $output_channel:expr => $key:expr, $val:expr, $force_quotes:expr, $no_comma:expr
     ) => {{
         use crate::misc_utils::{escape_quotes,
                                 to_camelcase};
@@ -48,7 +48,7 @@ macro_rules! print_json_field {
             print_at_output_channel!($output_channel => ",");
         }
 
-        if determine_if_skip_quotes!($skip_quotes, $val) {
+        if determine_if_skip_quotes!($force_quotes, $val) {
             println_at_output_channel!($output_channel => "\"{}\": {}", to_camelcase($key), escape_quotes(&$val));
         } else {
             println_at_output_channel!($output_channel => "\"{}\": \"{}\"", to_camelcase($key), escape_quotes(&$val));
@@ -70,7 +70,7 @@ macro_rules! print_field_if_json {
 #[macro_export]
 macro_rules! print_maybe_json {
     (
-        $json_printer:expr, $($val:expr),* => skip_quotes
+        $json_printer:expr, $($val:expr),* => force_quotes
     ) => {{
         print_maybe_json!($json_printer, $($val),* => true)
     }};
@@ -80,17 +80,17 @@ macro_rules! print_maybe_json {
         print_maybe_json!($json_printer, $($val),* => false)
     }};
     (
-        $json_printer:expr, $($val:expr),* => $skip_quotes:expr
+        $json_printer:expr, $($val:expr),* => $force_quotes:expr
     ) => {{
         let msg = format!($($val),*);
 
-        $json_printer.print_maybe_json($skip_quotes, &msg);
+        $json_printer.print_maybe_json($force_quotes, &msg);
     }}
 }
 
 macro_rules! write_maybe_json {
     (
-        $f:expr, $json_printer:expr, $($val:expr),* => skip_quotes
+        $f:expr, $json_printer:expr, $($val:expr),* => force_quotes
     ) => {{
         write_maybe_json!($f, $json_printer, $($val),* => true)
     }};
@@ -100,11 +100,11 @@ macro_rules! write_maybe_json {
         write_maybe_json!($f, $json_printer, $($val),* => false)
     }};
     (
-        $f:expr, $json_printer:expr, $($val:expr),* => $skip_quotes:expr
+        $f:expr, $json_printer:expr, $($val:expr),* => $force_quotes:expr
     ) => {{
         let msg = format!($($val),*);
 
-        $json_printer.write_maybe_json($f, $skip_quotes, &msg)
+        $json_printer.write_maybe_json($f, $force_quotes, &msg)
     }}
 }
 
