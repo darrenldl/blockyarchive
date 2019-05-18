@@ -195,11 +195,36 @@ impl fmt::Display for Stats {
             ver_to_usize(self.version)
         )?;
         if let Some(check_stats) = &self.check_stats {
-            write_maybe_json!(f, json_printer, "Block size used in checking              : {}", block_size                             => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks processed               : {}", check_stats.blocks_so_far()            => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks passed check (metadata) : {}", check_stats.meta_or_par_blocks_decoded => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks passed check (data)     : {}", check_stats.data_or_par_blocks_decoded => skip_quotes)?;
-            write_maybe_json!(f, json_printer, "Number of blocks failed check            : {}", check_stats.blocks_decode_failed       => skip_quotes)?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Block size used in checking              : {}",
+                block_size
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks processed               : {}",
+                check_stats.blocks_so_far()
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks passed check (metadata) : {}",
+                check_stats.meta_or_par_blocks_decoded
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks passed check (data)     : {}",
+                check_stats.data_or_par_blocks_decoded
+            )?;
+            write_maybe_json!(
+                f,
+                json_printer,
+                "Number of blocks failed check            : {}",
+                check_stats.blocks_decode_failed
+            )?;
 
             let (hour, minute, second) = time_utils::seconds_to_hms(check_time_elapsed);
             write_maybe_json!(
