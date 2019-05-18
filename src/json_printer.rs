@@ -175,14 +175,14 @@ impl JSONPrinter {
         writeln!(f, "{}", bracket_type_to_str_close(context.bracket_type))
     }
 
-    pub fn print_maybe_json(&self, skip_quotes: bool, msg: &str) {
+    pub fn print_maybe_json(&self, force_quotes: bool, msg: &str) {
         if self.json_enabled {
             let mut contexts = self.contexts.lock().unwrap();
             let context = contexts.last_mut().unwrap();
 
             let (l, r): (&str, &str) = split_key_val_pair(&msg);
 
-            print_json_field!(self.output_channel => l, r, skip_quotes, context.first_item);
+            print_json_field!(self.output_channel => l, r, force_quotes, context.first_item);
 
             context.first_item = false;
         } else {
@@ -193,7 +193,7 @@ impl JSONPrinter {
     pub fn write_maybe_json(
         &self,
         f: &mut fmt::Formatter,
-        skip_quotes: bool,
+        force_quotes: bool,
         msg: &str,
     ) -> fmt::Result {
         if self.json_enabled {
@@ -202,7 +202,7 @@ impl JSONPrinter {
 
             let (l, r): (&str, &str) = split_key_val_pair(&msg);
 
-            write_json_field!(f, l, r, skip_quotes, context.first_item)?;
+            write_json_field!(f, l, r, force_quotes, context.first_item)?;
 
             context.first_item = false;
 
