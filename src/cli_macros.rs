@@ -259,7 +259,7 @@ macro_rules! get_ver_and_data_par_burst_w_defaults {
                     exit_with_msg!(usr $json_printer => "Please state the SBX version explicitly if you want to use a custom burst error resistance level");
                 }
 
-                (Version::V17, Some(encode_defaults::DATA_PAR_BURST))
+                (encode_defaults::VERSION, Some(encode_defaults::DATA_PAR_BURST))
             },
             Some(x) => {
                 let version =

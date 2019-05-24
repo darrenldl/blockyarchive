@@ -1,4 +1,4 @@
-use crate::sbx_specs::{ver_to_block_size, ver_to_data_size, ver_to_usize, ver_uses_rs, Version};
+use crate::sbx_specs::{ver_to_block_size, ver_to_data_size, ver_to_usize, ver_uses_rs};
 
 use std::str::FromStr;
 

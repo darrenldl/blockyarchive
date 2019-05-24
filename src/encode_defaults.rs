@@ -1,3 +1,7 @@
+use crate::sbx_specs::Version;
+
+pub const VERSION: Version = Version::V17;
+
 pub const RS_DATA: usize = 10;
 
 pub const RS_PARITY: usize = 2;
