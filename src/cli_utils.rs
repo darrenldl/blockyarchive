@@ -246,7 +246,7 @@ pub fn sbx_version_arg<'a, 'b>() -> Arg<'a, 'b> {
           18 (0x12) |         .ecsbx |
           19 (0x13) |         .ecsbx |
 
-Details of default option : sbx-version=17, rs-data=10, rs-parity=2, burst=10
+Details of default option : sbx-version=17, rs-data=10, rs-parity=2, burst=12
 
 Note : blkar will function correctly regardless of the file extension you pick,
        the ones listed above are just the defaults",
