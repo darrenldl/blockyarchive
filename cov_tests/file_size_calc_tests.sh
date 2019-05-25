@@ -4,42 +4,42 @@ source kcov_blkar_fun.sh
 
 exit_code=0
 
-VERSIONS=(1 17 19)
+VERSIONS=(1 2 3 17 18 19)
 
 touch dummy
 
 for ver in ${VERSIONS[*]}; do
-    for (( i=0; i < 1; i++ )); do
+    for (( i=0; i < 3; i++ )); do
         actual_file_size=$((RANDOM % 4096))
         truncate -s $actual_file_size dummy
 
         if   [[ $ver ==  1 ]]; then
-            data_shards=$((1 + RANDOM % 5))
-            parity_shards=$((1 + RANDOM % 5))
+            data_shards=$((1 + RANDOM % 128))
+            parity_shards=$((1 + RANDOM % 128))
         elif [[ $ver ==  2 ]]; then
-            data_shards=$((1 + RANDOM % 5))
-            parity_shards=$((1 + RANDOM % 5))
+            data_shards=$((1 + RANDOM % 128))
+            parity_shards=$((1 + RANDOM % 128))
         elif [[ $ver ==  3 ]]; then
-            data_shards=$((1 + RANDOM % 5))
-            parity_shards=$((1 + RANDOM % 5))
+            data_shards=$((1 + RANDOM % 128))
+            parity_shards=$((1 + RANDOM % 128))
         elif [[ $ver == 17 ]]; then
-            data_shards=$((1 + RANDOM % 5))
-            parity_shards=$((1 + RANDOM % 5))
+            data_shards=$((1 + RANDOM % 128))
+            parity_shards=$((1 + RANDOM % 128))
         elif [[ $ver == 18 ]]; then
-            data_shards=$((1 + RANDOM % 5))
-            parity_shards=$((1 + RANDOM % 5))
+            data_shards=$((1 + RANDOM % 128))
+            parity_shards=$((1 + RANDOM % 128))
         else
-            data_shards=$((1 + RANDOM % 5))
-            parity_shards=$((1 + RANDOM % 5))
+            data_shards=$((1 + RANDOM % 128))
+            parity_shards=$((1 + RANDOM % 128))
         fi
 
-        burst=$((RANDOM % 10))
+        burst=$((RANDOM % 15))
 
         echo "Testing for version $ver, data = $data_shards, parity = $parity_shards, burst = $burst"
 
-        output=$(kcov_blkar encode --json --info-only --sbx-version $ver dummy \
-                           --rs-data $data_shards --rs-parity $parity_shards \
-                           --burst $burst)
+        output=$(blkar encode --json --info-only --sbx-version $ver dummy \
+                        --rs-data $data_shards --rs-parity $parity_shards \
+                        --burst $burst)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -48,9 +48,9 @@ for ver in ${VERSIONS[*]}; do
 
         encode_info_container_size=$(echo $output | jq -r ".stats.sbxContainerSize")
 
-        output=$(kcov_blkar calc --json $actual_file_size --sbx-version $ver \
-                           --rs-data $data_shards --rs-parity $parity_shards \
-                           --burst $burst)
+        output=$(blkar calc --json $actual_file_size --sbx-version $ver \
+                        --rs-data $data_shards --rs-parity $parity_shards \
+                        --burst $burst)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -59,10 +59,10 @@ for ver in ${VERSIONS[*]}; do
 
         calc_mode_container_size=$(echo $output | jq -r ".stats.sbxContainerSize")
 
-        output=$(kcov_blkar encode --json --sbx-version $ver -f dummy \
-                           --hash sha1 \
-                           --rs-data $data_shards --rs-parity $parity_shards \
-                           --burst $burst)
+        output=$(blkar encode --json --sbx-version $ver -f dummy \
+                        --hash sha1 \
+                        --rs-data $data_shards --rs-parity $parity_shards \
+                        --burst $burst)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -127,4 +127,4 @@ for ver in ${VERSIONS[*]}; do
     done
 done
 
-exit $exit_code
+echo $exit_code > exit_code
