@@ -6,21 +6,133 @@ if [[ $TRAVIS == true ]]; then
     fi
 fi
 
-cd cov_tests
+if [[ $PWD != */cov_tests ]]; then
+    cd cov_tests
+fi
 
 ./copy.sh
 
 test_failed=0
 
-echo "Generating test data"
-./gen_dummy.sh
-# truncate -s 10m dummy
+source test_list.sh
 
+test_count=${#tests[@]}
 
-if [[ $test_failed == 0 ]]; then
-    echo "All tests passed"
-    exit 0
+simul_test_count=1
+
+start_date=$(date "+%Y-%m-%d %H:%M")
+start_time=$(date "+%s")
+
+echo ""
+echo "Test start :" $start_date
+echo ""
+
+echo "Starting $test_count tests"
+echo ""
+
+i=0
+while (( $i < $test_count )); do
+  if (( $test_count - $i >= $simul_test_count )); then
+    tests_to_run=$simul_test_count
+  else
+    tests_to_run=$[test_count - i]
+  fi
+
+  echo "Running $tests_to_run tests in parallel"
+
+  j=$i
+
+  for (( c=0; c < $tests_to_run; c++ )); do
+    t=${tests[$i]}
+    if [[ "$t" != "" ]]; then
+      echo "    Starting $t"
+
+      rm -rf $t/
+      mkdir $t/
+      cd $t
+      ./../gen_dummy.sh
+      cp ../functions.sh .
+      ./../$t.sh > log 2> stderr_log &
+      cd ..
+
+      i=$[i+1]
+    fi
+  done
+
+  echo "Waiting for tests to finish"
+
+  wait
+
+  echo "Cleaning up files"
+
+  for (( c=0; c < $tests_to_run; c++ )); do
+    t=${tests[$j]}
+
+    if [[ "$t" != "" ]]; then
+      cd $t
+
+      if [[ $? == 0 ]]; then
+        find . -type f \
+             -not -name "exit_code" \
+             -not -name "log" \
+             -not -name "stderr_log" \
+             -delete
+
+        cd ..
+      fi
+    fi
+
+    j=$[j+1]
+  done
+
+  echo ""
+  echo "$[test_count - i] / $test_count tests remaining"
+  echo ""
+done
+
+# go through all exit codes
+test_fail_count=0
+tests_failed=()
+
+for t in ${tests[@]}; do
+  t_exit_code=$(cat $t/exit_code)
+
+  if (( $t_exit_code != 0 )); then
+    echo "========================================"
+    echo "Log of $t :"
+    echo ""
+    cat $t/log
+    echo ""
+    echo "Stderr log of $t :"
+    cat $t/stderr_log
+  fi
+
+  if (( $t_exit_code != 0 )); then
+    test_fail_count=$[$test_fail_count + 1]
+    tests_failed+=("$t")
+  fi
+done
+echo "========================================"
+
+if [[ $test_fail_count == 0 ]]; then
+    echo "All $test_count tests passed"
+    exit_code=0
 else
-    echo "$test_failed tests failed"
-    exit 1
+  echo
+    echo "$test_fail_count tests failed"
+    echo ""
+    echo "List of tests failed :"
+    for t in ${tests_failed[@]}; do
+      echo "    "$t
+    done
+    exit_code=1
 fi
+
+end_date=$(date "+%Y-%m-%d %H:%M")
+end_time=$(date "+%s")
+echo ""
+echo "Test end :" $end_date
+
+echo "Time elapsed :" $[(end_time - start_time) / 60] "minutes"
+
+exit $exit_code
