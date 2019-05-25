@@ -17,7 +17,6 @@ else
 fi
 
 test_failed=0
-test_failed_names=""
 
 source test_list.sh
 
