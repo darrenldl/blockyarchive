@@ -6,6 +6,8 @@ exit_code=0
 
 VERSIONS=(1 17)
 
+truncate -s $[1024 * 1024] dummy
+
 # Encode in all 6 versions
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver"
@@ -46,6 +48,12 @@ echo "Rescuing from dummy disk"
 rm -rf rescued_data &>/dev/null
 mkdir rescued_data &>/dev/null
 rm rescue_log &>/dev/null
+output=$(blkar rescue --json dummy_disk rescued_data rescue_log)
+if [[ $(echo $output | jq -r ".error") != "null" ]]; then
+    echo " ==> Invalid JSON"
+    exit_code=1
+fi
+# try rescuing again using the same rescue_log
 output=$(blkar rescue --json dummy_disk rescued_data rescue_log)
 if [[ $(echo $output | jq -r ".error") != "null" ]]; then
     echo " ==> Invalid JSON"
