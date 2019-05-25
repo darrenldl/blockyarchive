@@ -85,7 +85,7 @@ while (( $i < $test_count )); do
       cd $t
 
       if [[ $? == 0 ]]; then
-          find . -type d "cov" -prune \
+          find . -type d -name "cov" -prune \
                -type f \
                -not -name "exit_code" \
                -not -name "log" \
