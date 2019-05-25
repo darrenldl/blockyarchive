@@ -13,6 +13,7 @@ fi
 # export RUSTFLAGS="-C link-dead-code"
 
 echo "Running cargo tests"
+echo "========================================"
 rm -rf target/debug/
 cargo build --tests
 if [[ $? != 0 ]]; then
@@ -30,6 +31,7 @@ for file in target/debug/blkar_lib-*; do
 done
 
 echo "Running binary tests"
+echo "========================================"
 cd cov_tests/
 ./dev_tests.sh
 if [[ $? != 0 ]]; then
@@ -38,6 +40,7 @@ fi
 cd ..
 
 echo "Merging all code coverage reports"
+echo "========================================"
 rm -rf target/cov/total
 mkdir -p target/cov/total
 kcov --merge target/cov/total $COV_DIR target/cov/bin-tests
