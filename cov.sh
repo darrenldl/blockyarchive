@@ -12,14 +12,13 @@ fi
 
 # export RUSTFLAGS="-C link-dead-code"
 
+echo "Running cargo tests"
+rm -rf target/debug/
 cargo build --tests
 if [[ $? != 0 ]]; then
     exit 1
 fi
 
-files=(target/debug/blkar)
-
-echo "Running cargo tests"
 COV_DIR="target/cov/cargo-tests"
 for file in target/debug/blkar_lib-*; do
     if [[ $file == *.d ]]; then
