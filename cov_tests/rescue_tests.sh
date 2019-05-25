@@ -4,7 +4,7 @@ source kcov_blkar_fun.sh
 
 exit_code=0
 
-VERSIONS=(1 2 3 17 18 19)
+VERSIONS=(1 17)
 
 # Encode in all 6 versions
 for ver in ${VERSIONS[*]}; do
@@ -24,11 +24,7 @@ for ver in ${VERSIONS[*]}; do
 done
 
 rescue1uid=$(blkar show --json rescue1.sbx | jq -r ".blocks[0].fileUID")
-rescue2uid=$(blkar show --json rescue2.sbx | jq -r ".blocks[0].fileUID")
-rescue3uid=$(blkar show --json rescue3.sbx | jq -r ".blocks[0].fileUID")
 rescue17uid=$(blkar show --json rescue17.sbx | jq -r ".blocks[0].fileUID")
-rescue18uid=$(blkar show --json rescue18.sbx | jq -r ".blocks[0].fileUID")
-rescue19uid=$(blkar show --json rescue19.sbx | jq -r ".blocks[0].fileUID")
 
 # Generate random filler data
 echo "Generating random filler data"
@@ -40,20 +36,9 @@ dd if=/dev/urandom of=filler3 bs=512   count=1 &>/dev/null
 echo "Crafting dummy disk file"
 rm dummy_disk &>/dev/null
 cat filler1      >> dummy_disk
-cat rescue3.sbx  >> dummy_disk
-cat filler2      >> dummy_disk
 cat rescue1.sbx  >> dummy_disk
-cat filler3      >> dummy_disk
-cat rescue2.sbx  >> dummy_disk
 cat filler2      >> dummy_disk
-cat filler3      >> dummy_disk
 cat rescue17.sbx >> dummy_disk
-cat filler2      >> dummy_disk
-cat rescue19.sbx >> dummy_disk
-cat filler2      >> dummy_disk
-cat filler3      >> dummy_disk
-cat filler3      >> dummy_disk
-cat rescue18.sbx >> dummy_disk
 cat filler3      >> dummy_disk
 
 # Rescue from the disk
@@ -76,39 +61,11 @@ else
     echo -n " ==> NOT okay"
     exit_code=1
 fi
-cmp rescued_data/"$rescue2uid" rescue2.sbx
-if [[ $? == 0 ]]; then
-    echo -n " ==> Okay"
-else
-    echo -n " ==> NOT okay"
-    exit_code=1
-fi
-cmp rescued_data/"$rescue3uid" rescue3.sbx
-if [[ $? == 0 ]]; then
-    echo -n " ==> Okay"
-else
-    echo -n " ==> NOT okay"
-    exit_code=1
-fi
 cmp rescued_data/"$rescue17uid" rescue17.sbx
 if [[ $? == 0 ]]; then
     echo -n " ==> Okay"
 else
     echo -n " ==> NOT okay"
-    exit_code=1
-fi
-cmp rescued_data/"$rescue18uid" rescue18.sbx
-if [[ $? == 0 ]]; then
-    echo -n " ==> Okay"
-else
-    echo -n " ==> NOT okay"
-    exit_code=1
-fi
-cmp rescued_data/"$rescue19uid" rescue19.sbx
-if [[ $? == 0 ]]; then
-    echo " ==> Okay"
-else
-    echo " ==> NOT okay"
     exit_code=1
 fi
 
