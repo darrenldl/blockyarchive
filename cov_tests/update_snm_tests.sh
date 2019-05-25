@@ -9,7 +9,7 @@ VERSIONS=(1 17)
 # Encode in all 6 versions
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver"
-  output=$(./../blkar encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
+  output=$(blkar encode --json --sbx-version $ver -f dummy dummy$ver.sbx \
                       --rs-data 10 --rs-parity 2)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
@@ -26,7 +26,7 @@ done
 # Show all
 for ver in ${VERSIONS[*]}; do
     echo -n "Checking show output for $ver container"
-    output=$(./../blkar show --json --pv 1 dummy$ver.sbx 2>/dev/null)
+    output=$(blkar show --json --pv 1 dummy$ver.sbx 2>/dev/null)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
         echo " ==> Invalid JSON"
         exit_code=1
@@ -51,7 +51,7 @@ new_snm={}
 for ver in ${VERSIONS[*]}; do
     echo -n "Changing file name of "dummy$ver.sbx
     new_snm[$ver]=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 5 | head -n 1)
-    output=$(./../blkar update --json -y --snm ${new_snm[$ver]} -v dummy$ver.sbx)
+    output=$(blkar update --json -y --snm ${new_snm[$ver]} -v dummy$ver.sbx)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
         echo " ==> Invalid JSON"
         exit_code=1
@@ -97,7 +97,7 @@ done
 # Show all
 for ver in ${VERSIONS[*]}; do
   echo -n "Checking show output for $ver container"
-  output=$(./../blkar show --json --pv 1 dummy$ver.sbx 2>/dev/null)
+  output=$(blkar show --json --pv 1 dummy$ver.sbx 2>/dev/null)
   if [[ $(echo $output | jq -r ".error") != null ]]; then
     echo " ==> Invalid JSON"
     exit_code=1

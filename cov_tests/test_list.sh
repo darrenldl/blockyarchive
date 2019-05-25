@@ -16,5 +16,9 @@ tests=(
     "sort_tests"
     "file_size_calc_tests"
     "repair_truncated_tests"
+    "update_fnm_tests"
+    "update_no_fnm_tests"
+    "update_snm_tests"
+    "update_no_snm_tests"
     "check_hash_tests"
 )
