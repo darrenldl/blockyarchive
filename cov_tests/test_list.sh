@@ -14,6 +14,8 @@ tests=(
     "corruption_tests"
     "burst_corruption_tests"
     "sort_tests"
+    "sort_multi_pass"
+    "sort_multi_pass_no_skip"
     "file_size_calc_tests"
     "repair_truncated_tests"
     "update_fnm_tests"
