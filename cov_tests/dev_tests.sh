@@ -52,6 +52,7 @@ while (( $i < $test_count )); do
       cd $t
       ./../gen_dummy.sh
       cp ../functions.sh .
+      cp ../kcov_blkar_fun.sh .
       ./../$t.sh > log 2> stderr_log &
       cd ..
 
