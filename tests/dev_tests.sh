@@ -134,7 +134,6 @@ if [[ $test_fail_count == 0 ]]; then
     echo "All $test_count tests passed"
     exit_code=0
 else
-  echo
     echo "$test_fail_count tests failed"
     echo ""
     echo "List of tests failed :"
