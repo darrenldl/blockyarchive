@@ -20,11 +20,21 @@ fi
 
 files=(target/debug/blkar)
 
-#for file in target/debug/blkar-*[^\.d]; do
-# for file in ${files[@]}; do
 COV_DIR="target/cov/cargo-tests"
-for file in target/debug/blkar_lib-*; do if [[ $file == *.d ]]; then continue; fi
-  # mkdir -p "target/cov/$(basename $file)"
-  mkdir -p $COV_DIR
-  kcov --exclude-pattern=/.cargo,/usr/lib --verify $COV_DIR "$file"
+for file in target/debug/blkar_lib-*; do
+    if [[ $file == *.d ]]; then
+        continue
+    fi
+
+    mkdir -p $COV_DIR
+    kcov --exclude-pattern=/.cargo,/usr/lib --verify $COV_DIR "$file"
 done
+
+cd cov_tests/
+./dev_tests.sh
+cd ..
+
+# merge everything
+rm -rf target/cov/total
+mkdir -p target/cov/total
+kcov --merge target/cov/total $COV_DIR target/cov/bin-tests
