@@ -30,6 +30,7 @@ for file in target/debug/blkar_lib-*; do
     kcov --exclude-pattern=/.cargo,/usr/lib --verify $COV_DIR "$file"
 done
 
+echo ""
 echo "Running binary tests"
 echo "========================================"
 cd cov_tests/
@@ -39,6 +40,7 @@ if [[ $? != 0 ]]; then
 fi
 cd ..
 
+echo ""
 echo "Merging all code coverage reports"
 echo "========================================"
 rm -rf target/cov/total
