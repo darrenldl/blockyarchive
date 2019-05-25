@@ -4,7 +4,7 @@ exit_code=0
 
 echo "Extracting defaults from encode help message"
 
-defaults_from_help_msg=$(blkar encode --help | grep "Details of default option")
+defaults_from_help_msg=$(./../blkar encode --help | grep "Details of default option")
 default_ver_from_help_msg=$(echo $defaults_from_help_msg | awk '{ print $6 }' | tr '=,' ' ' | awk '{ print $2 }')
 default_rs_data_from_help_msg=$(echo $defaults_from_help_msg | awk '{ print $7 }' | tr '=,' ' ' | awk '{ print $2 }')
 default_rs_parity_from_help_msg=$(echo $defaults_from_help_msg | awk '{ print $8 }' | tr '=,' ' ' | awk '{ print $2 }')
