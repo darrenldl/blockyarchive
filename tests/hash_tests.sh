@@ -19,7 +19,7 @@ fi
 i=0
 for h in ${HASHES[*]}; do
   echo -n "Encoding in hash $h"
-  output=$(./../blkar encode --json --hash $h -f dummy dummy$h.sbx )
+  output=$(./../blkar encode --json --hash $h -f dummy dummy$h.sbx)
   hash=$(echo $output | jq -r ".stats.hash" | awk '{ print $3 }')
   if [[ $(echo $output | jq -r ".error") != "null" ]]; then
       echo "Invalid JSON"
