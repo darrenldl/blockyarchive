@@ -8,7 +8,7 @@ if [[ $TRAVIS == true ]]; then
     export PATH=$TARGET/bin:$PATH
 fi
 
-kcov_blkar() {
+blkar() {
     if [[ $TRAVIS == true ]]; then
         kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "../target/cov/blkar" blkar "$@" | sed "s/kcov.*//"
     else
