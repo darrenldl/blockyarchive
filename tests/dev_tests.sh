@@ -31,8 +31,8 @@ tests_missing=0
 for t in ${tests[@]}; do
     if [ ! -f $t.sh ]; then
         echo "Test $t.sh is missing"
+        tests_missing=$[tests_missing + 1]
     fi
-    tests_missing=$[tests_missing + 1]
 done
 
 if [[ $tests_missing != 0 ]]; then
