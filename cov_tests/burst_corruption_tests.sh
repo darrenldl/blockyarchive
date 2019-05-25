@@ -4,7 +4,7 @@ source kcov_blkar_fun.sh
 
 exit_code=0
 
-VERSIONS=(17 18 19)
+VERSIONS=(17)
 
 source functions.sh
 

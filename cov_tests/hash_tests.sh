@@ -4,10 +4,7 @@ source kcov_blkar_fun.sh
 
 exit_code=0
 
-HASHES=("sha1" "sha256" "sha512")
-if [[ $(command -v b2sum) != "" ]]; then
-    HASHES[3]="blake2b-512"
-fi
+HASHES=("sha1")
 
 # Record the hashes
 a[0]=$(sha1sum   dummy | awk '{print $1}')

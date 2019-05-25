@@ -4,7 +4,7 @@ source kcov_blkar_fun.sh
 
 exit_code=0
 
-VERSIONS=(1 2 3 17 18 19)
+VERSIONS=(1 17)
 
 file_size=$(ls -l dummy | awk '{ print $5 }')
 
