@@ -103,6 +103,18 @@ while (( $i < $test_count )); do
   echo ""
 done
 
+echo "========================================"
+
+echo "Merging coverage reports"
+# merge coverage support
+cov_dirs=""
+for t in ${tests[@]}; do
+    cov_dirs=$cov_dirs" "$t/cov
+done
+merged_cov_dir="../target/cov/bin-tests"
+mkdir -p $merge_cov_dir
+kcov --merge $merged_cov_dir $cov_dirs
+
 # go through all exit codes
 test_fail_count=0
 tests_failed=()
@@ -125,6 +137,7 @@ for t in ${tests[@]}; do
     tests_failed+=("$t")
   fi
 done
+
 echo "========================================"
 
 if [[ $test_fail_count == 0 ]]; then
