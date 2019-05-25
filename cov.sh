@@ -7,8 +7,7 @@ if [[ $TRAVIS == true ]]; then
 fi
 
 if [[ $TRAVIS == true ]]; then
-    TARGET=$HOME/kcov
-    export PATH=$TARGET/bin:$PATH
+    export PATH=$HOME/kcov/bin:$PATH
 fi
 
 # export RUSTFLAGS="-C link-dead-code"

@@ -5,8 +5,7 @@ COV_DIR=cov
 mkdir -p $COV_DIR
 
 if [[ $TRAVIS == true ]]; then
-    TARGET=$HOME/kcov
-    export PATH=$TARGET/bin:$PATH
+    export PATH=$HOME/kcov/bin:$PATH
 fi
 
 blkar() {
