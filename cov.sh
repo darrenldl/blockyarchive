@@ -20,6 +20,7 @@ fi
 
 files=(target/debug/blkar)
 
+echo "Running cargo tests"
 COV_DIR="target/cov/cargo-tests"
 for file in target/debug/blkar_lib-*; do
     if [[ $file == *.d ]]; then
@@ -30,6 +31,7 @@ for file in target/debug/blkar_lib-*; do
     kcov --exclude-pattern=/.cargo,/usr/lib --verify $COV_DIR "$file"
 done
 
+echo "Running binary tests"
 cd cov_tests/
 ./dev_tests.sh
 if [[ $? != 0 ]]; then
@@ -37,7 +39,7 @@ if [[ $? != 0 ]]; then
 fi
 cd ..
 
-# merge everything
+echo "Merging all code coverage reports"
 rm -rf target/cov/total
 mkdir -p target/cov/total
 kcov --merge target/cov/total $COV_DIR target/cov/bin-tests
