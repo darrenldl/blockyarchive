@@ -40,7 +40,7 @@ for ver in ${VERSIONS[*]}; do
         container_name=sort_$data_shards\_$parity_shards\_$ver.sbx
 
         echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
-        output=$(./../blkar encode --json --sbx-version $ver -f dummy $container_name \
+        output=$(blkar encode --json --sbx-version $ver -f dummy $container_name \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
@@ -95,7 +95,7 @@ for ver in ${VERSIONS[*]}; do
         echo "Sorting container"
         for i in 1 2 3 4 5 6; do
           echo -n "    pass $i"
-          output=$(./../blkar sort --json -f --burst $burst --multi-pass $container_name.$i sorted_$container_name)
+          output=$(blkar sort --json -f --burst $burst --multi-pass $container_name.$i sorted_$container_name)
           if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -109,7 +109,7 @@ for ver in ${VERSIONS[*]}; do
         done
 
         echo -n "Checking sorted container burst error resistance level"
-        output=$(./../blkar show --json --guess-burst sorted_$container_name)
+        output=$(blkar show --json --guess-burst sorted_$container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -126,7 +126,7 @@ for ver in ${VERSIONS[*]}; do
         output_name=dummy_$data_shards\_$parity_shards
 
         echo -n "Decoding"
-        output=$(./../blkar decode --json -f sorted_$container_name $output_name)
+        output=$(blkar decode --json -f sorted_$container_name $output_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -189,7 +189,7 @@ for ver in ${VERSIONS[*]}; do
     container_name=sort_$data_shards\_$parity_shards\_$ver.sbx
 
     echo -n "Encoding in version $ver, data = $data_shards, parity = $parity_shards"
-    output=$(./../blkar encode --json --sbx-version $ver -f dummy $container_name.1 \
+    output=$(blkar encode --json --sbx-version $ver -f dummy $container_name.1 \
                         --uid DEADBEEF0001 \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards)
@@ -210,7 +210,7 @@ for ver in ${VERSIONS[*]}; do
       exit_code=1
     fi
 
-    output=$(./../blkar encode --json --sbx-version $ver -f dummy_blank $container_name.2 \
+    output=$(blkar encode --json --sbx-version $ver -f dummy_blank $container_name.2 \
                         --uid DEADBEEF0001 \
                         --hash sha1 \
                         --rs-data $data_shards --rs-parity $parity_shards)
@@ -248,7 +248,7 @@ for ver in ${VERSIONS[*]}; do
     corrupt $[4096 * (50 + meta_count)] $container_name.1.2
 
     echo -n "Sorting container using 1st container"
-    output=$(./../blkar sort --json --burst $burst -f $container_name.1.2 $container_name.1.1)
+    output=$(blkar sort --json --burst $burst -f $container_name.1.2 $container_name.1.1)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -261,7 +261,7 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     echo -n "Sorting container using 2nd container"
-    output=$(./../blkar sort --json --burst $burst --multi-pass $container_name.2 $container_name.1.1)
+    output=$(blkar sort --json --burst $burst --multi-pass $container_name.2 $container_name.1.1)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -274,7 +274,7 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     echo -n "Checking sorted container burst error resistance level"
-    output=$(./../blkar show --json --guess-burst $container_name.1.1)
+    output=$(blkar show --json --guess-burst $container_name.1.1)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
@@ -455,7 +455,7 @@ for ver in ${VERSIONS[*]}; do
     fi
 
     echo -n "Decoding"
-    output=$(./../blkar decode --json -f $container_name.1.1 $output_name)
+    output=$(blkar decode --json -f $container_name.1.1 $output_name)
     if [[ $(echo $output | jq -r ".error") != null ]]; then
       echo " ==> Invalid JSON"
       exit_code=1
