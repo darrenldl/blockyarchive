@@ -112,7 +112,7 @@ for t in ${tests[@]}; do
     cov_dirs=$cov_dirs" "$t/cov
 done
 merged_cov_dir="../target/cov/bin-tests"
-mkdir -p $merge_cov_dir
+mkdir -p $merged_cov_dir
 kcov --merge $merged_cov_dir $cov_dirs
 
 # go through all exit codes
