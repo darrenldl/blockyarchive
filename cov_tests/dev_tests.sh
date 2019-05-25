@@ -104,6 +104,7 @@ while (( $i < $test_count )); do
 done
 
 echo "========================================"
+echo ""
 
 echo "Merging coverage reports"
 # merge coverage support
@@ -114,6 +115,8 @@ done
 merged_cov_dir="../target/cov/bin-tests"
 mkdir -p $merged_cov_dir
 kcov --merge $merged_cov_dir $cov_dirs
+
+echo ""
 
 # go through all exit codes
 test_fail_count=0
