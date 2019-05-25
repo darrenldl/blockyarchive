@@ -15,7 +15,7 @@ fi
 
 cargo build --tests
 if [[ $? != 0 ]]; then
-  exit 1
+    exit 1
 fi
 
 files=(target/debug/blkar)
@@ -32,6 +32,9 @@ done
 
 cd cov_tests/
 ./dev_tests.sh
+if [[ $? != 0 ]]; then
+    exit 1
+fi
 cd ..
 
 # merge everything
