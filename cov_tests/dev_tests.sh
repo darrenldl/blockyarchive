@@ -85,11 +85,12 @@ while (( $i < $test_count )); do
       cd $t
 
       if [[ $? == 0 ]]; then
-        find . -type f \
-             -not -name "exit_code" \
-             -not -name "log" \
-             -not -name "stderr_log" \
-             -delete
+          find . -type d "cov" -prune \
+               -type f \
+               -not -name "exit_code" \
+               -not -name "log" \
+               -not -name "stderr_log" \
+               -delete
 
         cd ..
       fi
@@ -112,9 +113,10 @@ cov_dirs=""
 for t in ${tests[@]}; do
     cov_dirs=$cov_dirs" "$t/cov
 done
+echo $cov_dirs
 merged_cov_dir="../target/cov/bin-tests"
 mkdir -p $merged_cov_dir
-kcov --merge $merged_cov_dir $cov_dirs
+# kcov --merge $merged_cov_dir $cov_dirs
 
 echo ""
 
