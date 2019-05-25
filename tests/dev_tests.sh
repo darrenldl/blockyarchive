@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $TRAVIS == true ]]; then
-    if ! [[ $TARGET == x86_64-unknown-linux-gnu && $DISABLE_COV == "" ]]; then
+    if ! [[ $TARGET == x86_64-unknown-linux-gnu ]]; then
         exit 0
     fi
 fi
