@@ -113,7 +113,6 @@ cov_dirs=""
 for t in ${tests[@]}; do
     cov_dirs=$cov_dirs" "$t/cov
 done
-echo $cov_dirs
 merged_cov_dir="../target/cov/bin-tests"
 rm -rf $merged_cov_dir
 mkdir -p $merged_cov_dir
