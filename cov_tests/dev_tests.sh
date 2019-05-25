@@ -23,6 +23,18 @@ simul_test_count=1
 start_date=$(date "+%Y-%m-%d %H:%M")
 start_time=$(date "+%s")
 
+tests_missing=0
+for t in ${tests[@]}; do
+    if [ ! -f $t.sh ]; then
+        echo "Test $t.sh is missing"
+    fi
+    tests_missing=$[tests_missing + 1]
+done
+
+if [[ $tests_missing != 0 ]]; then
+    exit 1
+fi
+
 echo ""
 echo "Test start :" $start_date
 echo ""
