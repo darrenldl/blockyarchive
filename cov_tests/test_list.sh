@@ -9,10 +9,12 @@ tests=(
     "rescue_tests"
     "rescue_from_to_tests"
     "rescue_pick_uid_tests"
+    "show_pick_uid_tests"
     "out_file_logic_tests"
     "corruption_tests"
     "burst_corruption_tests"
     "sort_tests"
     "file_size_calc_tests"
     "repair_truncated_tests"
+    "check_hash_tests"
 )
