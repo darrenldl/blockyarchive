@@ -18,7 +18,7 @@ source test_list.sh
 
 test_count=${#tests[@]}
 
-simul_test_count=1
+simul_test_count=5
 
 start_date=$(date "+%Y-%m-%d %H:%M")
 start_time=$(date "+%s")

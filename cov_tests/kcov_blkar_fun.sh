@@ -1,6 +1,8 @@
 #!/bin/bash
 
-mkdir -p "../../target/cov/blkar"
+COV_DIR=cov
+
+mkdir -p $COV_DIR
 
 TARGET=$HOME/kcov
 
@@ -10,8 +12,8 @@ fi
 
 blkar() {
     if [[ $TRAVIS == true ]]; then
-        kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "../../target/cov/blkar" ../blkar "$@" | sed "s/kcov.*//"
+        kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify $COV_DIR ../blkar "$@" | sed "s/kcov.*//"
     else
-        kcov --exclude-pattern=/.cargo,/usr/lib --verify "../../target/cov/blkar" ../blkar "$@" | sed "s/kcov.*//"
+        kcov --exclude-pattern=/.cargo,/usr/lib --verify $COV_DIR ../blkar "$@" | sed "s/kcov.*//"
     fi
 }
