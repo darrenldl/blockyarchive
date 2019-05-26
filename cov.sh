@@ -7,23 +7,42 @@ if [[ $TRAVIS == true ]]; then
 fi
 
 if [[ $TRAVIS == true ]]; then
-    TARGET=$HOME/kcov
-    export PATH=$TARGET/bin:$PATH
+    export PATH=$HOME/kcov/bin:$PATH
 fi
 
 # export RUSTFLAGS="-C link-dead-code"
 
+echo "Running cargo tests"
+echo "========================================"
+rm -rf target/debug/
 cargo build --tests
 if [[ $? != 0 ]]; then
-  exit 1
+    exit 1
 fi
 
-files=(target/debug/blkar)
+COV_DIR="target/cov/cargo-tests"
+for file in target/debug/blkar_lib-*; do
+    if [[ $file == *.d ]]; then
+        continue
+    fi
 
-#for file in target/debug/blkar-*[^\.d]; do
-# for file in ${files[@]}; do
-for file in target/debug/blkar_lib-*; do if [[ $file == *.d ]]; then continue; fi
-  # mkdir -p "target/cov/$(basename $file)"
-  mkdir -p "target/cov/blkar"
-  kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/blkar" "$file"
+    mkdir -p $COV_DIR
+    kcov --exclude-pattern=/.cargo,/usr/lib --verify $COV_DIR "$file"
 done
+
+echo ""
+echo "Running binary tests"
+echo "========================================"
+cd cov_tests/
+./dev_tests.sh
+if [[ $? != 0 ]]; then
+    exit 1
+fi
+cd ..
+
+echo ""
+echo "Merging all code coverage reports"
+echo "========================================"
+rm -rf target/cov/total
+mkdir -p target/cov/total
+kcov --merge target/cov/total $COV_DIR target/cov/bin-tests

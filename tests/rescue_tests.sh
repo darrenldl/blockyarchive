@@ -64,6 +64,12 @@ if [[ $(echo $output | jq -r ".error") != "null" ]]; then
     echo " ==> Invalid JSON"
     exit_code=1
 fi
+# try rescuing again using the same rescue_log
+output=$(./../blkar rescue --json dummy_disk rescued_data rescue_log)
+if [[ $(echo $output | jq -r ".error") != "null" ]]; then
+    echo " ==> Invalid JSON"
+    exit_code=1
+fi
 
 # Check if original bytes were used
 echo -n "Checking if original bytes from containers were used"

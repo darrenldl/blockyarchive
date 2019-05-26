@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $TRAVIS == true ]]; then
-    if ! [[ $TARGET == x86_64-unknown-linux-gnu && $DISABLE_COV == "" ]]; then
+    if ! [[ $TARGET == x86_64-unknown-linux-gnu ]]; then
         exit 0
     fi
 fi
@@ -17,7 +17,6 @@ else
 fi
 
 test_failed=0
-test_failed_names=""
 
 source test_list.sh
 
@@ -27,6 +26,18 @@ simul_test_count=5
 
 start_date=$(date "+%Y-%m-%d %H:%M")
 start_time=$(date "+%s")
+
+tests_missing=0
+for t in ${tests[@]}; do
+    if [ ! -f $t.sh ]; then
+        echo "Test $t.sh is missing"
+        tests_missing=$[tests_missing + 1]
+    fi
+done
+
+if [[ $tests_missing != 0 ]]; then
+    exit 1
+fi
 
 echo ""
 echo "Test start :" $start_date
@@ -123,7 +134,6 @@ if [[ $test_fail_count == 0 ]]; then
     echo "All $test_count tests passed"
     exit_code=0
 else
-  echo
     echo "$test_fail_count tests failed"
     echo ""
     echo "List of tests failed :"

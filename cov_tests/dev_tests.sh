@@ -6,142 +6,163 @@ if [[ $TRAVIS == true ]]; then
     fi
 fi
 
-cd cov_tests
+if [[ $PWD != */cov_tests ]]; then
+    cd cov_tests
+fi
 
 ./copy.sh
 
 test_failed=0
 
-echo "Generating test data"
-./gen_dummy.sh
-# truncate -s 10m dummy
+source test_list.sh
 
-# version tests
-echo "========================================"
-echo "Starting version tests"
-echo "========================================"
-./version_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
+test_count=${#tests[@]}
 
-echo "========================================"
-echo "Starting version tests (stdin as encode input)"
-echo "========================================"
-./version_tests_encode_stdin.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
+simul_test_count=5
 
-echo "========================================"
-echo "Starting version tests (stdout as decode output)"
-echo "========================================"
-./version_tests_decode_stdout.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
+start_date=$(date "+%Y-%m-%d %H:%M")
+start_time=$(date "+%s")
 
-# nometa tests
-echo "========================================"
-echo "Starting nometa tests"
-echo "========================================"
-./nometa_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
+tests_missing=0
+for t in ${tests[@]}; do
+    if [ ! -f $t.sh ]; then
+        echo "Test $t.sh is missing"
+        tests_missing=$[tests_missing + 1]
+    fi
+done
 
-# hash test
-echo "========================================"
-echo "Starting hash tests"
-echo "========================================"
-./hash_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
-
-# rescue tests
-echo "========================================"
-echo "Starting rescue tests"
-echo "========================================"
-./rescue_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
-
-echo "========================================"
-echo "Starting rescue with specified range tests"
-echo "========================================"
-./rescue_from_to_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
-
-echo "========================================"
-echo "Starting rescue with specified uid tests"
-echo "========================================"
-./rescue_pick_uid_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
-
-# output file tests
-echo "========================================"
-echo "Starting output file path logic tests"
-echo "========================================"
-./out_file_logic_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
-
-# corruption tests
-echo "========================================"
-echo "Starting corruption tests"
-echo "========================================"
-./corruption_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
-
-# burst corruption tests
-echo "========================================"
-echo "Starting burst corruption tests"
-echo "========================================"
-./burst_corruption_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
-
-# sort tests
-echo "========================================"
-echo "Starting sort tests"
-echo "========================================"
-./sort_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
-
-# file size tests
-echo "========================================"
-echo "Starting file size calculation tests"
-echo "========================================"
-./file_size_calc_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
-
-# container truncation tests
-echo "========================================"
-echo "Starting truncated container repair tests"
-echo "========================================"
-./repair_truncated_tests.sh
-if [[ $? != 0 ]]; then
-    test_failed=$[$test_failed+1]
-fi
-
-if [[ $test_failed == 0 ]]; then
-    echo "All tests passed"
-    exit 0
-else
-    echo "$test_failed tests failed"
+if [[ $tests_missing != 0 ]]; then
     exit 1
 fi
+
+echo ""
+echo "Test start :" $start_date
+echo ""
+
+echo "Starting $test_count tests"
+echo ""
+
+i=0
+while (( $i < $test_count )); do
+  if (( $test_count - $i >= $simul_test_count )); then
+    tests_to_run=$simul_test_count
+  else
+    tests_to_run=$[test_count - i]
+  fi
+
+  echo "Running $tests_to_run tests in parallel"
+
+  j=$i
+
+  for (( c=0; c < $tests_to_run; c++ )); do
+    t=${tests[$i]}
+    if [[ "$t" != "" ]]; then
+      echo "    Starting $t"
+
+      rm -rf $t/
+      mkdir $t/
+      cd $t
+      ./../gen_dummy.sh
+      cp ../functions.sh .
+      cp ../kcov_blkar_fun.sh .
+      ./../$t.sh > log 2> stderr_log &
+      cd ..
+
+      i=$[i+1]
+    fi
+  done
+
+  echo "Waiting for tests to finish"
+
+  wait
+
+  echo "Cleaning up files"
+
+  for (( c=0; c < $tests_to_run; c++ )); do
+    t=${tests[$j]}
+
+    if [[ "$t" != "" ]]; then
+      cd $t
+
+      if [[ $? == 0 ]]; then
+          find . -maxdepth 1 \
+               -type f \
+               -not -name "exit_code" \
+               -not -name "log" \
+               -not -name "stderr_log" \
+               -delete
+
+        cd ..
+      fi
+    fi
+
+    j=$[j+1]
+  done
+
+  echo ""
+  echo "$[test_count - i] / $test_count tests remaining"
+  echo ""
+done
+
+echo "========================================"
+echo ""
+
+echo "Merging coverage reports"
+# merge coverage support
+cov_dirs=""
+for t in ${tests[@]}; do
+    cov_dirs=$cov_dirs" "$t/cov
+done
+merged_cov_dir="../target/cov/bin-tests"
+rm -rf $merged_cov_dir
+mkdir -p $merged_cov_dir
+kcov --merge $merged_cov_dir $cov_dirs
+
+echo ""
+
+# go through all exit codes
+test_fail_count=0
+tests_failed=()
+
+for t in ${tests[@]}; do
+  t_exit_code=$(cat $t/exit_code)
+
+  if (( $t_exit_code != 0 )); then
+    echo "========================================"
+    echo "Log of $t :"
+    echo ""
+    cat $t/log
+    echo ""
+    echo "Stderr log of $t :"
+    cat $t/stderr_log
+  fi
+
+  if (( $t_exit_code != 0 )); then
+    test_fail_count=$[$test_fail_count + 1]
+    tests_failed+=("$t")
+  fi
+done
+
+echo "========================================"
+
+if [[ $test_fail_count == 0 ]]; then
+    echo "All $test_count tests passed"
+    exit_code=0
+else
+    echo "$test_fail_count tests failed"
+    echo ""
+    echo "List of tests failed :"
+    for t in ${tests_failed[@]}; do
+      echo "    "$t
+    done
+    exit_code=1
+fi
+
+end_date=$(date "+%Y-%m-%d %H:%M")
+end_time=$(date "+%s")
+echo ""
+echo "Test end :" $end_date
+
+echo "Time elapsed :" $[(end_time - start_time) / 60] "minutes"
+
+exit $exit_code

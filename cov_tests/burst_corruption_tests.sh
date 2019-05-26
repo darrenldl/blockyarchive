@@ -6,11 +6,9 @@ exit_code=0
 
 VERSIONS=(17)
 
-corrupt() {
-    dd if=/dev/zero of=$4 bs=$2 count=$3 seek=$1 conv=notrunc &>/dev/null
-}
+source functions.sh
 
-file_size=$[1024 * 2]
+file_size=$(ls -l dummy | awk '{ print $5 }')
 
 # generate test data
 dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null
@@ -18,26 +16,26 @@ dd if=/dev/urandom of=dummy bs=$file_size count=1 &>/dev/null
 for ver in ${VERSIONS[*]}; do
     for (( i=0; i < 1; i++ )); do
         if   [[ $ver == 17 ]]; then
-            data_shards=$((1 + RANDOM % 5))
-            parity_shards=$((1 + RANDOM % 5))
+            data_shards=$((1 + RANDOM % 128))
+            parity_shards=$((1 + RANDOM % 128))
             burst=$((1 + RANDOM % 10))
         elif [[ $ver == 18 ]]; then
-            data_shards=$((1 + RANDOM % 5))
-            parity_shards=$((1 + RANDOM % 5))
+            data_shards=$((1 + RANDOM % 128))
+            parity_shards=$((1 + RANDOM % 128))
             burst=$((1 + RANDOM % 10))
         else
-            data_shards=$((1 + RANDOM % 5))
-            parity_shards=$((1 + RANDOM % 5))
+            data_shards=$((1 + RANDOM % 128))
+            parity_shards=$((1 + RANDOM % 128))
             burst=$((1 + RANDOM % 10))
         fi
 
         container_name=burst_$data_shards\_$parity_shards\_$burst\_$ver.sbx
 
         echo -n "Encoding"
-        output=$(kcov_blkar encode --json --sbx-version $ver -f dummy $container_name \
-                           --hash sha1 \
-                           --rs-data $data_shards --rs-parity $parity_shards \
-                           --burst $burst)
+        output=$(blkar encode --json --sbx-version $ver -f dummy $container_name \
+                        --hash sha1 \
+                        --rs-data $data_shards --rs-parity $parity_shards \
+                        --burst $burst)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -56,7 +54,7 @@ for ver in ${VERSIONS[*]}; do
         fi
 
         echo -n "Checking burst error resistance level"
-        output=$(kcov_blkar show --json --guess-burst $container_name)
+        output=$(blkar show --json --guess-burst $container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -84,7 +82,7 @@ for ver in ${VERSIONS[*]}; do
         done
 
         echo -n "Repairing"
-        output=$(kcov_blkar repair --json --verbose $container_name)
+        output=$(blkar repair --json --verbose $container_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -99,7 +97,7 @@ for ver in ${VERSIONS[*]}; do
         output_name=dummy_$data_shards\_$parity_shards
 
         echo -n "Decoding"
-        output=$(kcov_blkar decode --json -f $container_name $output_name)
+        output=$(blkar decode --json -f $container_name $output_name)
         if [[ $(echo $output | jq -r ".error") != null ]]; then
             echo " ==> Invalid JSON"
             exit_code=1
@@ -122,4 +120,4 @@ for ver in ${VERSIONS[*]}; do
     done
 done
 
-exit $exit_code
+echo $exit_code > exit_code

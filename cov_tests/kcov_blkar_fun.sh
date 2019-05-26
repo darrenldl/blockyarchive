@@ -1,17 +1,13 @@
 #!/bin/bash
 
-mkdir -p "../target/cov/blkar"
+COV_DIR=cov
 
-TARGET=$HOME/kcov
+mkdir -p $COV_DIR
 
 if [[ $TRAVIS == true ]]; then
-    export PATH=$TARGET/bin:$PATH
+    export PATH=$HOME/kcov/bin:$PATH
 fi
 
-kcov_blkar() {
-    if [[ $TRAVIS == true ]]; then
-        kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo,/usr/lib --verify "../target/cov/blkar" blkar "$@" | sed "s/kcov.*//"
-    else
-        kcov --exclude-pattern=/.cargo,/usr/lib --verify "../target/cov/blkar" ./blkar "$@" | sed "s/kcov.*//"
-    fi
+blkar() {
+    kcov --exclude-pattern=/.cargo,/usr/lib --verify $COV_DIR ../blkar "$@" | sed "s/kcov.*//"
 }

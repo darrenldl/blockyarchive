@@ -1,19 +1,52 @@
 #!/bin/bash
 
-if [[ $PWD != */cov_tests ]]; then
-  cd cov_tests
+if [[ $PWD != */blockyarchive/cov_tests ]]; then
+  echo "Please invoke clean.sh in the cov_tests directory"
+  exit 1
 fi
 
-rm dummy* &>/dev/null
+source test_list.sh
 
-rm *.sbx &>/dev/null
+rm -f dummy*
 
-rm rescued_data/* &>/dev/null
+rm -f  *.sbx
 
-rm rescued_data2/* &>/dev/null
+rm -f  *.ecsbx
 
-rm rescue_log &>/dev/null
+rm -f rescued_data/*
 
-rm filler* &>/dev/null
+rm -f rescued_data2/*
 
-rm out_test/* &>/dev/null
+rm -f rescue_log
+
+rm -f filler*
+
+rm -f out_test/*
+
+rm -f sort_*.sbx.*
+
+rm -f sort_*.ecsbx.*
+
+rm -f exit_code
+
+rm -f ../blkar
+
+rm -f data_chunk
+
+rm -f data_chunk_orig
+
+rm -f chunk_*
+
+rm -f decode*.sbx.*
+
+rm -f decode*.ecsbx.*
+
+find . -regextype sed -regex "./sort_[0-9]*_[0-9]*_[0-9]*" -delete
+
+find . -regextype sed -regex "./decode_[0-9]*_[0-9]*_[0-9]*" -delete
+
+for t in ${tests[@]}; do
+  if [[ "$t" != "" ]]; then
+    rm -rf $t
+  fi
+done
