@@ -3,7 +3,6 @@
 [![Build Status](https://travis-ci.org/darrenldl/blockyarchive.svg?branch=master)](https://travis-ci.org/darrenldl/blockyarchive)
 [![Build status](https://ci.appveyor.com/api/projects/status/i4dxpldp4t312gtv?svg=true)](https://ci.appveyor.com/project/darrenldl/blockyarchive)
 [![codecov](https://codecov.io/gh/darrenldl/blockyarchive/branch/master/graph/badge.svg)](https://codecov.io/gh/darrenldl/blockyarchive)
-[![Coverage Status](https://coveralls.io/repos/github/darrenldl/blockyarchive/badge.svg?branch=master)](https://coveralls.io/github/darrenldl/blockyarchive?branch=master)
 [![Crates](https://img.shields.io/crates/v/blkar.svg)](https://crates.io/crates/blkar)
 [![dependency status](https://deps.rs/repo/github/darrenldl/blockyarchive/status.svg)](https://deps.rs/repo/github/darrenldl/blockyarchive)
 [![Gitter chat](https://badges.gitter.im/blockyarchive/gitter.png)](https://gitter.im/blockyarchive/community)
