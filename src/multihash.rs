@@ -174,13 +174,13 @@ pub mod hash {
                     Some(_Ctx::SHA512(sha2::Sha512::new()))
                 }
                 HashType::BLAKE2B_256 => {
-                    use blake2::Digest;
+                    use blake2::digest::VariableOutput;
                     Some(_Ctx::BLAKE2B_256(VarBlake2b::new(
                         specs::Param::new(hash_type).digest_length as usize,
                     ).unwrap()))
                 },
                 HashType::BLAKE2B_512 => {
-                    use blake2::Digest;
+                    use blake2::digest::VariableOutput;
                     Some(_Ctx::BLAKE2B_512(VarBlake2b::new(
                     specs::Param::new(hash_type).digest_length as usize,
                 ).unwrap()))},
@@ -205,13 +205,24 @@ pub mod hash {
 
         pub fn update(&mut self, data: &[u8]) {
             match self.ctx {
-                _Ctx::SHA1(ref mut ctx) => ctx.input(data),
-                _Ctx::SHA256(ref mut ctx) => ctx.input(data),
-                _Ctx::SHA512(ref mut ctx) => ctx.input(data),
+                _Ctx::SHA1(ref mut ctx) => {
+                    use sha1::Digest;
+                    ctx.input(data)
+                },
+                _Ctx::SHA256(ref mut ctx) => {
+                    use sha2::Digest;
+                    ctx.input(data)
+                },
+                _Ctx::SHA512(ref mut ctx) => {
+                    use sha2::Digest;
+                    ctx.input(data)
+                },
                 _Ctx::BLAKE2B_256(ref mut ctx) => {
+                    use blake2::digest::Input;
                     ctx.input(data);
                 }
                 _Ctx::BLAKE2B_512(ref mut ctx) => {
+                    use blake2::digest::Input;
                     ctx.input(data);
                 }
             }
@@ -219,14 +230,24 @@ pub mod hash {
 
         pub fn finish_to_bytes(self, hashval: &mut [u8]) {
             match self.ctx {
-                _Ctx::SHA1(ctx) => hashval.copy_from_slice(ctx.result().as_ref()),
-                _Ctx::SHA256(ctx) => hashval.copy_from_slice(ctx.result().as_ref()),
-                _Ctx::SHA512(ctx) => hashval.copy_from_slice(ctx.result().as_ref()),
-                _Ctx::BLAKE2B_256(mut ctx) => {
+                _Ctx::SHA1(ctx) => {
+                    use sha1::Digest;
+                    hashval.copy_from_slice(ctx.result().as_ref())},
+                _Ctx::SHA256(ctx) => {
+                    use sha2::Digest;
+                    hashval.copy_from_slice(ctx.result().as_ref())
+                },
+                _Ctx::SHA512(ctx) => {
+                    use sha2::Digest;
+                    hashval.copy_from_slice(ctx.result().as_ref())
+                },
+                _Ctx::BLAKE2B_256(ctx) => {
+                    use blake2::digest::VariableOutput;
                     hashval.copy_from_slice(ctx.result().bytes.as_slice())
                 }
-                _Ctx::BLAKE2B_512(mut ctx) => {
-                    hashval.copy_from_slice(ctx.result().bytes.as_slice())
+                _Ctx::BLAKE2B_512(ctx) => {
+                    use blake2::digest::VariableOutput;
+                    hashval.copy_from_slice(ctx.variable_result().bytes.as_slice())
                 }
             }
         }
