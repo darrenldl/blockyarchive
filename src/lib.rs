@@ -18,7 +18,7 @@ extern crate smallvec;
 
 extern crate reed_solomon_erasure;
 
-extern crate blake2_c;
+extern crate blake2;
 extern crate sha1;
 extern crate sha2;
 

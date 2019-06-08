@@ -133,10 +133,9 @@ pub mod specs {
 }
 
 pub mod hash {
-    use blake2_c::blake2b;
-    use sha1::Digest;
-
     use super::*;
+
+    use blake2::VarBlake2b;
 
     pub struct Ctx {
         ctx: _Ctx,
@@ -147,8 +146,8 @@ pub mod hash {
         SHA1(sha1::Sha1),
         SHA256(sha2::Sha256),
         SHA512(sha2::Sha512),
-        BLAKE2B_256(blake2b::State),
-        BLAKE2B_512(blake2b::State),
+        BLAKE2B_256(VarBlake2b),
+        BLAKE2B_512(VarBlake2b),
     }
 
     pub fn hash_type_is_supported(hash_type: HashType) -> bool {
@@ -161,18 +160,30 @@ pub mod hash {
     impl Ctx {
         pub fn new(hash_type: HashType) -> Result<Ctx, ()> {
             let ctx = match hash_type {
-                HashType::SHA1 => Some(_Ctx::SHA1(sha1::Sha1::new())),
-                HashType::SHA2_256 | HashType::SHA256 => Some(_Ctx::SHA256(sha2::Sha256::new())),
+                HashType::SHA1 => {
+                    use sha1::Digest;
+                    Some(_Ctx::SHA1(sha1::Sha1::new()))
+                },
+                HashType::SHA2_256 | HashType::SHA256 => {
+                    use sha2::Digest;
+                    Some(_Ctx::SHA256(sha2::Sha256::new()))
+                },
                 HashType::SHA2_512_256 => None,
                 HashType::SHA2_512_512 | HashType::SHA512 => {
+                    use sha2::Digest;
                     Some(_Ctx::SHA512(sha2::Sha512::new()))
                 }
-                HashType::BLAKE2B_256 => Some(_Ctx::BLAKE2B_256(blake2b::State::new(
+                HashType::BLAKE2B_256 => {
+                    use blake2::Digest;
+                    Some(_Ctx::BLAKE2B_256(VarBlake2b::new(
+                        specs::Param::new(hash_type).digest_length as usize,
+                    ).unwrap()))
+                },
+                HashType::BLAKE2B_512 => {
+                    use blake2::Digest;
+                    Some(_Ctx::BLAKE2B_512(VarBlake2b::new(
                     specs::Param::new(hash_type).digest_length as usize,
-                ))),
-                HashType::BLAKE2B_512 => Some(_Ctx::BLAKE2B_512(blake2b::State::new(
-                    specs::Param::new(hash_type).digest_length as usize,
-                ))),
+                ).unwrap()))},
                 HashType::BLAKE2S_128 => None,
                 HashType::BLAKE2S_256 => None,
             };
@@ -198,10 +209,10 @@ pub mod hash {
                 _Ctx::SHA256(ref mut ctx) => ctx.input(data),
                 _Ctx::SHA512(ref mut ctx) => ctx.input(data),
                 _Ctx::BLAKE2B_256(ref mut ctx) => {
-                    ctx.update(data);
+                    ctx.input(data);
                 }
                 _Ctx::BLAKE2B_512(ref mut ctx) => {
-                    ctx.update(data);
+                    ctx.input(data);
                 }
             }
         }
@@ -212,10 +223,10 @@ pub mod hash {
                 _Ctx::SHA256(ctx) => hashval.copy_from_slice(ctx.result().as_ref()),
                 _Ctx::SHA512(ctx) => hashval.copy_from_slice(ctx.result().as_ref()),
                 _Ctx::BLAKE2B_256(mut ctx) => {
-                    hashval.copy_from_slice(ctx.finalize().bytes.as_slice())
+                    hashval.copy_from_slice(ctx.result().bytes.as_slice())
                 }
                 _Ctx::BLAKE2B_512(mut ctx) => {
-                    hashval.copy_from_slice(ctx.finalize().bytes.as_slice())
+                    hashval.copy_from_slice(ctx.result().bytes.as_slice())
                 }
             }
         }
