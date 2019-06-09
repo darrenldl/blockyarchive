@@ -232,22 +232,22 @@ pub mod hash {
             match self.ctx {
                 _Ctx::SHA1(ctx) => {
                     use sha1::Digest;
-                    hashval.copy_from_slice(ctx.result().as_ref())},
+                    hashval.copy_from_slice(&ctx.result())},
                 _Ctx::SHA256(ctx) => {
                     use sha2::Digest;
-                    hashval.copy_from_slice(ctx.result().as_ref())
+                    hashval.copy_from_slice(&ctx.result())
                 },
                 _Ctx::SHA512(ctx) => {
                     use sha2::Digest;
-                    hashval.copy_from_slice(ctx.result().as_ref())
+                    hashval.copy_from_slice(&ctx.result())
                 },
                 _Ctx::BLAKE2B_256(ctx) => {
                     use blake2::digest::VariableOutput;
-                    hashval.copy_from_slice(ctx.result().bytes.as_slice())
+                    hashval.copy_from_slice(&ctx.vec_result())
                 }
                 _Ctx::BLAKE2B_512(ctx) => {
                     use blake2::digest::VariableOutput;
-                    hashval.copy_from_slice(ctx.variable_result().bytes.as_slice())
+                    hashval.copy_from_slice(&ctx.vec_result())
                 }
             }
         }
