@@ -41,7 +41,10 @@ fi
 cd ..
 
 echo ""
+echo "========================================"
+echo ""
 echo "Merging all code coverage reports"
+echo ""
 echo "========================================"
 rm -rf target/cov/total
 mkdir -p target/cov/total
