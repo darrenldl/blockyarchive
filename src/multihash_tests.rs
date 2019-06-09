@@ -212,10 +212,10 @@ fn test_hash_type_to_string() {
     assert_eq!("SHA2-512-256", hash_type_to_string(HashType::SHA2_512_256));
     assert_eq!("SHA512", hash_type_to_string(HashType::SHA512));
     assert_eq!("SHA512", hash_type_to_string(HashType::SHA2_512_512));
-    assert_eq!("BLAKE2B-256", hash_type_to_string(HashType::BLAKE2B_256));
-    assert_eq!("BLAKE2B-512", hash_type_to_string(HashType::BLAKE2B_512));
-    assert_eq!("BLAKE2S-128", hash_type_to_string(HashType::BLAKE2S_128));
-    assert_eq!("BLAKE2S-256", hash_type_to_string(HashType::BLAKE2S_256));
+    assert_eq!("BLAKE2b-256", hash_type_to_string(HashType::BLAKE2B_256));
+    assert_eq!("BLAKE2b-512", hash_type_to_string(HashType::BLAKE2B_512));
+    assert_eq!("BLAKE2s-128", hash_type_to_string(HashType::BLAKE2S_128));
+    assert_eq!("BLAKE2s-256", hash_type_to_string(HashType::BLAKE2S_256));
 }
 
 #[test]
