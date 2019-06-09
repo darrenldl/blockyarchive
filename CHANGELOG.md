@@ -1,10 +1,13 @@
 # Changelog
 
-## 7.0.1
+## 7.1.0
 
 - Dependencies update
-  
     - Updated use of `blake2_c` to `blake2`
+- Updated encode help message to mention BLAKE2b-256 as a supported hash function explicitly
+- Added support for following hash functions
+    - BLAKE2s-128
+    - BLAKE2s-256
 
 ## 7.0.0
 
