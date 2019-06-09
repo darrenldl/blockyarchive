@@ -1,5 +1,14 @@
 # Changelog
 
+## 7.1.0
+
+- Dependencies update
+    - Updated use of `blake2_c` to `blake2`
+- Updated encode help message to mention BLAKE2b-256 as a supported hash function explicitly
+- Added support for following hash functions
+    - BLAKE2s-128
+    - BLAKE2s-256
+
 ## 7.0.0
 
 - Updated `--pv` help message to state the default in JSON mode
@@ -60,7 +69,9 @@
     - Both are incompatible with range options, as opposed to decode mode where hashing is still done with range options
       
         - This is to reduce complexity, especially since ranged hashing isn't very useful in general
+
 - Time elapsed fields display update for decode mode
+  
     - Now decoding time and hashing time are displayed separately
 
 ## 6.0.1
