@@ -4,14 +4,15 @@ source kcov_blkar_fun.sh
 
 exit_code=0
 
-HASHES=("sha1")
+HASHES=("sha1" "sha256" "sha512" "blake2b-256" "blake2b-512")
 
 # Record the hashes
 a[0]=$(sha1sum   dummy | awk '{print $1}')
 a[1]=$(sha256sum dummy | awk '{print $1}')
 a[2]=$(sha512sum dummy | awk '{print $1}')
 if [[ $(command -v b2sum) != "" ]]; then
-    a[3]=$(b2sum     dummy | awk '{print $1}')
+    a[3]=$(b2sum -l 256 dummy | awk '{print $1}')
+    a[4]=$(b2sum        dummy | awk '{print $1}')
 fi
 
 # Encode in all 4 hashes
