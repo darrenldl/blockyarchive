@@ -195,14 +195,14 @@ pub mod hash {
                         VarBlake2s::new(specs::Param::new(hash_type).digest_length as usize)
                             .unwrap(),
                     ))
-                },
+                }
                 HashType::BLAKE2S_256 => {
                     use blake2::digest::VariableOutput;
                     Some(_Ctx::BLAKE2S_256(
                         VarBlake2s::new(specs::Param::new(hash_type).digest_length as usize)
                             .unwrap(),
                     ))
-                },
+                }
             };
             match ctx {
                 Some(ctx) => Ok(Ctx { ctx }),
