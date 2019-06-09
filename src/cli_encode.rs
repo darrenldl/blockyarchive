@@ -41,7 +41,10 @@ OUT/INFILE.ecsbx (only the file part of INFILE is used).",
           sha1
 (default) sha256
           sha512
-          blake2b-512",
+          blake2b-256
+          blake2b-512
+          blake2s-128
+          blake2s-256",
                 ),
         )
         .arg(Arg::with_name("no_meta").long("no-meta").help(
