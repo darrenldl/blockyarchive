@@ -25,10 +25,10 @@ pub fn hash_type_to_string(hash_type: HashType) -> String {
         SHA2_256 | SHA256 => String::from("SHA256"),
         SHA2_512_256 => String::from("SHA2-512-256"),
         SHA2_512_512 | SHA512 => String::from("SHA512"),
-        BLAKE2B_256 => String::from("BLAKE2B-256"),
-        BLAKE2B_512 => String::from("BLAKE2B-512"),
-        BLAKE2S_128 => String::from("BLAKE2S-128"),
-        BLAKE2S_256 => String::from("BLAKE2S-256"),
+        BLAKE2B_256 => String::from("BLAKE2b-256"),
+        BLAKE2B_512 => String::from("BLAKE2b-512"),
+        BLAKE2S_128 => String::from("BLAKE2s-128"),
+        BLAKE2S_256 => String::from("BLAKE2s-256"),
     }
 }
 
