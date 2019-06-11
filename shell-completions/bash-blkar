@@ -1,0 +1,9 @@
+#/usr/bin/env bash
+_blkar_completion() {
+  local SUBCOM="calc check decode encode help repair rescue show sort update"
+  if [[ $COMP_CWORD == 1 ]]; then
+    COMPREPLY=($(compgen -W "$SUBCOM" "${COMP_WORDS[1]}"))
+  fi
+}
+
+complete -F _blkar_completion blkar
