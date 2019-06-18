@@ -55,6 +55,7 @@ nom                  = "~ 4.2.3"
 chrono               = "~ 0.4.6"
 clap                 = "~ 2.33.0"
 ctrlc                = "~ 3.1.2"
+num_cpus             = "~ 1.10.1"
 
 [dev-dependencies]
 quickcheck = "~ 0.8.2"

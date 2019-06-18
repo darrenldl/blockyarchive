@@ -37,6 +37,8 @@ use crate::sbx_specs::{
 
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
+const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
+
 #[derive(Clone, Debug)]
 pub struct Stats {
     uid: [u8; SBX_FILE_UID_LEN],
@@ -612,8 +614,21 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         Some((data, parity, _)) => Some(RSEncoder::new(param.version, data, parity)),
     };
 
+    let single_lot_size = match param.data_par_burst {
+        None => DEFAULT_SINGLE_LOT_SIZE,
+        Some((data, parity, _)) => data + parity,
+    };
+
+    let lot_count = num_cpus::get();
+
+    let block_size = ver_to_block_size(param.version);
+
     // setup main data buffer
-    let mut data: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+    let mut data: Vec<u8> = vec![0; block_size * single_lot_size * lot_count];
+
+    let mut data_slots_used: usize = 0;
+
+    let total_data_slot_count: usize = single_lot_size * lot_count;
 
     // setup padding block
     let mut padding: [u8; SBX_LARGEST_BLOCK_SIZE] = [0x1A; SBX_LARGEST_BLOCK_SIZE];
@@ -646,6 +661,44 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     }
 
     let mut bytes_processed: u64 = 0;
+
+    loop {
+        // full up data buffer
+        data_slots_used = 0;
+        loop {
+            break_if_atomic_bool!(ctrlc_stop_flag);
+
+            if let Some(required_len) = required_len {
+                break_if_reached_required_len!(bytes_processed, required_len);
+            }
+
+            // read data in
+            let start = data_slots_used * block_size;
+            let end_exc = start + block_size;
+            let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data[start..end_exc]))?;
+
+            bytes_processed += read_res.len_read as u64;
+
+            if read_res.len_read == 0 {
+                break;
+            }
+
+            data_slots_used += 1;
+
+            if data_slots_used == total_data_slot_count {
+                break;
+            }
+        }
+
+        // fill in padding if necessary
+        if param.rs_enabled && data_slots_used % single_lot_size != 0 {
+            let lot_index = data_slots_used / single_lot_size;
+            let end_exc = (lot_index + 1) * single_lot_size;
+            for i in data_slots_used..end_exc {
+                data[]
+            }
+        }
+    }
 
     loop {
         let mut stats = stats.lock().unwrap();
