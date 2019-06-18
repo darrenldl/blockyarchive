@@ -37,6 +37,8 @@ use crate::sbx_specs::{
 
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
+use rayon::prelude::*;
+
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
 #[derive(Clone, Debug)]
@@ -662,7 +664,11 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     let mut bytes_processed: u64 = 0;
 
+    let mut batch_start_seq_num = 1;
+
     loop {
+        let mut stats = stats.lock().unwrap();
+
         // full up data buffer
         data_slots_used = 0;
         loop {
@@ -683,6 +689,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 break;
             }
 
+            stats.data_padding_bytes +=
+                sbx_block::write_padding(param.version, read_res.len_read, &mut data);
+
             data_slots_used += 1;
 
             if data_slots_used == total_data_slot_count {
@@ -690,14 +699,32 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             }
         }
 
-        // fill in padding if necessary
+        // fill remaining blocks in lot with padding if necessary
         if param.rs_enabled && data_slots_used % single_lot_size != 0 {
             let lot_index = data_slots_used / single_lot_size;
             let end_exc = (lot_index + 1) * single_lot_size;
             for i in data_slots_used..end_exc {
-                data[]
+                let start = i * block_size;
+                let end_exc = start + block_size;
+                stats.data_padding_bytes +=
+                    sbx_block::write_padding(param.version, 0, data[start..end_exc]);
             }
         }
+
+        // encode each lot in parallel
+        data.par_chunks_mut(single_lot_size)
+            .enumerate()
+            .for_each(|(lot_index, lot)| {
+                let mut block = Block::new(param.version &param.uid, BlockType::Data);
+                block.set_seq_num(batch_start_seq_num + lot_index * single_lot_size);
+
+                for slot in lot.chunks_mut(block_size) {
+                    block.sync_to_buffer(None, slot).unwrap();
+                    block.add1_seq_num();
+                }
+            });
+
+        batch_start_seq_num += data_slots_used;
     }
 
     loop {
