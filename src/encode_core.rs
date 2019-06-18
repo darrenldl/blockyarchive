@@ -628,7 +628,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     // setup main data buffer
     let mut data: Vec<u8> = vec![0; block_size * single_lot_size * lot_count];
 
-    let mut data_slots_used: usize = 0;
+    let mut data_slots_used: usize;
 
     let total_data_slot_count: usize = single_lot_size * lot_count;
 
@@ -666,7 +666,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     let mut batch_start_seq_num = 1;
 
-    loop {
+    let mut last_batch = false;
+
+    while !last_batch {
         let mut stats = stats.lock().unwrap();
 
         // full up data buffer
@@ -675,6 +677,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             break_if_atomic_bool!(ctrlc_stop_flag);
 
             if let Some(required_len) = required_len {
+                last_batch = true;
                 break_if_reached_required_len!(bytes_processed, required_len);
             }
 
@@ -686,6 +689,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             bytes_processed += read_res.len_read as u64;
 
             if read_res.len_read == 0 {
+                last_batch = true;
                 break;
             }
 
@@ -699,6 +703,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             }
         }
 
+        break_if_atomic_bool!(ctrlc_stop_flag);
+
         // fill remaining blocks in lot with padding if necessary
         if param.rs_enabled && data_slots_used % single_lot_size != 0 {
             let lot_index = data_slots_used / single_lot_size;
@@ -707,7 +713,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 let start = i * block_size;
                 let end_exc = start + block_size;
                 stats.data_padding_bytes +=
-                    sbx_block::write_padding(param.version, 0, data[start..end_exc]);
+                    sbx_block::write_padding(param.version, 0, &mut data[start..end_exc]);
             }
         }
 
@@ -715,12 +721,12 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         data.par_chunks_mut(single_lot_size)
             .enumerate()
             .for_each(|(lot_index, lot)| {
-                let mut block = Block::new(param.version &param.uid, BlockType::Data);
-                block.set_seq_num(batch_start_seq_num + lot_index * single_lot_size);
+                let mut block = Block::new(param.version, &param.uid, BlockType::Data);
+                block.set_seq_num((batch_start_seq_num + lot_index * single_lot_size) as u32);
 
                 for slot in lot.chunks_mut(block_size) {
                     block.sync_to_buffer(None, slot).unwrap();
-                    block.add1_seq_num();
+                    block.add1_seq_num().unwrap();
                 }
             });
 
