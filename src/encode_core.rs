@@ -626,11 +626,14 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let block_size = ver_to_block_size(param.version);
 
     // setup main data buffer
-    let mut data: Vec<u8> = vec![0; block_size * single_lot_size * lot_count];
+    let mut buffer: Vec<u8> = vec![0; block_size * single_lot_size * lot_count];
 
-    let mut data_slots_used: usize;
+    let data_slots_per_lot = match param.data_par_burst {
+        None => single_lot_size,
+        Some((data, _, _)) => data,
+    };
 
-    let total_data_slot_count: usize = single_lot_size * lot_count;
+    let total_data_slot_count = data_slots_per_lot * lot_count;
 
     // setup padding block
     let mut padding: [u8; SBX_LARGEST_BLOCK_SIZE] = [0x1A; SBX_LARGEST_BLOCK_SIZE];
@@ -672,7 +675,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         let mut stats = stats.lock().unwrap();
 
         // full up data buffer
-        data_slots_used = 0;
+        let mut data_slots_used = 0;
         loop {
             break_if_atomic_bool!(ctrlc_stop_flag);
 
@@ -682,7 +685,16 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             }
 
             // read data in
-            let start = data_slots_used * block_size;
+            let start = match param.data_par_burst {
+                None => data_slots_used * block_size,
+                Some((data, par, _)) => {
+                    let lot_to_use = data_slots_used / data;
+                    let start_index_in_lot = data_slots_used % data;
+
+                    lot_to_use * parity_slots_used.unwrap()
+                },
+            };
+
             let end_exc = start + block_size;
             let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data[start..end_exc]))?;
 
@@ -724,7 +736,13 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 let mut block = Block::new(param.version, &param.uid, BlockType::Data);
                 block.set_seq_num((batch_start_seq_num + lot_index * single_lot_size) as u32);
 
-                for slot in lot.chunks_mut(block_size) {
+                for (slot_index, slot) in lot.chunks_mut(block_size).enumerate() {
+                    if let Some((data, _, _)) = param.data_par_burst {
+                        if slot_index >= data {
+                            break;
+                        }
+                    }
+
                     block.sync_to_buffer(None, slot).unwrap();
                     block.add1_seq_num().unwrap();
                 }
