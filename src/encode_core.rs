@@ -370,7 +370,9 @@ struct Lot<'a> {
     meta_enabled: bool,
     block_size: usize,
     lot_size: usize,
-    slots_used: usize,
+    data_block_count: usize,
+    padding_block_count: usize,
+    parity_block_count: usize,
     directly_writable_slots: usize,
     data: Vec<u8>,
     write_pos_s: Vec<u64>,
@@ -412,7 +414,9 @@ impl<'a> Lot<'a> {
             meta_enabled,
             block_size,
             lot_size,
-            slots_used: 0,
+            data_block_count: 0,
+            padding_block_count: 0,
+            parity_block_count: 0,
             directly_writable_slots,
             data: vec![0; block_size * lot_size],
             write_pos_s: vec![0; lot_size],
@@ -421,10 +425,10 @@ impl<'a> Lot<'a> {
     }
 
     pub fn get_slot(&mut self) -> Option<&mut [u8]> {
-        if self.slots_used < self.directly_writable_slots {
-            let start = self.slots_used * self.block_size;
+        if self.slots_used() < self.directly_writable_slots {
+            let start = self.slots_used() * self.block_size;
             let end_exc = start + self.block_size;
-            self.slots_used += 1;
+            self.data_block_count += 1;
             Some(&mut self.data[start..end_exc])
         } else {
             None
@@ -432,22 +436,26 @@ impl<'a> Lot<'a> {
     }
 
     pub fn cancel_last_slot(&mut self) {
-        assert!(self.slots_used > 0);
+        assert!(self.data_block_count > 0);
 
-        self.slots_used -= 1;
+        self.data_block_count -= 1;
     }
 
     pub fn active(&self) -> bool {
-        self.slots_used > 0
+        self.slots_used() > 0
     }
 
     fn fill_in_padding(&mut self) {
-        for i in self.slots_used..self.directly_writable_slots {
-            let start = i * self.block_size;
-            let end_exc = start + self.block_size;
-            let slot = &mut self.data[start..end_exc];
+        if let Some(_) = self.data_par_burst {
+            for i in self.data_block_count..self.directly_writable_slots {
+                let start = i * self.block_size;
+                let end_exc = start + self.block_size;
+                let slot = &mut self.data[start..end_exc];
 
-            sbx_block::write_padding(self.version, 0, slot);
+                sbx_block::write_padding(self.version, 0, slot);
+
+                self.padding_block_count += 1;
+            }
         }
     }
 
@@ -461,7 +469,13 @@ impl<'a> Lot<'a> {
             }
 
             rs_codec.encode(&mut refs).unwrap();
+
+            self.parity_block_count = rs_codec.parity_shard_count();
         }
+    }
+
+    fn slots_used(&self) -> usize {
+        self.data_block_count + self.padding_block_count + self.parity_block_count
     }
 
     // pub fn is_full(&self) -> bool {
@@ -475,7 +489,7 @@ impl<'a> Lot<'a> {
             self.rs_encode();
 
             for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-                if slot_index < self.slots_used {
+                if slot_index < self.slots_used() {
                     let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
 
                     assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
@@ -508,29 +522,27 @@ impl<'a> Lot<'a> {
     }
 
     fn reset(&mut self) {
-        self.slots_used = 0;
+        self.data_block_count = 0;
+        self.padding_block_count = 0;
+        self.parity_block_count = 0;
     }
 
-    pub fn data_par_block_count(&self) -> (usize, usize) {
-        match self.data_par_burst {
-            None => (self.slots_used, 0),
-            Some((data, _, _)) =>
-                if self.slots_used <= data {
-                    (self.slots_used, 0)
-                } else {
-                    (data, self.slots_used - data)
-                }
-        }
+    pub fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
+        (self.data_block_count, self.padding_block_count, self.parity_block_count)
     }
 
     pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
         if self.active() {
             for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-                let write_pos = self.write_pos_s[slot_index];
+                if slot_index < self.slots_used() {
+                    let write_pos = self.write_pos_s[slot_index];
 
-                writer.seek(SeekFrom::Start(write_pos))?;
+                    writer.seek(SeekFrom::Start(write_pos))?;
 
-                writer.write(slot)?;
+                    writer.write(slot)?;
+                } else {
+                    break;
+                }
             }
 
             self.reset();
@@ -611,7 +623,7 @@ impl<'a> DataBlockBuffer<'a> {
     pub fn cancel_last_slot(&mut self) {
         let lots_used = self.lots_used;
 
-        if self.lots[lots_used].slots_used > 0 {
+        if self.lots[lots_used].slots_used() > 0 {
             self.lots[lots_used].cancel_last_slot();
         } else {
             assert!(lots_used > 0);
@@ -644,18 +656,20 @@ impl<'a> DataBlockBuffer<'a> {
         }
     }
 
-    pub fn data_par_block_count(&self) -> (usize, usize) {
+    pub fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
         let mut data_blocks = 0;
+        let mut padding_blocks = 0;
         let mut parity_blocks = 0;
 
         for lot in self.lots.iter() {
-            let (data, parity) = lot.data_par_block_count();
+            let (data, padding, parity) = lot.data_padding_parity_block_count();
 
             data_blocks += data;
+            padding_blocks += padding;
             parity_blocks += parity;
         }
 
-        (data_blocks, parity_blocks)
+        (data_blocks, padding_blocks, parity_blocks)
     }
 
     pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
@@ -949,6 +963,16 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         }
     }
 
+    let mut bytes_processed: u64 = 0;
+
+    let mut end_loop = false;
+
+    let mut block_for_seq_num_check = Block::dummy();
+
+    let data_size = ver_to_data_size(param.version);
+
+    block_for_seq_num_check.set_seq_num(0);
+
     reporter.start();
 
     if param.meta_enabled {
@@ -963,14 +987,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             true,
         )?;
     }
-
-    let mut bytes_processed: u64 = 0;
-
-    let mut end_loop = false;
-
-    let mut block_for_seq_num_check = Block::dummy();
-
-    block_for_seq_num_check.set_seq_num(0);
 
     while !end_loop {
         let mut stats = stats.lock().unwrap();
@@ -1007,12 +1023,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     sbx_block::write_padding(param.version, read_res.len_read, slot);
             }
 
-            let (data_blocks, parity_blocks) = buffer.data_par_block_count();
-
-            stats.data_blocks_written += data_blocks as u64;
-
-            stats.parity_blocks_written += parity_blocks as u64;
-
             if buffer.is_full() {
                 break;
             }
@@ -1021,6 +1031,12 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
         buffer.encode()?;
+
+        let (data_blocks, padding_blocks, parity_blocks) = buffer.data_padding_parity_block_count();
+
+        stats.data_blocks_written += data_blocks as u64;
+        stats.data_padding_bytes += padding_blocks * data_size;
+        stats.parity_blocks_written += parity_blocks as u64;
 
         buffer.write(&mut writer)?;
     }
