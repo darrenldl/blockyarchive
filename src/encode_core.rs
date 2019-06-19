@@ -488,8 +488,10 @@ impl<'a> Lot<'a> {
 
             self.rs_encode();
 
+            let slots_used = self.slots_used();
+
             for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-                if slot_index < self.slots_used() {
+                if slot_index < slots_used {
                     let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
 
                     assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
@@ -533,8 +535,10 @@ impl<'a> Lot<'a> {
 
     pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
         if self.active() {
+            let slots_used = self.slots_used();
+
             for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-                if slot_index < self.slots_used() {
+                if slot_index < slots_used {
                     let write_pos = self.write_pos_s[slot_index];
 
                     writer.seek(SeekFrom::Start(write_pos))?;
