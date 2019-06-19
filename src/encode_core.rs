@@ -40,6 +40,8 @@ use rayon::prelude::*;
 
 use reed_solomon_erasure::ReedSolomon;
 
+use smallvec::SmallVec;
+
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
 #[derive(Clone, Debug)]
@@ -439,10 +441,11 @@ fn write_meta_blocks(
     file_size: Option<u64>,
     hash: Option<multihash::HashBytes>,
     block: &mut Block,
-    buffer: &mut [u8],
     writer: &mut FileWriter,
     record_stats: bool,
 ) -> Result<(), Error> {
+    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
     // pack metadata into the block
     pack_metadata(
         block,
@@ -453,7 +456,7 @@ fn write_meta_blocks(
         hash,
     );
 
-    match block.sync_to_buffer(None, buffer) {
+    match block.sync_to_buffer(None, &mut buffer) {
         Ok(()) => {}
         Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
             return Err(Error::with_msg(&make_too_much_meta_err_string(
@@ -470,7 +473,7 @@ fn write_meta_blocks(
     for &p in write_pos_s.iter() {
         writer.seek(SeekFrom::Start(p))?;
 
-        writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
+        writer.write(sbx_block::slice_buf(block.get_version(), &buffer))?;
 
         if record_stats {
             stats.lock().unwrap().meta_blocks_written += 1;
@@ -637,7 +640,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let total_data_slot_count = data_slots_per_lot * lot_count;
 
     // setup padding block
-    let mut padding: [u8; SBX_LARGEST_BLOCK_SIZE] = [0x1A; SBX_LARGEST_BLOCK_SIZE];
+    let padding: [u8; SBX_LARGEST_BLOCK_SIZE] = [0x1A; SBX_LARGEST_BLOCK_SIZE];
 
     // setup main data block
     let mut block = Block::new(param.version, &param.uid, BlockType::Data);
@@ -660,7 +663,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             required_len,
             None,
             &mut block,
-            &mut data,
             &mut writer,
             true,
         )?;
@@ -688,16 +690,18 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             // read data in
             let start = match param.data_par_burst {
                 None => data_slots_used * block_size,
-                Some((data, par, _)) => {
+                Some((data, _, _)) => {
                     let lot_to_use = data_slots_used / data;
                     let start_index_in_lot = data_slots_used % data;
+                    let slot_to_use = lot_to_use * single_lot_size + start_index_in_lot;
 
-                    lot_to_use * parity_slots_used.unwrap()
+                    slot_to_use * block_size
                 },
             };
 
             let end_exc = start + block_size;
-            let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data[start..end_exc]))?;
+            let slot = &mut buffer[start..end_exc];
+            let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, slot))?;
 
             bytes_processed += read_res.len_read as u64;
 
@@ -707,7 +711,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             }
 
             stats.data_padding_bytes +=
-                sbx_block::write_padding(param.version, read_res.len_read, &mut data);
+                sbx_block::write_padding(param.version, read_res.len_read, slot);
 
             data_slots_used += 1;
 
@@ -725,13 +729,15 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             for i in data_slots_used..end_exc {
                 let start = i * block_size;
                 let end_exc = start + block_size;
+                let slot = &mut buffer[start..end_exc];
+
                 stats.data_padding_bytes +=
-                    sbx_block::write_padding(param.version, 0, &mut data[start..end_exc]);
+                    sbx_block::write_padding(param.version, 0, slot);
             }
         }
 
         // encode each lot in parallel
-        data.par_chunks_mut(block_size * single_lot_size)
+        buffer.par_chunks_mut(block_size * single_lot_size)
             .enumerate()
             .for_each(|(lot_index, lot)| {
                 let mut block = Block::new(param.version, &param.uid, BlockType::Data);
@@ -753,11 +759,11 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         batch_start_seq_num += lots_used * single_lot_size;
 
         // do Reed-Solomon encoding if needed
-        if let Some(rs_codec) = rs_codec {
+        if let Some(ref mut rs_codec) = rs_codec {
             // encode each lot in parallel
-            data.par_chunks_mut(block_size * single_lot_size)
+            buffer.par_chunks_mut(block_size * single_lot_size)
                 .for_each(|lot| {
-                    let ref refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(single_lot_size);
+                    let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(single_lot_size);
 
                     // collect references to data segments
                     for slot in lot.chunks_mut(block_size) {
@@ -769,84 +775,84 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         }
     }
 
-    loop {
-        let mut stats = stats.lock().unwrap();
+    // loop {
+    //     let mut stats = stats.lock().unwrap();
 
-        break_if_atomic_bool!(ctrlc_stop_flag);
+    //     break_if_atomic_bool!(ctrlc_stop_flag);
 
-        if let Some(required_len) = required_len {
-            break_if_reached_required_len!(bytes_processed, required_len);
-        }
+    //     if let Some(required_len) = required_len {
+    //         break_if_reached_required_len!(bytes_processed, required_len);
+    //     }
 
-        // read data in
-        let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data))?;
+    //     // read data in
+    //     let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data))?;
 
-        bytes_processed += read_res.len_read as u64;
+    //     bytes_processed += read_res.len_read as u64;
 
-        if read_res.len_read == 0 {
-            break;
-        }
+    //     if read_res.len_read == 0 {
+    //         break;
+    //     }
 
-        let mut data_blocks_written = 0;
-        let mut parity_blocks_written = 0;
+    //     let mut data_blocks_written = 0;
+    //     let mut parity_blocks_written = 0;
 
-        stats.data_padding_bytes +=
-            sbx_block::write_padding(param.version, read_res.len_read, &mut data);
+    //     stats.data_padding_bytes +=
+    //         sbx_block::write_padding(param.version, read_res.len_read, &mut data);
 
-        // start encoding
-        write_data_block(param, &mut block, &mut data, &mut writer)?;
+    //     // start encoding
+    //     write_data_block(param, &mut block, &mut data, &mut writer)?;
 
-        data_blocks_written += 1;
+    //     data_blocks_written += 1;
 
-        // update hash state if needed
-        if param.meta_enabled {
-            let data_part = &sbx_block::slice_data_buf(param.version, &data)[0..read_res.len_read];
-            hash_ctx.update(data_part);
-        }
+    //     // update hash state if needed
+    //     if param.meta_enabled {
+    //         let data_part = &sbx_block::slice_data_buf(param.version, &data)[0..read_res.len_read];
+    //         hash_ctx.update(data_part);
+    //     }
 
-        // update Reed-Solomon data if needed
-        if let Some(ref mut rs_codec) = rs_codec {
-            // encode normally once
-            if let Some(parity_to_use) = rs_codec.encode_no_block_sync(&data) {
-                for p in parity_to_use.iter_mut() {
-                    write_data_block(param, &mut block, p, &mut writer)?;
+    //     // update Reed-Solomon data if needed
+    //     if let Some(ref mut rs_codec) = rs_codec {
+    //         // encode normally once
+    //         if let Some(parity_to_use) = rs_codec.encode_no_block_sync(&data) {
+    //             for p in parity_to_use.iter_mut() {
+    //                 write_data_block(param, &mut block, p, &mut writer)?;
 
-                    parity_blocks_written += 1;
-                }
-            }
-        }
+    //                 parity_blocks_written += 1;
+    //             }
+    //         }
+    //     }
 
-        // update stats
-        stats.data_blocks_written += data_blocks_written;
-        stats.parity_blocks_written += parity_blocks_written;
-    }
+    //     // update stats
+    //     stats.data_blocks_written += data_blocks_written;
+    //     stats.parity_blocks_written += parity_blocks_written;
+    // }
 
-    if let Some(ref mut rs_codec) = rs_codec {
-        // fill remaining slots with padding if required
-        if rs_codec.active() {
-            let mut stats = stats.lock().unwrap();
+    // if let Some(ref mut rs_codec) = rs_codec {
+    //     // fill remaining slots with padding if required
+    //     if rs_codec.active() {
+    //         let mut stats = stats.lock().unwrap();
 
-            let slots_to_fill = rs_codec.unfilled_slot_count();
-            for i in 0..slots_to_fill {
-                // write padding
-                write_data_block(param, &mut block, &mut padding, &mut writer)?;
+    //         let slots_to_fill = rs_codec.unfilled_slot_count();
+    //         for i in 0..slots_to_fill {
+    //             // write padding
+    //             write_data_block(param, &mut block, &mut padding, &mut writer)?;
 
-                stats.data_blocks_written += 1;
-                stats.data_padding_bytes += ver_to_data_size(param.version);
+    //             stats.data_blocks_written += 1;
+    //             stats.data_padding_bytes += ver_to_data_size(param.version);
 
-                if let Some(parity_to_use) = rs_codec.encode_no_block_sync(&padding) {
-                    // this should only be executed at the last iteration
-                    assert_eq!(i, slots_to_fill - 1);
+    //             if let Some(parity_to_use) = rs_codec.encode_no_block_sync(&padding) {
+    //                 // this should only be executed at the last iteration
+    //                 assert_eq!(i, slots_to_fill - 1);
 
-                    for p in parity_to_use.iter_mut() {
-                        write_data_block(param, &mut block, p, &mut writer)?;
+    //                 for p in parity_to_use.iter_mut() {
+    //                     write_data_block(param, &mut block, p, &mut writer)?;
 
-                        stats.parity_blocks_written += 1;
-                    }
-                }
-            }
-        }
-    }
+    //                     stats.parity_blocks_written += 1;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     let data_bytes_encoded = match required_len {
         Some(x) => x,
@@ -864,7 +870,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             Some(data_bytes_encoded),
             Some(hash_bytes.clone()),
             &mut block,
-            &mut data,
             &mut writer,
             false,
         )?;
