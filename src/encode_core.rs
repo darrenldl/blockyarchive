@@ -438,14 +438,12 @@ impl<'a> Lot<'a> {
     }
 
     fn fill_in_padding(&mut self) {
-        if let Some((ref data, _, _)) = self.data_par_burst {
-            for i in self.slots_used..self.lot_size {
-                let start = i * self.block_size;
-                let end_exc = start + self.block_size;
-                let slot = &mut self.data[start..end_exc];
+        for i in self.slots_used..self.directly_writable_slots {
+            let start = i * self.block_size;
+            let end_exc = start + self.block_size;
+            let slot = &mut self.data[start..end_exc];
 
-                sbx_block::write_padding(self.version, 0, slot);
-            }
+            sbx_block::write_padding(self.version, 0, slot);
         }
     }
 
@@ -462,15 +460,11 @@ impl<'a> Lot<'a> {
         }
     }
 
-    pub fn slots_used(&self) -> usize {
-        self.slots_used
-    }
-
     pub fn is_full(&self) -> bool {
         self.slots_used == self.directly_writable_slots
     }
 
-    pub fn encode(&mut self, lot_start_seq_num: u32) -> Result<(), Error> {
+    pub fn encode(&mut self, lot_start_seq_num: u32) {
         self.fill_in_padding();
 
         self.rs_encode();
@@ -503,8 +497,6 @@ impl<'a> Lot<'a> {
                 self.write_pos_s[slot_index] = write_pos;
             }
         }
-
-        Ok(())
     }
 
     fn reset(&mut self) {
@@ -540,7 +532,7 @@ impl<'a> DataBlockBuffer<'a> {
     ) -> Self {
         let mut lots = Vec::with_capacity(lot_count);
 
-        for i in 0..lot_size {
+        for _ in 0..lot_size {
             lots.push(Lot::new(
                 version,
                 uid,
@@ -565,8 +557,6 @@ impl<'a> DataBlockBuffer<'a> {
 
     pub fn get_slot(&mut self) -> Option<&mut [u8]> {
         let lot_count = self.lots.len();
-
-        let lot = &mut self.lots[self.lots_used];
 
         if self.lots_used == lot_count {
             None
@@ -893,7 +883,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let mut hash_ctx = multihash::hash::Ctx::new(param.hash_type).unwrap();
 
     // setup Reed-Solomon things
-    let mut rs_codec = match param.data_par_burst {
+    let rs_codec = match param.data_par_burst {
         None => None,
         Some((data, parity, _)) => Some(ReedSolomon::new(data, parity).unwrap()),
     };
@@ -904,8 +894,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     };
 
     let lot_count = num_cpus::get();
-
-    let block_size = ver_to_block_size(param.version);
 
     // setup main data buffer
     let mut buffer = DataBlockBuffer::new(
@@ -964,11 +952,18 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             let slot = buffer.get_slot().unwrap();
             let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, slot))?;
 
+            hash_ctx.update(&slot[..read_res.len_read]);
+
             bytes_processed += read_res.len_read as u64;
 
             if read_res.len_read == 0 {
                 end_loop = true;
+                buffer.cancel_last_slot();
                 break;
+            }
+
+            if let Err(_) = block_for_seq_num_check.add1_seq_num() {
+                return Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
             }
 
             stats.data_padding_bytes +=
