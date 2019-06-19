@@ -504,8 +504,6 @@ impl<'a> Lot<'a> {
     }
 
     pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
-        assert!(self.is_full());
-
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
             let write_pos = self.write_pos_s[slot_index];
 
@@ -621,8 +619,6 @@ impl<'a> DataBlockBuffer<'a> {
     }
 
     pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
-        assert!(self.is_full());
-
         for lot in self.lots.iter_mut() {
             lot.write(writer)?;
         }
@@ -952,8 +948,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             let slot = buffer.get_slot().unwrap();
             let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, slot))?;
 
-            hash_ctx.update(&slot[..read_res.len_read]);
-
             bytes_processed += read_res.len_read as u64;
 
             if read_res.len_read == 0 {
@@ -965,6 +959,10 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             if let Err(_) = block_for_seq_num_check.add1_seq_num() {
                 return Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
             }
+
+            stats.data_blocks_written += 1;
+
+            hash_ctx.update(&sbx_block::slice_data_buf(param.version, slot)[..read_res.len_read]);
 
             stats.data_padding_bytes +=
                 sbx_block::write_padding(param.version, read_res.len_read, slot);
