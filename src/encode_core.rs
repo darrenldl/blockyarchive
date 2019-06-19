@@ -363,7 +363,7 @@ impl ProgressReport for Stats {
     }
 }
 
-struct Lot {
+struct Lot<'a> {
     version: Version,
     block: Block,
     data_par_burst: Option<(usize, usize, usize)>,
@@ -373,6 +373,7 @@ struct Lot {
     slots_used: usize,
     data: Vec<u8>,
     write_pos_s: Vec<u64>,
+    rs_codec: Option<&'a ReedSolomon>,
 }
 
 struct BlockBuffer {
@@ -384,15 +385,21 @@ enum GetSlotResult<'a> {
     Vacant(&'a mut [u8]),
 }
 
-impl Lot {
+impl Lot<'a> {
     pub fn new(
         version: Version,
         uid: &[u8; SBX_FILE_UID_LEN],
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
         lot_size: usize,
+        rs_codec: &'a Option<ReedSolomon>,
     ) -> Self {
         let block_size = ver_to_block_size(version);
+
+        let rs_codec = match rs_codec {
+            None => None,
+            Some(ref c) => Some(c)
+        };
 
         Lot {
             version,
@@ -404,6 +411,7 @@ impl Lot {
             slots_used: 0,
             data: vec![0; block_size * lot_size],
             write_pos_s: vec![0; lot_size],
+            rs_codec,
         }
     }
 
@@ -434,15 +442,32 @@ impl Lot {
         }
     }
 
+    fn rs_encode(&mut self) {
+        if let Some((ref data, _, _)) = self.data_par_burst {
+            let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(self.lot_size);
+
+            // collect references to data segments
+            for slot in self.data.chunks_mut(block_size) {
+                refs.push(slot);
+            }
+
+            self.rs_codec.encode(&mut refs);
+        }
+    }
+
     pub fn encode(&mut self, lot_start_seq_num: usize) {
+        self.fill_in_padding();
+
+        self.rs_encode();
+
         self.block.set_seq_num(lot_start_seq_num as u32);
 
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
             match self.data_par_burst {
-                None => block.sync_to_buffer(None, slot),
+                None => self.block.sync_to_buffer(None, slot).unwrap(),
                 Some((data, _, _)) =>
                     if slot_index < data {
-                        self.block.sync_to_buffer(None, slot)
+                        self.block.sync_to_buffer(None, slot).unwrap();
                     }
             }
 
@@ -455,7 +480,34 @@ impl Lot {
 
             self.write_pos_s[slot_index] = write_pos;
 
-            block.add1_seq_num().unwrap();
+            self.block.add1_seq_num().unwrap();
+        }
+    }
+}
+
+impl BlockBuffer {
+    pub fn new(
+        version: Version,
+        uid: &[u8; SBX_FILE_UID_LEN],
+        data_par_burst: Option<(usize, usize, usize)>,
+        meta_enabled: bool,
+        lot_size: usize,
+        rs_codec: &Option<ReedSolomon>,
+        lot_count: usize,
+    ) -> Self {
+        let mut lots = Vec::with_capacity(lot_count);
+
+        for i in 0..lot_size {
+            lots.push(Lot::new(version,
+                               uid,
+                               data_par_burst,
+                               meta_enabled,
+                               lot_size,
+                               rs_codec))
+        }
+
+        BlockBuffer {
+            lots,
         }
     }
 }
@@ -822,58 +874,58 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
         // do SBX block encoding and record write positions
-        buffer.par_chunks_mut(block_size * single_lot_size)
-            .enumerate()
-            .for_each(|(lot_index, lot)| {
-                let mut block = Block::new(param.version, &param.uid, BlockType::Data);
-                let batch_start_seq_num = batch_start_seq_num.unwrap();
-                let lot_start_seq_num = batch_start_seq_num + lot_index * single_lot_size;
+        // buffer.par_chunks_mut(block_size * single_lot_size)
+        //     .enumerate()
+        //     .for_each(|(lot_index, lot)| {
+        //         let mut block = Block::new(param.version, &param.uid, BlockType::Data);
+        //         let batch_start_seq_num = batch_start_seq_num.unwrap();
+        //         let lot_start_seq_num = batch_start_seq_num + lot_index * single_lot_size;
 
-                block.set_seq_num(lot_start_seq_num as u32);
+        //         block.set_seq_num(lot_start_seq_num as u32);
 
-                for (slot_index, slot) in lot.chunks_mut(block_size).enumerate() {
-                    match param.data_par_burst {
-                        None => block.sync_to_buffer(None, slot),
-                        Some((data, _, _)) =>
-                            if slot_index < data {
-                                block.sync_to_buffer(None, slot)
-                            }
-                    }
+        //         for (slot_index, slot) in lot.chunks_mut(block_size).enumerate() {
+        //             match param.data_par_burst {
+        //                 None => block.sync_to_buffer(None, slot),
+        //                 Some((data, _, _)) =>
+        //                     if slot_index < data {
+        //                         block.sync_to_buffer(None, slot)
+        //                     }
+        //             }
 
-                    if let Some((data, _, _)) = param.data_par_burst {
-                        if slot_index >= data {
-                            break;
-                        }
-                    }
+        //             if let Some((data, _, _)) = param.data_par_burst {
+        //                 if slot_index >= data {
+        //                     break;
+        //                 }
+        //             }
 
-                    block.add1_seq_num().unwrap();
-                }
-            });
+        //             block.add1_seq_num().unwrap();
+        //         }
+        //     });
 
         // do Reed-Solomon encoding if needed
-        if let Some(ref mut rs_codec) = rs_codec {
-            buffer.par_chunks_mut(block_size * single_lot_size)
-                .for_each(|lot| {
-                    let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(single_lot_size);
+        // if let Some(ref mut rs_codec) = rs_codec {
+        //     buffer.par_chunks_mut(block_size * single_lot_size)
+        //         .for_each(|lot| {
+        //             let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(single_lot_size);
 
-                    // collect references to data segments
-                    for slot in lot.chunks_mut(block_size) {
-                        refs.push(slot);
-                    }
+        //             // collect references to data segments
+        //             for slot in lot.chunks_mut(block_size) {
+        //                 refs.push(slot);
+        //             }
 
-                    rs_codec.encode(&mut refs);
-                });
-        }
+        //             rs_codec.encode(&mut refs);
+        //         });
+        // }
 
         // output used slots of buffer
-        match param.data_par_bust {
-            None => {
-                // use data_slots_used as main reference
-                for i in 0..data_slots_used {
-                    write_data_block(param, )
-                }
-            }
-        }
+        // match param.data_par_bust {
+        //     None => {
+        //         // use data_slots_used as main reference
+        //         for i in 0..data_slots_used {
+        //             write_data_block(param, )
+        //         }
+        //     }
+        // }
 
         let lots_used = data_slots_used / data_slots_per_lot;
 
