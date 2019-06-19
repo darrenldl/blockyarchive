@@ -973,8 +973,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     let mut block_for_seq_num_check = Block::dummy();
 
-    let data_size = ver_to_data_size(param.version);
-
     block_for_seq_num_check.set_seq_num(0);
 
     reporter.start();
@@ -1036,10 +1034,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
         buffer.encode()?;
 
-        let (data_blocks, padding_blocks, parity_blocks) = buffer.data_padding_parity_block_count();
+        let (data_blocks, _, parity_blocks) = buffer.data_padding_parity_block_count();
 
         stats.data_blocks_written += data_blocks as u64;
-        stats.data_padding_bytes += padding_blocks * data_size;
         stats.parity_blocks_written += parity_blocks as u64;
 
         buffer.write(&mut writer)?;
