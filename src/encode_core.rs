@@ -437,6 +437,10 @@ impl<'a> Lot<'a> {
         self.slots_used -= 1;
     }
 
+    pub fn active(&self) -> bool {
+        self.slots_used > 0
+    }
+
     fn fill_in_padding(&mut self) {
         for i in self.slots_used..self.directly_writable_slots {
             let start = i * self.block_size;
@@ -460,41 +464,45 @@ impl<'a> Lot<'a> {
         }
     }
 
-    pub fn is_full(&self) -> bool {
-        self.slots_used == self.directly_writable_slots
-    }
+    // pub fn is_full(&self) -> bool {
+    //     self.slots_used == self.directly_writable_slots
+    // }
 
     pub fn encode(&mut self, lot_start_seq_num: u32) {
-        self.fill_in_padding();
+        if self.active() {
+            self.fill_in_padding();
 
-        self.rs_encode();
+            self.rs_encode();
 
-        for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-            if slot_index < self.slots_used {
-                let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
+            for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+                if slot_index < self.slots_used {
+                    let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
 
-                assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
+                    assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
 
-                self.block
-                    .set_seq_num(lot_start_seq_num + slot_index as u32);
+                    self.block
+                        .set_seq_num(lot_start_seq_num + slot_index as u32);
 
-                match self.data_par_burst {
-                    None => self.block.sync_to_buffer(None, slot).unwrap(),
-                    Some((data, _, _)) => {
-                        if slot_index < data {
-                            self.block.sync_to_buffer(None, slot).unwrap();
+                    match self.data_par_burst {
+                        None => self.block.sync_to_buffer(None, slot).unwrap(),
+                        Some((data, _, _)) => {
+                            if slot_index < data {
+                                self.block.sync_to_buffer(None, slot).unwrap();
+                            }
                         }
                     }
+
+                    let write_pos = calc_data_block_write_pos(
+                        self.version,
+                        self.block.get_seq_num(),
+                        Some(self.meta_enabled),
+                        self.data_par_burst,
+                    );
+
+                    self.write_pos_s[slot_index] = write_pos;
+                } else {
+                    break;
                 }
-
-                let write_pos = calc_data_block_write_pos(
-                    self.version,
-                    self.block.get_seq_num(),
-                    Some(self.meta_enabled),
-                    self.data_par_burst,
-                );
-
-                self.write_pos_s[slot_index] = write_pos;
             }
         }
     }
@@ -503,16 +511,30 @@ impl<'a> Lot<'a> {
         self.slots_used = 0;
     }
 
-    pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
-        for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-            let write_pos = self.write_pos_s[slot_index];
-
-            writer.seek(SeekFrom::Start(write_pos))?;
-
-            writer.write(slot)?;
+    pub fn data_par_block_count(&self) -> (usize, usize) {
+        match self.data_par_burst {
+            None => (self.slots_used, 0),
+            Some((data, _, _)) =>
+                if self.slots_used <= data {
+                    (self.slots_used, 0)
+                } else {
+                    (data, self.slots_used - data)
+                }
         }
+    }
 
-        self.reset();
+    pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
+        if self.active() {
+            for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+                let write_pos = self.write_pos_s[slot_index];
+
+                writer.seek(SeekFrom::Start(write_pos))?;
+
+                writer.write(slot)?;
+            }
+
+            self.reset();
+        }
 
         Ok(())
     }
@@ -616,6 +638,24 @@ impl<'a> DataBlockBuffer<'a> {
 
     fn reset(&mut self) {
         self.lots_used = 0;
+
+        for lot in self.lots.iter_mut() {
+            lot.reset();
+        }
+    }
+
+    pub fn data_par_block_count(&self) -> (usize, usize) {
+        let mut data_blocks = 0;
+        let mut parity_blocks = 0;
+
+        for lot in self.lots.iter() {
+            let (data, parity) = lot.data_par_block_count();
+
+            data_blocks += data;
+            parity_blocks += parity;
+        }
+
+        (data_blocks, parity_blocks)
     }
 
     pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
@@ -944,28 +984,34 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 break_if_reached_required_len!(bytes_processed, required_len);
             }
 
-            // read data in
-            let slot = buffer.get_slot().unwrap();
-            let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, slot))?;
+            {
+                // read data in
+                let slot = buffer.get_slot().unwrap();
+                let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, slot))?;
 
-            bytes_processed += read_res.len_read as u64;
+                bytes_processed += read_res.len_read as u64;
 
-            if read_res.len_read == 0 {
-                end_loop = true;
-                buffer.cancel_last_slot();
-                break;
+                if read_res.len_read == 0 {
+                    end_loop = true;
+                    buffer.cancel_last_slot();
+                    break;
+                }
+
+                if let Err(_) = block_for_seq_num_check.add1_seq_num() {
+                    return Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
+                }
+
+                hash_ctx.update(&sbx_block::slice_data_buf(param.version, slot)[..read_res.len_read]);
+
+                stats.data_padding_bytes +=
+                    sbx_block::write_padding(param.version, read_res.len_read, slot);
             }
 
-            if let Err(_) = block_for_seq_num_check.add1_seq_num() {
-                return Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
-            }
+            let (data_blocks, parity_blocks) = buffer.data_par_block_count();
 
-            stats.data_blocks_written += 1;
+            stats.data_blocks_written += data_blocks as u64;
 
-            hash_ctx.update(&sbx_block::slice_data_buf(param.version, slot)[..read_res.len_read]);
-
-            stats.data_padding_bytes +=
-                sbx_block::write_padding(param.version, read_res.len_read, slot);
+            stats.parity_blocks_written += parity_blocks as u64;
 
             if buffer.is_full() {
                 break;
