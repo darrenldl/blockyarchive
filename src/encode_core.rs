@@ -22,7 +22,6 @@ use crate::reader::{Reader, ReaderType};
 use crate::multihash;
 
 use crate::general_error::Error;
-use crate::rs_codec::RSEncoder;
 use crate::sbx_specs::Version;
 
 use crate::sbx_block::{
@@ -38,6 +37,8 @@ use crate::sbx_specs::{
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 use rayon::prelude::*;
+
+use reed_solomon_erasure::ReedSolomon;
 
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
@@ -613,7 +614,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     // setup Reed-Solomon things
     let mut rs_codec = match param.data_par_burst {
         None => None,
-        Some((data, parity, _)) => Some(RSEncoder::new(param.version, data, parity)),
+        Some((data, parity, _)) => Some(ReedSolomon::new(data, parity).unwrap()),
     };
 
     let single_lot_size = match param.data_par_burst {
@@ -717,7 +718,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
         break_if_atomic_bool!(ctrlc_stop_flag);
 
-        // fill remaining blocks in lot with padding if necessary
+        // fill remaining blocks in last lot with padding if necessary
         if param.rs_enabled && data_slots_used % single_lot_size != 0 {
             let lot_index = data_slots_used / single_lot_size;
             let end_exc = (lot_index + 1) * single_lot_size;
@@ -730,7 +731,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         }
 
         // encode each lot in parallel
-        data.par_chunks_mut(single_lot_size)
+        data.par_chunks_mut(block_size * single_lot_size)
             .enumerate()
             .for_each(|(lot_index, lot)| {
                 let mut block = Block::new(param.version, &param.uid, BlockType::Data);
@@ -743,12 +744,29 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                         }
                     }
 
-                    block.sync_to_buffer(None, slot).unwrap();
                     block.add1_seq_num().unwrap();
                 }
             });
 
-        batch_start_seq_num += data_slots_used;
+        let lots_used  = data_slots_used / data_slots_per_lot;
+
+        batch_start_seq_num += lots_used * single_lot_size;
+
+        // do Reed-Solomon encoding if needed
+        if let Some(rs_codec) = rs_codec {
+            // encode each lot in parallel
+            data.par_chunks_mut(block_size * single_lot_size)
+                .for_each(|lot| {
+                    let ref refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(single_lot_size);
+
+                    // collect references to data segments
+                    for slot in lot.chunks_mut(block_size) {
+                        refs.push(slot);
+                    }
+
+                    rs_codec.encode(&mut refs);
+                });
+        }
     }
 
     loop {
