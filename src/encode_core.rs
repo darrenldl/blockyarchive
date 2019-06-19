@@ -599,14 +599,19 @@ impl<'a> DataBlockBuffer<'a> {
         let lot_count = self.lots.len();
 
         if self.lots_used == lot_count {
+            eprintln!("None 0");
             None
         } else {
             let candidates = &mut self.lots[self.lots_used..];
 
             if candidates.len() == 1 {
                 match candidates[0].get_slot() {
-                    Some(slot) => Some(slot),
+                    Some(slot) => {
+                        eprintln!("Some 0");
+                        Some(slot)
+                    },
                     None => {
+                        eprintln!("None 1");
                         self.lots_used += 1;
                         None
                     }
@@ -618,8 +623,12 @@ impl<'a> DataBlockBuffer<'a> {
                 let second = &mut second[0];
 
                 match first.get_slot() {
-                    Some(slot) => Some(slot),
+                    Some(slot) => {
+                        eprintln!("Some 1");
+                        Some(slot)
+                    },
                     None => {
+                        eprintln!("None 2");
                         self.lots_used += 1;
                         second.get_slot()
                     }
