@@ -530,7 +530,11 @@ impl<'a> Lot<'a> {
     }
 
     pub fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
-        (self.data_block_count, self.padding_block_count, self.parity_block_count)
+        (
+            self.data_block_count,
+            self.padding_block_count,
+            self.parity_block_count,
+        )
     }
 
     pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
@@ -1019,7 +1023,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     return Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
                 }
 
-                hash_ctx.update(&sbx_block::slice_data_buf(param.version, slot)[..read_res.len_read]);
+                hash_ctx
+                    .update(&sbx_block::slice_data_buf(param.version, slot)[..read_res.len_read]);
 
                 stats.data_padding_bytes +=
                     sbx_block::write_padding(param.version, read_res.len_read, slot);
