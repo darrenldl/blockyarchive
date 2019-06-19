@@ -363,6 +363,103 @@ impl ProgressReport for Stats {
     }
 }
 
+struct Lot {
+    version: Version,
+    block: Block,
+    data_par_burst: Option<(usize, usize, usize)>,
+    meta_enabled: bool,
+    block_size: usize,
+    lot_size: usize,
+    slots_used: usize,
+    data: Vec<u8>,
+    write_pos_s: Vec<u64>,
+}
+
+struct BlockBuffer {
+    lots: Vec<Lot>
+}
+
+enum GetSlotResult<'a> {
+    Full,
+    Vacant(&'a mut [u8]),
+}
+
+impl Lot {
+    pub fn new(
+        version: Version,
+        uid: &[u8; SBX_FILE_UID_LEN],
+        data_par_burst: Option<(usize, usize, usize)>,
+        meta_enabled: bool,
+        lot_size: usize,
+    ) -> Self {
+        let block_size = ver_to_block_size(version);
+
+        Lot {
+            version,
+            block: Block::new(version, uid, BlockType::Data),
+            data_par_burst,
+            meta_enabled,
+            block_size,
+            lot_size,
+            slots_used: 0,
+            data: vec![0; block_size * lot_size],
+            write_pos_s: vec![0; lot_size],
+        }
+    }
+
+    pub fn lot_size(&self) -> usize {
+        self.lot_size
+    }
+
+    pub fn get_slot(&mut self) -> GetSlotResult {
+        if self.slots_used < self.lot_size {
+            let start = self.slots_used * self.block_size;
+            let end_exc = start + self.block_size;
+            self.slots_used += 1;
+            GetSlotResult::Vacant(&mut self.data[start..end_exc])
+        } else {
+            GetSlotResult::Full
+        }
+    }
+
+    fn fill_in_padding(&mut self) {
+        if let Some((ref data, _, _)) = self.data_par_burst {
+            for i in self.slots_used..self.lot_size {
+                let start = i * self.block_size;
+                let end_exc = start + self.block_size;
+                let slot = &mut self.data[start..end_exc];
+
+                sbx_block::write_padding(self.version, 0, slot);
+            }
+        }
+    }
+
+    pub fn encode(&mut self, lot_start_seq_num: usize) {
+        self.block.set_seq_num(lot_start_seq_num as u32);
+
+        for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+            match self.data_par_burst {
+                None => block.sync_to_buffer(None, slot),
+                Some((data, _, _)) =>
+                    if slot_index < data {
+                        self.block.sync_to_buffer(None, slot)
+                    }
+            }
+
+            let write_pos = calc_data_block_write_pos(
+                self.version,
+                self.block.get_seq_num(),
+                Some(self.meta_enabled),
+                self.data_par_burst,
+            );
+
+            self.write_pos_s[slot_index] = write_pos;
+
+            block.add1_seq_num().unwrap();
+        }
+    }
+}
+
 fn pack_metadata(
     block: &mut Block,
     param: &Param,
@@ -632,6 +729,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     // setup main data buffer
     let mut buffer: Vec<u8> = vec![0; block_size * single_lot_size * lot_count];
 
+    let mut write_pos_s: Vec<u64> = vec![0; single_lot_size * lot_count];
+
     let data_slots_per_lot = match param.data_par_burst {
         None => single_lot_size,
         Some((data, _, _)) => data,
@@ -670,7 +769,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     let mut bytes_processed: u64 = 0;
 
-    let mut batch_start_seq_num = 1;
+    let mut batch_start_seq_num = Some(1);
 
     let mut last_batch = false;
 
@@ -722,28 +821,25 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
         break_if_atomic_bool!(ctrlc_stop_flag);
 
-        // fill remaining blocks in last lot with padding if necessary
-        if param.rs_enabled && data_slots_used % single_lot_size != 0 {
-            let lot_index = data_slots_used / single_lot_size;
-            let end_exc = (lot_index + 1) * single_lot_size;
-            for i in data_slots_used..end_exc {
-                let start = i * block_size;
-                let end_exc = start + block_size;
-                let slot = &mut buffer[start..end_exc];
-
-                stats.data_padding_bytes +=
-                    sbx_block::write_padding(param.version, 0, slot);
-            }
-        }
-
-        // encode each lot in parallel
+        // do SBX block encoding and record write positions
         buffer.par_chunks_mut(block_size * single_lot_size)
             .enumerate()
             .for_each(|(lot_index, lot)| {
                 let mut block = Block::new(param.version, &param.uid, BlockType::Data);
-                block.set_seq_num((batch_start_seq_num + lot_index * single_lot_size) as u32);
+                let batch_start_seq_num = batch_start_seq_num.unwrap();
+                let lot_start_seq_num = batch_start_seq_num + lot_index * single_lot_size;
+
+                block.set_seq_num(lot_start_seq_num as u32);
 
                 for (slot_index, slot) in lot.chunks_mut(block_size).enumerate() {
+                    match param.data_par_burst {
+                        None => block.sync_to_buffer(None, slot),
+                        Some((data, _, _)) =>
+                            if slot_index < data {
+                                block.sync_to_buffer(None, slot)
+                            }
+                    }
+
                     if let Some((data, _, _)) = param.data_par_burst {
                         if slot_index >= data {
                             break;
@@ -754,13 +850,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 }
             });
 
-        let lots_used  = data_slots_used / data_slots_per_lot;
-
-        batch_start_seq_num += lots_used * single_lot_size;
-
         // do Reed-Solomon encoding if needed
         if let Some(ref mut rs_codec) = rs_codec {
-            // encode each lot in parallel
             buffer.par_chunks_mut(block_size * single_lot_size)
                 .for_each(|lot| {
                     let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(single_lot_size);
@@ -772,6 +863,26 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                     rs_codec.encode(&mut refs);
                 });
+        }
+
+        // output used slots of buffer
+        match param.data_par_bust {
+            None => {
+                // use data_slots_used as main reference
+                for i in 0..data_slots_used {
+                    write_data_block(param, )
+                }
+            }
+        }
+
+        let lots_used = data_slots_used / data_slots_per_lot;
+
+        // batch_start_seq_num is only used for the next loop
+        // but if it's the last batch, then it's meaningless to calculate it
+        if last_batch {
+            batch_start_seq_num = None;
+        } else {
+            batch_start_seq_num = Some(batch_start_seq_num.unwrap() + lots_used * single_lot_size);
         }
     }
 
