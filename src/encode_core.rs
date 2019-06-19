@@ -392,13 +392,12 @@ impl<'a> Lot<'a> {
         meta_enabled: bool,
         lot_size: usize,
         rs_codec: &'a Option<ReedSolomon>,
-    ) -> Self
-    {
+    ) -> Self {
         let block_size = ver_to_block_size(version);
 
         let rs_codec = match rs_codec {
             None => None,
-            Some(ref c) => Some(c)
+            Some(ref c) => Some(c),
         };
 
         let directly_writable_slots = match data_par_burst {
@@ -482,14 +481,16 @@ impl<'a> Lot<'a> {
 
                 assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
 
-                self.block.set_seq_num(lot_start_seq_num + slot_index as u32);
+                self.block
+                    .set_seq_num(lot_start_seq_num + slot_index as u32);
 
                 match self.data_par_burst {
                     None => self.block.sync_to_buffer(None, slot).unwrap(),
-                    Some((data, _, _)) =>
+                    Some((data, _, _)) => {
                         if slot_index < data {
                             self.block.sync_to_buffer(None, slot).unwrap();
                         }
+                    }
                 }
 
                 let write_pos = calc_data_block_write_pos(
@@ -500,7 +501,6 @@ impl<'a> Lot<'a> {
                 );
 
                 self.write_pos_s[slot_index] = write_pos;
-
             }
         }
 
@@ -511,9 +511,7 @@ impl<'a> Lot<'a> {
         self.slots_used = 0;
     }
 
-    pub fn write(&mut self,
-                 writer: &mut FileWriter,
-    ) -> Result<(), Error> {
+    pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
         assert!(self.is_full());
 
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
@@ -543,12 +541,14 @@ impl<'a> DataBlockBuffer<'a> {
         let mut lots = Vec::with_capacity(lot_count);
 
         for i in 0..lot_size {
-            lots.push(Lot::new(version,
-                               uid,
-                               data_par_burst,
-                               meta_enabled,
-                               lot_size,
-                               rs_codec))
+            lots.push(Lot::new(
+                version,
+                uid,
+                data_par_burst,
+                meta_enabled,
+                lot_size,
+                rs_codec,
+            ))
         }
 
         DataBlockBuffer {
@@ -614,11 +614,14 @@ impl<'a> DataBlockBuffer<'a> {
         let start_seq_num = self.start_seq_num;
         let lot_size = self.lot_size;
 
-        self.lots.par_iter_mut().enumerate().for_each(|(lot_index, lot)|{
-            let lot_start_seq_num = start_seq_num + (lot_index * lot_size) as u32;
+        self.lots
+            .par_iter_mut()
+            .enumerate()
+            .for_each(|(lot_index, lot)| {
+                let lot_start_seq_num = start_seq_num + (lot_index * lot_size) as u32;
 
-            lot.encode(lot_start_seq_num);
-        });
+                lot.encode(lot_start_seq_num);
+            });
 
         Ok(())
     }
@@ -905,7 +908,15 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let block_size = ver_to_block_size(param.version);
 
     // setup main data buffer
-    let mut buffer = DataBlockBuffer::new(param.version, &param.uid, param.data_par_burst, param.meta_enabled, lot_size, lot_count, &rs_codec);
+    let mut buffer = DataBlockBuffer::new(
+        param.version,
+        &param.uid,
+        param.data_par_burst,
+        param.meta_enabled,
+        lot_size,
+        lot_count,
+        &rs_codec,
+    );
 
     // seek to calculated position
     if let Some(seek_to) = seek_to {
