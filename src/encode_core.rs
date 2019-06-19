@@ -22,7 +22,7 @@ use crate::reader::{Reader, ReaderType};
 use crate::multihash;
 
 use crate::general_error::Error;
-use crate::sbx_specs::Version;
+use crate::sbx_specs::{Version, SBX_LAST_SEQ_NUM};
 
 use crate::sbx_block::{
     calc_data_block_write_pos, make_too_much_meta_err_string, Block, BlockType, Metadata,
@@ -377,9 +377,11 @@ struct Lot<'a> {
     rs_codec: Option<&'a ReedSolomon>,
 }
 
-struct BlockBuffer<'a> {
+struct DataBlockBuffer<'a> {
     lots: Vec<Lot<'a>>,
+    lot_size: usize,
     lots_used: usize,
+    start_seq_num: u32,
 }
 
 impl<'a> Lot<'a> {
@@ -420,7 +422,7 @@ impl<'a> Lot<'a> {
     }
 
     pub fn get_slot(&mut self) -> Option<&mut [u8]> {
-        if self.slots_used < self.lot_size {
+        if self.slots_used < self.directly_writable_slots {
             let start = self.slots_used * self.block_size;
             let end_exc = start + self.block_size;
             self.slots_used += 1;
@@ -428,6 +430,12 @@ impl<'a> Lot<'a> {
         } else {
             None
         }
+    }
+
+    pub fn cancel_last_slot(&mut self) {
+        assert!(self.slots_used > 0);
+
+        self.slots_used -= 1;
     }
 
     fn fill_in_padding(&mut self) {
@@ -455,33 +463,44 @@ impl<'a> Lot<'a> {
         }
     }
 
-    pub fn encode(&mut self, lot_start_seq_num: usize) -> Result<(), Error> {
+    pub fn slots_used(&self) -> usize {
+        self.slots_used
+    }
+
+    pub fn is_full(&self) -> bool {
+        self.slots_used == self.directly_writable_slots
+    }
+
+    pub fn encode(&mut self, lot_start_seq_num: u32) -> Result<(), Error> {
         self.fill_in_padding();
 
         self.rs_encode();
 
-        self.block.set_seq_num(lot_start_seq_num as u32);
-
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-            match self.data_par_burst {
-                None => self.block.sync_to_buffer(None, slot).unwrap(),
-                Some((data, _, _)) =>
-                    if slot_index < data {
-                        self.block.sync_to_buffer(None, slot).unwrap();
-                    }
-            }
+            if slot_index < self.slots_used {
+                let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
 
-            let write_pos = calc_data_block_write_pos(
-                self.version,
-                self.block.get_seq_num(),
-                Some(self.meta_enabled),
-                self.data_par_burst,
-            );
+                assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
 
-            self.write_pos_s[slot_index] = write_pos;
+                self.block.set_seq_num(lot_start_seq_num + slot_index as u32);
 
-            if let Err(_) = self.block.add1_seq_num() {
-                return Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
+                match self.data_par_burst {
+                    None => self.block.sync_to_buffer(None, slot).unwrap(),
+                    Some((data, _, _)) =>
+                        if slot_index < data {
+                            self.block.sync_to_buffer(None, slot).unwrap();
+                        }
+                }
+
+                let write_pos = calc_data_block_write_pos(
+                    self.version,
+                    self.block.get_seq_num(),
+                    Some(self.meta_enabled),
+                    self.data_par_burst,
+                );
+
+                self.write_pos_s[slot_index] = write_pos;
+
             }
         }
 
@@ -495,6 +514,8 @@ impl<'a> Lot<'a> {
     pub fn write(&mut self,
                  writer: &mut FileWriter,
     ) -> Result<(), Error> {
+        assert!(self.is_full());
+
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
             let write_pos = self.write_pos_s[slot_index];
 
@@ -509,7 +530,7 @@ impl<'a> Lot<'a> {
     }
 }
 
-impl<'a> BlockBuffer<'a> {
+impl<'a> DataBlockBuffer<'a> {
     pub fn new(
         version: Version,
         uid: &[u8; SBX_FILE_UID_LEN],
@@ -530,9 +551,11 @@ impl<'a> BlockBuffer<'a> {
                                rs_codec))
         }
 
-        BlockBuffer {
+        DataBlockBuffer {
             lots,
+            lot_size,
             lots_used: 0,
+            start_seq_num: 1,
         }
     }
 
@@ -573,6 +596,47 @@ impl<'a> BlockBuffer<'a> {
                 }
             }
         }
+    }
+
+    pub fn cancel_last_slot(&mut self) {
+        let lots_used = self.lots_used;
+
+        if self.lots[lots_used].slots_used > 0 {
+            self.lots[lots_used].cancel_last_slot();
+        } else {
+            assert!(lots_used > 0);
+
+            self.lots[lots_used - 1].cancel_last_slot();
+        }
+    }
+
+    pub fn encode(&mut self) -> Result<(), Error> {
+        let start_seq_num = self.start_seq_num;
+        let lot_size = self.lot_size;
+
+        self.lots.par_iter_mut().enumerate().for_each(|(lot_index, lot)|{
+            let lot_start_seq_num = start_seq_num + (lot_index * lot_size) as u32;
+
+            lot.encode(lot_start_seq_num);
+        });
+
+        Ok(())
+    }
+
+    fn reset(&mut self) {
+        self.lots_used = 0;
+    }
+
+    pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
+        assert!(self.is_full());
+
+        for lot in self.lots.iter_mut() {
+            lot.write(writer)?;
+        }
+
+        self.reset();
+
+        Ok(())
     }
 }
 
@@ -693,53 +757,51 @@ fn write_meta_blocks(
         }
     }
 
-    block.add1_seq_num().unwrap();
-
     Ok(())
 }
 
-fn write_data_block(
-    param: &Param,
-    block: &mut Block,
-    buffer: &mut [u8],
-    writer: &mut FileWriter,
-) -> Result<(), Error> {
-    let write_pos = calc_data_block_write_pos(
-        param.version,
-        block.get_seq_num(),
-        Some(param.meta_enabled),
-        param.data_par_burst,
-    );
+// fn write_data_block(
+//     param: &Param,
+//     block: &mut Block,
+//     buffer: &mut [u8],
+//     writer: &mut FileWriter,
+// ) -> Result<(), Error> {
+//     let write_pos = calc_data_block_write_pos(
+//         param.version,
+//         block.get_seq_num(),
+//         Some(param.meta_enabled),
+//         param.data_par_burst,
+//     );
 
-    block_sync_and_write(block, buffer, writer, write_pos)
-}
+//     block_sync_and_write(block, buffer, writer, write_pos)
+// }
 
-fn block_sync_and_write(
-    block: &mut Block,
-    buffer: &mut [u8],
-    writer: &mut FileWriter,
-    pos: u64,
-) -> Result<(), Error> {
-    match block.sync_to_buffer(None, buffer) {
-        Ok(()) => {}
-        Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
-            return Err(Error::with_msg(&make_too_much_meta_err_string(
-                block.get_version(),
-                m,
-            )));
-        }
-        Err(_) => unreachable!(),
-    }
+// fn block_sync_and_write(
+//     block: &mut Block,
+//     buffer: &mut [u8],
+//     writer: &mut FileWriter,
+//     pos: u64,
+// ) -> Result<(), Error> {
+//     match block.sync_to_buffer(None, buffer) {
+//         Ok(()) => {}
+//         Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
+//             return Err(Error::with_msg(&make_too_much_meta_err_string(
+//                 block.get_version(),
+//                 m,
+//             )));
+//         }
+//         Err(_) => unreachable!(),
+//     }
 
-    writer.seek(SeekFrom::Start(pos))?;
+//     writer.seek(SeekFrom::Start(pos))?;
 
-    writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
+//     writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
 
-    match block.add1_seq_num() {
-        Ok(_)  => Ok(()),
-        Err(_) => Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"))
-    }
-}
+//     match block.add1_seq_num() {
+//         Ok(_)  => Ok(()),
+//         Err(_) => Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"))
+//     }
+// }
 
 pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
@@ -843,7 +905,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let block_size = ver_to_block_size(param.version);
 
     // setup main data buffer
-    let mut buffer = BlockBuffer::new(param.version, &param.uid, param.data_par_burst, param.meta_enabled, lot_size, lot_count, &rs_codec);
+    let mut buffer = DataBlockBuffer::new(param.version, &param.uid, param.data_par_burst, param.meta_enabled, lot_size, lot_count, &rs_codec);
 
     // seek to calculated position
     if let Some(seek_to) = seek_to {
@@ -869,18 +931,21 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     let mut bytes_processed: u64 = 0;
 
-    let mut last_batch = false;
+    let mut end_loop = false;
 
-    while !last_batch {
+    let mut block_for_seq_num_check = Block::dummy();
+
+    block_for_seq_num_check.set_seq_num(0);
+
+    while !end_loop {
         let mut stats = stats.lock().unwrap();
 
-        // full up data buffer
-        let mut data_slots_used = 0;
+        // fill up data buffer
         loop {
             break_if_atomic_bool!(ctrlc_stop_flag);
 
             if let Some(required_len) = required_len {
-                last_batch = true;
+                end_loop = true;
                 break_if_reached_required_len!(bytes_processed, required_len);
             }
 
@@ -891,14 +956,12 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             bytes_processed += read_res.len_read as u64;
 
             if read_res.len_read == 0 {
-                last_batch = true;
+                end_loop = true;
                 break;
             }
 
             stats.data_padding_bytes +=
                 sbx_block::write_padding(param.version, read_res.len_read, slot);
-
-            data_slots_used += 1;
 
             if buffer.is_full() {
                 break;
@@ -906,6 +969,10 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         }
 
         break_if_atomic_bool!(ctrlc_stop_flag);
+
+        buffer.encode()?;
+
+        buffer.write(&mut writer)?;
     }
 
     let data_bytes_encoded = match required_len {
