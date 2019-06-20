@@ -162,6 +162,8 @@ impl<T: 'static + ProgressReport + Send> ProgressReporter<T> {
                 }
             }
 
+            runner_shutdown_barrier.wait();
+
             print_progress::<T>(&runner_context, &runner_stats, true);
 
             runner_shutdown_barrier.wait();
@@ -222,6 +224,8 @@ impl<T: 'static + ProgressReport + Send> ProgressReporter<T> {
             self.stats.lock().unwrap().set_end_time();
 
             self.shutdown_flag.store(true, Ordering::SeqCst);
+
+            self.shutdown_barrier.wait();
 
             self.shutdown_barrier.wait();
         }
