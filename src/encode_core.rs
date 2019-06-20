@@ -22,8 +22,7 @@ use crate::reader::{Reader, ReaderType};
 use crate::multihash;
 
 use crate::general_error::Error;
-use crate::rs_codec::RSEncoder;
-use crate::sbx_specs::Version;
+use crate::sbx_specs::{Version, SBX_LAST_SEQ_NUM};
 
 use crate::sbx_block::{
     calc_data_block_write_pos, make_too_much_meta_err_string, Block, BlockType, Metadata,
@@ -36,6 +35,16 @@ use crate::sbx_specs::{
 };
 
 use crate::misc_utils::{PositionOrLength, RangeEnd};
+
+use rayon::prelude::*;
+
+use reed_solomon_erasure::ReedSolomon;
+
+use smallvec::SmallVec;
+
+const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
+
+const LOT_COUNT_PER_CPU: usize = 20;
 
 #[derive(Clone, Debug)]
 pub struct Stats {
@@ -356,6 +365,340 @@ impl ProgressReport for Stats {
     }
 }
 
+struct Lot<'a> {
+    version: Version,
+    block: Block,
+    data_par_burst: Option<(usize, usize, usize)>,
+    meta_enabled: bool,
+    block_size: usize,
+    lot_size: usize,
+    data_block_count: usize,
+    padding_block_count: usize,
+    parity_block_count: usize,
+    directly_writable_slots: usize,
+    data: Vec<u8>,
+    write_pos_s: Vec<u64>,
+    rs_codec: Option<&'a ReedSolomon>,
+}
+
+struct DataBlockBuffer<'a> {
+    lots: Vec<Lot<'a>>,
+    lot_size: usize,
+    lots_used: usize,
+    start_seq_num: Option<u32>,
+}
+
+enum GetSlotResult<'a> {
+    None,
+    Some(&'a mut [u8]),
+    LastSlot(&'a mut [u8]),
+}
+
+impl<'a> Lot<'a> {
+    pub fn new(
+        version: Version,
+        uid: &[u8; SBX_FILE_UID_LEN],
+        data_par_burst: Option<(usize, usize, usize)>,
+        meta_enabled: bool,
+        lot_size: usize,
+        rs_codec: &'a Option<ReedSolomon>,
+    ) -> Self {
+        let block_size = ver_to_block_size(version);
+
+        let rs_codec = match rs_codec {
+            None => None,
+            Some(ref c) => Some(c),
+        };
+
+        let directly_writable_slots = match data_par_burst {
+            None => lot_size,
+            Some((data, _, _)) => data,
+        };
+
+        Lot {
+            version,
+            block: Block::new(version, uid, BlockType::Data),
+            data_par_burst,
+            meta_enabled,
+            block_size,
+            lot_size,
+            data_block_count: 0,
+            padding_block_count: 0,
+            parity_block_count: 0,
+            directly_writable_slots,
+            data: vec![0; block_size * lot_size],
+            write_pos_s: vec![0; lot_size],
+            rs_codec,
+        }
+    }
+
+    pub fn get_slot(&mut self) -> GetSlotResult {
+        if self.slots_used() < self.directly_writable_slots {
+            let start = self.slots_used() * self.block_size;
+            let end_exc = start + self.block_size;
+            self.data_block_count += 1;
+            if self.is_full() {
+                GetSlotResult::LastSlot(&mut self.data[start..end_exc])
+            } else {
+                GetSlotResult::Some(&mut self.data[start..end_exc])
+            }
+        } else {
+            GetSlotResult::None
+        }
+    }
+
+    pub fn cancel_last_slot(&mut self) {
+        assert!(self.data_block_count > 0);
+
+        self.data_block_count -= 1;
+    }
+
+    pub fn active(&self) -> bool {
+        self.slots_used() > 0
+    }
+
+    fn fill_in_padding(&mut self) {
+        if let Some(_) = self.data_par_burst {
+            for i in self.data_block_count..self.directly_writable_slots {
+                let start = i * self.block_size;
+                let end_exc = start + self.block_size;
+                let slot = &mut self.data[start..end_exc];
+
+                sbx_block::write_padding(self.version, 0, slot);
+
+                self.padding_block_count += 1;
+            }
+        }
+    }
+
+    fn rs_encode(&mut self) {
+        if let Some(rs_codec) = self.rs_codec {
+            let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(self.lot_size);
+
+            // collect references to data segments
+            for slot in self.data.chunks_mut(self.block_size) {
+                refs.push(slot);
+            }
+
+            rs_codec.encode(&mut refs).unwrap();
+
+            self.parity_block_count = rs_codec.parity_shard_count();
+        }
+    }
+
+    fn slots_used(&self) -> usize {
+        self.data_block_count + self.padding_block_count + self.parity_block_count
+    }
+
+    pub fn is_full(&self) -> bool {
+        self.data_block_count == self.directly_writable_slots
+    }
+
+    pub fn encode(&mut self, lot_start_seq_num: u32) {
+        if self.active() {
+            self.fill_in_padding();
+
+            self.rs_encode();
+
+            let slots_used = self.slots_used();
+
+            for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+                if slot_index < slots_used {
+                    let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
+
+                    assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
+
+                    self.block
+                        .set_seq_num(lot_start_seq_num + slot_index as u32);
+
+                    self.block.sync_to_buffer(None, slot).unwrap();
+
+                    let write_pos = calc_data_block_write_pos(
+                        self.version,
+                        self.block.get_seq_num(),
+                        Some(self.meta_enabled),
+                        self.data_par_burst,
+                    );
+
+                    self.write_pos_s[slot_index] = write_pos;
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
+    fn reset(&mut self) {
+        self.data_block_count = 0;
+        self.padding_block_count = 0;
+        self.parity_block_count = 0;
+    }
+
+    pub fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
+        (
+            self.data_block_count,
+            self.padding_block_count,
+            self.parity_block_count,
+        )
+    }
+
+    pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
+        if self.active() {
+            let slots_used = self.slots_used();
+
+            for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+                if slot_index < slots_used {
+                    let write_pos = self.write_pos_s[slot_index];
+
+                    writer.seek(SeekFrom::Start(write_pos))?;
+
+                    writer.write(slot)?;
+                } else {
+                    break;
+                }
+            }
+
+            self.reset();
+        }
+
+        Ok(())
+    }
+}
+
+impl<'a> DataBlockBuffer<'a> {
+    pub fn new(
+        version: Version,
+        uid: &[u8; SBX_FILE_UID_LEN],
+        data_par_burst: Option<(usize, usize, usize)>,
+        meta_enabled: bool,
+        lot_size: usize,
+        lot_count: usize,
+        rs_codec: &'a Option<ReedSolomon>,
+    ) -> Self {
+        assert!(lot_count > 0);
+
+        let mut lots = Vec::with_capacity(lot_count);
+
+        for _ in 0..lot_count {
+            lots.push(Lot::new(
+                version,
+                uid,
+                data_par_burst,
+                meta_enabled,
+                lot_size,
+                rs_codec,
+            ))
+        }
+
+        DataBlockBuffer {
+            lots,
+            lot_size,
+            lots_used: 0,
+            start_seq_num: Some(1),
+        }
+    }
+
+    pub fn lot_count(&self) -> usize {
+        self.lots.len()
+    }
+
+    pub fn is_full(&self) -> bool {
+        self.lots_used == self.lot_count()
+    }
+
+    pub fn active(&self) -> bool {
+        self.lots_used > 0 || self.lots[self.lots_used].slots_used() > 0
+    }
+
+    pub fn get_slot(&mut self) -> Option<&mut [u8]> {
+        let lot_count = self.lots.len();
+
+        if self.lots_used == lot_count {
+            None
+        } else {
+            match self.lots[self.lots_used].get_slot() {
+                GetSlotResult::LastSlot(slot) => {
+                    self.lots_used += 1;
+                    Some(slot)
+                }
+                GetSlotResult::Some(slot) => Some(slot),
+                GetSlotResult::None => {
+                    self.lots_used += 1;
+                    None
+                }
+            }
+        }
+    }
+
+    pub fn cancel_last_slot(&mut self) {
+        assert!(self.active());
+
+        let shift_back_one_slot = self.is_full() || self.lots[self.lots_used].slots_used() == 0;
+
+        if shift_back_one_slot {
+            self.lots_used -= 1;
+        }
+
+        self.lots[self.lots_used].cancel_last_slot();
+    }
+
+    pub fn encode(&mut self) -> Result<(), Error> {
+        let start_seq_num = self.start_seq_num.unwrap();
+        let lot_size = self.lot_size;
+
+        self.lots
+            .par_iter_mut()
+            .enumerate()
+            .for_each(|(lot_index, lot)| {
+                let lot_start_seq_num = start_seq_num + (lot_index * lot_size) as u32;
+
+                lot.encode(lot_start_seq_num);
+            });
+
+        if self.is_full() {
+            self.start_seq_num = Some(start_seq_num + (self.lots.len() * lot_size) as u32);
+        } else {
+            self.start_seq_num = None;
+        }
+
+        Ok(())
+    }
+
+    fn reset(&mut self) {
+        self.lots_used = 0;
+
+        for lot in self.lots.iter_mut() {
+            lot.reset();
+        }
+    }
+
+    pub fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
+        let mut data_blocks = 0;
+        let mut padding_blocks = 0;
+        let mut parity_blocks = 0;
+
+        for lot in self.lots.iter() {
+            let (data, padding, parity) = lot.data_padding_parity_block_count();
+
+            data_blocks += data;
+            padding_blocks += padding;
+            parity_blocks += parity;
+        }
+
+        (data_blocks, padding_blocks, parity_blocks)
+    }
+
+    pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
+        for lot in self.lots.iter_mut() {
+            lot.write(writer)?;
+        }
+
+        self.reset();
+
+        Ok(())
+    }
+}
+
 fn pack_metadata(
     block: &mut Block,
     param: &Param,
@@ -433,14 +776,15 @@ fn write_meta_blocks(
     file_metadata: &Option<fs::Metadata>,
     file_size: Option<u64>,
     hash: Option<multihash::HashBytes>,
-    block: &mut Block,
-    buffer: &mut [u8],
     writer: &mut FileWriter,
     record_stats: bool,
 ) -> Result<(), Error> {
+    let mut block = Block::new(param.version, &param.uid, BlockType::Meta);
+    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
     // pack metadata into the block
     pack_metadata(
-        block,
+        &mut block,
         param,
         &stats.lock().unwrap(),
         file_metadata,
@@ -448,7 +792,7 @@ fn write_meta_blocks(
         hash,
     );
 
-    match block.sync_to_buffer(None, buffer) {
+    match block.sync_to_buffer(None, &mut buffer) {
         Ok(()) => {}
         Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
             return Err(Error::with_msg(&make_too_much_meta_err_string(
@@ -465,59 +809,14 @@ fn write_meta_blocks(
     for &p in write_pos_s.iter() {
         writer.seek(SeekFrom::Start(p))?;
 
-        writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
+        writer.write(sbx_block::slice_buf(block.get_version(), &buffer))?;
 
         if record_stats {
             stats.lock().unwrap().meta_blocks_written += 1;
         }
     }
 
-    block.add1_seq_num().unwrap();
-
     Ok(())
-}
-
-fn write_data_block(
-    param: &Param,
-    block: &mut Block,
-    buffer: &mut [u8],
-    writer: &mut FileWriter,
-) -> Result<(), Error> {
-    let write_pos = calc_data_block_write_pos(
-        param.version,
-        block.get_seq_num(),
-        Some(param.meta_enabled),
-        param.data_par_burst,
-    );
-
-    block_sync_and_write(block, buffer, writer, write_pos)
-}
-
-fn block_sync_and_write(
-    block: &mut Block,
-    buffer: &mut [u8],
-    writer: &mut FileWriter,
-    pos: u64,
-) -> Result<(), Error> {
-    match block.sync_to_buffer(None, buffer) {
-        Ok(()) => {}
-        Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
-            return Err(Error::with_msg(&make_too_much_meta_err_string(
-                block.get_version(),
-                m,
-            )));
-        }
-        Err(_) => unreachable!(),
-    }
-
-    writer.seek(SeekFrom::Start(pos))?;
-
-    writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
-
-    match block.add1_seq_num() {
-        Ok(_)  => Ok(()),
-        Err(_) => Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"))
-    }
 }
 
 pub fn encode_file(param: &Param) -> Result<Stats, Error> {
@@ -607,19 +906,28 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let mut hash_ctx = multihash::hash::Ctx::new(param.hash_type).unwrap();
 
     // setup Reed-Solomon things
-    let mut rs_codec = match param.data_par_burst {
+    let rs_codec = match param.data_par_burst {
         None => None,
-        Some((data, parity, _)) => Some(RSEncoder::new(param.version, data, parity)),
+        Some((data, parity, _)) => Some(ReedSolomon::new(data, parity).unwrap()),
     };
 
+    let lot_size = match param.data_par_burst {
+        None => DEFAULT_SINGLE_LOT_SIZE,
+        Some((data, parity, _)) => data + parity,
+    };
+
+    let lot_count = num_cpus::get() * LOT_COUNT_PER_CPU;
+
     // setup main data buffer
-    let mut data: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
-
-    // setup padding block
-    let mut padding: [u8; SBX_LARGEST_BLOCK_SIZE] = [0x1A; SBX_LARGEST_BLOCK_SIZE];
-
-    // setup main data block
-    let mut block = Block::new(param.version, &param.uid, BlockType::Data);
+    let mut buffer = DataBlockBuffer::new(
+        param.version,
+        &param.uid,
+        param.data_par_burst,
+        param.meta_enabled,
+        lot_size,
+        lot_count,
+        &rs_codec,
+    );
 
     // seek to calculated position
     if let Some(seek_to) = seek_to {
@@ -627,6 +935,14 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             r?;
         }
     }
+
+    let mut bytes_processed: u64 = 0;
+
+    let mut end_loop = false;
+
+    let mut block_for_seq_num_check = Block::dummy();
+
+    block_for_seq_num_check.set_seq_num(0);
 
     reporter.start();
 
@@ -638,92 +954,60 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             &metadata,
             required_len,
             None,
-            &mut block,
-            &mut data,
             &mut writer,
             true,
         )?;
     }
 
-    let mut bytes_processed: u64 = 0;
-
-    loop {
+    while !end_loop {
         let mut stats = stats.lock().unwrap();
+
+        // fill up data buffer
+        while !buffer.is_full() {
+            break_if_atomic_bool!(ctrlc_stop_flag);
+
+            if let Some(required_len) = required_len {
+                if bytes_processed >= required_len {
+                    end_loop = true;
+                    break;
+                }
+            }
+
+            {
+                // read data in
+                let slot = buffer.get_slot().unwrap();
+                let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, slot))?;
+
+                bytes_processed += read_res.len_read as u64;
+
+                if read_res.len_read == 0 {
+                    buffer.cancel_last_slot();
+                    end_loop = true;
+                    break;
+                }
+
+                if let Err(_) = block_for_seq_num_check.add1_seq_num() {
+                    return Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
+                }
+
+                hash_ctx
+                    .update(&sbx_block::slice_data_buf(param.version, slot)[..read_res.len_read]);
+
+                stats.data_padding_bytes +=
+                    sbx_block::write_padding(param.version, read_res.len_read, slot);
+            }
+        }
 
         break_if_atomic_bool!(ctrlc_stop_flag);
 
-        if let Some(required_len) = required_len {
-            break_if_reached_required_len!(bytes_processed, required_len);
-        }
+        buffer.encode()?;
 
-        // read data in
-        let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, &mut data))?;
+        let (data_blocks, _, parity_blocks) = buffer.data_padding_parity_block_count();
 
-        bytes_processed += read_res.len_read as u64;
+        stats.data_blocks_written += data_blocks as u64;
+        stats.parity_blocks_written += parity_blocks as u64;
 
-        if read_res.len_read == 0 {
-            break;
-        }
-
-        let mut data_blocks_written = 0;
-        let mut parity_blocks_written = 0;
-
-        stats.data_padding_bytes +=
-            sbx_block::write_padding(param.version, read_res.len_read, &mut data);
-
-        // start encoding
-        write_data_block(param, &mut block, &mut data, &mut writer)?;
-
-        data_blocks_written += 1;
-
-        // update hash state if needed
-        if param.meta_enabled {
-            let data_part = &sbx_block::slice_data_buf(param.version, &data)[0..read_res.len_read];
-            hash_ctx.update(data_part);
-        }
-
-        // update Reed-Solomon data if needed
-        if let Some(ref mut rs_codec) = rs_codec {
-            // encode normally once
-            if let Some(parity_to_use) = rs_codec.encode_no_block_sync(&data) {
-                for p in parity_to_use.iter_mut() {
-                    write_data_block(param, &mut block, p, &mut writer)?;
-
-                    parity_blocks_written += 1;
-                }
-            }
-        }
-
-        // update stats
-        stats.data_blocks_written += data_blocks_written;
-        stats.parity_blocks_written += parity_blocks_written;
-    }
-
-    if let Some(ref mut rs_codec) = rs_codec {
-        // fill remaining slots with padding if required
-        if rs_codec.active() {
-            let mut stats = stats.lock().unwrap();
-
-            let slots_to_fill = rs_codec.unfilled_slot_count();
-            for i in 0..slots_to_fill {
-                // write padding
-                write_data_block(param, &mut block, &mut padding, &mut writer)?;
-
-                stats.data_blocks_written += 1;
-                stats.data_padding_bytes += ver_to_data_size(param.version);
-
-                if let Some(parity_to_use) = rs_codec.encode_no_block_sync(&padding) {
-                    // this should only be executed at the last iteration
-                    assert_eq!(i, slots_to_fill - 1);
-
-                    for p in parity_to_use.iter_mut() {
-                        write_data_block(param, &mut block, p, &mut writer)?;
-
-                        stats.parity_blocks_written += 1;
-                    }
-                }
-            }
-        }
+        buffer.write(&mut writer)?;
     }
 
     let data_bytes_encoded = match required_len {
@@ -741,8 +1025,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             &metadata,
             Some(data_bytes_encoded),
             Some(hash_bytes.clone()),
-            &mut block,
-            &mut data,
             &mut writer,
             false,
         )?;

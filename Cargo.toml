@@ -1,6 +1,6 @@
 [package]
 name    = "blkar"
-version = "7.1.0"
+version = "7.1.1"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 edition = "2018"
 build   = "build.rs"
@@ -55,6 +55,8 @@ nom                  = "~ 4.2.3"
 chrono               = "~ 0.4.6"
 clap                 = "~ 2.33.0"
 ctrlc                = "~ 3.1.2"
+num_cpus             = "~ 1.10.1"
+rayon                = "~ 1.1.0"
 
 [dev-dependencies]
 quickcheck = "~ 0.8.2"

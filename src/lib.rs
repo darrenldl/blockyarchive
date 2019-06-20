@@ -22,6 +22,8 @@ extern crate blake2;
 extern crate sha1;
 extern crate sha2;
 
+extern crate num_cpus;
+
 mod crc_ccitt;
 
 macro_rules! break_if_eof_seen {
