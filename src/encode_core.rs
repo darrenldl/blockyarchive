@@ -1002,8 +1002,10 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             break_if_atomic_bool!(ctrlc_stop_flag);
 
             if let Some(required_len) = required_len {
-                end_loop = true;
-                break_if_reached_required_len!(bytes_processed, required_len);
+                if bytes_processed >= required_len {
+                    end_loop = true;
+                    break;
+                }
             }
 
             {
