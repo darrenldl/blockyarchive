@@ -1,5 +1,13 @@
 # Changelog
 
+## 7.1.1
+
+- Updated file error messages casing
+
+- Parallelised encode core
+  
+    - Performance of encode mode now scales roughly linearly to number of CPU cores
+
 ## 7.1.0
 
 - Dependencies update
