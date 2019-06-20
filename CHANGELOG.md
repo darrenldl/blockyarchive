@@ -12,7 +12,7 @@
   
     - For ECSBX encoding
       
-        - Performance of encode mode now scales roughly linearly to number of CPU cores
+        - Performance of encode mode now scales roughly linearly to number of CPU cores for default settings
 
 ## 7.1.0
 
