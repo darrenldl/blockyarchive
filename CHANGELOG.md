@@ -6,7 +6,13 @@
 
 - Parallelised encode core
   
-    - Performance of encode mode now scales roughly linearly to number of CPU cores
+    - For SBX encoding
+      
+        - Performance of encode mode is roughly 40% faster
+  
+    - For ECSBX encoding
+      
+        - Performance of encode mode now scales roughly linearly to number of CPU cores
 
 ## 7.1.0
 
