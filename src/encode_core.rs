@@ -840,7 +840,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             read: false,
             append: false,
             truncate: true,
-            buffered: true,
+            buffered: false,
         },
     )?;
 
