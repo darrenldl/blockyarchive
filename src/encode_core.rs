@@ -960,7 +960,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         Some((data, parity, _)) => data + parity,
     };
 
-    let lot_count = num_cpus::get();
+    // let lot_count = num_cpus::get();
+    let lot_count = 1;
 
     // setup main data buffer
     let mut buffer = DataBlockBuffer::new(
