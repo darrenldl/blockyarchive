@@ -601,7 +601,11 @@ impl<'a> DataBlockBuffer<'a> {
     }
 
     pub fn is_full(&self) -> bool {
-        self.lots_used == self.lots.len()
+        self.lots_used == self.lot_count()
+    }
+
+    pub fn active(&self) -> bool {
+        self.lots_used > 0 || self.lots[self.lots_used].slots_used() > 0
     }
 
     pub fn get_slot(&mut self) -> Option<&mut [u8]> {
@@ -625,21 +629,15 @@ impl<'a> DataBlockBuffer<'a> {
     }
 
     pub fn cancel_last_slot(&mut self) {
-        let lot_count = self.lot_count();
+        assert!(self.active());
 
-        if self.lots_used == lot_count {
+        let shift_back_one_slot = self.is_full() || self.lots[self.lots_used].slots_used() == 0;
+
+        if shift_back_one_slot {
             self.lots_used -= 1;
-            self.lots[self.lots_used].cancel_last_slot();
-        } else {
-            if self.lots[self.lots_used].slots_used() > 0 {
-                self.lots[self.lots_used].cancel_last_slot();
-            } else {
-                assert!(self.lots_used > 0);
-
-                self.lots_used -= 1;
-                self.lots[self.lots_used].cancel_last_slot();
-            }
         }
+
+        self.lots[self.lots_used].cancel_last_slot();
     }
 
     pub fn encode(&mut self) -> Result<(), Error> {
