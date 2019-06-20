@@ -573,6 +573,8 @@ impl<'a> DataBlockBuffer<'a> {
         lot_count: usize,
         rs_codec: &'a Option<ReedSolomon>,
     ) -> Self {
+        assert!(lot_count > 0);
+
         let mut lots = Vec::with_capacity(lot_count);
 
         for _ in 0..lot_count {
@@ -594,6 +596,10 @@ impl<'a> DataBlockBuffer<'a> {
         }
     }
 
+    pub fn lot_count(&self) -> usize {
+        self.lots.len()
+    }
+
     pub fn is_full(&self) -> bool {
         self.lots_used == self.lots.len()
     }
@@ -604,7 +610,7 @@ impl<'a> DataBlockBuffer<'a> {
         if self.lots_used == lot_count {
             None
         } else {
-            match self.lots[0].get_slot() {
+            match self.lots[self.lots_used].get_slot() {
                 GetSlotResult::LastSlot(slot) => {
                     self.lots_used += 1;
                     Some(slot)
@@ -619,14 +625,20 @@ impl<'a> DataBlockBuffer<'a> {
     }
 
     pub fn cancel_last_slot(&mut self) {
-        let lots_used = self.lots_used;
+        let lot_count = self.lot_count();
 
-        if self.lots[lots_used].slots_used() > 0 {
-            self.lots[lots_used].cancel_last_slot();
+        if self.lots_used == lot_count {
+            self.lots_used -= 1;
+            self.lots[self.lots_used].cancel_last_slot();
         } else {
-            assert!(lots_used > 0);
+            if self.lots[self.lots_used].slots_used() > 0 {
+                self.lots[self.lots_used].cancel_last_slot();
+            } else {
+                assert!(self.lots_used > 0);
 
-            self.lots[lots_used - 1].cancel_last_slot();
+                self.lots_used -= 1;
+                self.lots[self.lots_used].cancel_last_slot();
+            }
         }
     }
 
