@@ -609,63 +609,21 @@ impl<'a> DataBlockBuffer<'a> {
         let lot_count = self.lots.len();
 
         if self.lots_used == lot_count {
-            eprintln!("None 0");
             None
         } else {
             match self.lots[0].get_slot() {
                 GetSlotResult::LastSlot(slot) => {
-                    eprintln!("LastSlot 0");
                     self.lots_used += 1;
                     Some(slot)
                 },
                 GetSlotResult::Some(slot) => {
-                    eprintln!("Some 0");
                     Some(slot)
                 },
                 GetSlotResult::None => {
-                    eprintln!("None 1");
                     self.lots_used += 1;
                     None
                 }
             }
-
-            // let candidates = &mut self.lots[self.lots_used..];
-
-            // if candidates.len() == 1 {
-            //     match candidates[0].get_slot() {
-            //         GetSlotResult::LastSlot(slot) => {
-            //             eprintln!("LastSlot 0");
-            //             self.lots_used += 1;
-            //             Some(slot)
-            //         },
-            //         GetSlotResult::Some(slot) => {
-            //             eprintln!("Some 0");
-            //             Some(slot)
-            //         },
-            //         GetSlotResult::None => {
-            //             eprintln!("None 1");
-            //             self.lots_used += 1;
-            //             None
-            //         }
-            //     }
-            // } else {
-            //     let (first, second) = candidates.split_at_mut(1);
-
-            //     let first = &mut first[0];
-            //     let second = &mut second[0];
-
-            //     match first.get_slot() {
-            //         Some(slot) => {
-            //             eprintln!("Some 1");
-            //             Some(slot)
-            //         },
-            //         None => {
-            //             eprintln!("None 2");
-            //             self.lots_used += 1;
-            //             second.get_slot()
-            //         }
-            //     }
-            // }
         }
     }
 
