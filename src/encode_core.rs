@@ -996,7 +996,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         let mut stats = stats.lock().unwrap();
 
         // fill up data buffer
-        loop {
+        while !buffer.is_full() {
             break_if_atomic_bool!(ctrlc_stop_flag);
 
             if let Some(required_len) = required_len {
@@ -1028,10 +1028,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                 stats.data_padding_bytes +=
                     sbx_block::write_padding(param.version, read_res.len_read, slot);
-            }
-
-            if buffer.is_full() {
-                break;
             }
         }
 
