@@ -386,6 +386,12 @@ struct DataBlockBuffer<'a> {
     start_seq_num: u32,
 }
 
+enum GetSlotResult<'a> {
+    None,
+    Some(&'a mut [u8]),
+    LastSlot(&'a mut [u8]),
+}
+
 impl<'a> Lot<'a> {
     pub fn new(
         version: Version,
@@ -424,14 +430,18 @@ impl<'a> Lot<'a> {
         }
     }
 
-    pub fn get_slot(&mut self) -> Option<&mut [u8]> {
+    pub fn get_slot(&mut self) -> GetSlotResult {
         if self.slots_used() < self.directly_writable_slots {
             let start = self.slots_used() * self.block_size;
             let end_exc = start + self.block_size;
             self.data_block_count += 1;
-            Some(&mut self.data[start..end_exc])
+            if self.is_full() {
+                GetSlotResult::LastSlot(&mut self.data[start..end_exc])
+            } else {
+                GetSlotResult::Some(&mut self.data[start..end_exc])
+            }
         } else {
-            None
+            GetSlotResult::None
         }
     }
 
@@ -478,9 +488,9 @@ impl<'a> Lot<'a> {
         self.data_block_count + self.padding_block_count + self.parity_block_count
     }
 
-    // pub fn is_full(&self) -> bool {
-    //     self.slots_used == self.directly_writable_slots
-    // }
+    pub fn is_full(&self) -> bool {
+        self.data_block_count == self.directly_writable_slots
+    }
 
     pub fn encode(&mut self, lot_start_seq_num: u32) {
         if self.active() {
@@ -572,7 +582,7 @@ impl<'a> DataBlockBuffer<'a> {
     ) -> Self {
         let mut lots = Vec::with_capacity(lot_count);
 
-        for _ in 0..lot_size {
+        for _ in 0..lot_count {
             lots.push(Lot::new(
                 version,
                 uid,
@@ -602,38 +612,60 @@ impl<'a> DataBlockBuffer<'a> {
             eprintln!("None 0");
             None
         } else {
-            let candidates = &mut self.lots[self.lots_used..];
-
-            if candidates.len() == 1 {
-                match candidates[0].get_slot() {
-                    Some(slot) => {
-                        eprintln!("Some 0");
-                        Some(slot)
-                    },
-                    None => {
-                        eprintln!("None 1");
-                        self.lots_used += 1;
-                        None
-                    }
-                }
-            } else {
-                let (first, second) = candidates.split_at_mut(1);
-
-                let first = &mut first[0];
-                let second = &mut second[0];
-
-                match first.get_slot() {
-                    Some(slot) => {
-                        eprintln!("Some 1");
-                        Some(slot)
-                    },
-                    None => {
-                        eprintln!("None 2");
-                        self.lots_used += 1;
-                        second.get_slot()
-                    }
+            match self.lots[0].get_slot() {
+                GetSlotResult::LastSlot(slot) => {
+                    eprintln!("LastSlot 0");
+                    self.lots_used += 1;
+                    Some(slot)
+                },
+                GetSlotResult::Some(slot) => {
+                    eprintln!("Some 0");
+                    Some(slot)
+                },
+                GetSlotResult::None => {
+                    eprintln!("None 1");
+                    self.lots_used += 1;
+                    None
                 }
             }
+
+            // let candidates = &mut self.lots[self.lots_used..];
+
+            // if candidates.len() == 1 {
+            //     match candidates[0].get_slot() {
+            //         GetSlotResult::LastSlot(slot) => {
+            //             eprintln!("LastSlot 0");
+            //             self.lots_used += 1;
+            //             Some(slot)
+            //         },
+            //         GetSlotResult::Some(slot) => {
+            //             eprintln!("Some 0");
+            //             Some(slot)
+            //         },
+            //         GetSlotResult::None => {
+            //             eprintln!("None 1");
+            //             self.lots_used += 1;
+            //             None
+            //         }
+            //     }
+            // } else {
+            //     let (first, second) = candidates.split_at_mut(1);
+
+            //     let first = &mut first[0];
+            //     let second = &mut second[0];
+
+            //     match first.get_slot() {
+            //         Some(slot) => {
+            //             eprintln!("Some 1");
+            //             Some(slot)
+            //         },
+            //         None => {
+            //             eprintln!("None 2");
+            //             self.lots_used += 1;
+            //             second.get_slot()
+            //         }
+            //     }
+            // }
         }
     }
 
