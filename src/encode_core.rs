@@ -1016,8 +1016,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 bytes_processed += read_res.len_read as u64;
 
                 if read_res.len_read == 0 {
-                    end_loop = true;
                     buffer.cancel_last_slot();
+                    end_loop = true;
                     break;
                 }
 
