@@ -817,49 +817,6 @@ fn write_meta_blocks(
     Ok(())
 }
 
-// fn write_data_block(
-//     param: &Param,
-//     block: &mut Block,
-//     buffer: &mut [u8],
-//     writer: &mut FileWriter,
-// ) -> Result<(), Error> {
-//     let write_pos = calc_data_block_write_pos(
-//         param.version,
-//         block.get_seq_num(),
-//         Some(param.meta_enabled),
-//         param.data_par_burst,
-//     );
-
-//     block_sync_and_write(block, buffer, writer, write_pos)
-// }
-
-// fn block_sync_and_write(
-//     block: &mut Block,
-//     buffer: &mut [u8],
-//     writer: &mut FileWriter,
-//     pos: u64,
-// ) -> Result<(), Error> {
-//     match block.sync_to_buffer(None, buffer) {
-//         Ok(()) => {}
-//         Err(sbx_block::Error::TooMuchMetadata(ref m)) => {
-//             return Err(Error::with_msg(&make_too_much_meta_err_string(
-//                 block.get_version(),
-//                 m,
-//             )));
-//         }
-//         Err(_) => unreachable!(),
-//     }
-
-//     writer.seek(SeekFrom::Start(pos))?;
-
-//     writer.write(sbx_block::slice_buf(block.get_version(), buffer))?;
-
-//     match block.add1_seq_num() {
-//         Ok(_)  => Ok(()),
-//         Err(_) => Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"))
-//     }
-// }
-
 pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
