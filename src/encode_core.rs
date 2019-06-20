@@ -383,7 +383,7 @@ struct DataBlockBuffer<'a> {
     lots: Vec<Lot<'a>>,
     lot_size: usize,
     lots_used: usize,
-    start_seq_num: u32,
+    start_seq_num: Option<u32>,
 }
 
 enum GetSlotResult<'a> {
@@ -509,14 +509,7 @@ impl<'a> Lot<'a> {
                     self.block
                         .set_seq_num(lot_start_seq_num + slot_index as u32);
 
-                    match self.data_par_burst {
-                        None => self.block.sync_to_buffer(None, slot).unwrap(),
-                        Some((data, _, _)) => {
-                            if slot_index < data {
-                                self.block.sync_to_buffer(None, slot).unwrap();
-                            }
-                        }
-                    }
+                    self.block.sync_to_buffer(None, slot).unwrap();
 
                     let write_pos = calc_data_block_write_pos(
                         self.version,
@@ -597,7 +590,7 @@ impl<'a> DataBlockBuffer<'a> {
             lots,
             lot_size,
             lots_used: 0,
-            start_seq_num: 1,
+            start_seq_num: Some(1),
         }
     }
 
@@ -638,7 +631,7 @@ impl<'a> DataBlockBuffer<'a> {
     }
 
     pub fn encode(&mut self) -> Result<(), Error> {
-        let start_seq_num = self.start_seq_num;
+        let start_seq_num = self.start_seq_num.unwrap();
         let lot_size = self.lot_size;
 
         self.lots
@@ -649,6 +642,12 @@ impl<'a> DataBlockBuffer<'a> {
 
                 lot.encode(lot_start_seq_num);
             });
+
+        if self.is_full() {
+            self.start_seq_num = Some(start_seq_num + (self.lots.len() * lot_size) as u32);
+        } else {
+            self.start_seq_num = None;
+        }
 
         Ok(())
     }
