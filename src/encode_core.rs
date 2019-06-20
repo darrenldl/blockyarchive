@@ -615,10 +615,8 @@ impl<'a> DataBlockBuffer<'a> {
                 GetSlotResult::LastSlot(slot) => {
                     self.lots_used += 1;
                     Some(slot)
-                },
-                GetSlotResult::Some(slot) => {
-                    Some(slot)
-                },
+                }
+                GetSlotResult::Some(slot) => Some(slot),
                 GetSlotResult::None => {
                     self.lots_used += 1;
                     None
