@@ -63,8 +63,8 @@ impl VerbositySettings {
 }
 
 pub struct Context {
-    header_printed: bool,
-    finish_printed: bool,
+    header_text_printed: bool,
+    finish_text_printed: bool,
     header: String,
     last_report_time: f64,
     last_reported_units: u64,
@@ -85,8 +85,8 @@ impl Context {
         finish_print_elements: Vec<ProgressElement>,
     ) -> Context {
         Context {
-            header_printed: false,
-            finish_printed: false,
+            header_text_printed: false,
+            finish_text_printed: false,
             header: String::from(header),
             last_report_time: 0.,
             last_reported_units: 0,
@@ -162,8 +162,6 @@ impl<T: 'static + ProgressReport + Send> ProgressReporter<T> {
                 }
             }
 
-            runner_shutdown_barrier.wait();
-
             print_progress::<T>(&runner_context, &runner_stats, true);
 
             runner_shutdown_barrier.wait();
@@ -226,8 +224,6 @@ impl<T: 'static + ProgressReport + Send> ProgressReporter<T> {
             self.shutdown_flag.store(true, Ordering::SeqCst);
 
             self.shutdown_barrier.wait();
-
-            self.shutdown_barrier.wait();
         }
     }
 }
@@ -264,7 +260,7 @@ pub trait ProgressReport {
     }
 }
 
-pub fn print_progress<T>(context: &Arc<Mutex<Context>>, stats: &Arc<Mutex<T>>, pretend_finish: bool)
+pub fn print_progress<T>(context: &Arc<Mutex<Context>>, stats: &Arc<Mutex<T>>, finish: bool)
 where
     T: ProgressReport,
 {
@@ -288,17 +284,8 @@ where
     let units_so_far = stats.units_so_far();
     let total_units = stats.total_units();
 
-    let progress_complete = match total_units {
-        None => pretend_finish,
-        Some(total_units) => {
-            let percent = helper::calc_percent(units_so_far, total_units);
-
-            percent == 100 || pretend_finish
-        }
-    };
-
-    if ((verbose_while_active && !progress_complete) || (verbose_when_done && progress_complete))
-        && !(context.finish_printed && progress_complete)
+    if ((verbose_while_active && !finish) || (verbose_when_done && finish))
+        && !context.finish_text_printed
     {
         if context.verbosity_settings.json_enabled {
             let message = make_message(
@@ -315,12 +302,12 @@ where
             eprintln!("}}");
         } else {
             // print header once if not already
-            if !context.header_printed {
+            if !context.header_text_printed {
                 eprintln!("{}", context.header);
-                context.header_printed = true;
+                context.header_text_printed = true;
             }
 
-            let message = if progress_complete {
+            let message = if finish {
                 make_message(
                     &context,
                     stats.get_start_time(),
@@ -346,11 +333,11 @@ where
             stdout().flush().unwrap();
         }
 
-        if progress_complete && !context.finish_printed {
+        if finish {
             if !context.verbosity_settings.json_enabled {
                 eprintln!();
             }
-            context.finish_printed = true;
+            context.finish_text_printed = true;
         }
 
         context.last_report_time = time_utils::get_time_now(time_utils::TimeMode::UTC);
