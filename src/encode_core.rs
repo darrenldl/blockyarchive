@@ -44,6 +44,8 @@ use smallvec::SmallVec;
 
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
+const LOT_COUNT_PER_CPU: usize = 20;
+
 #[derive(Clone, Debug)]
 pub struct Stats {
     uid: [u8; SBX_FILE_UID_LEN],
@@ -914,8 +916,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         Some((data, parity, _)) => data + parity,
     };
 
-    // let lot_count = num_cpus::get();
-    let lot_count = 1;
+    let lot_count = num_cpus::get() * LOT_COUNT_PER_CPU;
 
     // setup main data buffer
     let mut buffer = DataBlockBuffer::new(
