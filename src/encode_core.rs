@@ -957,14 +957,16 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     // push buffers into pipeline
     for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
-        to_reader.send(Some(DataBlockBuffer::new(
-            param.version,
-            &param.uid,
-            param.data_par_burst,
-            param.meta_enabled,
-            lot_size,
-            lot_count,
-        ))).unwrap();
+        to_reader
+            .send(Some(DataBlockBuffer::new(
+                param.version,
+                &param.uid,
+                param.data_par_burst,
+                param.meta_enabled,
+                lot_size,
+                lot_count,
+            )))
+            .unwrap();
     }
 
     let reader_thread = {
@@ -976,7 +978,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             let mut run = true;
 
             while let Some(mut buffer) = from_writer.recv().unwrap() {
-                if !run { break; }
+                if !run {
+                    break;
+                }
 
                 let mut stats = stats.lock().unwrap();
 
@@ -1011,15 +1015,11 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 }
 
                                 hash_ctx.lock().unwrap().update(
-                                    &sbx_block::slice_data_buf(version, slot)
-                                        [..read_res.len_read],
+                                    &sbx_block::slice_data_buf(version, slot)[..read_res.len_read],
                                 );
 
-                                stats.data_padding_bytes += sbx_block::write_padding(
-                                    version,
-                                    read_res.len_read,
-                                    slot,
-                                );
+                                stats.data_padding_bytes +=
+                                    sbx_block::write_padding(version, read_res.len_read, slot);
                             }
                             Err(e) => {
                                 error_tx_reader.send(e).unwrap();
@@ -1053,8 +1053,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     break;
                 }
 
-                let (data_blocks, _, parity_blocks) =
-                    buffer.data_padding_parity_block_count();
+                let (data_blocks, _, parity_blocks) = buffer.data_padding_parity_block_count();
 
                 stats.data_blocks_written += data_blocks as u64;
                 stats.parity_blocks_written += parity_blocks as u64;
