@@ -360,7 +360,7 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
     reporter.stop();
     log_handler.stop();
 
-    let stats = stats.lock().unwrap().clone();
+    let stats = Arc::try_unwrap(stats).unwrap().into_inner().unwrap();
 
     Ok(stats)
 }

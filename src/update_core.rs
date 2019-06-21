@@ -378,7 +378,7 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     reporter.stop();
 
-    let stats = stats.lock().unwrap().clone();
+    let stats = Arc::try_unwrap(stats).unwrap().into_inner().unwrap();
 
     match err {
         None => Ok(Some(stats)),

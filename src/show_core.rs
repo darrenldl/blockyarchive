@@ -426,7 +426,7 @@ pub fn show_file(param: &Param) -> Result<Stats, Error> {
 
     stats.lock().unwrap().meta_block_count = meta_block_count;
 
-    let stats = stats.lock().unwrap().clone();
+    let stats = Arc::try_unwrap(stats).unwrap().into_inner().unwrap();
 
     Ok(stats)
 }

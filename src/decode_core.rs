@@ -1301,7 +1301,7 @@ fn hash(
 
     reporter.stop();
 
-    let stats = stats.lock().unwrap().clone();
+    let stats = Arc::try_unwrap(stats).unwrap().into_inner().unwrap();
 
     Ok(Some((stats, hash_ctx.finish_into_hash_bytes())))
 }
