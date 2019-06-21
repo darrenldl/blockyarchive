@@ -5,6 +5,8 @@ use std::fmt;
 use std::fs;
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc::channel;
+use std::thread;
 
 use crate::misc_utils::RequiredLenAndSeekTo;
 
@@ -45,6 +47,8 @@ use smallvec::SmallVec;
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
 const LOT_COUNT_PER_CPU: usize = 20;
+
+const PIPELINE_BUFFER_IN_ROTATION: usize = 3;
 
 #[derive(Clone, Debug)]
 pub struct Stats {
@@ -903,7 +907,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     );
 
     // set up hash state
-    let mut hash_ctx = multihash::hash::Ctx::new(param.hash_type).unwrap();
+    let mut hash_ctx = Arc::new(Mutex::new(multihash::hash::Ctx::new(param.hash_type).unwrap()));
 
     // setup Reed-Solomon things
     let rs_codec = match param.data_par_burst {
@@ -918,16 +922,21 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     let lot_count = num_cpus::get() * LOT_COUNT_PER_CPU;
 
-    // setup main data buffer
-    let mut buffer = DataBlockBuffer::new(
-        param.version,
-        &param.uid,
-        param.data_par_burst,
-        param.meta_enabled,
-        lot_size,
-        lot_count,
-        &rs_codec,
-    );
+    // setup main data buffers
+    let mut buffers = SmallVec<[DataBlockBuffer; 8]> = SmallVec::with_capacity(PIPELINE_BUFFER_IN_ROTATION);
+
+    for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
+        buffers.push(
+            DataBlockBuffer::new(
+                param.version,
+                &param.uid,
+                param.data_par_burst,
+                param.meta_enabled,
+                lot_size,
+                lot_count,
+                &rs_codec,
+            ));
+    }
 
     // seek to calculated position
     if let Some(seek_to) = seek_to {
@@ -959,56 +968,62 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         )?;
     }
 
-    while !end_loop {
-        let mut stats = stats.lock().unwrap();
+    let reader_thread = {
+        let runner_stats = Arc::clone(stats);
 
-        // fill up data buffer
-        while !buffer.is_full() {
-            break_if_atomic_bool!(ctrlc_stop_flag);
+        thread::spawn(move || {
+            while !end_loop {
+                let mut stats = runner_stats.lock().unwrap();
 
-            if let Some(required_len) = required_len {
-                if bytes_processed >= required_len {
-                    end_loop = true;
-                    break;
+                // fill up data buffer
+                while !buffer.is_full() {
+                    break_if_atomic_bool!(ctrlc_stop_flag);
+
+                    if let Some(required_len) = required_len {
+                        if bytes_processed >= required_len {
+                            end_loop = true;
+                            break;
+                        }
+                    }
+
+                    {
+                        // read data in
+                        let slot = buffer.get_slot().unwrap();
+                        let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, slot))?;
+
+                        bytes_processed += read_res.len_read as u64;
+
+                        if read_res.len_read == 0 {
+                            buffer.cancel_last_slot();
+                            end_loop = true;
+                            break;
+                        }
+
+                        if let Err(_) = block_for_seq_num_check.add1_seq_num() {
+                            return Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
+                        }
+
+                        hash_ctx
+                            .update(&sbx_block::slice_data_buf(param.version, slot)[..read_res.len_read]);
+
+                        stats.data_padding_bytes +=
+                            sbx_block::write_padding(param.version, read_res.len_read, slot);
+                    }
                 }
+
+                break_if_atomic_bool!(ctrlc_stop_flag);
+
+                buffer.encode()?;
+
+                let (data_blocks, _, parity_blocks) = buffer.data_padding_parity_block_count();
+
+                stats.data_blocks_written += data_blocks as u64;
+                stats.parity_blocks_written += parity_blocks as u64;
+
+                buffer.write(&mut writer)?;
             }
-
-            {
-                // read data in
-                let slot = buffer.get_slot().unwrap();
-                let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, slot))?;
-
-                bytes_processed += read_res.len_read as u64;
-
-                if read_res.len_read == 0 {
-                    buffer.cancel_last_slot();
-                    end_loop = true;
-                    break;
-                }
-
-                if let Err(_) = block_for_seq_num_check.add1_seq_num() {
-                    return Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
-                }
-
-                hash_ctx
-                    .update(&sbx_block::slice_data_buf(param.version, slot)[..read_res.len_read]);
-
-                stats.data_padding_bytes +=
-                    sbx_block::write_padding(param.version, read_res.len_read, slot);
-            }
-        }
-
-        break_if_atomic_bool!(ctrlc_stop_flag);
-
-        buffer.encode()?;
-
-        let (data_blocks, _, parity_blocks) = buffer.data_padding_parity_block_count();
-
-        stats.data_blocks_written += data_blocks as u64;
-        stats.parity_blocks_written += parity_blocks as u64;
-
-        buffer.write(&mut writer)?;
-    }
+        })
+    };
 
     let data_bytes_encoded = match required_len {
         Some(x) => x,
