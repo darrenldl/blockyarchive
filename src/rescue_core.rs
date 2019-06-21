@@ -77,7 +77,7 @@ impl Param {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Stats {
     pub meta_or_par_blocks_processed: u64,
     pub data_or_par_blocks_processed: u64,

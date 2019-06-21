@@ -63,7 +63,7 @@ impl Param {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Stats {
     version: Version,
     pub meta_blocks_updated: u64,
