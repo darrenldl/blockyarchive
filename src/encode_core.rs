@@ -5,6 +5,7 @@ use std::fmt;
 use std::fs;
 use std::io::SeekFrom;
 use std::sync::mpsc::channel;
+use std::sync::mpsc::SendError;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -1031,7 +1032,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                 break_if_atomic_bool!(ctrlc_stop_flag);
 
-                to_encoder.send(Some(buffer)).unwrap();
+                if let Err(SendError(_)) = to_encoder.send(Some(buffer)) {
+                    break;
+                }
             }
 
             to_encoder.send(None).unwrap_or(());
@@ -1056,7 +1059,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 stats.data_blocks_written += data_blocks as u64;
                 stats.parity_blocks_written += parity_blocks as u64;
 
-                to_writer.send(Some(buffer)).unwrap();
+                if let Err(SendError(_)) = to_writer.send(Some(buffer)) {
+                    break;
+                }
             }
 
             to_writer.send(None).unwrap_or(());
@@ -1073,7 +1078,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     break;
                 }
 
-                to_reader.send(Some(buffer)).unwrap();
+                if let Err(SendError(_)) = to_reader.send(Some(buffer)) {
+                    break;
+                }
             }
 
             to_reader.send(None).unwrap_or(());
