@@ -919,21 +919,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     let lot_count = num_cpus::get() * LOT_COUNT_PER_CPU;
 
-    // setup main data buffers
-    let mut buffers: SmallVec<[DataBlockBuffer; 8]> =
-        SmallVec::with_capacity(PIPELINE_BUFFER_IN_ROTATION);
-
-    for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
-        buffers.push(DataBlockBuffer::new(
-            param.version,
-            &param.uid,
-            param.data_par_burst,
-            param.meta_enabled,
-            lot_size,
-            lot_count,
-        ));
-    }
-
     // seek to calculated position
     if let Some(seek_to) = seek_to {
         if let Some(r) = reader.seek(SeekFrom::Start(seek_to)) {
@@ -969,6 +954,18 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let error_tx_encoder = error_tx_reader.clone();
     let error_tx_writer = error_tx_reader.clone();
 
+    // push buffers into pipeline
+    for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
+        to_reader.send(Some(DataBlockBuffer::new(
+            param.version,
+            &param.uid,
+            param.data_par_burst,
+            param.meta_enabled,
+            lot_size,
+            lot_count,
+        ))).unwrap();
+    }
+
     let reader_thread = {
         let version = param.version;
         let stats = Arc::clone(&stats);
@@ -977,81 +974,67 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         thread::spawn(move || {
             let mut run = true;
 
-            while run {
-                let buffer = match buffers.pop() {
-                    Some(b) => Some(b),
-                    None => from_writer.recv().unwrap(),
-                };
+            while let Some(mut buffer) = from_writer.recv().unwrap() {
+                if !run { break; }
 
-                match buffer {
-                    Some(mut buffer) => {
-                        let mut stats = stats.lock().unwrap();
+                let mut stats = stats.lock().unwrap();
 
-                        // fill up data buffer
-                        while !buffer.is_full() {
-                            break_if_atomic_bool!(ctrlc_stop_flag);
+                // fill up data buffer
+                while !buffer.is_full() {
+                    break_if_atomic_bool!(ctrlc_stop_flag);
 
-                            if let Some(required_len) = required_len {
-                                if bytes_processed >= required_len {
+                    if let Some(required_len) = required_len {
+                        if bytes_processed >= required_len {
+                            run = false;
+                            break;
+                        }
+                    }
+
+                    {
+                        // read data in
+                        let slot = buffer.get_slot().unwrap();
+                        match reader.read(sbx_block::slice_data_buf_mut(version, slot)) {
+                            Ok(read_res) => {
+                                bytes_processed += read_res.len_read as u64;
+
+                                if read_res.len_read == 0 {
+                                    buffer.cancel_last_slot();
                                     run = false;
                                     break;
                                 }
-                            }
 
-                            {
-                                // read data in
-                                let slot = buffer.get_slot().unwrap();
-                                match reader.read(sbx_block::slice_data_buf_mut(version, slot)) {
-                                    Ok(read_res) => {
-                                        bytes_processed += read_res.len_read as u64;
-
-                                        if read_res.len_read == 0 {
-                                            buffer.cancel_last_slot();
-                                            run = false;
-                                            break;
-                                        }
-
-                                        if let Err(_) = block_for_seq_num_check.add1_seq_num() {
-                                            error_tx_reader.send(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin")).unwrap();
-                                            run = false;
-                                            break;
-                                        }
-
-                                        hash_ctx.lock().unwrap().update(
-                                            &sbx_block::slice_data_buf(version, slot)
-                                                [..read_res.len_read],
-                                        );
-
-                                        stats.data_padding_bytes += sbx_block::write_padding(
-                                            version,
-                                            read_res.len_read,
-                                            slot,
-                                        );
-                                    }
-                                    Err(e) => {
-                                        error_tx_reader.send(e).unwrap();
-                                        run = false;
-                                        break;
-                                    }
+                                if let Err(_) = block_for_seq_num_check.add1_seq_num() {
+                                    error_tx_reader.send(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin")).unwrap();
+                                    run = false;
+                                    break;
                                 }
+
+                                hash_ctx.lock().unwrap().update(
+                                    &sbx_block::slice_data_buf(version, slot)
+                                        [..read_res.len_read],
+                                );
+
+                                stats.data_padding_bytes += sbx_block::write_padding(
+                                    version,
+                                    read_res.len_read,
+                                    slot,
+                                );
+                            }
+                            Err(e) => {
+                                error_tx_reader.send(e).unwrap();
+                                run = false;
+                                break;
                             }
                         }
-
-                        break_if_atomic_bool!(ctrlc_stop_flag);
-
-                        to_encoder.send(Some(buffer)).unwrap();
-                    }
-                    None => {
-                        break;
                     }
                 }
+
+                break_if_atomic_bool!(ctrlc_stop_flag);
+
+                to_encoder.send(Some(buffer)).unwrap();
             }
 
-            to_encoder.send(None).unwrap();
-
-            while let Some(_) = from_writer.recv().unwrap() {
-                continue;
-            }
+            to_encoder.send(None).unwrap_or(());
         })
     };
 
@@ -1076,7 +1059,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 to_writer.send(Some(buffer)).unwrap();
             }
 
-            to_writer.send(None).unwrap();
+            to_writer.send(None).unwrap_or(());
         })
     };
 
@@ -1093,7 +1076,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 to_reader.send(Some(buffer)).unwrap();
             }
 
-            to_reader.send(None).unwrap();
+            to_reader.send(None).unwrap_or(());
         })
     };
 
