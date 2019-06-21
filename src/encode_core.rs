@@ -391,6 +391,7 @@ struct DataBlockBuffer {
     lot_size: usize,
     lots_used: usize,
     start_seq_num: Option<u32>,
+    seq_num_incre: u32,
 }
 
 enum GetSlotResult<'a> {
@@ -575,6 +576,8 @@ impl DataBlockBuffer {
         meta_enabled: bool,
         lot_size: usize,
         lot_count: usize,
+        buffer_index: usize,
+        total_buffer_count: usize,
     ) -> Self {
         assert!(lot_count > 0);
 
@@ -596,11 +599,18 @@ impl DataBlockBuffer {
             ))
         }
 
+        let total_slot_count_per_buffer = lot_count * lot_size;
+
+        let seq_num_incre = (total_slot_count_per_buffer * total_buffer_count) as u32;
+
+        let start_seq_num = 1 + (buffer_index * total_slot_count_per_buffer) as u32;
+
         DataBlockBuffer {
             lots,
             lot_size,
             lots_used: 0,
-            start_seq_num: Some(1),
+            start_seq_num: Some(start_seq_num),
+            seq_num_incre,
         }
     }
 
@@ -661,8 +671,11 @@ impl DataBlockBuffer {
                 lot.encode(lot_start_seq_num);
             });
 
-        if self.is_full() {
-            self.start_seq_num = Some(start_seq_num + (self.lots.len() * lot_size) as u32);
+        let seq_num_incre_will_overflow =
+            std::u32::MAX - self.seq_num_incre < self.start_seq_num.unwrap();
+
+        if self.is_full() && !seq_num_incre_will_overflow {
+            self.start_seq_num = Some(start_seq_num + self.seq_num_incre);
         } else {
             self.start_seq_num = None;
         }
@@ -956,7 +969,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let error_tx_writer = error_tx_reader.clone();
 
     // push buffers into pipeline
-    for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
+    for i in 0..PIPELINE_BUFFER_IN_ROTATION {
         to_reader
             .send(Some(DataBlockBuffer::new(
                 param.version,
@@ -965,6 +978,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 param.meta_enabled,
                 lot_size,
                 lot_count,
+                i,
+                PIPELINE_BUFFER_IN_ROTATION,
             )))
             .unwrap();
     }
