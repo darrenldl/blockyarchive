@@ -923,7 +923,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let lot_count = num_cpus::get() * LOT_COUNT_PER_CPU;
 
     // setup main data buffers
-    let mut buffers = SmallVec<[DataBlockBuffer; 8]> = SmallVec::with_capacity(PIPELINE_BUFFER_IN_ROTATION);
+    let mut buffers: SmallVec<[DataBlockBuffer; 8]> = SmallVec::with_capacity(PIPELINE_BUFFER_IN_ROTATION);
 
     for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
         buffers.push(
@@ -947,8 +947,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     let mut bytes_processed: u64 = 0;
 
-    let mut end_loop = false;
-
     let mut block_for_seq_num_check = Block::dummy();
 
     block_for_seq_num_check.set_seq_num(0);
@@ -968,76 +966,136 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         )?;
     }
 
-    let (to_encoder, from_reader) = channel();
-    let (to_writer, from_encoder) = channel();
-    let (to_reader, from_writer) = channel();
+    let (to_encoder, from_reader) = channel::<Option<DataBlockBuffer>>();
+    let (to_writer, from_encoder) = channel::<Option<DataBlockBuffer>>();
+    let (to_reader, from_writer) = channel::<Option<DataBlockBuffer>>();
+    let (error_tx_reader, error_rx) = channel::<Error>();
+    let error_tx_encoder = error_tx_reader.clone();
+    let error_tx_writer = error_tx_reader.clone();
 
     let reader_thread = {
         let runner_stats = Arc::clone(stats);
 
         thread::spawn(move || {
-            while !end_loop {
-                let mut stats = runner_stats.lock().unwrap();
+            let run = true;
 
-                // fill up data buffer
-                while !buffer.is_full() {
-                    break_if_atomic_bool!(ctrlc_stop_flag);
+            while run {
+                let buffer = match buffers.pop {
+                    Some(b) => Some(b),
+                    None => from_writer.recv().unwrap(),
+                };
 
-                    if let Some(required_len) = required_len {
-                        if bytes_processed >= required_len {
-                            end_loop = true;
-                            break;
+                match buffer {
+                    Some(buffer) => {
+                        // fill up data buffer
+                        while !buffer.is_full() {
+                            break_if_atomic_bool!(ctrlc_stop_flag);
+
+                            if let Some(required_len) = required_len {
+                                if bytes_processed >= required_len {
+                                    run = false;
+                                    break;
+                                }
+                            }
+
+                            {
+                                // read data in
+                                let slot = buffer.get_slot().unwrap();
+                                let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, slot))?;
+
+                                bytes_processed += read_res.len_read as u64;
+
+                                if read_res.len_read == 0 {
+                                    buffer.cancel_last_slot();
+                                    run = false;
+                                    break;
+                                }
+
+                                if let Err(_) = block_for_seq_num_check.add1_seq_num() {
+                                    error_tx_reader.send(Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin")));
+                                    run = false;
+                                    break;
+                                }
+
+                                hash_ctx
+                                    .update(&sbx_block::slice_data_buf(param.version, slot)[..read_res.len_read]);
+
+                                stats.data_padding_bytes +=
+                                    sbx_block::write_padding(param.version, read_res.len_read, slot);
+                            }
                         }
+
+                        break_if_atomic_bool!(ctrlc_stop_flag);
+
+                        to_encoder.send(Some(buffer)).unwrap();
                     }
-
-                    {
-                        // read data in
-                        let slot = buffer.get_slot().unwrap();
-                        let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, slot))?;
-
-                        bytes_processed += read_res.len_read as u64;
-
-                        if read_res.len_read == 0 {
-                            buffer.cancel_last_slot();
-                            end_loop = true;
-                            break;
-                        }
-
-                        if let Err(_) = block_for_seq_num_check.add1_seq_num() {
-                            return Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
-                        }
-
-                        hash_ctx
-                            .update(&sbx_block::slice_data_buf(param.version, slot)[..read_res.len_read]);
-
-                        stats.data_padding_bytes +=
-                            sbx_block::write_padding(param.version, read_res.len_read, slot);
+                    None => {
+                        break;
                     }
                 }
+            }
 
-                break_if_atomic_bool!(ctrlc_stop_flag);
+            to_encoder.send(None).unwrap();
 
-                to_encoder.send(buffer).unwrap();
+            if let Some(_) = buffer {
+                let mut end_read_loop = false;
 
-                buffer.encode()?;
-
-                let (data_blocks, _, parity_blocks) = buffer.data_padding_parity_block_count();
-
-                stats.data_blocks_written += data_blocks as u64;
-                stats.parity_blocks_written += parity_blocks as u64;
-
-                buffer.write(&mut writer)?;
+                while !end_read_loop {
+                }
             }
         })
     };
 
     let encoder_thread = thread::spawn(move || {
-        
+        loop {
+            let mut stats = runner_stats.lock().unwrap();
+
+            match from_reader.recv().unwrap() {
+                Some(buffer) => {
+                    if let Err(e) = buffer.encode() {
+                        error_tx_encoder.send(Err(e)).unwrap();
+                    }
+
+                    let (data_blocks, _, parity_blocks) = buffer.data_padding_parity_block_count();
+
+                    stats.data_blocks_written += data_blocks as u64;
+                    stats.parity_blocks_written += parity_blocks as u64;
+
+                    to_writer.send(Some(buffer)).unwrap();
+                }
+                None => break
+            }
+        }
+
+        to_writer.send(None);
     });
 
     let writer_thread = thread::spawn(move || {
-        
+        loop {
+            let mut stats = runner_stats.lock().unwrap();
+
+            match from_encoder.recv().unwrap() {
+                Some(buffer) => {
+                    if let Err(e) = buffer.write(&mut writer) {
+                        error_tx_writer.send(Err(e)).unwrap();
+                    }
+
+                    to_reader.send(Some(buffer)).unwrap();
+                }
+                None => break
+            }
+        }
+
+        to_reader.send(None);
     });
+
+    reader_thread.join();
+    encoder_thread.join();
+    writer_thread.join();
+
+    if let Ok(err) = error_rx.try_recv() {
+        return err;
+    }
 
     let data_bytes_encoded = match required_len {
         Some(x) => x,
