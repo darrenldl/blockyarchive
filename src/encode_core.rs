@@ -973,20 +973,26 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let error_tx_encoder = error_tx_reader.clone();
     let error_tx_writer = error_tx_reader.clone();
 
+    let reader_stats = Arc::clone(&stats);
+    let encoder_stats = Arc::clone(&stats);
+    let writer_stats = Arc::clone(&stats);
+
     let reader_thread = {
-        let runner_stats = Arc::clone(stats);
+        let version = param.version;
 
         thread::spawn(move || {
             let run = true;
 
             while run {
-                let buffer = match buffers.pop {
+                let buffer = match buffers.pop() {
                     Some(b) => Some(b),
                     None => from_writer.recv().unwrap(),
                 };
 
                 match buffer {
                     Some(buffer) => {
+                        let mut stats = encoder_stats.lock().unwrap();
+
                         // fill up data buffer
                         while !buffer.is_full() {
                             break_if_atomic_bool!(ctrlc_stop_flag);
@@ -1001,27 +1007,34 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                             {
                                 // read data in
                                 let slot = buffer.get_slot().unwrap();
-                                let read_res = reader.read(sbx_block::slice_data_buf_mut(param.version, slot))?;
+                                match reader.read(sbx_block::slice_data_buf_mut(version, slot)) {
+                                    Ok(read_res) => {
+                                        bytes_processed += read_res.len_read as u64;
 
-                                bytes_processed += read_res.len_read as u64;
+                                        if read_res.len_read == 0 {
+                                            buffer.cancel_last_slot();
+                                            run = false;
+                                            break;
+                                        }
 
-                                if read_res.len_read == 0 {
-                                    buffer.cancel_last_slot();
-                                    run = false;
-                                    break;
+                                        if let Err(_) = block_for_seq_num_check.add1_seq_num() {
+                                            error_tx_reader.send(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
+                                            run = false;
+                                            break;
+                                        }
+
+                                        hash_ctx
+                                            .lock().unwrap().update(&sbx_block::slice_data_buf(version, slot)[..read_res.len_read]);
+
+                                        stats.data_padding_bytes +=
+                                            sbx_block::write_padding(version, read_res.len_read, slot);
+                                    }
+                                    Err(e) => {
+                                        error_tx_reader.send(e);
+                                        run = false;
+                                        break;
+                                    }
                                 }
-
-                                if let Err(_) = block_for_seq_num_check.add1_seq_num() {
-                                    error_tx_reader.send(Err(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin")));
-                                    run = false;
-                                    break;
-                                }
-
-                                hash_ctx
-                                    .update(&sbx_block::slice_data_buf(param.version, slot)[..read_res.len_read]);
-
-                                stats.data_padding_bytes +=
-                                    sbx_block::write_padding(param.version, read_res.len_read, slot);
                             }
                         }
 
@@ -1036,24 +1049,17 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             }
 
             to_encoder.send(None).unwrap();
-
-            if let Some(_) = buffer {
-                let mut end_read_loop = false;
-
-                while !end_read_loop {
-                }
-            }
         })
     };
 
     let encoder_thread = thread::spawn(move || {
         loop {
-            let mut stats = runner_stats.lock().unwrap();
+            let mut stats = encoder_stats.lock().unwrap();
 
             match from_reader.recv().unwrap() {
                 Some(buffer) => {
                     if let Err(e) = buffer.encode() {
-                        error_tx_encoder.send(Err(e)).unwrap();
+                        error_tx_encoder.send(e).unwrap();
                     }
 
                     let (data_blocks, _, parity_blocks) = buffer.data_padding_parity_block_count();
@@ -1072,12 +1078,12 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     let writer_thread = thread::spawn(move || {
         loop {
-            let mut stats = runner_stats.lock().unwrap();
+            let mut stats = writer_stats.lock().unwrap();
 
             match from_encoder.recv().unwrap() {
                 Some(buffer) => {
                     if let Err(e) = buffer.write(&mut writer) {
-                        error_tx_writer.send(Err(e)).unwrap();
+                        error_tx_writer.send(e).unwrap();
                     }
 
                     to_reader.send(Some(buffer)).unwrap();
@@ -1094,7 +1100,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     writer_thread.join();
 
     if let Ok(err) = error_rx.try_recv() {
-        return err;
+        return Err(err);
     }
 
     let data_bytes_encoded = match required_len {
@@ -1103,7 +1109,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     };
 
     if param.meta_enabled {
-        let hash_bytes = hash_ctx.finish_into_hash_bytes();
+        let hash_bytes = hash_ctx.lock().unwrap().finish_into_hash_bytes();
 
         // write actual medata blocks
         write_meta_blocks(
