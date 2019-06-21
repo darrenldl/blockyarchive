@@ -1131,7 +1131,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         data_bytes_encoded,
     );
 
-    let stats = Arc::try_unwrap(stats).unwrap().into_inner().unwrap();
+    let stats = stats.lock().unwrap().clone();
 
     Ok(stats)
 }

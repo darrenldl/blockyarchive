@@ -434,7 +434,7 @@ fn check_blocks(
 
     reporter.stop();
 
-    let stats = Arc::try_unwrap(stats).unwrap().into_inner().unwrap();
+    let stats = stats.lock().unwrap().clone();
 
     Ok(stats)
 }
