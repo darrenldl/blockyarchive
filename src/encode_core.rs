@@ -473,7 +473,7 @@ impl Lot {
     }
 
     fn rs_encode(&mut self) {
-        if let Some(rs_codec) = self.rs_codec {
+        if let Some(ref rs_codec) = *self.rs_codec {
             let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(self.lot_size);
 
             // collect references to data segments
@@ -839,7 +839,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         None => Reader::new(ReaderType::Stdin(std::io::stdin())),
     };
 
-    let mut writer = FileWriter::new(
+    let writer = Arc::new(Mutex::new(FileWriter::new(
         &param.out_file,
         FileWriterParam {
             read: false,
@@ -847,7 +847,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             truncate: true,
             buffered: false,
         },
-    )?;
+    )?));
 
     let metadata = match reader.metadata() {
         Some(m) => Some(m?),
@@ -955,7 +955,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             &metadata,
             required_len,
             None,
-            &mut writer,
+            &mut writer.lock().unwrap(),
             true,
         )?;
     }
@@ -967,11 +967,10 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let error_tx_encoder = error_tx_reader.clone();
     let error_tx_writer = error_tx_reader.clone();
 
-    let reader_stats = Arc::clone(&stats);
-    let encoder_stats = Arc::clone(&stats);
-
     let reader_thread = {
         let version = param.version;
+        let stats = Arc::clone(&stats);
+        let hash_ctx = Arc::clone(&hash_ctx);
 
         thread::spawn(move || {
             let mut run = true;
@@ -984,7 +983,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                 match buffer {
                     Some(mut buffer) => {
-                        let mut stats = reader_stats.lock().unwrap();
+                        let mut stats = stats.lock().unwrap();
 
                         // fill up data buffer
                         while !buffer.is_full() {
@@ -1011,7 +1010,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                         }
 
                                         if let Err(_) = block_for_seq_num_check.add1_seq_num() {
-                                            error_tx_reader.send(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
+                                            error_tx_reader.send(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin")).unwrap();
                                             run = false;
                                             break;
                                         }
@@ -1023,7 +1022,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                             sbx_block::write_padding(version, read_res.len_read, slot);
                                     }
                                     Err(e) => {
-                                        error_tx_reader.send(e);
+                                        error_tx_reader.send(e).unwrap();
                                         run = false;
                                         break;
                                     }
@@ -1042,12 +1041,19 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             }
 
             to_encoder.send(None).unwrap();
+
+            while let Some(_) = from_writer.recv().unwrap() {
+                continue;
+            }
         })
     };
 
-    let encoder_thread = thread::spawn(move || {
+    let encoder_thread = {
+        let stats = Arc::clone(&stats);
+
+        thread::spawn(move || {
         loop {
-            let mut stats = encoder_stats.lock().unwrap();
+            let mut stats = stats.lock().unwrap();
 
             match from_reader.recv().unwrap() {
                 Some(mut buffer) => {
@@ -1066,14 +1072,21 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             }
         }
 
-        to_writer.send(None);
-    });
+        to_writer.send(None).unwrap();
 
-    let writer_thread = thread::spawn(move || {
+            while let Some(_) = from_reader.recv().unwrap() {
+                continue;
+            }
+    })};
+
+    let writer_thread = {
+        let writer = Arc::clone(&writer);
+
+        thread::spawn(move || {
         loop {
             match from_encoder.recv().unwrap() {
                 Some(mut buffer) => {
-                    if let Err(e) = buffer.write(&mut writer) {
+                    if let Err(e) = buffer.write(&mut writer.lock().unwrap()) {
                         error_tx_writer.send(e).unwrap();
                     }
 
@@ -1083,12 +1096,16 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             }
         }
 
-        to_reader.send(None);
-    });
+        to_reader.send(None).unwrap();
 
-    reader_thread.join();
-    encoder_thread.join();
-    writer_thread.join();
+            while let Some(_) = from_encoder.recv().unwrap() {
+                continue;
+            }
+    })};
+
+    reader_thread.join().unwrap();
+    encoder_thread.join().unwrap();
+    writer_thread.join().unwrap();
 
     if let Ok(err) = error_rx.try_recv() {
         return Err(err);
@@ -1100,7 +1117,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     };
 
     if param.meta_enabled {
-        let hash_bytes = hash_ctx.into_inner().unwrap().finish_into_hash_bytes();
+        let hash_bytes = Arc::try_unwrap(hash_ctx).unwrap().into_inner().unwrap().finish_into_hash_bytes();
 
         // write actual medata blocks
         write_meta_blocks(
@@ -1109,7 +1126,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             &metadata,
             Some(data_bytes_encoded),
             Some(hash_bytes.clone()),
-            &mut writer,
+            &mut writer.lock().unwrap(),
             false,
         )?;
 
