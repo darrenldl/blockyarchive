@@ -369,7 +369,7 @@ impl ProgressReport for Stats {
     }
 }
 
-struct Lot<'a> {
+struct Lot {
     version: Version,
     block: Block,
     data_par_burst: Option<(usize, usize, usize)>,
@@ -382,11 +382,11 @@ struct Lot<'a> {
     directly_writable_slots: usize,
     data: Vec<u8>,
     write_pos_s: Vec<u64>,
-    rs_codec: Option<&'a ReedSolomon>,
+    rs_codec: Arc<Option<ReedSolomon>>,
 }
 
-struct DataBlockBuffer<'a> {
-    lots: Vec<Lot<'a>>,
+struct DataBlockBuffer {
+    lots: Vec<Lot>,
     lot_size: usize,
     lots_used: usize,
     start_seq_num: Option<u32>,
@@ -398,21 +398,18 @@ enum GetSlotResult<'a> {
     LastSlot(&'a mut [u8]),
 }
 
-impl<'a> Lot<'a> {
+impl Lot {
     pub fn new(
         version: Version,
         uid: &[u8; SBX_FILE_UID_LEN],
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
         lot_size: usize,
-        rs_codec: &'a Option<ReedSolomon>,
+        rs_codec: &Arc<Option<ReedSolomon>>,
     ) -> Self {
         let block_size = ver_to_block_size(version);
 
-        let rs_codec = match rs_codec {
-            None => None,
-            Some(ref c) => Some(c),
-        };
+        let rs_codec = Arc::clone(rs_codec);
 
         let directly_writable_slots = match data_par_burst {
             None => lot_size,
@@ -569,7 +566,7 @@ impl<'a> Lot<'a> {
     }
 }
 
-impl<'a> DataBlockBuffer<'a> {
+impl DataBlockBuffer {
     pub fn new(
         version: Version,
         uid: &[u8; SBX_FILE_UID_LEN],
@@ -577,11 +574,15 @@ impl<'a> DataBlockBuffer<'a> {
         meta_enabled: bool,
         lot_size: usize,
         lot_count: usize,
-        rs_codec: &'a Option<ReedSolomon>,
     ) -> Self {
         assert!(lot_count > 0);
 
         let mut lots = Vec::with_capacity(lot_count);
+
+        let rs_codec = Arc::new(match data_par_burst {
+            None => None,
+            Some((data, parity, _)) => Some(ReedSolomon::new(data, parity).unwrap()),
+        });
 
         for _ in 0..lot_count {
             lots.push(Lot::new(
@@ -590,7 +591,7 @@ impl<'a> DataBlockBuffer<'a> {
                 data_par_burst,
                 meta_enabled,
                 lot_size,
-                rs_codec,
+                &rs_codec,
             ))
         }
 
@@ -907,13 +908,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     );
 
     // set up hash state
-    let mut hash_ctx = Arc::new(Mutex::new(multihash::hash::Ctx::new(param.hash_type).unwrap()));
-
-    // setup Reed-Solomon things
-    let rs_codec = match param.data_par_burst {
-        None => None,
-        Some((data, parity, _)) => Some(ReedSolomon::new(data, parity).unwrap()),
-    };
+    let hash_ctx = Arc::new(Mutex::new(multihash::hash::Ctx::new(param.hash_type).unwrap()));
 
     let lot_size = match param.data_par_burst {
         None => DEFAULT_SINGLE_LOT_SIZE,
@@ -934,7 +929,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 param.meta_enabled,
                 lot_size,
                 lot_count,
-                &rs_codec,
             ));
     }
 
@@ -975,13 +969,12 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     let reader_stats = Arc::clone(&stats);
     let encoder_stats = Arc::clone(&stats);
-    let writer_stats = Arc::clone(&stats);
 
     let reader_thread = {
         let version = param.version;
 
         thread::spawn(move || {
-            let run = true;
+            let mut run = true;
 
             while run {
                 let buffer = match buffers.pop() {
@@ -990,8 +983,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 };
 
                 match buffer {
-                    Some(buffer) => {
-                        let mut stats = encoder_stats.lock().unwrap();
+                    Some(mut buffer) => {
+                        let mut stats = reader_stats.lock().unwrap();
 
                         // fill up data buffer
                         while !buffer.is_full() {
@@ -1057,7 +1050,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             let mut stats = encoder_stats.lock().unwrap();
 
             match from_reader.recv().unwrap() {
-                Some(buffer) => {
+                Some(mut buffer) => {
                     if let Err(e) = buffer.encode() {
                         error_tx_encoder.send(e).unwrap();
                     }
@@ -1078,10 +1071,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     let writer_thread = thread::spawn(move || {
         loop {
-            let mut stats = writer_stats.lock().unwrap();
-
             match from_encoder.recv().unwrap() {
-                Some(buffer) => {
+                Some(mut buffer) => {
                     if let Err(e) = buffer.write(&mut writer) {
                         error_tx_writer.send(e).unwrap();
                     }
@@ -1109,7 +1100,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     };
 
     if param.meta_enabled {
-        let hash_bytes = hash_ctx.lock().unwrap().finish_into_hash_bytes();
+        let hash_bytes = hash_ctx.into_inner().unwrap().finish_into_hash_bytes();
 
         // write actual medata blocks
         write_meta_blocks(
