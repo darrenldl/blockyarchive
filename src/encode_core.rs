@@ -968,6 +968,10 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         )?;
     }
 
+    let (to_encoder, from_reader) = channel();
+    let (to_writer, from_encoder) = channel();
+    let (to_reader, from_writer) = channel();
+
     let reader_thread = {
         let runner_stats = Arc::clone(stats);
 
@@ -1013,6 +1017,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                 break_if_atomic_bool!(ctrlc_stop_flag);
 
+                to_encoder.send(buffer).unwrap();
+
                 buffer.encode()?;
 
                 let (data_blocks, _, parity_blocks) = buffer.data_padding_parity_block_count();
@@ -1024,6 +1030,14 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             }
         })
     };
+
+    let encoder_thread = thread::spawn(move || {
+        
+    });
+
+    let writer_thread = thread::spawn(move || {
+        
+    });
 
     let data_bytes_encoded = match required_len {
         Some(x) => x,
