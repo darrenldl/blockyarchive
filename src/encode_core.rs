@@ -4,8 +4,8 @@ use crate::time_utils;
 use std::fmt;
 use std::fs;
 use std::io::SeekFrom;
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 use crate::misc_utils::RequiredLenAndSeekTo;
@@ -908,7 +908,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     );
 
     // set up hash state
-    let hash_ctx = Arc::new(Mutex::new(multihash::hash::Ctx::new(param.hash_type).unwrap()));
+    let hash_ctx = Arc::new(Mutex::new(
+        multihash::hash::Ctx::new(param.hash_type).unwrap(),
+    ));
 
     let lot_size = match param.data_par_burst {
         None => DEFAULT_SINGLE_LOT_SIZE,
@@ -918,18 +920,18 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let lot_count = num_cpus::get() * LOT_COUNT_PER_CPU;
 
     // setup main data buffers
-    let mut buffers: SmallVec<[DataBlockBuffer; 8]> = SmallVec::with_capacity(PIPELINE_BUFFER_IN_ROTATION);
+    let mut buffers: SmallVec<[DataBlockBuffer; 8]> =
+        SmallVec::with_capacity(PIPELINE_BUFFER_IN_ROTATION);
 
     for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
-        buffers.push(
-            DataBlockBuffer::new(
-                param.version,
-                &param.uid,
-                param.data_par_burst,
-                param.meta_enabled,
-                lot_size,
-                lot_count,
-            ));
+        buffers.push(DataBlockBuffer::new(
+            param.version,
+            &param.uid,
+            param.data_par_burst,
+            param.meta_enabled,
+            lot_size,
+            lot_count,
+        ));
     }
 
     // seek to calculated position
@@ -1015,11 +1017,16 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                             break;
                                         }
 
-                                        hash_ctx
-                                            .lock().unwrap().update(&sbx_block::slice_data_buf(version, slot)[..read_res.len_read]);
+                                        hash_ctx.lock().unwrap().update(
+                                            &sbx_block::slice_data_buf(version, slot)
+                                                [..read_res.len_read],
+                                        );
 
-                                        stats.data_padding_bytes +=
-                                            sbx_block::write_padding(version, read_res.len_read, slot);
+                                        stats.data_padding_bytes += sbx_block::write_padding(
+                                            version,
+                                            read_res.len_read,
+                                            slot,
+                                        );
                                     }
                                     Err(e) => {
                                         error_tx_reader.send(e).unwrap();
@@ -1052,56 +1059,59 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         let stats = Arc::clone(&stats);
 
         thread::spawn(move || {
-        loop {
-            let mut stats = stats.lock().unwrap();
+            loop {
+                let mut stats = stats.lock().unwrap();
 
-            match from_reader.recv().unwrap() {
-                Some(mut buffer) => {
-                    if let Err(e) = buffer.encode() {
-                        error_tx_encoder.send(e).unwrap();
+                match from_reader.recv().unwrap() {
+                    Some(mut buffer) => {
+                        if let Err(e) = buffer.encode() {
+                            error_tx_encoder.send(e).unwrap();
+                        }
+
+                        let (data_blocks, _, parity_blocks) =
+                            buffer.data_padding_parity_block_count();
+
+                        stats.data_blocks_written += data_blocks as u64;
+                        stats.parity_blocks_written += parity_blocks as u64;
+
+                        to_writer.send(Some(buffer)).unwrap();
                     }
-
-                    let (data_blocks, _, parity_blocks) = buffer.data_padding_parity_block_count();
-
-                    stats.data_blocks_written += data_blocks as u64;
-                    stats.parity_blocks_written += parity_blocks as u64;
-
-                    to_writer.send(Some(buffer)).unwrap();
+                    None => break,
                 }
-                None => break
             }
-        }
 
-        to_writer.send(None).unwrap();
+            to_writer.send(None).unwrap();
 
             while let Some(_) = from_reader.recv().unwrap() {
                 continue;
             }
-    })};
+        })
+    };
 
     let writer_thread = {
         let writer = Arc::clone(&writer);
 
         thread::spawn(move || {
-        loop {
-            match from_encoder.recv().unwrap() {
-                Some(mut buffer) => {
-                    if let Err(e) = buffer.write(&mut writer.lock().unwrap()) {
-                        error_tx_writer.send(e).unwrap();
+            loop {
+                match from_encoder.recv().unwrap() {
+                    Some(mut buffer) => {
+                        if let Err(e) = buffer.write(&mut writer.lock().unwrap()) {
+                            error_tx_writer.send(e).unwrap();
+                        }
+
+                        to_reader.send(Some(buffer)).unwrap();
                     }
-
-                    to_reader.send(Some(buffer)).unwrap();
+                    None => break,
                 }
-                None => break
             }
-        }
 
-        to_reader.send(None).unwrap();
+            to_reader.send(None).unwrap();
 
             while let Some(_) = from_encoder.recv().unwrap() {
                 continue;
             }
-    })};
+        })
+    };
 
     reader_thread.join().unwrap();
     encoder_thread.join().unwrap();
@@ -1117,7 +1127,11 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     };
 
     if param.meta_enabled {
-        let hash_bytes = Arc::try_unwrap(hash_ctx).unwrap().into_inner().unwrap().finish_into_hash_bytes();
+        let hash_bytes = Arc::try_unwrap(hash_ctx)
+            .unwrap()
+            .into_inner()
+            .unwrap()
+            .finish_into_hash_bytes();
 
         // write actual medata blocks
         write_meta_blocks(
