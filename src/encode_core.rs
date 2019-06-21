@@ -1059,32 +1059,24 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         let stats = Arc::clone(&stats);
 
         thread::spawn(move || {
-            loop {
+            while let Some(mut buffer) = from_reader.recv().unwrap() {
                 let mut stats = stats.lock().unwrap();
 
-                match from_reader.recv().unwrap() {
-                    Some(mut buffer) => {
-                        if let Err(e) = buffer.encode() {
-                            error_tx_encoder.send(e).unwrap();
-                        }
-
-                        let (data_blocks, _, parity_blocks) =
-                            buffer.data_padding_parity_block_count();
-
-                        stats.data_blocks_written += data_blocks as u64;
-                        stats.parity_blocks_written += parity_blocks as u64;
-
-                        to_writer.send(Some(buffer)).unwrap();
-                    }
-                    None => break,
+                if let Err(e) = buffer.encode() {
+                    error_tx_encoder.send(e).unwrap();
+                    break;
                 }
+
+                let (data_blocks, _, parity_blocks) =
+                    buffer.data_padding_parity_block_count();
+
+                stats.data_blocks_written += data_blocks as u64;
+                stats.parity_blocks_written += parity_blocks as u64;
+
+                to_writer.send(Some(buffer)).unwrap();
             }
 
             to_writer.send(None).unwrap();
-
-            while let Some(_) = from_reader.recv().unwrap() {
-                continue;
-            }
         })
     };
 
@@ -1092,24 +1084,16 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         let writer = Arc::clone(&writer);
 
         thread::spawn(move || {
-            loop {
-                match from_encoder.recv().unwrap() {
-                    Some(mut buffer) => {
-                        if let Err(e) = buffer.write(&mut writer.lock().unwrap()) {
-                            error_tx_writer.send(e).unwrap();
-                        }
-
-                        to_reader.send(Some(buffer)).unwrap();
-                    }
-                    None => break,
+            while let Some(mut buffer) = from_encoder.recv().unwrap() {
+                if let Err(e) = buffer.write(&mut writer.lock().unwrap()) {
+                    error_tx_writer.send(e).unwrap();
+                    break;
                 }
+
+                to_reader.send(Some(buffer)).unwrap();
             }
 
             to_reader.send(None).unwrap();
-
-            while let Some(_) = from_encoder.recv().unwrap() {
-                continue;
-            }
         })
     };
 
