@@ -19,6 +19,8 @@
     - In some occasion, the summary of progress, specifically the time elapsed and average rate, may not be correctly calculated
 - Fixed check and decode mode reference block checking
     - Previously it may accept a reference block which does not contain `RSD` or `RSP` field even though it is required for version 17, 18, 19
+- Fixed check and decode mode burst error resistance level guessing start position calculation
+    - Previously it defaults to from_pos position, but should just default to start of file, i.e. uncoupled to any other position options
 
 ## 7.1.0
 
