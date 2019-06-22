@@ -57,7 +57,6 @@ clap                 = "~ 2.33.0"
 ctrlc                = "~ 3.1.2"
 num_cpus             = "~ 1.10.1"
 rayon                = "~ 1.1.0"
-crossbeam-channel    = "~ 0.3.8"
 
 [dev-dependencies]
 quickcheck = "~ 0.8.2"
