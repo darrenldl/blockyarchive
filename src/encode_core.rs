@@ -48,9 +48,9 @@ use smallvec::SmallVec;
 
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
-const LOT_COUNT_PER_CPU: usize = 20;
+const LOT_COUNT_PER_CPU: usize = 10;
 
-const PIPELINE_BUFFER_IN_ROTATION: usize = 3;
+const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
 #[derive(Clone, Debug)]
 pub struct Stats {
