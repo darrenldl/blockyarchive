@@ -25,6 +25,13 @@ Specify this if you want blkar to report blank blocks as well.",
         .arg(ref_from_byte_arg())
         .arg(ref_to_byte_inc_arg())
         .arg(ref_to_byte_exc_arg())
+        .arg(burst_arg().help(
+            "Burst error resistance level used by the container.
+Use this if the level used by the container is above 1000,
+as blkar will only guess up to 1000. Or use this when blkar
+fails to guess correctly. blkar uses this value only if
+--hash is specified.",
+        ))
         .arg(guess_burst_from_byte_arg())
         .arg(
             Arg::with_name("hash")
