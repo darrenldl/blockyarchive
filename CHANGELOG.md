@@ -8,7 +8,7 @@
   
     - For SBX encoding
       
-        - Performance of encode mode is roughly 40% faster
+        - Performance of encode mode is roughly 75% faster
   
     - For ECSBX encoding
       
