@@ -749,8 +749,9 @@ pub fn decode(
         param.from_pos,
         param.guess_burst_from_pos,
         param.force_misalign,
+        "decode",
         &param.in_file,
-    );
+    )?;
 
     let data_size = ver_to_data_size(version);
     let data_size_of_last_data_block = match orig_file_size {

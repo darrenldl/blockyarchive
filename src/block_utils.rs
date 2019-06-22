@@ -553,40 +553,36 @@ pub fn get_data_par_burst_from_ref_block_and_in_file(
     from_pos: Option<u64>,
     guess_burst_from_pos: Option<u64>,
     force_misalign: bool,
+    purpose: &str,
     in_file: &str,
-) -> Option<(usize, usize, usize)> {
+) -> Result<Option<(usize, usize, usize)>, Error> {
     if ver_uses_rs(ref_block.get_version()) && ref_block.is_meta() {
-        match (ref_block.get_RSD(), ref_block.get_RSP()) {
-            (Ok(Some(data)), Ok(Some(parity))) => {
-                let data = data as usize;
-                let parity = parity as usize;
+        let data = get_RSD_from_ref_block!(ref_block_pos, ref_block, purpose);
+        let parity = get_RSP_from_ref_block!(ref_block_pos, ref_block, purpose);
 
-                let guess_burst_from_pos = match guess_burst_from_pos {
-                    Some(x) => Some(GuessBurstFromPos::NoShift(x)),
-                    None => match from_pos {
-                        None => None,
-                        Some(x) => Some(GuessBurstFromPos::ShiftToStart(x)),
-                    },
-                };
+        let guess_burst_from_pos = match guess_burst_from_pos {
+            Some(x) => Some(GuessBurstFromPos::NoShift(x)),
+            None => match from_pos {
+                None => None,
+                Some(x) => Some(GuessBurstFromPos::ShiftToStart(x)),
+            },
+        };
 
-                // try to obtain burst error resistance level
-                match burst {
-                    Some(l) => Some((data, parity, l)),
-                    None => match guess_burst_err_resistance_level(
-                        in_file,
-                        guess_burst_from_pos,
-                        force_misalign,
-                        ref_block_pos,
-                        ref_block,
-                    ) {
-                        Ok(Some(l)) => Some((data, parity, l)),
-                        _ => Some((data, parity, 0)), // assume burst resistance level is 0
-                    },
-                }
-            }
-            _ => None,
-        }
+        // try to obtain burst error resistance level
+        Ok(match burst {
+            Some(l) => Some((data, parity, l)),
+            None => match guess_burst_err_resistance_level(
+                in_file,
+                guess_burst_from_pos,
+                force_misalign,
+                ref_block_pos,
+                ref_block,
+            ) {
+                Ok(Some(l)) => Some((data, parity, l)),
+                _ => Some((data, parity, 0)), // assume burst resistance level is 0
+            },
+        })
     } else {
-        None
+        Ok(None)
     }
 }

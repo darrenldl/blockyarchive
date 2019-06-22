@@ -456,8 +456,9 @@ fn hash(
         param.from_pos,
         param.guess_burst_from_pos,
         param.force_misalign,
+        "check",
         &param.in_file,
-    );
+    )?;
 
     let version = ref_block.get_version();
 
