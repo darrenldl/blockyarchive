@@ -4,7 +4,7 @@
 
 - Updated file error messages casing
 
-- Parallelised encode core
+- Added multithreading and operation pipelining to encode core
   
     - For SBX encoding
       
@@ -12,7 +12,9 @@
   
     - For ECSBX encoding
       
-        - Performance of encode mode now scales roughly linearly to number of CPU cores for default settings
+        - Performance of encode mode now scales roughly linearly to number of CPU cores for version 17, 18
+- Fixed progress reporting code synchronisation issue
+    - In some occasion, the summary of progress, specifically the time elapsed and average rate, may not be correctly calculated
 
 ## 7.1.0
 
