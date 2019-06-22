@@ -1068,8 +1068,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
         thread::spawn(move || {
             while let Some(mut buffer) = from_reader.recv().unwrap() {
-                let mut stats = stats.lock().unwrap();
-
                 if let Err(e) = buffer.encode() {
                     error_tx_encoder.send(e).unwrap();
                     break;
@@ -1077,8 +1075,12 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                 let (data_blocks, _, parity_blocks) = buffer.data_padding_parity_block_count();
 
-                stats.data_blocks_written += data_blocks as u64;
-                stats.parity_blocks_written += parity_blocks as u64;
+                {
+                    let mut stats = stats.lock().unwrap();
+
+                    stats.data_blocks_written += data_blocks as u64;
+                    stats.parity_blocks_written += parity_blocks as u64;
+                }
 
                 to_writer.send(Some(buffer)).unwrap();
             }
