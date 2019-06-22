@@ -94,74 +94,74 @@ impl fmt::Display for Stats {
             write_maybe_json!(
                 f,
                 json_printer,
-                "File UID                               : {}",
+                "File UID                            : {}",
                 misc_utils::bytes_to_upper_hex_string(&self.uid)
                     => force_quotes
             )?;
             write_maybe_json!(
                 f,
                 json_printer,
-                "SBX version                            : {}",
+                "SBX version                         : {}",
                 ver_to_usize(self.version)
             )?;
             write_maybe_json!(
                 f,
                 json_printer,
-                "Block size used in encoding            : {}",
+                "Block size used in encoding         : {}",
                 block_size
             )?;
             write_maybe_json!(
                 f,
                 json_printer,
-                "Data  size used in encoding            : {}",
+                "Data  size used in encoding         : {}",
                 data_size
             )?;
             write_maybe_json!(
                 f,
                 json_printer,
-                "Number of blocks written               : {}",
+                "Number of blocks written            : {}",
                 blocks_written
             )?;
             write_maybe_json!(
                 f,
                 json_printer,
-                "Number of blocks written (metadata)    : {}",
+                "Number of blocks written (metadata) : {}",
                 meta_blocks_written
             )?;
             write_maybe_json!(
                 f,
                 json_printer,
-                "Number of blocks written (data)        : {}",
+                "Number of blocks written (data)     : {}",
                 data_blocks_written
             )?;
             write_maybe_json!(
                 f,
                 json_printer,
-                "Number of blocks written (parity)      : {}",
+                "Number of blocks written (parity)   : {}",
                 parity_blocks_written
             )?;
             write_maybe_json!(
                 f,
                 json_printer,
-                "Amount of data encoded (bytes)         : {}",
+                "Amount of data encoded (bytes)      : {}",
                 data_bytes_encoded
             )?;
             write_maybe_json!(
                 f,
                 json_printer,
-                "File size                              : {}",
+                "File size                           : {}",
                 in_file_size
             )?;
             write_maybe_json!(
                 f,
                 json_printer,
-                "SBX container size                     : {}",
+                "SBX container size                  : {}",
                 out_file_size
             )?;
             write_maybe_json!(
                 f,
                 json_printer,
-                "Hash                                   : {}",
+                "Hash                                : {}",
                 match self.hash_bytes {
                     None => null_if_json_else_NA!(json_printer).to_string(),
                     Some(ref h) => format!(
@@ -174,7 +174,7 @@ impl fmt::Display for Stats {
             write_maybe_json!(
                 f,
                 json_printer,
-                "Time elapsed                           : {:02}:{:02}:{:02}",
+                "Time elapsed                        : {:02}:{:02}:{:02}",
                 hour,
                 minute,
                 second
