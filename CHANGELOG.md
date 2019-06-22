@@ -26,7 +26,7 @@
 
 - Fixed help message on behaviour of --ref-from option in check and decode mode
   
-    - It was stated it defaults to start of file, but it should state it defaults to --from option value
+    - It was stated it defaults to start of file, but it should state it defaults to --from option value mod SBX scan block size (128 bytes)
 
 ## 7.1.0
 
