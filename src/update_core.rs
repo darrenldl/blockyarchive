@@ -6,7 +6,7 @@ use crate::progress_report::*;
 use smallvec::SmallVec;
 
 use crate::sbx_specs::{
-    ver_to_block_size, ver_to_usize, ver_uses_rs, Version, SBX_LARGEST_BLOCK_SIZE,
+    ver_to_block_size, ver_to_usize, Version, SBX_LARGEST_BLOCK_SIZE,
 };
 
 use crate::cli_utils::setup_ctrlc_handler;
@@ -274,17 +274,7 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let header_pred = header_pred_same_ver_uid!(ref_block);
 
-    let burst = get_burst_or_guess!(no_offset => param, ref_block_pos, ref_block);
-
-    let data_par_burst = if ver_uses_rs(version) {
-        Some((
-            get_RSD_from_ref_block!(ref_block_pos, ref_block, "update"),
-            get_RSP_from_ref_block!(ref_block_pos, ref_block, "update"),
-            burst,
-        ))
-    } else {
-        None
-    };
+    let data_par_burst = get_data_par_burst!(no_offset => param, ref_block_pos, ref_block, "update");
 
     let stats = Arc::new(Mutex::new(Stats::new(
         &ref_block,

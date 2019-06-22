@@ -742,16 +742,7 @@ pub fn decode(
         None
     };
 
-    let data_par_burst = block_utils::get_data_par_burst_from_ref_block_and_in_file(
-        ref_block_pos,
-        ref_block,
-        param.burst,
-        param.from_pos,
-        param.guess_burst_from_pos,
-        param.force_misalign,
-        "decode",
-        &param.in_file,
-    )?;
+    let data_par_burst = get_data_par_burst!(param, ref_block_pos, ref_block, "decode");
 
     let data_size = ver_to_data_size(version);
     let data_size_of_last_data_block = match orig_file_size {

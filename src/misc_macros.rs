@@ -176,6 +176,39 @@ macro_rules! get_RSP_from_ref_block {
     }}
 }
 
+macro_rules! get_data_par_burst {
+    (
+        no_offset => $param:expr, $ref_block_pos:expr, $ref_block:expr, $purpose:expr
+    ) => {{
+        use crate::sbx_specs::ver_uses_rs;
+
+        if ver_uses_rs($ref_block.get_version()) {
+            Some((
+                get_RSD_from_ref_block!($ref_block_pos, $ref_block, $purpose),
+                get_RSP_from_ref_block!($ref_block_pos, $ref_block, $purpose),
+                get_burst_or_guess!(no_offset => $param, $ref_block_pos, $ref_block),
+            ))
+        } else {
+            None
+        }
+    }};
+    (
+        $param:expr, $ref_block_pos:expr, $ref_block:expr, $purpose:expr
+    ) => {{
+        use crate::sbx_specs::ver_uses_rs;
+
+        if ver_uses_rs($ref_block.get_version()) {
+            Some((
+                get_RSD_from_ref_block!($ref_block_pos, $ref_block, $purpose),
+                get_RSP_from_ref_block!($ref_block_pos, $ref_block, $purpose),
+                get_burst_or_guess!($param, $ref_block_pos, $ref_block),
+            ))
+        } else {
+            None
+        }
+    }};
+}
+
 macro_rules! return_if_not_ver_uses_rs {
     (
         $version:expr, $json_printer:expr
