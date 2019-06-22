@@ -996,12 +996,12 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         thread::spawn(move || {
             let mut run = true;
 
+            let mut data_padding_bytes = 0;
+
             while let Some(mut buffer) = from_writer.recv().unwrap() {
                 if !run {
                     break;
                 }
-
-                let mut stats = stats.lock().unwrap();
 
                 // fill up data buffer
                 while !buffer.is_full() {
@@ -1037,7 +1037,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                     &sbx_block::slice_data_buf(version, slot)[..read_res.len_read],
                                 );
 
-                                stats.data_padding_bytes +=
+                                data_padding_bytes +=
                                     sbx_block::write_padding(version, read_res.len_read, slot);
                             }
                             Err(e) => {
@@ -1055,6 +1055,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             }
 
             to_encoder.send(None).unwrap();
+
+            stats.lock().unwrap().data_padding_bytes = data_padding_bytes;
 
             shutdown_barrier.wait();
         })
