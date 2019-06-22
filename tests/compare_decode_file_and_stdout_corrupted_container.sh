@@ -30,7 +30,7 @@ for ver in ${VERSIONS[*]}; do
 
     echo "Corrupting at $corrupt_count random positions"
     for (( p=0; p < $corrupt_count; p++ )); do
-      pos=$((RANDOM % $file_size))
+      pos=$((4096 + RANDOM % ($file_size - 4096)))
       # echo "#$p corruption, corrupting byte at position : $pos"
       corrupt $pos $container_name
     done
