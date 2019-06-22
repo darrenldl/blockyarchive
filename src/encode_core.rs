@@ -5,7 +5,7 @@ use std::fmt;
 use std::fs;
 use std::io::SeekFrom;
 use std::sync::mpsc::channel;
-use std::sync::mpsc::SendError;
+use std::sync::Barrier;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -968,6 +968,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let error_tx_encoder = error_tx_reader.clone();
     let error_tx_writer = error_tx_reader.clone();
 
+    let worker_shutdown_barrier = Arc::new(Barrier::new(3));
+
     // push buffers into pipeline
     for i in 0..PIPELINE_BUFFER_IN_ROTATION {
         to_reader
@@ -988,6 +990,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         let version = param.version;
         let stats = Arc::clone(&stats);
         let hash_ctx = Arc::clone(&hash_ctx);
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
 
         thread::spawn(move || {
             let mut run = true;
@@ -1047,17 +1050,18 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                 break_if_atomic_bool!(ctrlc_stop_flag);
 
-                if let Err(SendError(_)) = to_encoder.send(Some(buffer)) {
-                    break;
-                }
+                to_encoder.send(Some(buffer)).unwrap();
             }
 
-            to_encoder.send(None).unwrap_or(());
+            to_encoder.send(None).unwrap();
+
+            shutdown_barrier.wait();
         })
     };
 
     let encoder_thread = {
         let stats = Arc::clone(&stats);
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
 
         thread::spawn(move || {
             while let Some(mut buffer) = from_reader.recv().unwrap() {
@@ -1073,17 +1077,18 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 stats.data_blocks_written += data_blocks as u64;
                 stats.parity_blocks_written += parity_blocks as u64;
 
-                if let Err(SendError(_)) = to_writer.send(Some(buffer)) {
-                    break;
-                }
+                to_writer.send(Some(buffer)).unwrap();
             }
 
-            to_writer.send(None).unwrap_or(());
+            to_writer.send(None).unwrap();
+
+            shutdown_barrier.wait();
         })
     };
 
     let writer_thread = {
         let writer = Arc::clone(&writer);
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
 
         thread::spawn(move || {
             while let Some(mut buffer) = from_encoder.recv().unwrap() {
@@ -1092,12 +1097,12 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     break;
                 }
 
-                if let Err(SendError(_)) = to_reader.send(Some(buffer)) {
-                    break;
-                }
+                to_reader.send(Some(buffer)).unwrap();
             }
 
-            to_reader.send(None).unwrap_or(());
+            to_reader.send(None).unwrap();
+
+            shutdown_barrier.wait();
         })
     };
 
