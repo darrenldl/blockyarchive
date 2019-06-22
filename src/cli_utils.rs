@@ -172,11 +172,10 @@ pub fn ref_from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
             "First position to try to search for a reference block. The position
 is automatically rounded down to the closest multiple of 128 bytes.
 If this option is not specified, defaults to value of --from option
-modulo SBX scan block size (128).
-Negative values are rejected. If FROM-BYTE exceeds the largest
-possible position (file size - 1), then it will be treated as
-(file size - 1). The rounding procedure is applied after all
-auto-adjustments.",
+modulo SBX scan block size (128). Negative values are rejected.
+If FROM-BYTE exceeds the largest possible position (file size - 1),
+then it will be treated as (file size - 1). The rounding procedure
+is applied after all auto-adjustments.",
         )
 }
 
