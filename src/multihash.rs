@@ -137,11 +137,13 @@ pub mod hash {
 
     use blake2::{VarBlake2b, VarBlake2s};
 
+    #[derive(Clone, Debug)]
     pub struct Ctx {
         ctx: _Ctx,
     }
 
     #[allow(non_camel_case_types)]
+    #[derive(Clone, Debug)]
     enum _Ctx {
         SHA1(sha1::Sha1),
         SHA256(sha2::Sha256),
