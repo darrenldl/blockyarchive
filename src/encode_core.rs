@@ -9,6 +9,8 @@ use std::sync::Barrier;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+use crossbeam_channel;
+
 use crate::misc_utils::RequiredLenAndSeekTo;
 
 use crate::json_printer::{BracketType, JSONPrinter};
@@ -961,9 +963,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         )?;
     }
 
-    let (to_encoder, from_reader) = channel::<Option<DataBlockBuffer>>();
-    let (to_writer, from_encoder) = channel::<Option<DataBlockBuffer>>();
-    let (to_reader, from_writer) = channel::<Option<DataBlockBuffer>>();
+    let (to_encoder, from_reader) = crossbeam_channel::bounded(PIPELINE_BUFFER_IN_ROTATION);
+    let (to_writer, from_encoder) = crossbeam_channel::bounded(PIPELINE_BUFFER_IN_ROTATION);
+    let (to_reader, from_writer) = crossbeam_channel::bounded(PIPELINE_BUFFER_IN_ROTATION);
     let (error_tx_reader, error_rx) = channel::<Error>();
     let error_tx_encoder = error_tx_reader.clone();
     let error_tx_writer = error_tx_reader.clone();

@@ -24,6 +24,8 @@ extern crate sha2;
 
 extern crate num_cpus;
 
+extern crate crossbeam_channel;
+
 mod crc_ccitt;
 
 macro_rules! break_if_eof_seen {
