@@ -13,8 +13,12 @@
     - For ECSBX encoding
       
         - Performance of encode mode now scales roughly linearly to number of CPU cores for version 17, 18
+
 - Fixed progress reporting code synchronisation issue
+  
     - In some occasion, the summary of progress, specifically the time elapsed and average rate, may not be correctly calculated
+- Fixed check and decode mode reference block checking
+    - Previously it may accept a reference block which does not contain `RSD` or `RSP` field even though it is required for version 17, 18, 19
 
 ## 7.1.0
 
