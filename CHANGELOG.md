@@ -16,21 +16,24 @@
 
 - Fixed progress reporting code synchronisation issue
   
-    - In some occasion, the summary of progress, specifically the time elapsed and average rate, may not be correctly calculated
+    - On some occasions, the summary of progress, specifically the time elapsed and average rate, may not be correctly calculated
 
 - Fixed check and decode mode reference block checking
   
     - Previously it may accept a reference block which does not contain `RSD` or `RSP` field even though it is required for version 17, 18, 19
 
-- Fixed help message on behaviour of --guess-burst-from option in check and decode mode
+- Fixed help message on behaviour of --guess-burst-from option
   
     - It was stated it defaults to start of file, but it should state it defaults to --from option value
 
-- Fixed help message on behaviour of --ref-from option in check and decode mode
+- Fixed help message on behaviour of --ref-from option
   
     - It was stated it defaults to start of file, but it should state it defaults to --from option value mod SBX scan block size (128)
+
 - Added missing --burst option to check mode
+
 - Fixed input file size checking for encode mode
+
     - Previously for SBX version 17, 18, 19, blkar fails to take data and parity shard ratio into account
 
 ## 7.1.0
