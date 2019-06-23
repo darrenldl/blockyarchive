@@ -88,6 +88,7 @@ tests=(
   "update_snm_tests"
   "update_no_snm_tests"
   "check_hash_tests"
+  "check_hash_tests_manual_burst"
   "check_hash_only_tests"
   "verify_encode_help_msg_consistent_w_actual_defaults"
 )
