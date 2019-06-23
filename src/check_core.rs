@@ -23,7 +23,6 @@ use crate::multihash::*;
 use crate::sbx_block;
 use crate::sbx_specs::{ver_to_block_size, ver_to_data_size, ver_to_usize, SBX_LARGEST_BLOCK_SIZE};
 
-use crate::block_utils;
 use crate::time_utils;
 
 use crate::block_utils::RefBlockChoice;
@@ -449,15 +448,7 @@ fn hash(
 ) -> Result<(HashStats, HashBytes), Error> {
     let stats = Arc::new(Mutex::new(HashStats::new(orig_file_size)));
 
-    let data_par_burst = block_utils::get_data_par_burst_from_ref_block_and_in_file(
-        ref_block_pos,
-        ref_block,
-        param.burst,
-        param.from_pos,
-        param.guess_burst_from_pos,
-        param.force_misalign,
-        &param.in_file,
-    );
+    let data_par_burst = get_data_par_burst!(param, ref_block_pos, ref_block, "check");
 
     let version = ref_block.get_version();
 

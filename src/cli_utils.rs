@@ -155,7 +155,7 @@ pub fn guess_burst_from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
         .help(
             "Position to start guessing burst error resistance level. The position
 is automatically rounded down to the closest multiple of (ref block size) bytes.
-If this option is not specified, defaults to the start of file.
+If this option is not specified, defaults to value of --from option.
 Negative values are rejected. If FROM-BYTE exceeds the largest
 possible position (file size - 1), then it will be treated as
 (file size - 1). The rounding procedure is applied after all
@@ -171,11 +171,11 @@ pub fn ref_from_byte_arg<'a, 'b>() -> Arg<'a, 'b> {
         .help(
             "First position to try to search for a reference block. The position
 is automatically rounded down to the closest multiple of 128 bytes.
-If this option is not specified, defaults to the start of file.
-Negative values are rejected. If FROM-BYTE exceeds the largest
-possible position (file size - 1), then it will be treated as
-(file size - 1). The rounding procedure is applied after all
-auto-adjustments.",
+If this option is not specified, defaults to value of --from option
+modulo SBX scan block size (128). Negative values are rejected.
+If FROM-BYTE exceeds the largest possible position (file size - 1),
+then it will be treated as (file size - 1). The rounding procedure
+is applied after all auto-adjustments.",
         )
 }
 

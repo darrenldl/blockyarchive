@@ -283,19 +283,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
     let stats = Arc::new(Mutex::new(Stats::new(&ref_block, file_size, json_printer)));
 
     let version = ref_block.get_version();
-    let rs_enabled = ver_uses_rs(version);
 
-    let burst = get_burst_or_guess!(param, ref_block_pos, ref_block);
-
-    let data_par_burst = if rs_enabled {
-        Some((
-            get_RSD_from_ref_block!(ref_block_pos, ref_block, "sort"),
-            get_RSP_from_ref_block!(ref_block_pos, ref_block, "sort"),
-            burst,
-        ))
-    } else {
-        None
-    };
+    let data_par_burst = get_data_par_burst!(param, ref_block_pos, ref_block, "sort");
 
     let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 

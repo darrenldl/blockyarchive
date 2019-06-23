@@ -298,13 +298,8 @@ pub fn repair_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let block_size = ver_to_block_size(version);
 
-    let burst = get_burst_or_guess!(no_offset => param, ref_block_pos, ref_block);
-
-    let data_par_burst = Some((
-        get_RSD_from_ref_block!(ref_block_pos, ref_block, "repair"),
-        get_RSP_from_ref_block!(ref_block_pos, ref_block, "repair"),
-        burst,
-    ));
+    let data_par_burst =
+        get_data_par_burst!(no_offset => param, ref_block_pos, ref_block, "repair");
 
     let total_block_count = {
         use crate::file_utils::from_orig_file_size::calc_total_block_count_exc_burst_gaps;

@@ -192,23 +192,33 @@ macro_rules! get_in_file {
     }};
 }
 
-macro_rules! get_data_shards {
+macro_rules! get_data_or_parity_shards {
     (
-        $matches:expr, $version:expr, $json_printer:expr
+        data => $matches:expr, $version:expr, $json_printer:expr
+    ) => {{
+        get_data_or_parity_shards!("rs_data", "data", $matches, $version, $json_printer)
+    }};
+    (
+        parity => $matches:expr, $version:expr, $json_printer:expr
+    ) => {{
+        get_data_or_parity_shards!("rs_parity", "parity", $matches, $version, $json_printer)
+    }};
+    (
+        $match_val:expr, $data_or_par:expr, $matches:expr, $version:expr, $json_printer:expr
     ) => {{
         use crate::sbx_specs::ver_to_usize;
 
         let ver_usize = ver_to_usize($version);
 
-        match $matches.value_of("rs_data") {
+        match $matches.value_of($match_val) {
             None    => {
-                exit_with_msg!(usr $json_printer => "Reed-Solomon erasure code data shard count must be specified for version {}", ver_usize);
+                exit_with_msg!(usr $json_printer => "Reed-Solomon erasure code {} shard count must be specified for version {}", $data_or_par, ver_usize);
             },
             Some(x) => {
                 match usize::from_str(&x) {
                     Ok(x)  => x,
                     Err(_) => {
-                        exit_with_msg!(usr $json_printer => "Failed to parse Reed-Solomon erasure code data shard count");
+                        exit_with_msg!(usr $json_printer => "Failed to parse Reed-Solomon erasure code {} shard count", $data_or_par);
                     }
                 }
             }
@@ -216,27 +226,19 @@ macro_rules! get_data_shards {
     }}
 }
 
+macro_rules! get_data_shards {
+    (
+        $matches:expr, $version:expr, $json_printer:expr
+    ) => {{
+        get_data_or_parity_shards!(data => $matches, $version, $json_printer)
+    }}
+}
+
 macro_rules! get_parity_shards {
     (
         $matches:expr, $version:expr, $json_printer:expr
     ) => {{
-        use crate::sbx_specs::ver_to_usize;
-
-        let ver_usize = ver_to_usize($version);
-
-        match $matches.value_of("rs_parity") {
-            None    => {
-                exit_with_msg!(usr $json_printer => "Reed-Solomon erasure code parity shard count must be specified for version {}", ver_usize);
-            },
-            Some(x) => {
-                match usize::from_str(&x) {
-                    Ok(x)  => x,
-                    Err(_) => {
-                        exit_with_msg!(usr $json_printer => "Failed to parse Reed-Solomon erasure code parity shard count");
-                    }
-                }
-            }
-        }
+        get_data_or_parity_shards!(parity => $matches, $version, $json_printer)
     }}
 }
 

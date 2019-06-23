@@ -59,7 +59,7 @@ for ver in ${VERSIONS[*]}; do
     done
 
     echo -n "Repairing without --burst"
-    output=$(./../blkar repair --json --verbose $container_name)
+    output=$(./../blkar repair --json --verbose --dry-run $container_name)
     # blkar may error out as guessing burst error level may fail entirely,
     # so only check for values if it didn't error out
     if [[ $(echo $output | jq -r ".error") == null ]]; then

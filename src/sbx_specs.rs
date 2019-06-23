@@ -145,8 +145,20 @@ pub fn ver_forces_meta_enabled(version: Version) -> bool {
     }
 }
 
-pub fn ver_to_max_data_file_size(version: Version) -> u64 {
-    let data_block_size = ver_to_data_size(version) as u64;
+pub fn ver_to_max_data_file_size(
+    version: Version,
+    data_par_burst: Option<(usize, usize, usize)>,
+) -> u64 {
+    let data_size = ver_to_data_size(version) as u64;
 
-    SBX_MAX_DATA_BLOCK_COUNT as u64 * data_block_size
+    if ver_uses_rs(version) {
+        let (data, parity, _) = data_par_burst.unwrap();
+
+        let block_set_size = (data + parity) as u64;
+        let max_block_set_count = SBX_MAX_DATA_BLOCK_COUNT as u64 / block_set_size;
+
+        max_block_set_count * data as u64 * data_size
+    } else {
+        SBX_MAX_DATA_BLOCK_COUNT as u64 * data_size
+    }
 }

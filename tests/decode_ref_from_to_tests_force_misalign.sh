@@ -27,7 +27,7 @@ rm dummy.ecsbx.tmp
 
 echo -n "Decoding dummy disk"
 
-output=$(./../blkar decode -f --json --ref-from $offset --force-misalign dummy.ecsbx)
+output=$(./../blkar decode -f --json --ref-from $offset --burst 0 --force-misalign dummy.ecsbx)
 if [[ $(echo $output | jq -r ".error") == "null" ]]; then
   echo -n " ==> Okay"
 else
@@ -37,7 +37,7 @@ fi
 
 corrupt $offset dummy.ecsbx
 
-output=$(./../blkar decode -f --json --ref-from $offset --ref-to-inc $offset --force-misalign dummy.ecsbx)
+output=$(./../blkar decode -f --json --ref-from $offset --ref-to-inc $offset --burst 0 --force-misalign dummy.ecsbx)
 if [[ $(echo $output | jq -r ".error") == "Error : Failed to find reference block" ]]; then
   echo -n " ==> Okay"
 else
@@ -45,7 +45,7 @@ else
   exit_code=1
 fi
 
-output=$(./../blkar decode -f --json --ref-from $[offset + 512] --force-misalign dummy.ecsbx)
+output=$(./../blkar decode -f --json --ref-from $[offset + 512] --burst 0 --force-misalign dummy.ecsbx)
 if [[ $(echo $output | jq -r ".error") == "null" ]]; then
   echo " ==> Okay"
 else

@@ -135,45 +135,95 @@ macro_rules! write_block {
     }}
 }
 
+macro_rules! get_RSD_or_RSP_from_ref_block {
+    (
+        RSD => $ref_block_pos:expr, $ref_block:expr, $purpose:expr
+    ) => {{
+        get_RSD_or_RSP_from_ref_block!("RSD", get_RSD, $ref_block_pos, $ref_block, $purpose)
+    }};
+    (
+        RSP => $ref_block_pos:expr, $ref_block:expr, $purpose:expr
+    ) => {{
+        get_RSD_or_RSP_from_ref_block!("RSP", get_RSP, $ref_block_pos, $ref_block, $purpose)
+    }};
+    (
+        $id:expr, $getter_func:ident, $ref_block_pos:expr, $ref_block:expr, $purpose:expr
+    ) => {{
+        use crate::sbx_specs::ver_to_usize;
+        use crate::sbx_block;
+        use crate::general_error::Error;
+
+        let ver_usize = ver_to_usize($ref_block.get_version());
+        match $ref_block.$getter_func() {
+            Err(sbx_block::Error::IncorrectBlockType) => {
+                return Err(Error::with_msg(&format!("Reference block at byte {} (0x{:X}) is not a metadata block but must be one to {} for version {}",
+                                                    $ref_block_pos,
+                                                    $ref_block_pos,
+                                                    $purpose,
+                                                    ver_usize,
+                )));
+            },
+            Err(_) => unreachable!(),
+            Ok(None) => {
+                return Err(Error::with_msg(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have {} field (must be present to {} for version {})",
+                                                    $ref_block_pos,
+                                                    $ref_block_pos,
+                                                    $id,
+                                                    $purpose,
+                                                    ver_usize)));
+            },
+            Ok(Some(x)) => x as usize,
+        }
+    }}
+}
+
 macro_rules! get_RSD_from_ref_block {
     (
         $ref_block_pos:expr, $ref_block:expr, $purpose:expr
     ) => {{
-        use crate::sbx_specs::ver_to_usize;
-        use crate::general_error::Error;
-
-        let ver_usize = ver_to_usize($ref_block.get_version());
-        match $ref_block.get_RSD().unwrap() {
-            None    => {
-                return Err(Error::with_msg(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSD field (must be present to {} for version {})",
-                                                        $ref_block_pos,
-                                                        $ref_block_pos,
-                                                        $purpose,
-                                                        ver_usize)));
-            },
-            Some(x) => x as usize,
-        }
-    }}
+        get_RSD_or_RSP_from_ref_block!(RSD => $ref_block_pos, $ref_block, $purpose)
+    }};
 }
 
 macro_rules! get_RSP_from_ref_block {
     (
         $ref_block_pos:expr, $ref_block:expr, $purpose:expr
     ) => {{
-        use crate::sbx_specs::ver_to_usize;
+        get_RSD_or_RSP_from_ref_block!(RSP => $ref_block_pos, $ref_block, $purpose)
+    }};
+}
 
-        let ver_usize = ver_to_usize($ref_block.get_version());
-        match $ref_block.get_RSP().unwrap() {
-            None    => {
-                return Err(Error::with_msg(&format!("Reference block at byte {} (0x{:X}) is a metadata block but does not have RSP field ({} for version {})",
-                                                        $ref_block_pos,
-                                                        $ref_block_pos,
-                                                        $purpose,
-                                                        ver_usize)));
-            },
-            Some(x) => x as usize,
+macro_rules! get_data_par_burst {
+    (
+        no_offset => $param:expr, $ref_block_pos:expr, $ref_block:expr, $purpose:expr
+    ) => {{
+        use crate::sbx_specs::ver_uses_rs;
+
+        if ver_uses_rs($ref_block.get_version()) {
+            Some((
+                get_RSD_from_ref_block!($ref_block_pos, $ref_block, $purpose),
+                get_RSP_from_ref_block!($ref_block_pos, $ref_block, $purpose),
+                get_burst_or_guess!(no_offset => $param, $ref_block_pos, $ref_block),
+            ))
+        } else {
+            None
         }
-    }}
+    }};
+    (
+        $param:expr, $ref_block_pos:expr, $ref_block:expr, $purpose:expr
+    ) => {{
+        use crate::sbx_specs::ver_uses_rs;
+
+        if ver_uses_rs($ref_block.get_version()) {
+            Some((
+                get_RSD_from_ref_block!($ref_block_pos, $ref_block, $purpose),
+                get_RSP_from_ref_block!($ref_block_pos, $ref_block, $purpose),
+                get_burst_or_guess!($param, $ref_block_pos, $ref_block),
+            ))
+        } else {
+            None
+        }
+    }};
 }
 
 macro_rules! return_if_not_ver_uses_rs {
