@@ -9,9 +9,7 @@
 
 [Documentation](https://github.com/darrenldl/blockyarchive/wiki)
 
-Blockyarchive/blkar (pronounced "bloc-kar") is an archiver written in Rust that allows you to protect your data from bit rot, and makes it easier to recover the data from failing storage devices.
-
-Blkar supports both SeqBox and EC-SeqBox. Both facilitates data recovery, but only EC-SeqBox provides data repair capability.
+Blockyarchive/blkar (pronounced "bloc-kar") is an archiver written in Rust that offers bit rot protection, and makes it easier to recover the data from failing storage devices. blkar supports both SeqBox and EC-SeqBox archives. Both format facilitate data recovery, but only EC-SeqBox provides data repair capability.
 
 ### What are SeqBox and EC-SeqBox?
 
