@@ -25,7 +25,6 @@ Error-correcting SeqBox (or EC-SeqBox for short) is an extended version of SeqBo
 
 Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
 
-
 ### Features overall
 
 - Data recovery that does not depend on file system metadata (sector level recovery)
@@ -47,7 +46,7 @@ Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
 
 **Installation**
 
-`blkar` is available via [AUR](https://aur.archlinux.org/packages/blkar), [GitHub releases](https://github.com/darrenldl/blockyarchive/releases) or `cargo`
+blkar is available via [AUR](https://aur.archlinux.org/packages/blkar), [GitHub releases](https://github.com/darrenldl/blockyarchive/releases) or `cargo`
 
 ```
 cargo install blkar
