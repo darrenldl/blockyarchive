@@ -145,7 +145,10 @@ pub fn ver_forces_meta_enabled(version: Version) -> bool {
     }
 }
 
-pub fn ver_to_max_data_file_size(version: Version, data_par_burst: Option<(usize, usize, usize)>) -> u64 {
+pub fn ver_to_max_data_file_size(
+    version: Version,
+    data_par_burst: Option<(usize, usize, usize)>,
+) -> u64 {
     let data_size = ver_to_data_size(version) as u64;
 
     if ver_uses_rs(version) {
