@@ -157,7 +157,7 @@ pub fn ver_to_max_data_file_size(
         let block_set_size = (data + parity) as u64;
         let max_block_set_count = SBX_MAX_DATA_BLOCK_COUNT as u64 / block_set_size;
 
-        max_block_set_count * block_set_size * data_size
+        max_block_set_count * data as u64 * data_size
     } else {
         SBX_MAX_DATA_BLOCK_COUNT as u64 * data_size
     }
