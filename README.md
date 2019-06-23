@@ -19,6 +19,10 @@ Error-correcting SeqBox (or EC-SeqBox for short) is an extended version of SeqBo
 
 Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
 
+### Demo
+
+[![asciicast](https://asciinema.org/a/240491.svg)](https://asciinema.org/a/240491)
+
 ### Features overall
 
 - Data recovery that does not depend on file system metadata (sector level recovery)
@@ -35,10 +39,6 @@ Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
 - Only a single file is supported for encoding as SeqBox and EC-SeqBox are both single-file archive formats
     - However, blkar may still be usable when you have multiple files, as blkar supports taking input from stdin during encoding, and also supports outputting to stdout during decoding
     - This means if you have an archiver that supports bundling and unbundling on the fly with pipes, like tar, you can combine the use of the archiver and blkar into one encoding and decoding step
-
-### Demo
-
-[![asciicast](https://asciinema.org/a/240491.svg)](https://asciinema.org/a/240491)
 
 ### Getting started
 
