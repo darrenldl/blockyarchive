@@ -349,7 +349,7 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
                 Err(e) => match e {
                     sbx_block::Error::TooMuchMetadata(_) => {
                         let err_msg = format!("Failed to update metadata block number {} at {} (0x{:X}) due to too much metadata",
-                                                  meta_block_count, p, p);
+                                              meta_block_count, p, p);
                         err = Some(Error::with_msg(&err_msg));
                     }
                     _ => unreachable!(),
