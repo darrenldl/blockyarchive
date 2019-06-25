@@ -37,7 +37,7 @@ pub fn string_to_hash_type(string: &str) -> Result<HashType, ()> {
 
     use self::HashType::*;
 
-    match string.as_str() {
+    let hash_type = match string.as_str() {
         "sha1" => Ok(SHA1),
         "sha2-256" | "sha256" => Ok(SHA256),
         "sha2-512-256" => Ok(SHA2_512_256),
@@ -47,6 +47,11 @@ pub fn string_to_hash_type(string: &str) -> Result<HashType, ()> {
         "blake2s-128" => Ok(BLAKE2S_128),
         "blake2s-256" => Ok(BLAKE2S_256),
         _ => Err(()),
+    };
+
+    match hash_type {
+        Ok(hs) => if hash::hash_type_is_supported(hs) { Ok(hs) } else { Err(()) }
+        Err(()) => Err(())
     }
 }
 
