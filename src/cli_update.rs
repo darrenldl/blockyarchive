@@ -7,6 +7,8 @@ use clap::*;
 use crate::sbx_block::Metadata;
 use crate::sbx_block::MetadataID;
 
+use crate::multihash;
+
 use crate::json_printer::BracketType;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
@@ -63,6 +65,22 @@ This also implies --skip-warning, and changes progress report text
                 .help("Remove SBX container name")
                 .conflicts_with("snm"),
         )
+        .arg(
+            Arg::with_name("hash_type")
+                .long("hash")
+                .value_name("HASH-TYPE")
+                .help("Rehash the stored data. If HSH field already exists, then it
+is replaced with the new hash result. Otherwise a HSH field is
+added for the new hash result.
+HASH-TYPE may be one of (case-insensitive) :
+sha1
+sha256
+sha512
+blake2b-256
+blake2b-512
+blake2s-128
+blake2s-256")
+        )
 }
 
 pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
@@ -75,6 +93,14 @@ pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
     let burst = get_burst_opt!(matches, json_printer);
+
+    let hash_type = match matches.value_of("hash_type") {
+        None => None,
+        Some(x) => match multihash::string_to_hash_type(x) {
+            Ok(x) => Some(x),
+            Err(_) => exit_with_msg!(usr json_printer => "Invalid hash type"),
+        },
+    };
 
     let metas_to_update = {
         let mut res = smallvec![];
@@ -135,6 +161,7 @@ pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
         metas_to_update,
         metas_to_remove,
         &json_printer,
+        hash_type,
         matches.is_present("verbose"),
         pr_verbosity_level,
         burst,

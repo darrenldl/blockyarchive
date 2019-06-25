@@ -1,5 +1,6 @@
 use std::fmt;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::AtomicBool;
 
 use crate::progress_report::*;
 
@@ -24,6 +25,8 @@ use crate::general_error::Error;
 use crate::block_utils::RefBlockChoice;
 use crate::sbx_block::BlockType;
 
+use crate::multihash;
+
 use crate::time_utils;
 
 pub struct Param {
@@ -32,6 +35,7 @@ pub struct Param {
     metas_to_update: SmallVec<[Metadata; 8]>,
     metas_to_remove: SmallVec<[MetadataID; 8]>,
     json_printer: Arc<JSONPrinter>,
+    hash_type: Option<multihash::HashType>,
     verbose: bool,
     pr_verbosity_level: PRVerbosityLevel,
     burst: Option<usize>,
@@ -44,6 +48,7 @@ impl Param {
         metas_to_update: SmallVec<[Metadata; 8]>,
         metas_to_remove: SmallVec<[MetadataID; 8]>,
         json_printer: &Arc<JSONPrinter>,
+        hash_type: Option<multihash::HashType>,
         verbose: bool,
         pr_verbosity_level: PRVerbosityLevel,
         burst: Option<usize>,
@@ -54,6 +59,7 @@ impl Param {
             metas_to_update,
             metas_to_remove,
             json_printer: Arc::clone(json_printer),
+            hash_type,
             verbose,
             pr_verbosity_level,
             burst,
@@ -254,6 +260,122 @@ fn print_block_info_and_meta_changes(
     json_printer.print_close_bracket();
 }
 
+fn update_metadata_blocks(
+    ctrlc_stop_flag: &AtomicBool,
+    param: &Param,
+    ref_block: &Block,
+    json_printer: &Arc<JSONPrinter>,
+    data_par_burst: Option<(usize, usize, usize)>,
+    test_run: bool,
+) -> Result<Stats, Error> {
+    let version = ref_block.get_version();
+
+    let header_pred = header_pred_same_ver_uid!(ref_block);
+
+    let mut block = Block::dummy();
+    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
+    let mut meta_block_count: u64 = 0;
+
+    let stats = Arc::new(Mutex::new(Stats::new(
+        &ref_block,
+        data_par_burst,
+        json_printer,
+    )));
+
+    let reporter = Arc::new(ProgressReporter::new(
+        &stats,
+        if test_run {
+            "SBX metadata block update testing progress"
+        } else {
+            "SBX metadata block update progress"
+        },
+        "blocks",
+        param.pr_verbosity_level,
+        param.json_printer.json_enabled(),
+    ));
+
+    let mut reader = FileReader::new(
+        &param.in_file,
+        FileReaderParam {
+            write: !param.dry_run,
+            buffered: false,
+        },
+    )?;
+
+    let mut err = None;
+
+    if param.verbose && !test_run {
+        json_printer.print_open_bracket(Some("metadata changes"), BracketType::Square);
+    }
+    for &p in sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst).iter() {
+        break_if_atomic_bool!(ctrlc_stop_flag);
+
+        if let Some(_) = err {
+            break;
+        }
+
+        reader.seek(SeekFrom::Start(p))?;
+        let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
+
+        break_if_eof_seen!(read_res);
+
+        break_if_eof_seen!(read_res);
+
+        let block_okay = match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
+            Ok(()) => true,
+            Err(_) => false,
+        } && block.is_meta();
+
+        if block_okay {
+            let old_metas = block.metas().unwrap().clone();
+
+            update_metas(&mut block, &param.metas_to_update);
+            remove_metas(&mut block, &param.metas_to_remove);
+
+            match block.sync_to_buffer(None, &mut buffer) {
+                Ok(()) => {
+                    if param.verbose {
+                        pause_reporter!(reporter =>
+                                        print_block_info_and_meta_changes(param, meta_block_count, p, &old_metas););
+                    }
+
+                    if !param.dry_run {
+                        reader.seek(SeekFrom::Start(p))?;
+                        reader.write(sbx_block::slice_buf(version, &buffer))?;
+                    }
+
+                    stats.lock().unwrap().meta_blocks_updated += 1;
+                }
+                Err(e) => match e {
+                    sbx_block::Error::TooMuchMetadata(_) => {
+                        let err_msg = format!("Failed to update metadata block number {} at {} (0x{:X}) due to too much metadata",
+                                              meta_block_count, p, p);
+                        err = Some(Error::with_msg(&err_msg));
+                    }
+                    _ => unreachable!(),
+                },
+            }
+        } else {
+            stats.lock().unwrap().meta_blocks_decode_failed += 1;
+        }
+
+        meta_block_count += 1;
+    }
+    if param.verbose && !test_run {
+        json_printer.print_close_bracket();
+    }
+
+    reporter.stop();
+
+    let stats = stats.lock().unwrap().clone();
+
+    match err {
+        None => Ok(stats),
+        Some(e) => Err(e),
+    }
+}
+
 pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
@@ -307,8 +429,8 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
     let mut err = None;
 
     if param.verbose {
-        json_printer.print_open_bracket(Some("metadata changes"), BracketType::Square)
-    };
+        json_printer.print_open_bracket(Some("metadata changes"), BracketType::Square);
+    }
     for &p in sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst).iter() {
         break_if_atomic_bool!(ctrlc_stop_flag);
 
