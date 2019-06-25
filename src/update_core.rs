@@ -390,109 +390,17 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
                                                     ctrlc_stop_flag
     );
 
-    let version = ref_block.get_version();
-
-    let header_pred = header_pred_same_ver_uid!(ref_block);
-
     let data_par_burst =
         get_data_par_burst!(no_offset => param, ref_block_pos, ref_block, "update");
 
-    let stats = Arc::new(Mutex::new(Stats::new(
-        &ref_block,
-        data_par_burst,
-        json_printer,
-    )));
-
-    let mut reader = FileReader::new(
-        &param.in_file,
-        FileReaderParam {
-            write: !param.dry_run,
-            buffered: true,
-        },
-    )?;
-
-    let mut block = Block::dummy();
-    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
-
-    let mut meta_block_count: u64 = 0;
-
-    let reporter = Arc::new(ProgressReporter::new(
-        &stats,
-        "SBX metadata block updating progress",
-        "blocks",
-        param.pr_verbosity_level,
-        param.json_printer.json_enabled(),
-    ));
-
-    reporter.start();
-
-    let mut err = None;
-
-    if param.verbose {
-        json_printer.print_open_bracket(Some("metadata changes"), BracketType::Square);
-    }
-    for &p in sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst).iter() {
-        break_if_atomic_bool!(ctrlc_stop_flag);
-
-        if let Some(_) = err {
-            break;
-        }
-
-        reader.seek(SeekFrom::Start(p))?;
-        let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
-
-        break_if_eof_seen!(read_res);
-
-        let block_okay = match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
-            Ok(()) => true,
-            Err(_) => false,
-        } && block.is_meta();
-
-        if block_okay {
-            let old_metas = block.metas().unwrap().clone();
-
-            update_metas(&mut block, &param.metas_to_update);
-            remove_metas(&mut block, &param.metas_to_remove);
-
-            match block.sync_to_buffer(None, &mut buffer) {
-                Ok(()) => {
-                    if param.verbose {
-                        pause_reporter!(reporter =>
-                                        print_block_info_and_meta_changes(param, meta_block_count, p, &old_metas););
-                    }
-
-                    if !param.dry_run {
-                        reader.seek(SeekFrom::Start(p))?;
-                        reader.write(sbx_block::slice_buf(version, &buffer))?;
-                    }
-
-                    stats.lock().unwrap().meta_blocks_updated += 1;
-                }
-                Err(e) => match e {
-                    sbx_block::Error::TooMuchMetadata(_) => {
-                        let err_msg = format!("Failed to update metadata block number {} at {} (0x{:X}) due to too much metadata",
-                                              meta_block_count, p, p);
-                        err = Some(Error::with_msg(&err_msg));
-                    }
-                    _ => unreachable!(),
-                },
-            }
-        } else {
-            stats.lock().unwrap().meta_blocks_decode_failed += 1;
-        }
-
-        meta_block_count += 1;
-    }
-    if param.verbose {
-        json_printer.print_close_bracket()
-    };
-
-    reporter.stop();
-
-    let stats = stats.lock().unwrap().clone();
-
-    match err {
-        None => Ok(Some(stats)),
-        Some(e) => Err(e),
+    match update_metadata_blocks(&ctrlc_stop_flag,
+                           param,
+                           &ref_block,
+                           &json_printer,
+                           data_par_burst,
+                           false,
+    ) {
+        Ok(s) => Ok(Some(s)),
+        Err(e) => Err(e),
     }
 }
