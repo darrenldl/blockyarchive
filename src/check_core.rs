@@ -30,6 +30,8 @@ use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 use crate::hash_stats::HashStats;
 
+use crate::sbx_container_content;
+
 pub enum HashAction {
     NoHash,
     HashAfterCheck,
@@ -318,7 +320,7 @@ impl fmt::Display for Stats {
 
 fn check_blocks(
     param: &Param,
-    ctrlc_stop_flag: &Arc<AtomicBool>,
+    ctrlc_stop_flag: &AtomicBool,
     required_len: u64,
     seek_to: u64,
     ref_block: &Block,
@@ -440,7 +442,7 @@ fn check_blocks(
 
 fn hash(
     param: &Param,
-    ctrlc_stop_flag: &Arc<AtomicBool>,
+    ctrlc_stop_flag: &AtomicBool,
     orig_file_size: u64,
     ref_block_pos: u64,
     ref_block: &Block,
@@ -450,89 +452,15 @@ fn hash(
 
     let data_par_burst = get_data_par_burst!(param, ref_block_pos, ref_block, "check");
 
-    let version = ref_block.get_version();
-
-    let data_chunk_size = ver_to_data_size(version) as u64;
-
-    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
-
-    let mut reader = FileReader::new(
-        &param.in_file,
-        FileReaderParam {
-            write: false,
-            buffered: true,
-        },
-    )?;
-
-    let mut block = Block::dummy();
-
-    let reporter = Arc::new(ProgressReporter::new(
-        &stats,
-        "Stored data hashing progress",
-        "bytes",
-        param.pr_verbosity_level,
-        param.json_printer.json_enabled(),
-    ));
-
-    let header_pred = header_pred_same_ver_uid!(ref_block);
-
-    reporter.start();
-
-    // go through data and parity blocks
-    let mut seq_num = 1;
-    loop {
-        let mut stats = stats.lock().unwrap();
-
-        break_if_atomic_bool!(ctrlc_stop_flag);
-
-        let pos = sbx_block::calc_data_block_write_pos(version, seq_num, None, data_par_burst);
-
-        reader.seek(SeekFrom::Start(pos))?;
-
-        // read at reference block block size
-        let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
-
-        let decode_successful = !read_res.eof_seen
-            && match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
-                Ok(_) => block.get_seq_num() == seq_num,
-                _ => false,
-            };
-
-        let bytes_remaining = stats.total_bytes - stats.bytes_processed;
-
-        let is_last_data_block = bytes_remaining <= data_chunk_size;
-
-        if !sbx_block::seq_num_is_meta(seq_num)
-            && !sbx_block::seq_num_is_parity_w_data_par_burst(seq_num, data_par_burst)
-        {
-            if decode_successful {
-                let slice = if is_last_data_block {
-                    &sbx_block::slice_data_buf(version, &buffer)[0..bytes_remaining as usize]
-                } else {
-                    sbx_block::slice_data_buf(version, &buffer)
-                };
-
-                // hash data chunk
-                hash_ctx.update(slice);
-
-                stats.bytes_processed += slice.len() as u64;
-            } else {
-                return Err(Error::with_msg("Failed to decode data block"));
-            }
-        }
-
-        if is_last_data_block {
-            break;
-        }
-
-        incre_or_break_if_last!(seq_num => seq_num);
-    }
-
-    reporter.stop();
-
-    let stats = stats.lock().unwrap().clone();
-
-    Ok((stats, hash_ctx.finish_into_hash_bytes()))
+    sbx_container_content::hash(&param.json_printer,
+                                param.pr_verbosity_level,
+                                data_par_burst,
+                                ctrlc_stop_flag,
+                                &param.in_file,
+                                orig_file_size,
+                                ref_block,
+                                hash_ctx,
+    )
 }
 
 pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {

@@ -78,6 +78,7 @@ mod time_utils_tests;
 pub mod sbx_block;
 pub mod sbx_specs;
 mod sbx_specs_tests;
+mod sbx_container_content;
 
 mod encode_defaults;
 
