@@ -160,7 +160,7 @@ pub fn get_ref_block(
     ref_block_choice: RefBlockChoice,
     pr_verbosity_level: PRVerbosityLevel,
     json_enabled: bool,
-    stop_flag: &Arc<AtomicBool>,
+    stop_flag: &AtomicBool,
 ) -> Result<Option<(u64, Block)>, Error> {
     let file_size = file_utils::get_file_size(in_file)?;
 

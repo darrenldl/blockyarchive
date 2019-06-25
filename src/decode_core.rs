@@ -730,7 +730,7 @@ pub fn decode(
     param: &Param,
     ref_block_pos: u64,
     ref_block: &Block,
-    ctrlc_stop_flag: &Arc<AtomicBool>,
+    ctrlc_stop_flag: &AtomicBool,
 ) -> Result<(Stats, Option<HashBytes>), Error> {
     let version = ref_block.get_version();
 
@@ -1227,7 +1227,7 @@ pub fn decode(
 fn hash(
     param: &Param,
     ref_block: &Block,
-    ctrlc_stop_flag: &Arc<AtomicBool>,
+    ctrlc_stop_flag: &AtomicBool,
 ) -> Result<Option<(HashStats, HashBytes)>, Error> {
     let hash_bytes: Option<HashBytes> = if ref_block.is_data() {
         None
