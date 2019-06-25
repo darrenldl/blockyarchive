@@ -21,7 +21,7 @@ use crate::sbx_specs::Version;
 use crate::multihash::*;
 
 use crate::sbx_block;
-use crate::sbx_specs::{ver_to_block_size, ver_to_data_size, ver_to_usize, SBX_LARGEST_BLOCK_SIZE};
+use crate::sbx_specs::{ver_to_block_size, ver_to_usize, SBX_LARGEST_BLOCK_SIZE};
 
 use crate::time_utils;
 
@@ -446,20 +446,19 @@ fn hash(
     orig_file_size: u64,
     ref_block_pos: u64,
     ref_block: &Block,
-    mut hash_ctx: hash::Ctx,
+    hash_ctx: hash::Ctx,
 ) -> Result<(HashStats, HashBytes), Error> {
-    let stats = Arc::new(Mutex::new(HashStats::new(orig_file_size)));
-
     let data_par_burst = get_data_par_burst!(param, ref_block_pos, ref_block, "check");
 
-    sbx_container_content::hash(&param.json_printer,
-                                param.pr_verbosity_level,
-                                data_par_burst,
-                                ctrlc_stop_flag,
-                                &param.in_file,
-                                orig_file_size,
-                                ref_block,
-                                hash_ctx,
+    sbx_container_content::hash(
+        &param.json_printer,
+        param.pr_verbosity_level,
+        data_par_burst,
+        ctrlc_stop_flag,
+        &param.in_file,
+        orig_file_size,
+        ref_block,
+        hash_ctx,
     )
 }
 

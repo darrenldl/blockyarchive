@@ -1,12 +1,12 @@
-use crate::sbx_specs::{ver_to_data_size, SBX_LARGEST_BLOCK_SIZE};
-use crate::sbx_block::Block;
-use crate::hash_stats::HashStats;
-use crate::general_error::Error;
-use crate::multihash::*;
-use crate::json_printer::{JSONPrinter};
-use crate::progress_report::{PRVerbosityLevel, ProgressReporter};
 use crate::file_reader::{FileReader, FileReaderParam};
+use crate::general_error::Error;
+use crate::hash_stats::HashStats;
+use crate::json_printer::JSONPrinter;
+use crate::multihash::*;
+use crate::progress_report::{PRVerbosityLevel, ProgressReporter};
 use crate::sbx_block;
+use crate::sbx_block::Block;
+use crate::sbx_specs::{ver_to_data_size, SBX_LARGEST_BLOCK_SIZE};
 
 use std::io::SeekFrom;
 
