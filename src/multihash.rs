@@ -50,8 +50,14 @@ pub fn string_to_hash_type(string: &str) -> Result<HashType, ()> {
     };
 
     match hash_type {
-        Ok(hs) => if hash::hash_type_is_supported(hs) { Ok(hs) } else { Err(()) }
-        Err(()) => Err(())
+        Ok(hs) => {
+            if hash::hash_type_is_supported(hs) {
+                Ok(hs)
+            } else {
+                Err(())
+            }
+        }
+        Err(()) => Err(()),
     }
 }
 

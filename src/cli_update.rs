@@ -69,7 +69,8 @@ This also implies --skip-warning, and changes progress report text
             Arg::with_name("hash_type")
                 .long("hash")
                 .value_name("HASH-TYPE")
-                .help("Rehash the stored data. If HSH field already exists, then it
+                .help(
+                    "Rehash the stored data. If HSH field already exists, then it
 is replaced with the new hash result. Otherwise a HSH field is
 added for the new hash result.
 HASH-TYPE may be one of (case-insensitive) :
@@ -79,7 +80,8 @@ sha512
 blake2b-256
 blake2b-512
 blake2s-128
-blake2s-256")
+blake2s-256",
+                ),
         )
 }
 

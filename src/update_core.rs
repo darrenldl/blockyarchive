@@ -1,6 +1,6 @@
 use std::fmt;
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, Mutex};
 
 use crate::progress_report::*;
 
@@ -393,12 +393,13 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
     let data_par_burst =
         get_data_par_burst!(no_offset => param, ref_block_pos, ref_block, "update");
 
-    match update_metadata_blocks(&ctrlc_stop_flag,
-                           param,
-                           &ref_block,
-                           &json_printer,
-                           data_par_burst,
-                           false,
+    match update_metadata_blocks(
+        &ctrlc_stop_flag,
+        param,
+        &ref_block,
+        &json_printer,
+        data_par_burst,
+        false,
     ) {
         Ok(s) => Ok(Some(s)),
         Err(e) => Err(e),
