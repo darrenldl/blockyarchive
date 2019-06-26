@@ -1,5 +1,13 @@
 # Changelog
 
+## 7.2.0
+
+- Fixed hash type validation
+  
+    - Some unsupported hash functions are accepted but not actually usable in core code, and cause crash when hash context is being created
+  
+    - These unsupported hash functions are not listed in help messages, so normally not triggered
+
 ## 7.1.1
 
 - Updated file error messages casing
@@ -33,7 +41,7 @@
 - Added missing --burst option to check mode
 
 - Fixed input file size checking for encode mode
-
+  
     - Previously for SBX version 17, 18, 19, blkar fails to take data and parity shard ratio into account
 
 ## 7.1.0
