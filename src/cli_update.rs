@@ -171,7 +171,7 @@ pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
         ask_if_wish_to_continue!();
     }
 
-    let param = Param::new(
+    let mut param = Param::new(
         in_file,
         matches.is_present("dry_run"),
         metas_to_update,
@@ -182,7 +182,7 @@ pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
         pr_verbosity_level,
         burst,
     );
-    match update_core::update_file(&param) {
+    match update_core::update_file(&mut param) {
         Ok(Some(s)) => exit_with_msg!(ok json_printer => "{}", s),
         Ok(None) => exit_with_msg!(ok json_printer => ""),
         Err(e) => exit_with_msg!(op json_printer => "{}", e),

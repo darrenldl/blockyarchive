@@ -425,19 +425,24 @@ pub fn update_file(param: &mut Param) -> Result<Option<Stats>, Error> {
         true,
     )?;
 
-    let hash_res = match hash_ctx {
-        Some(hash_ctx) =>
-            Some(sbx_container_content::hash(&json_printer,
-                                        param.pr_verbosity_level,
-                                        data_par_burst,
-                                        &ctrlc_stop_flag,
-                                        &param.in_file,
-                                        orig_file_size.unwrap(),
-                                        &ref_block,
-                                        hash_ctx,
-            )),
-            None => None
-    };
+    if let Some(hash_ctx) = hash_ctx {
+        let hash_res = sbx_container_content::hash(&json_printer,
+                                                   param.pr_verbosity_level,
+                                                   data_par_burst,
+                                                   &ctrlc_stop_flag,
+                                                   &param.in_file,
+                                                   orig_file_size.unwrap(),
+                                                   &ref_block,
+                                                   hash_ctx,
+        );
+
+        for meta in param.metas_to_update.iter_mut() {
+            match meta {
+                Metadata::HSH(hs) => *hs = hash_res,
+                _ => {},
+            }
+        }
+    }
 
     match update_metadata_blocks(
         &ctrlc_stop_flag,
