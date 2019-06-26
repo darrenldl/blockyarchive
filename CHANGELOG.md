@@ -11,6 +11,9 @@
 - Added --hash to update mode
   
     - This options allows rehashing stored data in the SBX container with a possibly different hash function
+- Check mode UX improvement
+    - Previously if hashing fails, then blkar errors out without showing the block check stats. This wastes a lot of time if the container is large, as the block check stats could be useful in diagnosis.
+    - Now blkar displays the error during stats reporting instead of erroring out and exiting immediately. This means block check stats are visible even when hashing error occurs.
 
 ## 7.1.1
 
