@@ -180,7 +180,7 @@ impl fmt::Display for Stats {
         let hash_time_elapsed = match &self.hash_result {
             None => 0i64,
             Some(Ok((stats, _))) => (stats.end_time - stats.start_time) as i64,
-            Some(Err(_)) => 0,
+            Some(Err(_)) => 0i64,
         };
         let time_elapsed = check_time_elapsed + hash_time_elapsed;
 
