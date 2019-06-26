@@ -320,8 +320,6 @@ fn update_metadata_blocks(
 
         break_if_eof_seen!(read_res);
 
-        break_if_eof_seen!(read_res);
-
         let block_okay = match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
             Ok(()) => true,
             Err(_) => false,
@@ -394,6 +392,16 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let data_par_burst =
         get_data_par_burst!(no_offset => param, ref_block_pos, ref_block, "update");
+
+    // test run once first to make sure metadata blocks have enough space
+    update_metadata_blocks(
+        &ctrlc_stop_flag,
+        param,
+        &ref_block,
+        &json_printer,
+        data_par_burst,
+        true,
+    )?;
 
     match update_metadata_blocks(
         &ctrlc_stop_flag,
