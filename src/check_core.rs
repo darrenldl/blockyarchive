@@ -301,7 +301,7 @@ impl fmt::Display for Stats {
                     }
                 }
                 (Some(_), Some(Err(e))) => {
-                    write_if!(not_json => f, json_printer => "Encountered error when hashing stored data, {}", e;)?;
+                    write_if!(not_json => f, json_printer => "Encountered error while hashing stored data, {}", e;)?;
                 }
                 (Some(_), None) => {
                     write_if!(not_json => f, json_printer => "No hash is available for stored data";)?;
