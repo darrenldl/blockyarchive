@@ -83,6 +83,12 @@ blake2s-128
 blake2s-256",
                 ),
         )
+        .arg(
+            Arg::with_name("no_hsh")
+                .long("no-hsh")
+                .help("Remove SBX container stored data hash")
+                .conflicts_with("hash_type")
+        )
 }
 
 pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
@@ -113,6 +119,11 @@ pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
         if let Some(x) = matches.value_of("snm") {
             res.push(Metadata::SNM(x.to_string()))
         }
+        if let Some(_) = matches.value_of("hash_type") {
+            let hash_type = hash_type.unwrap();
+            let dummy_hash = multihash::hash::Ctx::new(hash_type).unwrap().finish_into_bytes();
+            res.push(Metadata::HSH((hash_type, dummy_hash)))
+        }
 
         res
     };
@@ -125,6 +136,9 @@ pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
         }
         if matches.is_present("no_snm") {
             res.push(MetadataID::SNM)
+        }
+        if matches.is_present("no_hash") {
+            res.push(MetadataID::HSH)
         }
 
         res

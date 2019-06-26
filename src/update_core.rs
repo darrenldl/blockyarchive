@@ -27,6 +27,8 @@ use crate::sbx_block::BlockType;
 
 use crate::multihash;
 
+use crate::sbx_container_content;
+
 use crate::time_utils;
 
 pub struct Param {
@@ -376,7 +378,7 @@ fn update_metadata_blocks(
     }
 }
 
-pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
+pub fn update_file(param: &mut Param) -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
     let json_printer = &param.json_printer;
@@ -390,6 +392,26 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
                                                     ctrlc_stop_flag
     );
 
+    let (orig_file_size, hash_ctx) = match param.hash_type {
+        Some(ht) => {
+            if ref_block.is_data() {
+                return Err(Error::with_msg("Reference block is not a metadata block"));
+            } else {
+                let orig_file_size = match ref_block.get_FSZ().unwrap() {
+                    None => {
+                        return Err(Error::with_msg(
+                            "Reference block does not have a file size field",
+                        ))
+                    }
+                    Some(x) => x,
+                };
+
+                (Some(orig_file_size), Some(multihash::hash::Ctx::new(ht).unwrap()))
+            }
+        },
+        None => (None, None),
+    };
+
     let data_par_burst =
         get_data_par_burst!(no_offset => param, ref_block_pos, ref_block, "update");
 
@@ -402,6 +424,20 @@ pub fn update_file(param: &Param) -> Result<Option<Stats>, Error> {
         data_par_burst,
         true,
     )?;
+
+    let hash_res = match hash_ctx {
+        Some(hash_ctx) =>
+            Some(sbx_container_content::hash(&json_printer,
+                                        param.pr_verbosity_level,
+                                        data_par_burst,
+                                        &ctrlc_stop_flag,
+                                        &param.in_file,
+                                        orig_file_size.unwrap(),
+                                        &ref_block,
+                                        hash_ctx,
+            )),
+            None => None
+    };
 
     match update_metadata_blocks(
         &ctrlc_stop_flag,
