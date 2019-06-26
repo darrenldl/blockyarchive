@@ -441,9 +441,8 @@ pub fn update_file(param: &mut Param) -> Result<Option<Stats>, Error> {
         )?;
 
         for meta in param.metas_to_update.iter_mut() {
-            match meta {
-                Metadata::HSH(hs) => *hs = hash_res.clone(),
-                _ => {}
+            if let Metadata::HSH(hs) = meta {
+                *hs = hash_res.clone()
             }
         }
     }
