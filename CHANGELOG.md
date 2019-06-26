@@ -8,6 +8,10 @@
   
     - These unsupported hash functions are not listed in help messages, so normally not triggered
 
+- Added --hash to update mode
+  
+    - This options allows rehashing stored data in the SBX container with a possibly different hash function
+
 ## 7.1.1
 
 - Updated file error messages casing
