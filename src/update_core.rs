@@ -426,7 +426,7 @@ pub fn update_file(param: &mut Param) -> Result<Option<Stats>, Error> {
     )?;
 
     if let Some(hash_ctx) = hash_ctx {
-        let hash_res = sbx_container_content::hash(&json_printer,
+        let (_, hash_res) = sbx_container_content::hash(&json_printer,
                                                    param.pr_verbosity_level,
                                                    data_par_burst,
                                                    &ctrlc_stop_flag,
@@ -434,11 +434,11 @@ pub fn update_file(param: &mut Param) -> Result<Option<Stats>, Error> {
                                                    orig_file_size.unwrap(),
                                                    &ref_block,
                                                    hash_ctx,
-        );
+        )?;
 
         for meta in param.metas_to_update.iter_mut() {
             match meta {
-                Metadata::HSH(hs) => *hs = hash_res,
+                Metadata::HSH(hs) => *hs = hash_res.clone(),
                 _ => {},
             }
         }
