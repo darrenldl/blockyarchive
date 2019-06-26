@@ -298,7 +298,7 @@ fn update_metadata_blocks(
     let mut reader = FileReader::new(
         &param.in_file,
         FileReaderParam {
-            write: !param.dry_run,
+            write: !param.dry_run && !test_run,
             buffered: false,
         },
     )?;
@@ -335,14 +335,16 @@ fn update_metadata_blocks(
 
             match block.sync_to_buffer(None, &mut buffer) {
                 Ok(()) => {
-                    if param.verbose {
-                        pause_reporter!(reporter =>
-                                        print_block_info_and_meta_changes(param, meta_block_count, p, &old_metas););
-                    }
+                    if !test_run {
+                        if param.verbose {
+                            pause_reporter!(reporter =>
+                                            print_block_info_and_meta_changes(param, meta_block_count, p, &old_metas););
+                        }
 
-                    if !param.dry_run {
-                        reader.seek(SeekFrom::Start(p))?;
-                        reader.write(sbx_block::slice_buf(version, &buffer))?;
+                        if !param.dry_run {
+                            reader.seek(SeekFrom::Start(p))?;
+                            reader.write(sbx_block::slice_buf(version, &buffer))?;
+                        }
                     }
 
                     stats.lock().unwrap().meta_blocks_updated += 1;
