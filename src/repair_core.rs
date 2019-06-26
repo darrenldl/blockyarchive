@@ -331,7 +331,7 @@ pub fn repair_file(param: &Param) -> Result<Option<Stats>, Error> {
         &param.in_file,
         FileReaderParam {
             write: !param.dry_run,
-            buffered: true,
+            buffered: false,
         },
     )?;
 
