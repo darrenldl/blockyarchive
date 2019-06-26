@@ -406,9 +406,12 @@ pub fn update_file(param: &mut Param) -> Result<Option<Stats>, Error> {
                     Some(x) => x,
                 };
 
-                (Some(orig_file_size), Some(multihash::hash::Ctx::new(ht).unwrap()))
+                (
+                    Some(orig_file_size),
+                    Some(multihash::hash::Ctx::new(ht).unwrap()),
+                )
             }
-        },
+        }
         None => (None, None),
     };
 
@@ -426,20 +429,21 @@ pub fn update_file(param: &mut Param) -> Result<Option<Stats>, Error> {
     )?;
 
     if let Some(hash_ctx) = hash_ctx {
-        let (_, hash_res) = sbx_container_content::hash(&json_printer,
-                                                   param.pr_verbosity_level,
-                                                   data_par_burst,
-                                                   &ctrlc_stop_flag,
-                                                   &param.in_file,
-                                                   orig_file_size.unwrap(),
-                                                   &ref_block,
-                                                   hash_ctx,
+        let (_, hash_res) = sbx_container_content::hash(
+            &json_printer,
+            param.pr_verbosity_level,
+            data_par_burst,
+            &ctrlc_stop_flag,
+            &param.in_file,
+            orig_file_size.unwrap(),
+            &ref_block,
+            hash_ctx,
         )?;
 
         for meta in param.metas_to_update.iter_mut() {
             match meta {
                 Metadata::HSH(hs) => *hs = hash_res.clone(),
-                _ => {},
+                _ => {}
             }
         }
     }
