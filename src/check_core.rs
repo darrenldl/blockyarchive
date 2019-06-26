@@ -542,16 +542,16 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
     }
 
     if do_hash {
-        let (hash_stats, computed_hash) = hash(
+        let hash_result = hash(
             param,
             &ctrlc_stop_flag,
             orig_file_size.unwrap(),
             ref_block_pos,
             &ref_block,
             hash_ctx.unwrap(),
-        )?;
+        );
 
-        stats.hash_result = Some(Ok((hash_stats, computed_hash)));
+        stats.hash_result = Some(hash_result);
     }
 
     Ok(Some(stats))
