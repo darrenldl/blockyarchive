@@ -266,7 +266,7 @@ impl fmt::Display for Stats {
                         hash_type_to_string(h.0),
                         misc_utils::bytes_to_lower_hex_string(&h.1)
                     ),
-                    (_, Some(Err(e))) => format!("{}", e)
+                    (_, Some(Err(e))) => format!("{}", e),
                 }
             )?;
 
