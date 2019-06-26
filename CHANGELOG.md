@@ -2,7 +2,7 @@
 
 ## 7.2.0
 
-- Fixed hash type validation
+- Fixed hash type validation in commandline arguments processing
   
     - Some unsupported hash functions are accepted but not actually usable in core code, and cause crash when hash context is being created
   
