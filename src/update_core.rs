@@ -307,6 +307,8 @@ fn update_metadata_blocks(
 
     let mut err = None;
 
+    reporter.start();
+
     if param.verbose && !test_run {
         json_printer.print_open_bracket(Some("metadata changes"), BracketType::Square);
     }
