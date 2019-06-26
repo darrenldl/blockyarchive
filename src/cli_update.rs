@@ -139,7 +139,7 @@ pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
         if matches.is_present("no_snm") {
             res.push(MetadataID::SNM)
         }
-        if matches.is_present("no_hash") {
+        if matches.is_present("no_hsh") {
             res.push(MetadataID::HSH)
         }
 
