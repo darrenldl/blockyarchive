@@ -135,9 +135,8 @@ pub struct Stats {
     check_stats: Option<CheckStats>,
     do_hash: bool,
     recorded_hash: Option<HashBytes>,
-    computed_hash: Option<HashBytes>,
+    hash_result: Option<Result<(HashStats, HashBytes), Error>>,
     json_printer: Arc<JSONPrinter>,
-    hash_stats: Option<HashStats>,
 }
 
 impl Stats {
@@ -292,13 +291,16 @@ impl fmt::Display for Stats {
             second
         )?;
         if self.do_hash {
-            match (&self.recorded_hash, &self.computed_hash) {
-                (Some(recorded_hash), Some(computed_hash)) => {
+            match (&self.recorded_hash, &self.hash_result) {
+                (Some(recorded_hash), Some(Ok(_, computed_hash))) => {
                     if recorded_hash.1 == computed_hash.1 {
                         write_if!(not_json => f, json_printer => "The hash of stored data matches the recorded hash";)?;
                     } else {
                         write_if!(not_json => f, json_printer => "The hash of stored data does NOT match the recorded hash";)?;
                     }
+                }
+                (Some(_), Some(Err(e))) => {
+                    write_if!(not_json => f, json_printer => "Encountered error when hashing stored data, {}", e)?;
                 }
                 (Some(_), None) => {
                     write_if!(not_json => f, json_printer => "No hash is available for stored data";)?;
@@ -548,8 +550,7 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
             hash_ctx.unwrap(),
         )?;
 
-        stats.hash_stats = Some(hash_stats);
-        stats.computed_hash = Some(computed_hash);
+        stats.hash_stats = Some((hash_stats, computed_hash));
     }
 
     Ok(Some(stats))
