@@ -4,7 +4,7 @@ use crate::stdin_error;
 use crate::stdout_error;
 use std::fmt;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ErrorKind {
     FileError(file_error::FileError),
     StdinError(stdin_error::StdinError),
@@ -13,7 +13,7 @@ pub enum ErrorKind {
     MessageOnly(String),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Error {
     pub kind: ErrorKind,
 }

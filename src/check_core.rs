@@ -146,9 +146,8 @@ impl Stats {
             check_stats: None,
             do_hash,
             recorded_hash: None,
-            computed_hash: None,
+            hash_result: None,
             json_printer: Arc::clone(json_printer),
-            hash_stats: None,
         }
     }
 }
@@ -178,9 +177,10 @@ impl fmt::Display for Stats {
             None => 0i64,
             Some(stats) => (stats.end_time - stats.start_time) as i64,
         };
-        let hash_time_elapsed = match &self.hash_stats {
+        let hash_time_elapsed = match &self.hash_result {
             None => 0i64,
-            Some(stats) => (stats.end_time - stats.start_time) as i64,
+            Some(Ok((stats, _))) => (stats.end_time - stats.start_time) as i64,
+            Some(Err(_)) => 0,
         };
         let time_elapsed = check_time_elapsed + hash_time_elapsed;
 
@@ -236,7 +236,7 @@ impl fmt::Display for Stats {
                 second
             )?;
         }
-        if let Some(_) = &self.hash_stats {
+        if self.do_hash {
             write_maybe_json!(
                 f,
                 json_printer,
@@ -254,18 +254,19 @@ impl fmt::Display for Stats {
                 f,
                 json_printer,
                 "Hash of stored data                      : {}",
-                match (&self.recorded_hash, &self.computed_hash) {
+                match (&self.recorded_hash, &self.hash_result) {
                     (None, None) => null_if_json_else_NA!(json_printer).to_string(),
                     (Some(_), None) => null_if_json_else!(
                         json_printer,
                         "N/A - recorded hash type is not supported by blkar"
                     )
                     .to_string(),
-                    (_, Some(h)) => format!(
+                    (_, Some(Ok((_, h)))) => format!(
                         "{} - {}",
                         hash_type_to_string(h.0),
                         misc_utils::bytes_to_lower_hex_string(&h.1)
                     ),
+                    (_, Some(Err(e))) => format!("{}", e)
                 }
             )?;
 
@@ -292,7 +293,7 @@ impl fmt::Display for Stats {
         )?;
         if self.do_hash {
             match (&self.recorded_hash, &self.hash_result) {
-                (Some(recorded_hash), Some(Ok(_, computed_hash))) => {
+                (Some(recorded_hash), Some(Ok((_, computed_hash)))) => {
                     if recorded_hash.1 == computed_hash.1 {
                         write_if!(not_json => f, json_printer => "The hash of stored data matches the recorded hash";)?;
                     } else {
@@ -300,7 +301,7 @@ impl fmt::Display for Stats {
                     }
                 }
                 (Some(_), Some(Err(e))) => {
-                    write_if!(not_json => f, json_printer => "Encountered error when hashing stored data, {}", e)?;
+                    write_if!(not_json => f, json_printer => "Encountered error when hashing stored data, {}", e;)?;
                 }
                 (Some(_), None) => {
                     write_if!(not_json => f, json_printer => "No hash is available for stored data";)?;
@@ -550,7 +551,7 @@ pub fn check_file(param: &Param) -> Result<Option<Stats>, Error> {
             hash_ctx.unwrap(),
         )?;
 
-        stats.hash_stats = Some((hash_stats, computed_hash));
+        stats.hash_result = Some(Ok((hash_stats, computed_hash)));
     }
 
     Ok(Some(stats))
