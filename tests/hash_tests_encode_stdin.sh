@@ -23,7 +23,7 @@ for h in ${HASHES[*]}; do
   echo -n "Encoding in hash $h"
   output=$(cat dummy | \
              ./../blkar encode --json --hash $h -f - dummy$h.sbx )
-  hash=$(echo $output | jq -r ".stats.hash" | awk '{ print $3 }')
+  hash=$(echo $output | jq -r ".stats.hash")
   if [[ $(echo $output | jq -r ".error") != "null" ]]; then
       echo "Invalid JSON"
       exit_code=1
