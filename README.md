@@ -1,7 +1,6 @@
 # blockyarchive
 
 [![Build Status](https://travis-ci.org/darrenldl/blockyarchive.svg?branch=master)](https://travis-ci.org/darrenldl/blockyarchive)
-[![Build status](https://ci.appveyor.com/api/projects/status/i4dxpldp4t312gtv?svg=true)](https://ci.appveyor.com/project/darrenldl/blockyarchive)
 [![codecov](https://codecov.io/gh/darrenldl/blockyarchive/branch/master/graph/badge.svg)](https://codecov.io/gh/darrenldl/blockyarchive)
 [![Crates](https://img.shields.io/crates/v/blkar.svg)](https://crates.io/crates/blkar)
 [![dependency status](https://deps.rs/repo/github/darrenldl/blockyarchive/status.svg)](https://deps.rs/repo/github/darrenldl/blockyarchive)
