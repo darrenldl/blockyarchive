@@ -233,20 +233,20 @@ fn test_string_to_hash_type() {
         assert_eq!(HashType::SHA256, string_to_hash_type("sha256").unwrap());
         assert_eq!(HashType::SHA256, string_to_hash_type("Sha256").unwrap());
     }
-    {
-        assert_eq!(
-            HashType::SHA2_512_256,
-            string_to_hash_type("SHA2-512-256").unwrap()
-        );
-        assert_eq!(
-            HashType::SHA2_512_256,
-            string_to_hash_type("sha2-512-256").unwrap()
-        );
-        assert_eq!(
-            HashType::SHA2_512_256,
-            string_to_hash_type("Sha2-512-256").unwrap()
-        );
-    }
+    // {
+    //     assert_eq!(
+    //         HashType::SHA2_512_256,
+    //         string_to_hash_type("SHA2-512-256").unwrap()
+    //     );
+    //     assert_eq!(
+    //         HashType::SHA2_512_256,
+    //         string_to_hash_type("sha2-512-256").unwrap()
+    //     );
+    //     assert_eq!(
+    //         HashType::SHA2_512_256,
+    //         string_to_hash_type("Sha2-512-256").unwrap()
+    //     );
+    // }
     {
         assert_eq!(
             HashType::SHA512,
