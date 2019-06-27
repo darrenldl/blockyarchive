@@ -29,12 +29,12 @@ pub struct LogHandler<T: 'static + Log + Send> {
     error: Arc<Mutex<Option<Error>>>,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum ErrorKind {
     ParseError,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LogError {
     kind: ErrorKind,
     path: String,

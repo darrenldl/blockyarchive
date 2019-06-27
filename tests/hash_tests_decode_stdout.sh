@@ -9,12 +9,12 @@ if [[ $(command -v b2sum) != "" ]]; then
 fi
 
 # Record the hashes
-a[0]=$(sha1sum   dummy | awk '{print $1}')
-a[1]=$(sha256sum dummy | awk '{print $1}')
-a[2]=$(sha512sum dummy | awk '{print $1}')
+a[0]="SHA1 - "$(sha1sum   dummy | awk '{print $1}')
+a[1]="SHA256 - "$(sha256sum dummy | awk '{print $1}')
+a[2]="SHA512 - "$(sha512sum dummy | awk '{print $1}')
 if [[ $(command -v b2sum) != "" ]]; then
-    a[3]=$(b2sum -l 256 dummy | awk '{print $1}')
-    a[4]=$(b2sum        dummy | awk '{print $1}')
+    a[3]="BLAKE2b-256 - "$(b2sum -l 256 dummy | awk '{print $1}')
+    a[4]="BLAKE2b-512 - "$(b2sum        dummy | awk '{print $1}')
 fi
 
 # Encode in all 4 hashes
@@ -22,7 +22,7 @@ i=0
 for h in ${HASHES[*]}; do
   echo -n "Encoding in hash $h"
   output=$(./../blkar encode --json --hash $h -f dummy dummy$h.sbx )
-  hash=$(echo $output | jq -r ".stats.hash" | awk '{ print $3 }')
+  hash=$(echo $output | jq -r ".stats.hash")
   if [[ $(echo $output | jq -r ".error") != "null" ]]; then
       echo "Invalid JSON"
       exit_code=1
@@ -62,8 +62,8 @@ for h in ${HASHES[*]}; do
       echo " ==> Invalid JSON"
       exit_code=1
   fi
-  recorded_hash=$(echo $output | jq -r ".stats.recordedHash" | awk '{ print $3 }')
-  output_file_hash=$(echo $output | jq -r ".stats.hashOfOutputFile" | awk '{ print $3 }')
+  recorded_hash=$(echo $output | jq -r ".stats.recordedHash")
+  output_file_hash=$(echo $output | jq -r ".stats.hashOfOutputFile")
   if [[ $recorded_hash == ${a[$i]} ]]; then
       echo -n " ==> Okay"
   else

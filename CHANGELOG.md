@@ -1,5 +1,20 @@
 # Changelog
 
+## 7.2.0
+
+- Fixed hash type validation in commandline arguments processing
+  
+    - Some unsupported hash functions are accepted but not actually usable in core code, and cause crash when hash context is being created
+  
+    - These unsupported hash functions are not listed in help messages, so normally not triggered
+
+- Added --hash to update mode
+  
+    - This options allows rehashing stored data in the SBX container with a possibly different hash function
+- Check mode UX improvement
+    - Previously if hashing fails, then blkar errors out without showing the block check stats. This wastes a lot of time if the container is large, as the block check stats could be useful in diagnosis.
+    - Now blkar displays the error during stats reporting instead of erroring out and exiting immediately. This means block check stats are visible even when hashing error occurs.
+
 ## 7.1.1
 
 - Updated file error messages casing
@@ -33,7 +48,7 @@
 - Added missing --burst option to check mode
 
 - Fixed input file size checking for encode mode
-
+  
     - Previously for SBX version 17, 18, 19, blkar fails to take data and parity shard ratio into account
 
 ## 7.1.0

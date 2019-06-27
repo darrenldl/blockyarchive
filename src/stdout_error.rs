@@ -1,7 +1,7 @@
 use std::fmt;
 pub use std::io::ErrorKind;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct StdoutError {
     pub kind: ErrorKind,
 }

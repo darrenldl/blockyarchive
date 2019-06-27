@@ -87,6 +87,8 @@ tests=(
   "update_no_fnm_tests"
   "update_snm_tests"
   "update_no_snm_tests"
+  "update_hash_tests"
+  "update_no_hsh_tests"
   "check_hash_tests"
   "check_hash_tests_manual_burst"
   "check_hash_only_tests"

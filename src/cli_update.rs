@@ -7,6 +7,8 @@ use clap::*;
 use crate::sbx_block::Metadata;
 use crate::sbx_block::MetadataID;
 
+use crate::multihash;
+
 use crate::json_printer::BracketType;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
@@ -63,6 +65,30 @@ This also implies --skip-warning, and changes progress report text
                 .help("Remove SBX container name")
                 .conflicts_with("snm"),
         )
+        .arg(
+            Arg::with_name("hash_type")
+                .long("hash")
+                .value_name("HASH-TYPE")
+                .help(
+                    "Rehash the stored data with HASH-TYPE hash function. If HSH
+field already exists, then it is replaced with the new hash
+result. Otherwise a HSH field is added for the new hash result.
+HASH-TYPE may be one of (case-insensitive) :
+sha1
+sha256
+sha512
+blake2b-256
+blake2b-512
+blake2s-128
+blake2s-256",
+                ),
+        )
+        .arg(
+            Arg::with_name("no_hsh")
+                .long("no-hsh")
+                .help("Remove SBX container stored data hash")
+                .conflicts_with("hash_type"),
+        )
 }
 
 pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
@@ -76,6 +102,14 @@ pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
 
     let burst = get_burst_opt!(matches, json_printer);
 
+    let hash_type = match matches.value_of("hash_type") {
+        None => None,
+        Some(x) => match multihash::string_to_hash_type(x) {
+            Ok(x) => Some(x),
+            Err(_) => exit_with_msg!(usr json_printer => "Invalid hash type"),
+        },
+    };
+
     let metas_to_update = {
         let mut res = smallvec![];
 
@@ -84,6 +118,13 @@ pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
         }
         if let Some(x) = matches.value_of("snm") {
             res.push(Metadata::SNM(x.to_string()))
+        }
+        if let Some(_) = matches.value_of("hash_type") {
+            let hash_type = hash_type.unwrap();
+            let dummy_hash = multihash::hash::Ctx::new(hash_type)
+                .unwrap()
+                .finish_into_bytes();
+            res.push(Metadata::HSH((hash_type, dummy_hash)))
         }
 
         res
@@ -97,6 +138,9 @@ pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
         }
         if matches.is_present("no_snm") {
             res.push(MetadataID::SNM)
+        }
+        if matches.is_present("no_hsh") {
+            res.push(MetadataID::HSH)
         }
 
         res
@@ -129,17 +173,18 @@ pub fn update<'a>(matches: &ArgMatches<'a>) -> i32 {
         ask_if_wish_to_continue!();
     }
 
-    let param = Param::new(
+    let mut param = Param::new(
         in_file,
         matches.is_present("dry_run"),
         metas_to_update,
         metas_to_remove,
         &json_printer,
+        hash_type,
         matches.is_present("verbose"),
         pr_verbosity_level,
         burst,
     );
-    match update_core::update_file(&param) {
+    match update_core::update_file(&mut param) {
         Ok(Some(s)) => exit_with_msg!(ok json_printer => "{}", s),
         Ok(None) => exit_with_msg!(ok json_printer => ""),
         Err(e) => exit_with_msg!(op json_printer => "{}", e),
