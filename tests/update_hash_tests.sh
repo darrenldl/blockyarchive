@@ -186,7 +186,7 @@ for ver in ${VERSIONS[*]}; do
     echo -n " ==> NOT okay"
     exit_code=1
   fi
-  if [[ $(echo $output | jq -r ".blocks[0].fileName") == ${new_fnm[$ver]} ]]; then
+  if [[ $(echo $output | jq -r ".blocks[0].hash") == ${a[1]} ]]; then
       echo " ==> Okay"
   else
       echo " ==> NOT okay"
