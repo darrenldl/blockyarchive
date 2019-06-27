@@ -70,9 +70,9 @@ This also implies --skip-warning, and changes progress report text
                 .long("hash")
                 .value_name("HASH-TYPE")
                 .help(
-                    "Rehash the stored data. If HSH field already exists, then it
-is replaced with the new hash result. Otherwise a HSH field is
-added for the new hash result.
+                    "Rehash the stored data with HASH-TYPE hash function. If HSH
+field already exists, then it is replaced with the new hash
+result. Otherwise a HSH field is added for the new hash result.
 HASH-TYPE may be one of (case-insensitive) :
 sha1
 sha256
