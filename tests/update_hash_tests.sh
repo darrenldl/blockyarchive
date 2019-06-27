@@ -2,7 +2,7 @@
 
 exit_code=0
 
-VERSIONS=(1 2 3 17 18 19)
+VERSIONS=(1 3 17 19)
 
 HASHES=("sha1" "sha256" "sha512")
 if [[ $(command -v b2sum) != "" ]]; then
