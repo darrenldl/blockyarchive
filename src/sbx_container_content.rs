@@ -6,15 +6,18 @@ use crate::multihash::*;
 use crate::progress_report::{PRVerbosityLevel, ProgressReporter};
 use crate::sbx_block;
 use crate::sbx_block::Block;
-use crate::sbx_specs::{ver_to_data_size, SBX_LARGEST_BLOCK_SIZE};
+use crate::sbx_specs::{ver_to_data_size, SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM};
 use crate::data_block_buffer::{InputMode, OutputMode, DataBlockBuffer};
 
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::sync_channel;
+use std::sync::mpsc::channel;
+use std::sync::Barrier;
+use std::thread;
 
-const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
+const PIPELINE_BUFFER_IN_ROTATION: usize = 2;
 
 pub fn hash(
     json_printer: &JSONPrinter,
@@ -54,83 +57,131 @@ pub fn hash(
 
     let header_pred = header_pred_same_ver_uid!(ref_block);
 
-    // let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
-    // let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+    let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+    let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+    let (error_tx_reader, error_rx) = channel::<Error>();
+    let error_tx_hasher = error_tx_reader.clone();
+
+    let worker_shutdown_barrier = Arc::new(Barrier::new(3));
 
     // push buffers into pipeline
-    // for i in 0..PIPELINE_BUFFER_IN_ROTATION {
-    //     to_reader
-    //         .send(Some(DataBlockBuffer::new(
-    //             version,
-    //             None,
-    //             InputMode::Block,
-    //             OutputMode::Disabled,
-    //             data_par_burst,
-    //             true,
-    //             i,
-    //             PIPELINE_BUFFER_IN_ROTATION,
-    //         )))
-    //         .unwrap();
-    // }
+    for i in 0..PIPELINE_BUFFER_IN_ROTATION {
+        to_reader
+            .send(Some(DataBlockBuffer::new(
+                version,
+                None,
+                InputMode::Block,
+                OutputMode::Disabled,
+                data_par_burst,
+                true,
+                i,
+                PIPELINE_BUFFER_IN_ROTATION,
+            )))
+            .unwrap();
+    }
 
     reporter.start();
 
-    // let reader_thread = {
-    //     let mut run = true;
+    let reader_thread = {
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
 
-    //     while let Some(mut buffer) = from_hasher.recv().unwrap() {
-    //     }
-    // };
+        thread::spawn(move || {
+            let mut run = true;
+            let mut seq_num = 1;
 
-    // go through data and parity blocks
-    let mut seq_num = 1;
-    loop {
-        let mut stats = stats.lock().unwrap();
+            while let Some(mut buffer) = from_hasher.recv().unwrap() {
+                if !run {
+                    break;
+                }
 
-        break_if_atomic_bool!(ctrlc_stop_flag);
+                while !buffer.is_full() {
+                    let mut stats = stats.lock().unwrap();
 
-        let pos = sbx_block::calc_data_block_write_pos(version, seq_num, None, data_par_burst);
+                    break_if_atomic_bool!(ctrlc_stop_flag);
 
-        reader.seek(SeekFrom::Start(pos))?;
+                    let pos = sbx_block::calc_data_block_write_pos(version, seq_num, None, data_par_burst);
 
-        // read at reference block block size
-        let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
+                    if let Err(e) = reader.seek(SeekFrom::Start(pos)) {
+                        error_tx_reader.send(e);
+                        run = false;
+                        break;
+                    }
 
-        let decode_successful = !read_res.eof_seen
-            && match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
-                Ok(_) => block.get_seq_num() == seq_num,
-                _ => false,
-            };
+                    let slot = buffer.get_slot().unwrap();
+                    match reader.read(slot) {
+                        Ok(read_res) => {
+                            let decode_successful = !read_res.eof_seen
+                                && match block.sync_from_buffer(slot, Some(&header_pred), None) {
+                                    Ok(_) => block.get_seq_num() == seq_num,
+                                    _ => false,
+                                };
 
-        let bytes_remaining = stats.total_bytes - stats.bytes_processed;
+                            let bytes_remaining = stats.total_bytes - stats.bytes_processed;
 
-        let is_last_data_block = bytes_remaining <= data_chunk_size;
+                            let is_last_data_block = bytes_remaining <= data_chunk_size;
 
-        if !sbx_block::seq_num_is_meta(seq_num)
-            && !sbx_block::seq_num_is_parity_w_data_par_burst(seq_num, data_par_burst)
-        {
-            if decode_successful {
-                let slice = if is_last_data_block {
-                    &sbx_block::slice_data_buf(version, &buffer)[0..bytes_remaining as usize]
-                } else {
-                    sbx_block::slice_data_buf(version, &buffer)
-                };
+                            if !sbx_block::seq_num_is_meta(seq_num)
+                                && !sbx_block::seq_num_is_parity_w_data_par_burst(seq_num, data_par_burst)
+                            {
+                                if decode_successful {
+                                    let slice = if is_last_data_block {
+                                        &sbx_block::slice_data_buf(version, slot)[0..bytes_remaining as usize]
+                                    } else {
+                                        sbx_block::slice_data_buf(version, slot)
+                                    };
 
-                // hash data chunk
-                hash_ctx.update(slice);
+                                    stats.bytes_processed += slice.len() as u64;
+                                } else {
+                                    error_tx_reader.send(Error::with_msg("Failed to decode data block")).unwrap();
+                                    run = false;
+                                    break;
+                                }
+                            }
 
-                stats.bytes_processed += slice.len() as u64;
-            } else {
-                return Err(Error::with_msg("Failed to decode data block"));
+                            if is_last_data_block
+                                || seq_num == SBX_LAST_SEQ_NUM
+                            {
+                                run = false;
+                                break;
+                            }
+                        },
+                        Err(e) => {
+                            error_tx_reader.send(e).unwrap();
+                            run = false;
+                            break;
+                        }
+                    }
+                }
+
+                break_if_atomic_bool!(ctrlc_stop_flag);
+
+                to_hasher.send(Some(buffer)).unwrap();
             }
-        }
 
-        if is_last_data_block {
-            break;
-        }
+            to_hasher.send(None).unwrap();
 
-        incre_or_break_if_last!(seq_num => seq_num);
-    }
+            shutdown_barrier.wait();
+        })
+    };
+
+    let hasher_thread = {
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+
+        thread::spawn(move || {
+            while let Some(buffer) = from_reader.recv().unwrap() {
+                buffer.hash(&mut hash);
+
+                to_reader.send(Some(buffer));
+            }
+
+            to_reader.send(None).unwrap();
+
+            shutdown_barrier.wait();
+        })
+    };
+
+    reader_thread.join().unwrap();
+    hasher_thread.join().unwrap();
 
     reporter.stop();
 

@@ -672,7 +672,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 }
 
                                 hash_ctx.lock().unwrap().update(
-                                    &sbx_block::slice_data_buf(version, slot)[..read_res.len_read],
+                                    &slot[..read_res.len_read],
                                 );
 
                                 data_padding_bytes +=
