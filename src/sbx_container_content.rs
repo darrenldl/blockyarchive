@@ -112,7 +112,7 @@ pub fn hash(
                         break;
                     }
 
-                    let slot = buffer.get_slot().unwrap();
+                    let (slot, content_len) = buffer.get_slot().unwrap();
                     match reader.read(slot) {
                         Ok(read_res) => {
                             let decode_successful = !read_res.eof_seen
@@ -133,6 +133,7 @@ pub fn hash(
                             {
                                 if decode_successful {
                                     let slice = if is_last_data_block {
+                                        *content_len = Some(bytes_remaining as usize);
                                         &sbx_block::slice_data_buf(version, slot)
                                             [0..bytes_remaining as usize]
                                     } else {

@@ -652,7 +652,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                     {
                         // read data in
-                        let slot = buffer.get_slot().unwrap();
+                        let (slot, _) = buffer.get_slot().unwrap();
                         match reader.read(slot) {
                             Ok(read_res) => {
                                 bytes_processed += read_res.len_read as u64;

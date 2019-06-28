@@ -23,8 +23,8 @@ const LOT_COUNT_PER_CPU: usize = 10;
 
 enum GetSlotResult<'a> {
     None,
-    Some(&'a mut [u8]),
-    LastSlot(&'a mut [u8]),
+    Some(&'a mut [u8], &'a mut Option<usize>),
+    LastSlot(&'a mut [u8], &'a mut Option<usize>),
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -52,9 +52,11 @@ struct Lot {
     data_block_count: usize,
     padding_block_count: usize,
     parity_block_count: usize,
+    padding_byte_count_in_non_padding_blocks: usize,
     directly_writable_slots: usize,
     data: Vec<u8>,
-    write_pos_s: Vec<u64>,
+    slot_write_pos: Vec<u64>,
+    slot_content_len: Vec<Option<usize>>,
     rs_codec: Arc<Option<ReedSolomon>>,
 }
 
@@ -103,16 +105,20 @@ impl Lot {
             data_block_count: 0,
             padding_block_count: 0,
             parity_block_count: 0,
+            padding_byte_count_in_non_padding_blocks: 0,
             directly_writable_slots,
             data: vec![0; block_size * lot_size],
-            write_pos_s: vec![0; lot_size],
+            slot_write_pos: vec![0; lot_size],
+            slot_content_len: vec![None; lot_size],
             rs_codec,
         }
     }
 
     fn get_slot(&mut self) -> GetSlotResult {
         if self.slots_used() < self.directly_writable_slots {
-            let start = self.slots_used() * self.block_size;
+            let slots_used = self.slots_used();
+
+            let start = slots_used * self.block_size;
             let end_exc = start + self.block_size;
             self.data_block_count += 1;
 
@@ -125,10 +131,12 @@ impl Lot {
                 InputMode::Data => sbx_block::slice_data_buf_mut(self.version, slot),
             };
 
+            let content_len = &mut self.slot_content_len[slots_used];
+
             if is_full {
-                GetSlotResult::LastSlot(slot)
+                GetSlotResult::LastSlot(slot, content_len)
             } else {
-                GetSlotResult::Some(slot)
+                GetSlotResult::Some(slot, content_len)
             }
         } else {
             GetSlotResult::None
@@ -146,6 +154,21 @@ impl Lot {
     }
 
     fn fill_in_padding(&mut self) {
+        for i in 0..self.data_block_count {
+            if let Some(len) = self.content_len[i] {
+                assert!(len > 0);
+                assert!(len <= self.block_size);
+
+                let start = i * self.block_size;
+                let end_exc = start + self.block_size;
+                let slot = &mut self.data[start..end_exc];
+
+                if len < self.block_size {
+                    self.padding_byte_count_in_non_padding_blocks += sbx_block::write_padding(self.version, len, slot);
+                }
+            }
+        }
+
         if let Some(_) = self.data_par_burst {
             for i in self.data_block_count..self.directly_writable_slots {
                 let start = i * self.block_size;
@@ -208,7 +231,7 @@ impl Lot {
                         self.data_par_burst,
                     );
 
-                    self.write_pos_s[slot_index] = write_pos;
+                    self.slot_write_pos[slot_index] = write_pos;
                 } else {
                     break;
                 }
@@ -252,7 +275,7 @@ impl Lot {
 
             for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
                 if slot_index < slots_used {
-                    let write_pos = self.write_pos_s[slot_index];
+                    let write_pos = self.slot_write_pos[slot_index];
 
                     writer.seek(SeekFrom::Start(write_pos))?;
 
@@ -342,18 +365,18 @@ impl DataBlockBuffer {
         self.lots_used > 0 || self.lots[self.lots_used].slots_used() > 0
     }
 
-    pub fn get_slot(&mut self) -> Option<&mut [u8]> {
+    pub fn get_slot(&mut self) -> Option<(&mut [u8], &mut Option<usize>)> {
         let lot_count = self.lots.len();
 
         if self.lots_used == lot_count {
             None
         } else {
             match self.lots[self.lots_used].get_slot() {
-                GetSlotResult::LastSlot(slot) => {
+                GetSlotResult::LastSlot(slot, content_len) => {
                     self.lots_used += 1;
-                    Some(slot)
+                    Some((slot, content_len))
                 }
-                GetSlotResult::Some(slot) => Some(slot),
+                GetSlotResult::Some(slot, content_len) => Some((slot, content_len)),
                 GetSlotResult::None => {
                     self.lots_used += 1;
                     None
