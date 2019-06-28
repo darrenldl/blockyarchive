@@ -31,12 +31,13 @@ enum GetSlotResult<'a> {
     LastSlot(&'a mut [u8]),
 }
 
+#[derive(Copy, Clone, Debug)]
 pub enum InputMode {
     Block,
     Data,
-    Disabled,
 }
 
+#[derive(Copy, Clone, Debug)]
 pub enum OutputMode {
     Block,
     Data,
@@ -119,17 +120,19 @@ impl Lot {
             let end_exc = start + self.block_size;
             self.data_block_count += 1;
 
+            let is_full = self.is_full();
+
             let raw_slot = &mut self.data[start..end_exc];
 
             let slot = match self.input_mode {
-                Block => raw_slot,
-                Data => sbx_block::slice_data_buf_mut(self.version, raw_slot),
+                InputMode::Block => raw_slot,
+                InputMode::Data => sbx_block::slice_data_buf_mut(self.version, raw_slot),
             };
 
-            if self.is_full() {
-                GetSlotResult::LastSlot(&mut self.data[start..end_exc])
+            if is_full {
+                GetSlotResult::LastSlot(slot)
             } else {
-                GetSlotResult::Some(&mut self.data[start..end_exc])
+                GetSlotResult::Some(slot)
             }
         } else {
             GetSlotResult::None
@@ -220,7 +223,7 @@ impl Lot {
     fn hash(&self, hash_ctx: &mut hash::Ctx) {
         let slots_used = self.slots_used();
 
-        for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+        for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
             if slot_index < slots_used {
                 let data = sbx_block::slice_data_buf(self.version, slot);
 
