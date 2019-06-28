@@ -589,8 +589,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     block_for_seq_num_check.set_seq_num(0);
 
-    reporter.start();
-
     if param.meta_enabled {
         // write dummy metadata block
         write_meta_blocks(
@@ -627,6 +625,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             )))
             .unwrap();
     }
+
+    reporter.start();
 
     let reader_thread = {
         let version = param.version;
