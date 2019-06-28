@@ -3,6 +3,7 @@ use reed_solomon_erasure::ReedSolomon;
 use smallvec::SmallVec;
 use std::io::SeekFrom;
 use std::sync::Arc;
+use std::cmp::min;
 
 use crate::general_error::Error;
 use crate::sbx_specs::{Version, SBX_LAST_SEQ_NUM};
@@ -66,7 +67,7 @@ pub struct DataBlockBuffer {
 }
 
 impl Lot {
-    pub fn new(
+    fn new(
         version: Version,
         uid: Option<&[u8; SBX_FILE_UID_LEN]>,
         input_mode: InputMode,
@@ -109,7 +110,7 @@ impl Lot {
         }
     }
 
-    pub fn get_slot(&mut self) -> GetSlotResult {
+    fn get_slot(&mut self) -> GetSlotResult {
         if self.slots_used() < self.directly_writable_slots {
             let start = self.slots_used() * self.block_size;
             let end_exc = start + self.block_size;
@@ -134,13 +135,13 @@ impl Lot {
         }
     }
 
-    pub fn cancel_last_slot(&mut self) {
+    fn cancel_last_slot(&mut self) {
         assert!(self.data_block_count > 0);
 
         self.data_block_count -= 1;
     }
 
-    pub fn active(&self) -> bool {
+    fn active(&self) -> bool {
         self.slots_used() > 0
     }
 
@@ -177,11 +178,11 @@ impl Lot {
         self.data_block_count + self.padding_block_count + self.parity_block_count
     }
 
-    pub fn is_full(&self) -> bool {
+    fn is_full(&self) -> bool {
         self.data_block_count == self.directly_writable_slots
     }
 
-    pub fn encode(&mut self, lot_start_seq_num: u32) {
+    fn encode(&mut self, lot_start_seq_num: u32) {
         if self.active() {
             self.fill_in_padding();
 
@@ -218,8 +219,10 @@ impl Lot {
     fn hash(&self, ctx: &mut hash::Ctx) {
         let slots_used = self.slots_used();
 
+        let slots_to_hash = min(slots_used, self.directly_writable_slots);
+
         for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
-            if slot_index < slots_used {
+            if slot_index < slots_to_hash {
                 let data = sbx_block::slice_data_buf(self.version, slot);
 
                 ctx.update(data);
@@ -235,7 +238,7 @@ impl Lot {
         self.parity_block_count = 0;
     }
 
-    pub fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
+    fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
         (
             self.data_block_count,
             self.padding_block_count,
@@ -243,7 +246,7 @@ impl Lot {
         )
     }
 
-    pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
+    fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
         if self.active() {
             let slots_used = self.slots_used();
 
@@ -396,7 +399,7 @@ impl DataBlockBuffer {
         Ok(())
     }
 
-    fn reset(&mut self) {
+    pub fn reset(&mut self) {
         self.lots_used = 0;
 
         for lot in self.lots.iter_mut() {

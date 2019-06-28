@@ -39,7 +39,7 @@ pub fn hash(
         &in_file,
         FileReaderParam {
             write: false,
-            buffered: true,
+            buffered: false,
         },
     )?;
 
@@ -60,7 +60,7 @@ pub fn hash(
     let (error_tx_reader, error_rx) = channel::<Error>();
     let (hash_bytes_tx, hash_bytes_rx) = channel();
 
-    let worker_shutdown_barrier = Arc::new(Barrier::new(3));
+    let worker_shutdown_barrier = Arc::new(Barrier::new(2));
 
     // push buffers into pipeline
     for i in 0..PIPELINE_BUFFER_IN_ROTATION {
@@ -90,13 +90,13 @@ pub fn hash(
             let mut seq_num = 1;
 
             while let Some(mut buffer) = from_hasher.recv().unwrap() {
+                let mut stats = stats.lock().unwrap();
+
                 if !run {
                     break;
                 }
 
                 while !buffer.is_full() {
-                    let mut stats = stats.lock().unwrap();
-
                     break_if_atomic_bool!(ctrlc_stop_flag);
 
                     let pos = sbx_block::calc_data_block_write_pos(
@@ -179,8 +179,10 @@ pub fn hash(
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
 
         thread::spawn(move || {
-            while let Some(buffer) = from_reader.recv().unwrap() {
+            while let Some(mut buffer) = from_reader.recv().unwrap() {
                 buffer.hash(&mut hash_ctx);
+
+                buffer.reset();
 
                 to_reader.send(Some(buffer)).unwrap();
             }
