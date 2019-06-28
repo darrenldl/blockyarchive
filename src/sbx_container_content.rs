@@ -126,23 +126,21 @@ pub fn hash(
 
                             eprintln!("bytes_remaining : {}", bytes_remaining);
 
-                            let is_last_data_block = bytes_remaining <= data_chunk_size;
-                            if !sbx_block::seq_num_is_meta(seq_num)
-                                && !sbx_block::seq_num_is_parity_w_data_par_burst(
+                            if !sbx_block::seq_num_is_parity_w_data_par_burst(
                                     seq_num,
                                     data_par_burst,
                                 )
                             {
+                                let is_last_data_block = bytes_remaining <= data_chunk_size;
+
                                 if decode_successful {
-                                    let slice = if is_last_data_block {
-                                        *content_len_exc_header = Some(bytes_remaining as usize);
-                                        &sbx_block::slice_data_buf(version, slot)
-                                            [0..bytes_remaining as usize]
+                                    let bytes_processed = if is_last_data_block {
+                                        bytes_remaining
                                     } else {
-                                        sbx_block::slice_data_buf(version, slot)
+                                        data_chunk_size
                                     };
 
-                                    stats.bytes_processed += slice.len() as u64;
+                                    stats.bytes_processed += bytes_processed as u64;
                                 } else {
                                     error_tx_reader
                                         .send(Error::with_msg("Failed to decode data block"))
@@ -150,9 +148,15 @@ pub fn hash(
                                     run = false;
                                     break;
                                 }
+
+                                if is_last_data_block {
+                                    *content_len_exc_header = Some(bytes_remaining as usize);
+                                    run = false;
+                                    break;
+                                }
                             }
 
-                            if is_last_data_block || seq_num == SBX_LAST_SEQ_NUM {
+                            if seq_num == SBX_LAST_SEQ_NUM {
                                 run = false;
                                 break;
                             }

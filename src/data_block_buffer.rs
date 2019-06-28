@@ -253,6 +253,12 @@ impl Lot {
 
             let slots_to_hash = min(slots_used, self.directly_writable_slots);
 
+            eprintln!("slots_to_hash : {}", slots_to_hash);
+            eprintln!("lot_size : {}", self.lot_size);
+            eprintln!("slots_used : {}", slots_used);
+            eprintln!("directly_writable_slots : {}", self.directly_writable_slots);
+
+
             for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
                 if slot_index < slots_to_hash {
                     let content_len = match self.slot_content_len_exc_header[slot_index] {
