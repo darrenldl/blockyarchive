@@ -124,6 +124,8 @@ pub fn hash(
 
                             let bytes_remaining = stats.total_bytes - stats.bytes_processed;
 
+                            eprintln!("bytes_remaining : {}", bytes_remaining);
+
                             let is_last_data_block = bytes_remaining <= data_chunk_size;
                             if !sbx_block::seq_num_is_meta(seq_num)
                                 && !sbx_block::seq_num_is_parity_w_data_par_burst(
@@ -131,8 +133,6 @@ pub fn hash(
                                     data_par_burst,
                                 )
                             {
-                                eprintln!("bytes_remaining : {}", bytes_remaining);
-
                                 if decode_successful {
                                     let slice = if is_last_data_block {
                                         *content_len_exc_header = Some(bytes_remaining as usize);
