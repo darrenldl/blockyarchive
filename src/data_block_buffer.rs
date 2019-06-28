@@ -122,11 +122,11 @@ impl Lot {
 
             let is_full = self.is_full();
 
-            let raw_slot = &mut self.data[start..end_exc];
+            let slot = &mut self.data[start..end_exc];
 
             let slot = match self.input_mode {
-                InputMode::Block => raw_slot,
-                InputMode::Data => sbx_block::slice_data_buf_mut(self.version, raw_slot),
+                InputMode::Block => slot,
+                InputMode::Data => sbx_block::slice_data_buf_mut(self.version, slot),
             };
 
             if is_full {
@@ -255,6 +255,12 @@ impl Lot {
                     let write_pos = self.write_pos_s[slot_index];
 
                     writer.seek(SeekFrom::Start(write_pos))?;
+
+                    let slot = match self.output_mode {
+                        OutputMode::Block => slot,
+                        OutputMode::Data => sbx_block::slice_data_buf(self.version, slot),
+                        OutputMode::Disabled => panic!("Output is diabled"),
+                    };
 
                     writer.write(slot)?;
                 } else {
