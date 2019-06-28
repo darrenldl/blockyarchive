@@ -20,6 +20,8 @@ use crate::sbx_specs::{
 
 use crate::file_writer::{FileWriter};
 
+const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
+
 struct Lot {
     version: Version,
     block: Block,
@@ -224,7 +226,6 @@ impl DataBlockBuffer {
         uid: &[u8; SBX_FILE_UID_LEN],
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
-        lot_size: usize,
         lot_count: usize,
         buffer_index: usize,
         total_buffer_count: usize,
@@ -232,6 +233,11 @@ impl DataBlockBuffer {
         assert!(lot_count > 0);
 
         let mut lots = Vec::with_capacity(lot_count);
+
+        let lot_size = match data_par_burst {
+            None => DEFAULT_SINGLE_LOT_SIZE,
+            Some((data, parity, _)) => data + parity,
+        };
 
         let rs_codec = Arc::new(match data_par_burst {
             None => None,
