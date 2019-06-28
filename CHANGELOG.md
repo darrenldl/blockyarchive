@@ -4,7 +4,9 @@
 
 - Fixed `sbx_container_content::hash`
   
-    - Previously, it may produce incorrect hash due to incorrect last data block determination logic
+    - Previously, it may produce incorrect hash due to incorrect termination determination logic of core loop
+
+        - Specifically the core loop may end while reading a parity block, causing the final block set to be missed out entirely for hashing
   
     - This only affects the following modes and usage
       
