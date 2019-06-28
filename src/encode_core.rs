@@ -38,7 +38,7 @@ use crate::sbx_specs::{
 
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
-use crate::data_block_buffer::{DataBlockBuffer, InputMode, OutputMode};
+use crate::data_block_buffer::{DataBlockBuffer, InputMode, OutputMode, Slot};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
@@ -652,7 +652,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                     {
                         // read data in
-                        let (slot, _) = buffer.get_slot().unwrap();
+                        let Slot {slot, content_len_exc_header: _} = buffer.get_slot().unwrap();
                         match reader.read(slot) {
                             Ok(read_res) => {
                                 bytes_processed += read_res.len_read as u64;

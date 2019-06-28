@@ -1,4 +1,4 @@
-use crate::data_block_buffer::{DataBlockBuffer, InputMode, OutputMode};
+use crate::data_block_buffer::{DataBlockBuffer, InputMode, OutputMode, Slot};
 use crate::file_reader::{FileReader, FileReaderParam};
 use crate::general_error::Error;
 use crate::hash_stats::HashStats;
@@ -112,7 +112,7 @@ pub fn hash(
                         break;
                     }
 
-                    let (slot, content_len) = buffer.get_slot().unwrap();
+                    let Slot {slot, content_len_exc_header} = buffer.get_slot().unwrap();
                     match reader.read(slot) {
                         Ok(read_res) => {
                             let decode_successful = !read_res.eof_seen
@@ -133,7 +133,7 @@ pub fn hash(
                             {
                                 if decode_successful {
                                     let slice = if is_last_data_block {
-                                        *content_len = Some(bytes_remaining as usize);
+                                        *content_len_exc_header = Some(bytes_remaining as usize);
                                         &sbx_block::slice_data_buf(version, slot)
                                             [0..bytes_remaining as usize]
                                     } else {
