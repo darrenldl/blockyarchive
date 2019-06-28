@@ -9,10 +9,11 @@ use crate::sbx_block::Block;
 use crate::sbx_specs::{ver_to_data_size, SBX_LARGEST_BLOCK_SIZE};
 
 use std::io::SeekFrom;
-
 use std::sync::{Arc, Mutex};
-
 use std::sync::atomic::AtomicBool;
+use std::sync::mpsc::sync_channel;
+
+const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
 pub fn hash(
     json_printer: &JSONPrinter,
@@ -52,7 +53,17 @@ pub fn hash(
 
     let header_pred = header_pred_same_ver_uid!(ref_block);
 
+    let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+    let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+
     reporter.start();
+
+    let reader_thread = {
+        let mut run = true;
+
+        while let Some(mut buffer) = from_hasher.recv().unwrap() {
+        }
+    };
 
     // go through data and parity blocks
     let mut seq_num = 1;
