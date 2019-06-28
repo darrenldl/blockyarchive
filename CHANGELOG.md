@@ -1,6 +1,20 @@
 # Changelog
 
-## 7.2.0
+## 7.2.1
+
+- Fixed `sbx_container_content::hash`
+  
+    - Previously, it may produce incorrect hash due to incorrect last data block determination logic
+  
+    - This only affects the following modes and usage
+      
+        - check mode `--hash`, `--hash-only`
+      
+        - update mode `--hash`
+      
+        - All other modes are not affected by this
+
+## 7.2.0 (yanked)
 
 - Fixed hash type validation in commandline arguments processing
   
@@ -11,7 +25,9 @@
 - Added --hash to update mode
   
     - This options allows rehashing stored data in the SBX container with a possibly different hash function
+
 - Check mode UX improvement
+  
     - Previously if hashing fails, then blkar errors out without showing the block check stats. This wastes a lot of time if the container is large, as the block check stats could be useful in diagnosis.
     - Now blkar displays the error during stats reporting instead of erroring out and exiting immediately. This means block check stats are visible even when hashing error occurs.
 
