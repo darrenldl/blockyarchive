@@ -26,11 +26,9 @@ use crate::reader::{Reader, ReaderType};
 use crate::multihash;
 
 use crate::general_error::Error;
-use crate::sbx_specs::{Version};
+use crate::sbx_specs::Version;
 
-use crate::sbx_block::{
-    make_too_much_meta_err_string, Block, BlockType, Metadata,
-};
+use crate::sbx_block::{make_too_much_meta_err_string, Block, BlockType, Metadata};
 
 use crate::sbx_block;
 use crate::sbx_specs::{
@@ -40,7 +38,7 @@ use crate::sbx_specs::{
 
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
-use crate::data_block_buffer::{InputMode, OutputMode, DataBlockBuffer};
+use crate::data_block_buffer::{DataBlockBuffer, InputMode, OutputMode};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
@@ -671,9 +669,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                     break;
                                 }
 
-                                hash_ctx.lock().unwrap().update(
-                                    &slot[..read_res.len_read],
-                                );
+                                hash_ctx.lock().unwrap().update(&slot[..read_res.len_read]);
 
                                 data_padding_bytes +=
                                     sbx_block::write_padding(version, read_res.len_read, slot);

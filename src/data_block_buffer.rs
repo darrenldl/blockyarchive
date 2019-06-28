@@ -1,24 +1,19 @@
+use rayon::prelude::*;
 use reed_solomon_erasure::ReedSolomon;
 use smallvec::SmallVec;
-use rayon::prelude::*;
-use std::sync::Arc;
 use std::io::SeekFrom;
+use std::sync::Arc;
 
-use crate::sbx_specs::{Version, SBX_LAST_SEQ_NUM};
 use crate::general_error::Error;
+use crate::sbx_specs::{Version, SBX_LAST_SEQ_NUM};
 
-use crate::sbx_block::{
-    calc_data_block_write_pos, Block, BlockType,
-};
+use crate::sbx_block::{calc_data_block_write_pos, Block, BlockType};
 
 use crate::sbx_block;
 
-use crate::sbx_specs::{
-    ver_to_block_size,
-    SBX_FILE_UID_LEN,
-};
+use crate::sbx_specs::{ver_to_block_size, SBX_FILE_UID_LEN};
 
-use crate::file_writer::{FileWriter};
+use crate::file_writer::FileWriter;
 use crate::multihash::hash;
 
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;

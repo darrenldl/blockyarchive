@@ -1,3 +1,4 @@
+use crate::data_block_buffer::{DataBlockBuffer, InputMode, OutputMode};
 use crate::file_reader::{FileReader, FileReaderParam};
 use crate::general_error::Error;
 use crate::hash_stats::HashStats;
@@ -7,14 +8,13 @@ use crate::progress_report::{PRVerbosityLevel, ProgressReporter};
 use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_specs::{ver_to_data_size, SBX_LAST_SEQ_NUM};
-use crate::data_block_buffer::{InputMode, OutputMode, DataBlockBuffer};
 
 use std::io::SeekFrom;
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
-use std::sync::mpsc::sync_channel;
 use std::sync::mpsc::channel;
+use std::sync::mpsc::sync_channel;
 use std::sync::Barrier;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 2;
@@ -99,7 +99,12 @@ pub fn hash(
 
                     break_if_atomic_bool!(ctrlc_stop_flag);
 
-                    let pos = sbx_block::calc_data_block_write_pos(version, seq_num, None, data_par_burst);
+                    let pos = sbx_block::calc_data_block_write_pos(
+                        version,
+                        seq_num,
+                        None,
+                        data_par_burst,
+                    );
 
                     if let Err(e) = reader.seek(SeekFrom::Start(pos)) {
                         error_tx_reader.send(e).unwrap();
@@ -121,32 +126,36 @@ pub fn hash(
                             let is_last_data_block = bytes_remaining <= data_chunk_size;
 
                             if !sbx_block::seq_num_is_meta(seq_num)
-                                && !sbx_block::seq_num_is_parity_w_data_par_burst(seq_num, data_par_burst)
+                                && !sbx_block::seq_num_is_parity_w_data_par_burst(
+                                    seq_num,
+                                    data_par_burst,
+                                )
                             {
                                 if decode_successful {
                                     let slice = if is_last_data_block {
-                                        &sbx_block::slice_data_buf(version, slot)[0..bytes_remaining as usize]
+                                        &sbx_block::slice_data_buf(version, slot)
+                                            [0..bytes_remaining as usize]
                                     } else {
                                         sbx_block::slice_data_buf(version, slot)
                                     };
 
                                     stats.bytes_processed += slice.len() as u64;
                                 } else {
-                                    error_tx_reader.send(Error::with_msg("Failed to decode data block")).unwrap();
+                                    error_tx_reader
+                                        .send(Error::with_msg("Failed to decode data block"))
+                                        .unwrap();
                                     run = false;
                                     break;
                                 }
                             }
 
-                            if is_last_data_block
-                                || seq_num == SBX_LAST_SEQ_NUM
-                            {
+                            if is_last_data_block || seq_num == SBX_LAST_SEQ_NUM {
                                 run = false;
                                 break;
                             }
 
                             seq_num += 1;
-                        },
+                        }
                         Err(e) => {
                             error_tx_reader.send(e).unwrap();
                             run = false;
@@ -178,7 +187,9 @@ pub fn hash(
 
             to_reader.send(None).unwrap();
 
-            hash_bytes_tx.send(hash_ctx.finish_into_hash_bytes()).unwrap();
+            hash_bytes_tx
+                .send(hash_ctx.finish_into_hash_bytes())
+                .unwrap();
 
             shutdown_barrier.wait();
         })
