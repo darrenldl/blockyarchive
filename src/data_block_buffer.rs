@@ -248,26 +248,29 @@ impl Lot {
     }
 
     fn hash(&self, ctx: &mut hash::Ctx) {
-        let slots_used = self.slots_used();
+        if self.active() {
+            let slots_used = self.slots_used();
 
-        let slots_to_hash = min(slots_used, self.directly_writable_slots);
+            let slots_to_hash = min(slots_used, self.directly_writable_slots);
 
-        for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
-            if slot_index < slots_to_hash {
-                let content_len = match self.slot_content_len_exc_header[slot_index] {
-                    None => self.data_size,
-                    Some(len) => {
-                        assert!(len > 0);
-                        assert!(len <= self.data_size);
-                        len
-                    }
-                };
+            for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
+                if slot_index < slots_to_hash {
+                    let content_len = match self.slot_content_len_exc_header[slot_index] {
+                        None => self.data_size,
+                        Some(len) => {
+                            assert!(len > 0);
+                            assert!(len <= self.data_size);
+                            eprintln!("content_len : {}", len);
+                            len
+                        }
+                    };
 
-                let data = &sbx_block::slice_data_buf(self.version, slot)[..content_len];
+                    let data = &sbx_block::slice_data_buf(self.version, slot)[..content_len];
 
-                ctx.update(data);
-            } else {
-                break;
+                    ctx.update(data);
+                } else {
+                    break;
+                }
             }
         }
     }
@@ -276,6 +279,9 @@ impl Lot {
         self.data_block_count = 0;
         self.padding_block_count = 0;
         self.parity_block_count = 0;
+        for len in self.slot_content_len_exc_header.iter_mut() {
+            *len = None;
+        }
     }
 
     fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
