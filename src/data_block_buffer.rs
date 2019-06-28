@@ -25,9 +25,29 @@ const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
 const LOT_COUNT_PER_CPU: usize = 10;
 
+enum GetSlotResult<'a> {
+    None,
+    Some(&'a mut [u8]),
+    LastSlot(&'a mut [u8]),
+}
+
+pub enum InputMode {
+    Block,
+    Data,
+    Disabled,
+}
+
+pub enum OutputMode {
+    Block,
+    Data,
+    Disabled,
+}
+
 struct Lot {
     version: Version,
     block: Block,
+    input_mode: InputMode,
+    output_mode: OutputMode,
     data_par_burst: Option<(usize, usize, usize)>,
     meta_enabled: bool,
     block_size: usize,
@@ -41,12 +61,6 @@ struct Lot {
     rs_codec: Arc<Option<ReedSolomon>>,
 }
 
-enum GetSlotResult<'a> {
-    None,
-    Some(&'a mut [u8]),
-    LastSlot(&'a mut [u8]),
-}
-
 pub struct DataBlockBuffer {
     lots: Vec<Lot>,
     lot_size: usize,
@@ -58,7 +72,9 @@ pub struct DataBlockBuffer {
 impl Lot {
     pub fn new(
         version: Version,
-        uid: &[u8; SBX_FILE_UID_LEN],
+        uid: Option<&[u8; SBX_FILE_UID_LEN]>,
+        input_mode: InputMode,
+        output_mode: OutputMode,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
         lot_size: usize,
@@ -73,9 +89,16 @@ impl Lot {
             Some((data, _, _)) => data,
         };
 
+        let uid = match uid {
+            None => &[0; SBX_FILE_UID_LEN],
+            Some(x) => x,
+        };
+
         Lot {
             version,
             block: Block::new(version, uid, BlockType::Data),
+            input_mode,
+            output_mode,
             data_par_burst,
             meta_enabled,
             block_size,
@@ -95,6 +118,14 @@ impl Lot {
             let start = self.slots_used() * self.block_size;
             let end_exc = start + self.block_size;
             self.data_block_count += 1;
+
+            let raw_slot = &mut self.data[start..end_exc];
+
+            let slot = match self.input_mode {
+                Block => raw_slot,
+                Data => sbx_block::slice_data_buf_mut(self.version, raw_slot),
+            };
+
             if self.is_full() {
                 GetSlotResult::LastSlot(&mut self.data[start..end_exc])
             } else {
@@ -238,7 +269,9 @@ impl Lot {
 impl DataBlockBuffer {
     pub fn new(
         version: Version,
-        uid: &[u8; SBX_FILE_UID_LEN],
+        uid: Option<&[u8; SBX_FILE_UID_LEN]>,
+        input_mode: InputMode,
+        output_mode: OutputMode,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
         buffer_index: usize,
@@ -264,6 +297,8 @@ impl DataBlockBuffer {
             lots.push(Lot::new(
                 version,
                 uid,
+                input_mode,
+                output_mode,
                 data_par_burst,
                 meta_enabled,
                 lot_size,

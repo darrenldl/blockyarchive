@@ -7,7 +7,7 @@ use crate::progress_report::{PRVerbosityLevel, ProgressReporter};
 use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_specs::{ver_to_data_size, SBX_LARGEST_BLOCK_SIZE};
-use crate::data_block_buffer::DataBlockBuffer;
+use crate::data_block_buffer::{InputMode, OutputMode, DataBlockBuffer};
 
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
@@ -54,31 +54,33 @@ pub fn hash(
 
     let header_pred = header_pred_same_ver_uid!(ref_block);
 
-    let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
-    let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+    // let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+    // let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
 
     // push buffers into pipeline
-    for i in 0..PIPELINE_BUFFER_IN_ROTATION {
-        to_reader
-            .send(Some(DataBlockBuffer::new(
-                version,
-                &,
-                param.data_par_burst,
-                param.meta_enabled,
-                i,
-                PIPELINE_BUFFER_IN_ROTATION,
-            )))
-            .unwrap();
-    }
+    // for i in 0..PIPELINE_BUFFER_IN_ROTATION {
+    //     to_reader
+    //         .send(Some(DataBlockBuffer::new(
+    //             version,
+    //             None,
+    //             InputMode::Block,
+    //             OutputMode::Disabled,
+    //             data_par_burst,
+    //             true,
+    //             i,
+    //             PIPELINE_BUFFER_IN_ROTATION,
+    //         )))
+    //         .unwrap();
+    // }
 
     reporter.start();
 
-    let reader_thread = {
-        let mut run = true;
+    // let reader_thread = {
+    //     let mut run = true;
 
-        while let Some(mut buffer) = from_hasher.recv().unwrap() {
-        }
-    };
+    //     while let Some(mut buffer) = from_hasher.recv().unwrap() {
+    //     }
+    // };
 
     // go through data and parity blocks
     let mut seq_num = 1;
