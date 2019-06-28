@@ -6,7 +6,7 @@ use crate::multihash::*;
 use crate::progress_report::{PRVerbosityLevel, ProgressReporter};
 use crate::sbx_block;
 use crate::sbx_block::Block;
-use crate::sbx_specs::{ver_to_data_size, SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM};
+use crate::sbx_specs::{ver_to_data_size, SBX_LAST_SEQ_NUM};
 use crate::data_block_buffer::{InputMode, OutputMode, DataBlockBuffer};
 
 use std::io::SeekFrom;
@@ -23,7 +23,7 @@ pub fn hash(
     json_printer: &JSONPrinter,
     pr_verbosity_level: PRVerbosityLevel,
     data_par_burst: Option<(usize, usize, usize)>,
-    ctrlc_stop_flag: &AtomicBool,
+    ctrlc_stop_flag: &Arc<AtomicBool>,
     in_file: &str,
     orig_file_size: u64,
     ref_block: &Block,
@@ -34,8 +34,6 @@ pub fn hash(
     let version = ref_block.get_version();
 
     let data_chunk_size = ver_to_data_size(version) as u64;
-
-    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
     let mut reader = FileReader::new(
         &in_file,
@@ -60,7 +58,7 @@ pub fn hash(
     let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
     let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
     let (error_tx_reader, error_rx) = channel::<Error>();
-    let error_tx_hasher = error_tx_reader.clone();
+    let (hash_bytes_tx, hash_bytes_rx) = channel();
 
     let worker_shutdown_barrier = Arc::new(Barrier::new(3));
 
@@ -83,7 +81,9 @@ pub fn hash(
     reporter.start();
 
     let reader_thread = {
+        let ctrlc_stop_flag = Arc::clone(ctrlc_stop_flag);
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+        let stats = Arc::clone(&stats);
 
         thread::spawn(move || {
             let mut run = true;
@@ -102,7 +102,7 @@ pub fn hash(
                     let pos = sbx_block::calc_data_block_write_pos(version, seq_num, None, data_par_burst);
 
                     if let Err(e) = reader.seek(SeekFrom::Start(pos)) {
-                        error_tx_reader.send(e);
+                        error_tx_reader.send(e).unwrap();
                         run = false;
                         break;
                     }
@@ -144,6 +144,8 @@ pub fn hash(
                                 run = false;
                                 break;
                             }
+
+                            seq_num += 1;
                         },
                         Err(e) => {
                             error_tx_reader.send(e).unwrap();
@@ -169,12 +171,14 @@ pub fn hash(
 
         thread::spawn(move || {
             while let Some(buffer) = from_reader.recv().unwrap() {
-                buffer.hash(&mut hash);
+                buffer.hash(&mut hash_ctx);
 
-                to_reader.send(Some(buffer));
+                to_reader.send(Some(buffer)).unwrap();
             }
 
             to_reader.send(None).unwrap();
+
+            hash_bytes_tx.send(hash_ctx.finish_into_hash_bytes()).unwrap();
 
             shutdown_barrier.wait();
         })
@@ -183,9 +187,13 @@ pub fn hash(
     reader_thread.join().unwrap();
     hasher_thread.join().unwrap();
 
+    if let Ok(err) = error_rx.try_recv() {
+        return Err(err);
+    }
+
     reporter.stop();
 
     let stats = stats.lock().unwrap().clone();
 
-    Ok((stats, hash_ctx.finish_into_hash_bytes()))
+    Ok((stats, hash_bytes_rx.recv().unwrap()))
 }

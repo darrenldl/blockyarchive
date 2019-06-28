@@ -445,7 +445,7 @@ fn check_blocks(
 
 fn hash(
     param: &Param,
-    ctrlc_stop_flag: &AtomicBool,
+    ctrlc_stop_flag: &Arc<AtomicBool>,
     orig_file_size: u64,
     ref_block_pos: u64,
     ref_block: &Block,

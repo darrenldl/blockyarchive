@@ -220,14 +220,16 @@ impl Lot {
         }
     }
 
-    fn hash(&self, hash_ctx: &mut hash::Ctx) {
+    fn hash(&self, ctx: &mut hash::Ctx) {
         let slots_used = self.slots_used();
 
         for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
             if slot_index < slots_used {
                 let data = sbx_block::slice_data_buf(self.version, slot);
 
-                hash_ctx.update(data);
+                ctx.update(data);
+            } else {
+                break;
             }
         }
     }
@@ -421,6 +423,12 @@ impl DataBlockBuffer {
         }
 
         (data_blocks, padding_blocks, parity_blocks)
+    }
+
+    pub fn hash(&self, ctx: &mut hash::Ctx) {
+        for lot in self.lots.iter() {
+            lot.hash(ctx);
+        }
     }
 
     pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
