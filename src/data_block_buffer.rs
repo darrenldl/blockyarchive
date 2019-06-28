@@ -19,6 +19,7 @@ use crate::sbx_specs::{
 };
 
 use crate::file_writer::{FileWriter};
+use crate::multihash::hash;
 
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
@@ -179,6 +180,18 @@ impl Lot {
                 } else {
                     break;
                 }
+            }
+        }
+    }
+
+    fn hash(&self, hash_ctx: &mut hash::Ctx) {
+        let slots_used = self.slots_used();
+
+        for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+            if slot_index < slots_used {
+                let data = sbx_block::slice_data_buf(self.version, slot);
+
+                hash_ctx.update(data);
             }
         }
     }
