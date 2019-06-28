@@ -23,6 +23,8 @@ use crate::multihash::hash;
 
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
+const LOT_COUNT_PER_CPU: usize = 10;
+
 struct Lot {
     version: Version,
     block: Block,
@@ -239,10 +241,11 @@ impl DataBlockBuffer {
         uid: &[u8; SBX_FILE_UID_LEN],
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
-        lot_count: usize,
         buffer_index: usize,
         total_buffer_count: usize,
     ) -> Self {
+        let lot_count = num_cpus::get() * LOT_COUNT_PER_CPU;
+
         assert!(lot_count > 0);
 
         let mut lots = Vec::with_capacity(lot_count);

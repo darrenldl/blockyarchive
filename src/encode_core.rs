@@ -42,8 +42,6 @@ use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 use crate::data_block_buffer::DataBlockBuffer;
 
-const LOT_COUNT_PER_CPU: usize = 10;
-
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
 #[derive(Clone, Debug)]
@@ -574,8 +572,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         multihash::hash::Ctx::new(param.hash_type).unwrap(),
     ));
 
-    let lot_count = num_cpus::get() * LOT_COUNT_PER_CPU;
-
     // seek to calculated position
     if let Some(seek_to) = seek_to {
         if let Some(r) = reader.seek(SeekFrom::Start(seek_to)) {
@@ -619,7 +615,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 &param.uid,
                 param.data_par_burst,
                 param.meta_enabled,
-                lot_count,
                 i,
                 PIPELINE_BUFFER_IN_ROTATION,
             )))

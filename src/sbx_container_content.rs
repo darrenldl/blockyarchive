@@ -7,6 +7,7 @@ use crate::progress_report::{PRVerbosityLevel, ProgressReporter};
 use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_specs::{ver_to_data_size, SBX_LARGEST_BLOCK_SIZE};
+use crate::data_block_buffer::DataBlockBuffer;
 
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
@@ -55,6 +56,20 @@ pub fn hash(
 
     let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
     let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+
+    // push buffers into pipeline
+    for i in 0..PIPELINE_BUFFER_IN_ROTATION {
+        to_reader
+            .send(Some(DataBlockBuffer::new(
+                version,
+                &,
+                param.data_par_burst,
+                param.meta_enabled,
+                i,
+                PIPELINE_BUFFER_IN_ROTATION,
+            )))
+            .unwrap();
+    }
 
     reporter.start();
 
