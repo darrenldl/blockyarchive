@@ -3,6 +3,7 @@ use reed_solomon_erasure::ReedSolomon;
 use smallvec::SmallVec;
 use std::io::SeekFrom;
 use std::sync::Arc;
+use std::cmp::min;
 
 use crate::general_error::Error;
 use crate::sbx_specs::{Version, SBX_LAST_SEQ_NUM};
@@ -126,7 +127,7 @@ impl Lot {
             data: vec![0; block_size * lot_size],
             slot_write_pos: vec![0; lot_size],
             slot_content_len_exc_header: vec![None; lot_size],
-            slots_is_padding: vec![false; lot_size],
+            slot_is_padding: vec![false; directly_writable_slots],
             rs_codec,
         }
     }
@@ -172,10 +173,6 @@ impl Lot {
         assert!(self.data_block_count > 0);
 
         self.data_block_count -= 1;
-    }
-
-    fn active(&self) -> bool {
-        self.slots_used() > 0
     }
 
     fn fill_in_padding(&mut self) {
@@ -226,15 +223,30 @@ impl Lot {
         self.slots_used >= self.directly_writable_slots
     }
 
+    fn calc_write_pos_s(&mut self) {
+        for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+            if slot_index < self.slots_used {
+                let write_pos = calc_data_block_write_pos(
+                    self.version,
+                    self.block.get_seq_num(),
+                    Some(self.meta_enabled),
+                    self.data_par_burst,
+                );
+            } else {
+                break;
+            }
+        }
+    }
+
     fn encode(&mut self, lot_start_seq_num: u32) {
+        assert!(self.input_type == InputType::Data);
+
         self.fill_in_padding();
 
         self.rs_encode();
 
-        let slots_used = self.slots_used();
-
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-            if slot_index < slots_used {
+            if slot_index < self.slots_used {
                 let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
 
                 assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
@@ -259,80 +271,89 @@ impl Lot {
     }
 
     fn hash(&self, ctx: &mut hash::Ctx) {
-        if self.active() {
-            let slots_used = self.slots_used();
+        assert!(self.arrangement == BlockArrangement::Ordered);
 
-            let slots_to_hash = self.data_block_count;
+        let slots_to_hash = match self.data_par_burst {
+            None => self.slots_used,
+            Some((data, _, _)) => min(data, self.slots_used)
+        };
 
-            eprintln!("slots_to_hash : {}", slots_to_hash);
-            eprintln!("lot_size : {}", self.lot_size);
-            eprintln!("slots_used : {}", slots_used);
-            eprintln!("directly_writable_slots : {}", self.directly_writable_slots);
+        for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
+            if slot_index < slots_to_hash {
+                let content_len = match self.slot_content_len_exc_header[slot_index] {
+                    None => self.data_size,
+                    Some(len) => {
+                        assert!(len > 0);
+                        assert!(len <= self.data_size);
+                        len
+                    }
+                };
 
+                let data = &sbx_block::slice_data_buf(self.version, slot)[..content_len];
 
-            for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
-                if slot_index < slots_to_hash {
-                    let content_len = match self.slot_content_len_exc_header[slot_index] {
-                        None => self.data_size,
-                        Some(len) => {
-                            assert!(len > 0);
-                            assert!(len <= self.data_size);
-                            eprintln!("content_len : {}", len);
-                            len
-                        }
-                    };
-
-                    let data = &sbx_block::slice_data_buf(self.version, slot)[..content_len];
-
-                    ctx.update(data);
-                } else {
-                    break;
-                }
+                ctx.update(data);
+            } else {
+                break;
             }
         }
     }
 
     fn reset(&mut self) {
-        self.data_block_count = 0;
-        self.padding_block_count = 0;
-        self.parity_block_count = 0;
+        self.slots_used = 0;
+
         for len in self.slot_content_len_exc_header.iter_mut() {
             *len = None;
         }
     }
 
     fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
+        let data = match self.data_par_burst {
+            None => self.slots_used,
+            Some((data, _, _)) => min(data, self.slots_used),
+        };
+
+        let mut padding = 0;
+        for &is_padding in self.slot_is_padding.iter() {
+            if is_padding {
+                padding += 1;
+            }
+        }
+
+        let parity_block_count = match self.data_par_burst {
+            None => 0,
+            Some((data, _, _)) =>
+                if self.slots_used < data {
+                    0
+                } else {
+                    slots_used - data
+                }
+        };
+
         (
-            self.data_block_count,
-            self.padding_block_count,
-            self.parity_block_count,
+            data, padding, parity
         )
     }
 
     fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
-        if self.active() {
-            let slots_used = self.slots_used();
+        for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+            if slot_index < self.slots_used {
+                let write_pos = self.slot_write_pos[slot_index];
 
-            for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-                if slot_index < slots_used {
-                    let write_pos = self.slot_write_pos[slot_index];
+                writer.seek(SeekFrom::Start(write_pos))?;
 
-                    writer.seek(SeekFrom::Start(write_pos))?;
+                let slot = match self.output_mode {
+                    OutputMode::Block => slot,
+                    OutputMode::Data => sbx_block::slice_data_buf(self.version, slot),
+                    OutputMode::Disabled => panic!("Output is diabled"),
+                };
 
-                    let slot = match self.output_mode {
-                        OutputMode::Block => slot,
-                        OutputMode::Data => sbx_block::slice_data_buf(self.version, slot),
-                        OutputMode::Disabled => panic!("Output is diabled"),
-                    };
-
-                    writer.write(slot)?;
-                } else {
-                    break;
-                }
+                writer.write(slot)?;
+            } else {
+                break;
             }
-
-            self.reset();
         }
+
+        self.reset();
 
         Ok(())
     }
@@ -402,7 +423,7 @@ impl DataBlockBuffer {
     }
 
     pub fn active(&self) -> bool {
-        self.lots_used > 0 || self.lots[self.lots_used].slots_used() > 0
+        self.lots_used > 0 || self.lots[self.lots_used].slots_used > 0
     }
 
     pub fn get_slot(&mut self) -> Option<Slot> {
