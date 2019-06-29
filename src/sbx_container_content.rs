@@ -1,4 +1,4 @@
-use crate::data_block_buffer::{DataBlockBuffer, InputMode, OutputMode, Slot};
+use crate::data_block_buffer::{DataBlockBuffer, InputType, OutputType, Slot, BlockArrangement};
 use crate::file_reader::{FileReader, FileReaderParam};
 use crate::general_error::Error;
 use crate::hash_stats::HashStats;
@@ -68,8 +68,9 @@ pub fn hash(
             .send(Some(DataBlockBuffer::new(
                 version,
                 None,
-                InputMode::Block,
-                OutputMode::Disabled,
+                InputType::Block,
+                OutputType::Disabled,
+                BlockArrangement::Ordered,
                 data_par_burst,
                 true,
                 i,

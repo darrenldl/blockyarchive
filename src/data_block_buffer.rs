@@ -21,25 +21,44 @@ const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
 const LOT_COUNT_PER_CPU: usize = 10;
 
+macro_rules! slice_slot_w_index {
+    (
+        $self:expr, $index:expr
+    ) => {{
+        let start = $index * $self.block_size;
+        let end_exc = start + $self.block_size;
+
+        &$self.data[start..end_exc]
+    }};
+    (
+        mut => $self:expr, $index:expr
+    ) => {{
+        let start = $index * $self.block_size;
+        let end_exc = start + $self.block_size;
+
+        &mut $self.data[start..end_exc]
+    }}
+}
+
 enum GetSlotResult<'a> {
     None,
     Some(&'a mut [u8], &'a mut Option<usize>),
     LastSlot(&'a mut [u8], &'a mut Option<usize>),
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum InputType {
     Block,
     Data,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum BlockArrangement {
     Ordered,
     Unordered,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum OutputType {
     Block,
     Data,
@@ -53,9 +72,8 @@ pub struct Slot<'a> {
 
 struct Lot {
     version: Version,
-    block: Block,
-    input_type: InputMode,
-    output_type: OutputMode,
+    input_type: InputType,
+    output_type: OutputType,
     arrangement: BlockArrangement,
     data_par_burst: Option<(usize, usize, usize)>,
     meta_enabled: bool,
@@ -65,6 +83,7 @@ struct Lot {
     slots_used: usize,
     padding_byte_count_in_non_padding_blocks: usize,
     directly_writable_slots: usize,
+    blocks: Vec<Block>,
     data: Vec<u8>,
     slot_write_pos: Vec<u64>,
     slot_content_len_exc_header: Vec<Option<usize>>,
@@ -98,7 +117,7 @@ impl Lot {
         let rs_codec = Arc::clone(rs_codec);
 
         let directly_writable_slots = match input_type {
-            InputMode::Block => lot_size,
+            InputType::Block => lot_size,
             InputType::Data => match data_par_burst {
                 None => lot_size,
                 Some((data, _, _)) => data,
@@ -110,9 +129,13 @@ impl Lot {
             Some(x) => x,
         };
 
+        let mut blocks = Vec::with_capacity(lot_size);
+        for _ in 0..lot_size {
+            blocks.push(Block::new(version, uid, BlockType::Data));
+        }
+
         Lot {
             version,
-            block: Block::new(version, uid, BlockType::Data),
             input_type,
             output_type,
             arrangement,
@@ -124,6 +147,7 @@ impl Lot {
             slots_used: 0,
             padding_byte_count_in_non_padding_blocks: 0,
             directly_writable_slots,
+            blocks,
             data: vec![0; block_size * lot_size],
             slot_write_pos: vec![0; lot_size],
             slot_content_len_exc_header: vec![None; lot_size],
@@ -134,30 +158,18 @@ impl Lot {
 
     fn get_slot(&mut self) -> GetSlotResult {
         if self.slots_used < self.directly_writable_slots {
-            match self.data_par_burst {
-                None => self.data_block_count += 1,
-                Some((data, _, _)) => {
-                    if slots_used < data {
-                        self.data_block_count += 1;
-                    } else {
-                        self.parity_block_count += 1;
-                    }
-                }
-            }
-
             let is_full = self.is_full();
 
-            let start = slots_used * self.block_size;
-            let end_exc = start + self.block_size;
-
-            let slot = &mut self.data[start..end_exc];
+            let slot = slice_slot_w_index!(mut => self, self.slots_used);
 
             let slot = match self.input_type {
                 InputType::Block => slot,
                 InputType::Data => sbx_block::slice_data_buf_mut(self.version, slot),
             };
 
-            let content_len = &mut self.slot_content_len_exc_header[slots_used];
+            let content_len = &mut self.slot_content_len_exc_header[self.slots_used];
+
+            self.slots_used += 1;
 
             if is_full {
                 GetSlotResult::LastSlot(slot, content_len)
@@ -170,36 +182,34 @@ impl Lot {
     }
 
     fn cancel_last_slot(&mut self) {
-        assert!(self.data_block_count > 0);
+        assert!(self.slots_used > 0);
 
-        self.data_block_count -= 1;
+        self.slots_used -= 1;
     }
 
     fn fill_in_padding(&mut self) {
-        for i in 0..self.data_block_count {
+        for i in 0..self.slots_used {
             if let Some(len) = self.slot_content_len_exc_header[i] {
                 assert!(len > 0);
                 assert!(len <= self.data_size);
 
-                let start = i * self.block_size;
-                let end_exc = start + self.block_size;
-                let slot = &mut self.data[start..end_exc];
+                let slot = slice_slot_w_index!(mut => self, i);
 
-                if len < self.block_size {
+                if len < self.data_size {
                     self.padding_byte_count_in_non_padding_blocks += sbx_block::write_padding(self.version, len, slot);
                 }
             }
         }
 
         if let Some((data, _, _)) = self.data_par_burst {
-            for i in self.data_block_count..data {
-                let start = i * self.block_size;
-                let end_exc = start + self.block_size;
-                let slot = &mut self.data[start..end_exc];
+            assert!(self.arrangement == BlockArrangement::Ordered);
+
+            for i in self.slots_used..data {
+                let slot = slice_slot_w_index!(mut => self, i);
 
                 sbx_block::write_padding(self.version, 0, slot);
 
-                self.padding_block_count += 1;
+                self.slot_is_padding[i] = true;
             }
         }
     }
@@ -214,8 +224,6 @@ impl Lot {
             }
 
             rs_codec.encode(&mut refs).unwrap();
-
-            self.parity_block_count = rs_codec.parity_shard_count();
         }
     }
 
@@ -223,15 +231,48 @@ impl Lot {
         self.slots_used >= self.directly_writable_slots
     }
 
-    fn calc_write_pos_s(&mut self) {
+    fn sync_block_from_slot(&mut self) {
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
             if slot_index < self.slots_used {
-                let write_pos = calc_data_block_write_pos(
-                    self.version,
-                    self.block.get_seq_num(),
-                    Some(self.meta_enabled),
-                    self.data_par_burst,
-                );
+                self.blocks[slot_index].sync_from_buffer(slot, None, None).unwrap();
+            } else {
+                break;
+            }
+        }
+    }
+
+    fn calc_slot_write_pos(&mut self) {
+        for slot_index in 0..self.slots_used {
+            let write_pos = calc_data_block_write_pos(
+                self.version,
+                self.blocks[slot_index].get_seq_num(),
+                Some(self.meta_enabled),
+                self.data_par_burst,
+            );
+
+            self.slot_write_pos[slot_index] = write_pos;
+        }
+    }
+
+    fn set_block_seq_num_based_on_lot_start_seq_num(&mut self, lot_start_seq_num: u32) {
+        for slot_index in 0..self.slots_used{
+            if slot_index < self.slots_used {
+                let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
+
+                assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
+
+                self.blocks[slot_index]
+                    .set_seq_num(lot_start_seq_num + slot_index as u32);
+            } else {
+                break;
+            }
+        }
+    }
+
+    fn sync_block_to_slot(&mut self) {
+        for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+            if slot_index < self.slots_used {
+                self.blocks[slot_index].sync_to_buffer(None, slot).unwrap();
             } else {
                 break;
             }
@@ -240,34 +281,32 @@ impl Lot {
 
     fn encode(&mut self, lot_start_seq_num: u32) {
         assert!(self.input_type == InputType::Data);
+        assert!(self.arrangement == BlockArrangement::Ordered);
 
         self.fill_in_padding();
 
         self.rs_encode();
 
-        for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-            if slot_index < self.slots_used {
-                let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
+        self.set_block_seq_num_based_on_lot_start_seq_num(lot_start_seq_num);
 
-                assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
+        self.calc_slot_write_pos();
 
-                self.block
-                    .set_seq_num(lot_start_seq_num + slot_index as u32);
+        self.sync_block_to_slot();
 
-                self.block.sync_to_buffer(None, slot).unwrap();
+        // for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+        //     if slot_index < self.slots_used {
+        //         let write_pos = calc_data_block_write_pos(
+        //             self.version,
+        //             self.block.get_seq_num(),
+        //             Some(self.meta_enabled),
+        //             self.data_par_burst,
+        //         );
 
-                let write_pos = calc_data_block_write_pos(
-                    self.version,
-                    self.block.get_seq_num(),
-                    Some(self.meta_enabled),
-                    self.data_par_burst,
-                );
-
-                self.slot_write_pos[slot_index] = write_pos;
-            } else {
-                break;
-            }
-        }
+        //         self.slot_write_pos[slot_index] = write_pos;
+        //     } else {
+        //         break;
+        //     }
+        // }
     }
 
     fn hash(&self, ctx: &mut hash::Ctx) {
@@ -319,13 +358,13 @@ impl Lot {
             }
         }
 
-        let parity_block_count = match self.data_par_burst {
+        let parity = match self.data_par_burst {
             None => 0,
             Some((data, _, _)) =>
                 if self.slots_used < data {
                     0
                 } else {
-                    slots_used - data
+                    self.slots_used - data
                 }
         };
 
@@ -341,10 +380,10 @@ impl Lot {
 
                 writer.seek(SeekFrom::Start(write_pos))?;
 
-                let slot = match self.output_mode {
-                    OutputMode::Block => slot,
-                    OutputMode::Data => sbx_block::slice_data_buf(self.version, slot),
-                    OutputMode::Disabled => panic!("Output is diabled"),
+                let slot = match self.output_type {
+                    OutputType::Block => slot,
+                    OutputType::Data => sbx_block::slice_data_buf(self.version, slot),
+                    OutputType::Disabled => panic!("Output is diabled"),
                 };
 
                 writer.write(slot)?;
@@ -363,8 +402,9 @@ impl DataBlockBuffer {
     pub fn new(
         version: Version,
         uid: Option<&[u8; SBX_FILE_UID_LEN]>,
-        input_mode: InputMode,
-        output_mode: OutputMode,
+        input_type: InputType,
+        output_type: OutputType,
+        arrangement: BlockArrangement,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
         buffer_index: usize,
@@ -390,8 +430,9 @@ impl DataBlockBuffer {
             lots.push(Lot::new(
                 version,
                 uid,
-                input_mode,
-                output_mode,
+                input_type,
+                output_type,
+                arrangement,
                 data_par_burst,
                 meta_enabled,
                 lot_size,
@@ -450,7 +491,7 @@ impl DataBlockBuffer {
     pub fn cancel_last_slot(&mut self) {
         assert!(self.active());
 
-        let shift_back_one_slot = self.is_full() || self.lots[self.lots_used].slots_used() == 0;
+        let shift_back_one_slot = self.is_full() || self.lots[self.lots_used].slots_used == 0;
 
         if shift_back_one_slot {
             self.lots_used -= 1;

@@ -38,7 +38,7 @@ use crate::sbx_specs::{
 
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
-use crate::data_block_buffer::{DataBlockBuffer, InputMode, OutputMode, Slot};
+use crate::data_block_buffer::{DataBlockBuffer, InputType, OutputType, Slot, BlockArrangement};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
@@ -611,8 +611,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             .send(Some(DataBlockBuffer::new(
                 param.version,
                 Some(&param.uid),
-                InputMode::Data,
-                OutputMode::Block,
+                InputType::Data,
+                OutputType::Block,
+                BlockArrangement::Ordered,
                 param.data_par_burst,
                 param.meta_enabled,
                 i,
