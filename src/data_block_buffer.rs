@@ -33,24 +33,15 @@ pub enum InputType {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum InputMode {
-    DataOnlyAligned,
-    DataOnlyUnaligned,
-    DataAndParityAligned,
-    DataAndParityUnaligned,
+pub enum BlockArrangement {
+    Ordered,
+    Unordered,
 }
 
 #[derive(Copy, Clone, Debug)]
 pub enum OutputType {
     Block,
     Data,
-    Disabled,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum OutputMode {
-    DataOnly,
-    DataAndParity,
     Disabled,
 }
 
@@ -63,23 +54,20 @@ struct Lot {
     version: Version,
     block: Block,
     input_type: InputMode,
-    input_mode: InputMode,
     output_type: OutputMode,
-    output_mode: OutputMode,
+    arrangement: BlockArrangement,
     data_par_burst: Option<(usize, usize, usize)>,
     meta_enabled: bool,
     block_size: usize,
     data_size: usize,
     lot_size: usize,
     slots_used: usize,
-    data_block_count: usize,
-    padding_block_count: usize,
-    parity_block_count: usize,
     padding_byte_count_in_non_padding_blocks: usize,
     directly_writable_slots: usize,
     data: Vec<u8>,
     slot_write_pos: Vec<u64>,
     slot_content_len_exc_header: Vec<Option<usize>>,
+    slot_is_padding: Vec<bool>,
     rs_codec: Arc<Option<ReedSolomon>>,
 }
 
@@ -96,9 +84,8 @@ impl Lot {
         version: Version,
         uid: Option<&[u8; SBX_FILE_UID_LEN]>,
         input_type: InputType,
-        input_mode: InputMode,
         output_type: OutputType,
-        output_mode: OutputMode,
+        arrangement: BlockArrangement,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
         lot_size: usize,
@@ -109,13 +96,12 @@ impl Lot {
 
         let rs_codec = Arc::clone(rs_codec);
 
-        let directly_writable_slots = match input_mode {
-            InputMode::DataOnlyAligned => match data_par_burst {
+        let directly_writable_slots = match input_type {
+            InputMode::Block => lot_size,
+            InputType::Data => match data_par_burst {
                 None => lot_size,
                 Some((data, _, _)) => data,
             }
-            InputMode::DataOnlyUnaligned |
-            InputMode::DataAndParityAligned | InputMode::DataAndParityUnaligned => lot_size,
         };
 
         let uid = match uid {
@@ -127,30 +113,26 @@ impl Lot {
             version,
             block: Block::new(version, uid, BlockType::Data),
             input_type,
-            input_mode,
             output_type,
-            output_mode,
+            arrangement,
             data_par_burst,
             meta_enabled,
             block_size,
             data_size,
             lot_size,
-            data_block_count: 0,
-            padding_block_count: 0,
-            parity_block_count: 0,
+            slots_used: 0,
             padding_byte_count_in_non_padding_blocks: 0,
             directly_writable_slots,
             data: vec![0; block_size * lot_size],
             slot_write_pos: vec![0; lot_size],
             slot_content_len_exc_header: vec![None; lot_size],
+            slots_is_padding: vec![false; lot_size],
             rs_codec,
         }
     }
 
     fn get_slot(&mut self) -> GetSlotResult {
-        let slots_used = self.slots_used();
-
-        if slots_used < self.directly_writable_slots {
+        if self.slots_used < self.directly_writable_slots {
             match self.data_par_burst {
                 None => self.data_block_count += 1,
                 Some((data, _, _)) => {
@@ -240,50 +222,38 @@ impl Lot {
         }
     }
 
-    fn slots_used(&self) -> usize {
-        self.data_block_count + self.padding_block_count + self.parity_block_count
-    }
-
     fn is_full(&self) -> bool {
-        match self.input_mode {
-            InputMode::Block => self.slots_used() == self.directly_writable_slots,
-            InputMode::Data => match self.data_par_burst {
-                None => self.data_block_count == self.directly_writable_slots,
-            }self.data_block_count == 
-        }
-        self.data_block_count == self.directly_writable_slots
+        self.slots_used >= self.directly_writable_slots
     }
 
     fn encode(&mut self, lot_start_seq_num: u32) {
-        if self.active() {
-            self.fill_in_padding();
+        self.fill_in_padding();
 
-            self.rs_encode();
+        self.rs_encode();
 
-            let slots_used = self.slots_used();
+        let slots_used = self.slots_used();
 
-            for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-                if slot_index < slots_used {
-                    let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
+        for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+            if slot_index < slots_used {
+                let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
 
-                    assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
+                assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
 
-                    self.block
-                        .set_seq_num(lot_start_seq_num + slot_index as u32);
+                self.block
+                    .set_seq_num(lot_start_seq_num + slot_index as u32);
 
-                    self.block.sync_to_buffer(None, slot).unwrap();
+                self.block.sync_to_buffer(None, slot).unwrap();
 
-                    let write_pos = calc_data_block_write_pos(
-                        self.version,
-                        self.block.get_seq_num(),
-                        Some(self.meta_enabled),
-                        self.data_par_burst,
-                    );
+                let write_pos = calc_data_block_write_pos(
+                    self.version,
+                    self.block.get_seq_num(),
+                    Some(self.meta_enabled),
+                    self.data_par_burst,
+                );
 
-                    self.slot_write_pos[slot_index] = write_pos;
-                } else {
-                    break;
-                }
+                self.slot_write_pos[slot_index] = write_pos;
+            } else {
+                break;
             }
         }
     }
