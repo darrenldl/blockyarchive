@@ -708,7 +708,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     break;
                 }
 
-                let (data_blocks, padding_blocks, parity_blocks) = buffer.data_padding_parity_block_count();
+                let (data_blocks, padding_blocks, parity_blocks) =
+                    buffer.data_padding_parity_block_count();
                 let padding_byte_count = buffer.padding_byte_count_in_non_padding_blocks();
 
                 {

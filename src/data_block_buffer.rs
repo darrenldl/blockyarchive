@@ -269,24 +269,24 @@ impl Lot {
     fn calc_slot_write_pos(&mut self) {
         for slot_index in 0..self.slots_used {
             let write_pos = match self.output_type {
-                OutputType::Block =>
-                    calc_data_block_write_pos(
-                        self.version,
-                        self.blocks[slot_index].get_seq_num(),
-                        Some(self.meta_enabled),
-                        self.data_par_burst,
-                    ),
+                OutputType::Block => calc_data_block_write_pos(
+                    self.version,
+                    self.blocks[slot_index].get_seq_num(),
+                    Some(self.meta_enabled),
+                    self.data_par_burst,
+                ),
                 OutputType::Data => {
                     let data_par = match self.data_par_burst {
                         None => None,
-                        Some((data, par, _)) => Some((data, par))
+                        Some((data, par, _)) => Some((data, par)),
                     };
 
                     calc_data_chunk_write_pos(
                         self.version,
                         self.blocks[slot_index].get_seq_num(),
                         data_par,
-                    ).unwrap()
+                    )
+                    .unwrap()
                 }
                 OutputType::Disabled => panic!("Output is disabled"),
             };
