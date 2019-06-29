@@ -211,6 +211,7 @@ impl Lot {
 
             if let Some((data, _, _)) = self.data_par_burst {
                 assert!(self.arrangement == BlockArrangement::Ordered);
+                assert!(self.slots_used <= data);
 
                 for i in self.slots_used..data {
                     let slot = slice_slot_w_index!(mut => self, i);
@@ -228,6 +229,8 @@ impl Lot {
     fn rs_encode(&mut self) {
         if self.active() {
             if let Some(ref rs_codec) = *self.rs_codec {
+                assert!(self.slots_used == rs_codec.data_shard_count());
+
                 let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(self.lot_size);
 
                 // collect references to data segments
