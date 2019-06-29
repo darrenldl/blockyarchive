@@ -1,9 +1,9 @@
 use rayon::prelude::*;
 use reed_solomon_erasure::ReedSolomon;
 use smallvec::SmallVec;
+use std::cmp::min;
 use std::io::SeekFrom;
 use std::sync::Arc;
-use std::cmp::min;
 
 use crate::general_error::Error;
 use crate::sbx_specs::{Version, SBX_LAST_SEQ_NUM};
@@ -37,7 +37,7 @@ macro_rules! slice_slot_w_index {
         let end_exc = start + $self.block_size;
 
         &mut $self.data[start..end_exc]
-    }}
+    }};
 }
 
 macro_rules! lot_is_full {
@@ -45,7 +45,7 @@ macro_rules! lot_is_full {
         $self:expr
     ) => {{
         $self.slots_used == $self.directly_writable_slots
-    }}
+    }};
 }
 
 enum GetSlotResult<'a> {
@@ -129,7 +129,7 @@ impl Lot {
             InputType::Data => match data_par_burst {
                 None => lot_size,
                 Some((data, _, _)) => data,
-            }
+            },
         };
 
         let uid = match uid {
@@ -202,7 +202,8 @@ impl Lot {
                 let slot = slice_slot_w_index!(mut => self, i);
 
                 if len < self.data_size {
-                    self.padding_byte_count_in_non_padding_blocks += sbx_block::write_padding(self.version, len, slot);
+                    self.padding_byte_count_in_non_padding_blocks +=
+                        sbx_block::write_padding(self.version, len, slot);
                 }
             }
         }
@@ -240,7 +241,9 @@ impl Lot {
     fn sync_block_from_slot(&mut self) {
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
             if slot_index < self.slots_used {
-                self.blocks[slot_index].sync_from_buffer(slot, None, None).unwrap();
+                self.blocks[slot_index]
+                    .sync_from_buffer(slot, None, None)
+                    .unwrap();
             } else {
                 break;
             }
@@ -261,14 +264,13 @@ impl Lot {
     }
 
     fn set_block_seq_num_based_on_lot_start_seq_num(&mut self, lot_start_seq_num: u32) {
-        for slot_index in 0..self.slots_used{
+        for slot_index in 0..self.slots_used {
             if slot_index < self.slots_used {
                 let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
 
                 assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
 
-                self.blocks[slot_index]
-                    .set_seq_num(lot_start_seq_num + slot_index as u32);
+                self.blocks[slot_index].set_seq_num(lot_start_seq_num + slot_index as u32);
             } else {
                 break;
             }
@@ -320,7 +322,7 @@ impl Lot {
 
         let slots_to_hash = match self.data_par_burst {
             None => self.slots_used,
-            Some((data, _, _)) => min(data, self.slots_used)
+            Some((data, _, _)) => min(data, self.slots_used),
         };
 
         for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
@@ -370,17 +372,16 @@ impl Lot {
 
         let parity = match self.data_par_burst {
             None => 0,
-            Some((data, _, _)) =>
+            Some((data, _, _)) => {
                 if self.slots_used < data {
                     0
                 } else {
                     self.slots_used - data
                 }
+            }
         };
 
-        (
-            data, padding, parity
-        )
+        (data, padding, parity)
     }
 
     fn padding_byte_count_in_non_padding_blocks(&self) -> usize {
@@ -490,10 +491,15 @@ impl DataBlockBuffer {
             match self.lots[self.lots_used].get_slot() {
                 GetSlotResult::LastSlot(slot, content_len_exc_header) => {
                     self.lots_used += 1;
-                    Some(Slot { slot, content_len_exc_header })
+                    Some(Slot {
+                        slot,
+                        content_len_exc_header,
+                    })
                 }
-                GetSlotResult::Some(slot, content_len_exc_header) =>
-                    Some(Slot { slot, content_len_exc_header}),
+                GetSlotResult::Some(slot, content_len_exc_header) => Some(Slot {
+                    slot,
+                    content_len_exc_header,
+                }),
                 GetSlotResult::None => {
                     self.lots_used += 1;
                     None
