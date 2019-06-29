@@ -34,8 +34,10 @@ pub enum InputType {
 
 #[derive(Copy, Clone, Debug)]
 pub enum InputMode {
-    DataOnly,
-    DataAndParity,
+    DataOnlyAligned,
+    DataOnlyUnaligned,
+    DataAndParityAligned,
+    DataAndParityUnaligned,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -60,13 +62,16 @@ pub struct Slot<'a> {
 struct Lot {
     version: Version,
     block: Block,
+    input_type: InputMode,
     input_mode: InputMode,
+    output_type: OutputMode,
     output_mode: OutputMode,
     data_par_burst: Option<(usize, usize, usize)>,
     meta_enabled: bool,
     block_size: usize,
     data_size: usize,
     lot_size: usize,
+    slots_used: usize,
     data_block_count: usize,
     padding_block_count: usize,
     parity_block_count: usize,
@@ -90,7 +95,9 @@ impl Lot {
     fn new(
         version: Version,
         uid: Option<&[u8; SBX_FILE_UID_LEN]>,
+        input_type: InputType,
         input_mode: InputMode,
+        output_type: OutputType,
         output_mode: OutputMode,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
@@ -103,11 +110,12 @@ impl Lot {
         let rs_codec = Arc::clone(rs_codec);
 
         let directly_writable_slots = match input_mode {
-            InputMode::Block => lot_size,
-            InputMode::Data => match data_par_burst {
+            InputMode::DataOnlyAligned => match data_par_burst {
                 None => lot_size,
                 Some((data, _, _)) => data,
             }
+            InputMode::DataOnlyUnaligned |
+            InputMode::DataAndParityAligned | InputMode::DataAndParityUnaligned => lot_size,
         };
 
         let uid = match uid {
@@ -118,7 +126,9 @@ impl Lot {
         Lot {
             version,
             block: Block::new(version, uid, BlockType::Data),
+            input_type,
             input_mode,
+            output_type,
             output_mode,
             data_par_burst,
             meta_enabled,
@@ -141,9 +151,6 @@ impl Lot {
         let slots_used = self.slots_used();
 
         if slots_used < self.directly_writable_slots {
-            let start = slots_used * self.block_size;
-            let end_exc = start + self.block_size;
-
             match self.data_par_burst {
                 None => self.data_block_count += 1,
                 Some((data, _, _)) => {
@@ -157,11 +164,14 @@ impl Lot {
 
             let is_full = self.is_full();
 
+            let start = slots_used * self.block_size;
+            let end_exc = start + self.block_size;
+
             let slot = &mut self.data[start..end_exc];
 
-            let slot = match self.input_mode {
-                InputMode::Block => slot,
-                InputMode::Data => sbx_block::slice_data_buf_mut(self.version, slot),
+            let slot = match self.input_type {
+                InputType::Block => slot,
+                InputType::Data => sbx_block::slice_data_buf_mut(self.version, slot),
             };
 
             let content_len = &mut self.slot_content_len_exc_header[slots_used];
