@@ -343,6 +343,10 @@ impl Lot {
         for len in self.slot_content_len_exc_header.iter_mut() {
             *len = None;
         }
+
+        for is_padding in self.slot_is_padding.iter_mut() {
+            *is_padding = false;
+        }
     }
 
     fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
@@ -371,6 +375,10 @@ impl Lot {
         (
             data, padding, parity
         )
+    }
+
+    fn padding_byte_count_in_non_padding_blocks(&self) -> usize {
+        self.padding_byte_count_in_non_padding_blocks
     }
 
     fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
@@ -547,6 +555,16 @@ impl DataBlockBuffer {
         }
 
         (data_blocks, padding_blocks, parity_blocks)
+    }
+
+    pub fn padding_byte_count_in_non_padding_blocks(&self) -> usize {
+        let mut byte_count = 0;
+
+        for lot in self.lots.iter() {
+            byte_count += lot.padding_byte_count_in_non_padding_blocks();
+        }
+
+        byte_count
     }
 
     pub fn hash(&self, ctx: &mut hash::Ctx) {

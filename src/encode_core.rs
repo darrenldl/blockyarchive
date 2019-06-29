@@ -577,8 +577,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         }
     }
 
-    let mut bytes_processed: u64 = 0;
-
     let mut block_for_seq_num_check = Block::dummy();
 
     block_for_seq_num_check.set_seq_num(0);
@@ -626,14 +624,13 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     let reader_thread = {
         let version = param.version;
-        let stats = Arc::clone(&stats);
         let hash_ctx = Arc::clone(&hash_ctx);
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+        let data_size = ver_to_data_size(version);
 
         thread::spawn(move || {
             let mut run = true;
-
-            let mut data_padding_bytes = 0;
+            let mut bytes_processed = 0;
 
             while let Some(mut buffer) = from_writer.recv().unwrap() {
                 if !run {
@@ -653,7 +650,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                     {
                         // read data in
-                        let Slot {slot, content_len_exc_header: _} = buffer.get_slot().unwrap();
+                        let Slot {slot, content_len_exc_header} = buffer.get_slot().unwrap();
                         match reader.read(slot) {
                             Ok(read_res) => {
                                 bytes_processed += read_res.len_read as u64;
@@ -672,8 +669,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                                 hash_ctx.lock().unwrap().update(&slot[..read_res.len_read]);
 
-                                data_padding_bytes +=
-                                    sbx_block::write_padding(version, read_res.len_read, slot);
+                                if read_res.len_read < data_size {
+                                    *content_len_exc_header = Some(read_res.len_read);
+                                }
                             }
                             Err(e) => {
                                 error_tx_reader.send(e).unwrap();
@@ -691,7 +689,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
             to_encoder.send(None).unwrap();
 
-            stats.lock().unwrap().data_padding_bytes = data_padding_bytes;
+            // stats.lock().unwrap().data_padding_bytes = data_padding_bytes;
 
             shutdown_barrier.wait();
         })
@@ -709,12 +707,15 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 }
 
                 let (data_blocks, _, parity_blocks) = buffer.data_padding_parity_block_count();
+                let padding_byte_count = buffer.padding_byte_count_in_non_padding_blocks();
 
                 {
                     let mut stats = stats.lock().unwrap();
 
                     stats.data_blocks_written += data_blocks as u64;
                     stats.parity_blocks_written += parity_blocks as u64;
+
+                    stats.data_padding_bytes = padding_byte_count;
                 }
 
                 to_writer.send(Some(buffer)).unwrap();
