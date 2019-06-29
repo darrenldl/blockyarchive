@@ -40,6 +40,14 @@ macro_rules! slice_slot_w_index {
     }}
 }
 
+macro_rules! lot_is_full {
+    (
+        $self:expr
+    ) => {{
+        $self.slots_used == $self.directly_writable_slots
+    }}
+}
+
 enum GetSlotResult<'a> {
     None,
     Some(&'a mut [u8], &'a mut Option<usize>),
@@ -158,8 +166,6 @@ impl Lot {
 
     fn get_slot(&mut self) -> GetSlotResult {
         if self.slots_used < self.directly_writable_slots {
-            let is_full = self.is_full();
-
             let slot = slice_slot_w_index!(mut => self, self.slots_used);
 
             let slot = match self.input_type {
@@ -171,7 +177,7 @@ impl Lot {
 
             self.slots_used += 1;
 
-            if is_full {
+            if lot_is_full!(self) {
                 GetSlotResult::LastSlot(slot, content_len)
             } else {
                 GetSlotResult::Some(slot, content_len)
