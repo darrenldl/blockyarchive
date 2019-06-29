@@ -8,7 +8,7 @@ use std::sync::Arc;
 use crate::general_error::Error;
 use crate::sbx_specs::{Version, SBX_LAST_SEQ_NUM};
 
-use crate::sbx_block::{calc_data_block_write_pos, Block, BlockType};
+use crate::sbx_block::{calc_data_block_write_pos, calc_data_chunk_write_pos, Block, BlockType};
 
 use crate::sbx_block;
 
@@ -218,6 +218,8 @@ impl Lot {
 
                 self.slot_is_padding[i] = true;
             }
+
+            self.slots_used = data;
         }
     }
 
@@ -231,6 +233,8 @@ impl Lot {
             }
 
             rs_codec.encode(&mut refs).unwrap();
+
+            self.slots_used = self.lot_size;
         }
     }
 
@@ -252,12 +256,28 @@ impl Lot {
 
     fn calc_slot_write_pos(&mut self) {
         for slot_index in 0..self.slots_used {
-            let write_pos = calc_data_block_write_pos(
-                self.version,
-                self.blocks[slot_index].get_seq_num(),
-                Some(self.meta_enabled),
-                self.data_par_burst,
-            );
+            let write_pos = match self.output_type {
+                OutputType::Block =>
+                    calc_data_block_write_pos(
+                        self.version,
+                        self.blocks[slot_index].get_seq_num(),
+                        Some(self.meta_enabled),
+                        self.data_par_burst,
+                    ),
+                OutputType::Data => {
+                    let data_par = match self.data_par_burst {
+                        None => None,
+                        Some((data, par, _)) => Some((data, par))
+                    };
+
+                    calc_data_chunk_write_pos(
+                        self.version,
+                        self.blocks[slot_index].get_seq_num(),
+                        data_par,
+                    ).unwrap()
+                }
+                OutputType::Disabled => panic!("Output is disabled"),
+            };
 
             self.slot_write_pos[slot_index] = write_pos;
         }
