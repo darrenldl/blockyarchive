@@ -189,6 +189,7 @@ impl Lot {
 
     fn cancel_last_slot(&mut self) {
         assert!(self.slots_used > 0);
+        assert!(self.slots_used <= self.directly_writable_slots);
 
         self.slots_used -= 1;
     }
@@ -378,6 +379,8 @@ impl Lot {
 
     fn reset(&mut self) {
         self.slots_used = 0;
+
+        self.padding_byte_count_in_non_padding_blocks = 0;
 
         for len in self.slot_content_len_exc_header.iter_mut() {
             *len = None;
