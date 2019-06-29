@@ -227,7 +227,7 @@ impl Lot {
 
             // collect references to data segments
             for slot in self.data.chunks_mut(self.block_size) {
-                refs.push(slot);
+                refs.push(sbx_block::slice_data_buf(self.version, slot));
             }
 
             rs_codec.encode(&mut refs).unwrap();
