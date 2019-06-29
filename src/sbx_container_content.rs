@@ -116,7 +116,6 @@ pub fn hash(
                     let Slot {slot, content_len_exc_header} = buffer.get_slot().unwrap();
                     match reader.read(slot) {
                         Ok(read_res) => {
-                            eprintln!("seq_num : {}", seq_num);
                             let decode_successful = !read_res.eof_seen
                                 && match block.sync_from_buffer(slot, Some(&header_pred), None) {
                                     Ok(_) => block.get_seq_num() == seq_num,
@@ -124,8 +123,6 @@ pub fn hash(
                                 };
 
                             let bytes_remaining = stats.total_bytes - stats.bytes_processed;
-
-                            eprintln!("bytes_remaining : {}", bytes_remaining);
 
                             if !sbx_block::seq_num_is_parity_w_data_par_burst(
                                     seq_num,
