@@ -194,52 +194,60 @@ impl Lot {
     }
 
     fn fill_in_padding(&mut self) {
-        for i in 0..self.slots_used {
-            if let Some(len) = self.slot_content_len_exc_header[i] {
-                assert!(len > 0);
-                assert!(len <= self.data_size);
+        if self.active() {
+            for i in 0..self.slots_used {
+                if let Some(len) = self.slot_content_len_exc_header[i] {
+                    assert!(len > 0);
+                    assert!(len <= self.data_size);
 
-                let slot = slice_slot_w_index!(mut => self, i);
+                    let slot = slice_slot_w_index!(mut => self, i);
 
-                if len < self.data_size {
-                    self.padding_byte_count_in_non_padding_blocks +=
-                        sbx_block::write_padding(self.version, len, slot);
+                    if len < self.data_size {
+                        self.padding_byte_count_in_non_padding_blocks +=
+                            sbx_block::write_padding(self.version, len, slot);
+                    }
                 }
             }
-        }
 
-        if let Some((data, _, _)) = self.data_par_burst {
-            assert!(self.arrangement == BlockArrangement::Ordered);
+            if let Some((data, _, _)) = self.data_par_burst {
+                assert!(self.arrangement == BlockArrangement::Ordered);
 
-            for i in self.slots_used..data {
-                let slot = slice_slot_w_index!(mut => self, i);
+                for i in self.slots_used..data {
+                    let slot = slice_slot_w_index!(mut => self, i);
 
-                sbx_block::write_padding(self.version, 0, slot);
+                    sbx_block::write_padding(self.version, 0, slot);
 
-                self.slot_is_padding[i] = true;
+                    self.slot_is_padding[i] = true;
+                }
+
+                self.slots_used = data;
             }
-
-            self.slots_used = data;
         }
     }
 
     fn rs_encode(&mut self) {
-        if let Some(ref rs_codec) = *self.rs_codec {
-            let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(self.lot_size);
+        if self.active() {
+            if let Some(ref rs_codec) = *self.rs_codec {
+                let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(self.lot_size);
 
-            // collect references to data segments
-            for slot in self.data.chunks_mut(self.block_size) {
-                refs.push(sbx_block::slice_data_buf_mut(self.version, slot));
+                // collect references to data segments
+                for slot in self.data.chunks_mut(self.block_size) {
+                    refs.push(sbx_block::slice_data_buf_mut(self.version, slot));
+                }
+
+                rs_codec.encode(&mut refs).unwrap();
+
+                self.slots_used = self.lot_size;
             }
-
-            rs_codec.encode(&mut refs).unwrap();
-
-            self.slots_used = self.lot_size;
         }
     }
 
     fn is_full(&self) -> bool {
         self.slots_used >= self.directly_writable_slots
+    }
+
+    fn active(&self) -> bool {
+        self.slots_used > 0
     }
 
     fn sync_block_from_slot(&mut self) {
