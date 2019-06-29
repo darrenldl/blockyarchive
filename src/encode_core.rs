@@ -692,8 +692,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
             to_encoder.send(None).unwrap();
 
-            // stats.lock().unwrap().data_padding_bytes = data_padding_bytes;
-
             shutdown_barrier.wait();
         })
     };
@@ -701,6 +699,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let encoder_thread = {
         let stats = Arc::clone(&stats);
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+        let data_size = ver_to_data_size(param.version);
 
         thread::spawn(move || {
             while let Some(mut buffer) = from_reader.recv().unwrap() {
@@ -709,7 +708,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     break;
                 }
 
-                let (data_blocks, _, parity_blocks) = buffer.data_padding_parity_block_count();
+                let (data_blocks, padding_blocks, parity_blocks) = buffer.data_padding_parity_block_count();
                 let padding_byte_count = buffer.padding_byte_count_in_non_padding_blocks();
 
                 {
@@ -718,7 +717,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     stats.data_blocks_written += data_blocks as u64;
                     stats.parity_blocks_written += parity_blocks as u64;
 
-                    stats.data_padding_bytes = padding_byte_count;
+                    stats.data_padding_bytes = padding_byte_count + padding_blocks * data_size;
                 }
 
                 to_writer.send(Some(buffer)).unwrap();
