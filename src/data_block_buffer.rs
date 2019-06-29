@@ -3,7 +3,6 @@ use reed_solomon_erasure::ReedSolomon;
 use smallvec::SmallVec;
 use std::io::SeekFrom;
 use std::sync::Arc;
-use std::cmp::min;
 
 use crate::general_error::Error;
 use crate::sbx_specs::{Version, SBX_LAST_SEQ_NUM};
@@ -28,15 +27,28 @@ enum GetSlotResult<'a> {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum InputMode {
+pub enum InputType {
     Block,
     Data,
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum OutputMode {
+pub enum InputMode {
+    DataOnly,
+    DataAndParity,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum OutputType {
     Block,
     Data,
+    Disabled,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum OutputMode {
+    DataOnly,
+    DataAndParity,
     Disabled,
 }
 
@@ -90,9 +102,12 @@ impl Lot {
 
         let rs_codec = Arc::clone(rs_codec);
 
-        let directly_writable_slots = match data_par_burst {
-            None => lot_size,
-            Some((data, _, _)) => data,
+        let directly_writable_slots = match input_mode {
+            InputMode::Block => lot_size,
+            InputMode::Data => match data_par_burst {
+                None => lot_size,
+                Some((data, _, _)) => data,
+            }
         };
 
         let uid = match uid {
@@ -123,12 +138,22 @@ impl Lot {
     }
 
     fn get_slot(&mut self) -> GetSlotResult {
-        if self.slots_used() < self.directly_writable_slots {
-            let slots_used = self.slots_used();
+        let slots_used = self.slots_used();
 
+        if slots_used < self.directly_writable_slots {
             let start = slots_used * self.block_size;
             let end_exc = start + self.block_size;
-            self.data_block_count += 1;
+
+            match self.data_par_burst {
+                None => self.data_block_count += 1,
+                Some((data, _, _)) => {
+                    if slots_used < data {
+                        self.data_block_count += 1;
+                    } else {
+                        self.parity_block_count += 1;
+                    }
+                }
+            }
 
             let is_full = self.is_full();
 
@@ -177,8 +202,8 @@ impl Lot {
             }
         }
 
-        if let Some(_) = self.data_par_burst {
-            for i in self.data_block_count..self.directly_writable_slots {
+        if let Some((data, _, _)) = self.data_par_burst {
+            for i in self.data_block_count..data {
                 let start = i * self.block_size;
                 let end_exc = start + self.block_size;
                 let slot = &mut self.data[start..end_exc];
@@ -210,6 +235,12 @@ impl Lot {
     }
 
     fn is_full(&self) -> bool {
+        match self.input_mode {
+            InputMode::Block => self.slots_used() == self.directly_writable_slots,
+            InputMode::Data => match self.data_par_burst {
+                None => self.data_block_count == self.directly_writable_slots,
+            }self.data_block_count == 
+        }
         self.data_block_count == self.directly_writable_slots
     }
 
@@ -251,7 +282,7 @@ impl Lot {
         if self.active() {
             let slots_used = self.slots_used();
 
-            let slots_to_hash = min(slots_used, self.directly_writable_slots);
+            let slots_to_hash = self.data_block_count;
 
             eprintln!("slots_to_hash : {}", slots_to_hash);
             eprintln!("lot_size : {}", self.lot_size);
