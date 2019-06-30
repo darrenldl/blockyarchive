@@ -926,20 +926,6 @@ pub fn decode(
                 }
             }
 
-            // fn read_enough_blocks(stats: &mut Stats) -> bool {
-            //     let blocks_decode_failed = match stats.blocks_decode_failed {
-            //         DecodeFailStats::Breakdown(ref x) => {
-            //             x.meta_blocks_decode_failed
-            //                 + x.data_blocks_decode_failed
-            //                 + x.parity_blocks_decode_failed
-            //         }
-            //         DecodeFailStats::Total(x) => x,
-            //     };
-
-            //     (stats.meta_blocks_decoded + stats.data_blocks_decoded + blocks_decode_failed)
-            //         == stats.total_blocks
-            // }
-
             stats = Arc::new(Mutex::new(Stats::new(
                 &ref_block,
                 WriteTo::Stdout,
