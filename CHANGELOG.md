@@ -36,6 +36,14 @@
   
     - 7.1.1 is yanked nonetheless to avoid other potential issues
 
+- Added multithreading and operation pipelining for `sbx_container_content::hash`
+  
+    - This speeds up the hashing step of the following modes and usage
+      
+        - check mode `--hash`, `--hash-only`
+      
+        - update mode `--hash`
+
 ## 7.2.0 (yanked)
 
 - Fixed hash type validation in commandline arguments processing
