@@ -93,7 +93,7 @@ struct Lot {
     directly_writable_slots: usize,
     blocks: Vec<Block>,
     data: Vec<u8>,
-    slot_write_pos: Vec<u64>,
+    slot_write_pos: Vec<Option<u64>>,
     slot_content_len_exc_header: Vec<Option<usize>>,
     slot_is_padding: Vec<bool>,
     rs_codec: Arc<Option<ReedSolomon>>,
@@ -157,7 +157,7 @@ impl Lot {
             directly_writable_slots,
             blocks,
             data: vec![0; block_size * lot_size],
-            slot_write_pos: vec![0; lot_size],
+            slot_write_pos: vec![None; lot_size],
             slot_content_len_exc_header: vec![None; lot_size],
             slot_is_padding: vec![false; directly_writable_slots],
             rs_codec,
@@ -269,12 +269,12 @@ impl Lot {
     fn calc_slot_write_pos(&mut self) {
         for slot_index in 0..self.slots_used {
             let write_pos = match self.output_type {
-                OutputType::Block => calc_data_block_write_pos(
+                OutputType::Block => Some(calc_data_block_write_pos(
                     self.version,
                     self.blocks[slot_index].get_seq_num(),
                     Some(self.meta_enabled),
                     self.data_par_burst,
-                ),
+                )),
                 OutputType::Data => {
                     let data_par = match self.data_par_burst {
                         None => None,
@@ -286,7 +286,6 @@ impl Lot {
                         self.blocks[slot_index].get_seq_num(),
                         data_par,
                     )
-                    .unwrap()
                 }
                 OutputType::Disabled => panic!("Output is disabled"),
             };
@@ -328,8 +327,6 @@ impl Lot {
         self.rs_encode();
 
         self.set_block_seq_num_based_on_lot_start_seq_num(lot_start_seq_num);
-
-        self.calc_slot_write_pos();
 
         self.sync_block_to_slot();
     }
@@ -408,21 +405,23 @@ impl Lot {
     }
 
     fn write(&mut self, seek: bool, writer: &mut FileWriter) -> Result<(), Error> {
+        self.calc_slot_write_pos();
+
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
             if slot_index < self.slots_used {
-                if seek {
-                    let write_pos = self.slot_write_pos[slot_index];
+                if let Some(write_pos) = self.slot_write_pos[slot_index] {
+                    if seek {
+                        writer.seek(SeekFrom::Start(write_pos))?;
+                    }
 
-                    writer.seek(SeekFrom::Start(write_pos))?;
+                    let slot = match self.output_type {
+                        OutputType::Block => slot,
+                        OutputType::Data => sbx_block::slice_data_buf(self.version, slot),
+                        OutputType::Disabled => panic!("Output is diabled"),
+                    };
+
+                    writer.write(slot)?;
                 }
-
-                let slot = match self.output_type {
-                    OutputType::Block => slot,
-                    OutputType::Data => sbx_block::slice_data_buf(self.version, slot),
-                    OutputType::Disabled => panic!("Output is diabled"),
-                };
-
-                writer.write(slot)?;
             } else {
                 break;
             }
