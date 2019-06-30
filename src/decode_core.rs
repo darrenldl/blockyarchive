@@ -825,14 +825,6 @@ pub fn decode(
         Some(ver_to_block_size(version) as u64),
     );
 
-    let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
-    let (to_writer, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
-    let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
-    let (error_tx_reader, error_rx) = channel::<Error>();
-    let error_tx_writer = error_tx_reader.clone();
-
-    let worker_shutdown_barrier = Arc::new(Barrier::new(3));
-
     match param.out_file {
         Some(_) => {
             // output to file
@@ -852,11 +844,18 @@ pub fn decode(
                 param.json_printer.json_enabled(),
             );
 
+            let (to_writer, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+            let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+            let (error_tx_reader, error_rx) = channel::<Error>();
+            let error_tx_writer = error_tx_reader.clone();
+
+            let worker_shutdown_barrier = Arc::new(Barrier::new(3));
+
             // push buffers into pipeline
             for i in 0..PIPELINE_BUFFER_IN_ROTATION {
                 to_reader
                     .send(Some(DataBlockBuffer::new(
-                        param.version,
+                        version,
                         Some(&param.uid),
                         InputType::Block,
                         OutputType::Block,
@@ -889,6 +888,7 @@ pub fn decode(
                         let mut meta_blocks_decoded = 0;
                         let mut data_blocks_decoded = 0;
                         let mut parity_blocks_decoded = 0;
+                        let mut blocks_decode_failed: u64 = 0;
 
                         while !buffer.is_full() {
                             break_if_atomic_bool!(ctrlc_stop_flag);
@@ -898,13 +898,24 @@ pub fn decode(
                                 break;
                             }
 
-                            // read at reference block block size
-                            match reader.read(sbx_block::slice_buf_mut(version, &mut buffer)) {
+                            let Slot { slot, content_len_exc_header: _} = buffer.get_slot().unwrap();
+                            match reader.read(slot) {
                                 Ok(read_res) => {
                                     bytes_processed += read_res.len_read as u64;
 
+                                    if read_res.eof_seen {
+                                        run = false;
+                                        break;
+                                    }
+
+                                    if let Err(_) = block.sync_from_buffer(slot, Some(&header_pred), None) {
+                                        buffer.cancel_last_slot();
+                                        blocks_decode_failed += 1;
+                                        continue;
+                                    }
+
+                                    // update stats
                                     if block.is_meta() {
-                                        // do nothing if block is meta
                                         meta_blocks_decoded += 1;
                                     } else {
                                         match data_par_shards {
@@ -920,9 +931,33 @@ pub fn decode(
                                             }
                                         }
                                     }
+
+                                    let do_write =
+                                        !block.is_parity(data, par)
+                                        && {
+                                            match param.multi_pass {
+                                                None | Some(MultiPassType::OverwriteAll) => true,
+                                                Some(MultiPassType::SkipGood) => {
+                                                    // only write if the position to write to does not already contain a non-blank chunk
+                                                    writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
+                                                    let read_res = writer
+                                                        .read(sbx_block::slice_data_buf_mut(version, &mut check_buffer))
+                                                        .unwrap()?;
+
+                                                    read_res.eof_seen || {
+                                                        misc_utils::buffer_is_blank(sbx_block::slice_data_buf(
+                                                            version,
+                                                            &check_buffer,
+                                                        ))
+                                                    }
+                                                }
+                                            }
+                                        };
                                 }
                                 Err(e) => {
                                     error_tx_reader.send(e).unwrap();
+                                    buffer.cancel_last_slot();
+                                    block_decode_failed = true;
                                     run = false;
                                     break;
                                 }
@@ -935,6 +970,10 @@ pub fn decode(
                             stats.meta_blocks_decoded += meta_blocks_decoded;
                             stats.data_blocks_decoded += data_blocks_decoded;
                             stats.parity_blocks_decoded += parity_blocks_decoded;
+
+                            for _ in 0..blocks_decode_failed {
+                                stats.incre_blocks_failed();
+                            }
                         }
 
                         break_if_atomic_bool!(ctrlc_stop_flag);
@@ -942,41 +981,17 @@ pub fn decode(
                 })
             };
 
-            let hasher_thread = {
-                thread::spawn(move || {
-                    while let Some(buffer) = from_reader.recv().unwrap() {
-                        
-                    }
-                })
-            };
-
             let writer_thread = {
                 thread::spawn(move || {
                     while let Some(mut buffer) = from_hasher.recv().unwrap() {
-                        buffer.write()
+                        buffer.sync_blocks_from_slots();
+
+                        buffer.write(writer)
                     }
                 })
             };
 
             loop {
-                let mut stats = stats.lock().unwrap();
-
-                break_if_atomic_bool!(ctrlc_stop_flag);
-
-                break_if_reached_required_len!(bytes_processed, required_len);
-
-                // read at reference block block size
-                let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
-
-                bytes_processed += read_res.len_read as u64;
-
-                break_if_eof_seen!(read_res);
-
-                if let Err(_) = block.sync_from_buffer(&buffer, Some(&header_pred), None) {
-                    stats.incre_blocks_failed();
-                    continue;
-                }
-
                 if block.is_meta() {
                     // do nothing if block is meta
                     stats.meta_blocks_decoded += 1;

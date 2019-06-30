@@ -93,6 +93,7 @@ struct Lot {
     directly_writable_slots: usize,
     blocks: Vec<Block>,
     data: Vec<u8>,
+    check_buffer: Vec<u8>,
     slot_write_pos: Vec<Option<u64>>,
     slot_content_len_exc_header: Vec<Option<usize>>,
     slot_is_padding: Vec<bool>,
@@ -254,7 +255,7 @@ impl Lot {
         self.slots_used > 0
     }
 
-    fn sync_block_from_slot(&mut self) {
+    fn sync_blocks_from_slots(&mut self) {
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
             if slot_index < self.slots_used {
                 self.blocks[slot_index]
@@ -308,7 +309,7 @@ impl Lot {
         }
     }
 
-    fn sync_block_to_slot(&mut self) {
+    fn sync_blocks_to_slots(&mut self) {
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
             if slot_index < self.slots_used {
                 self.blocks[slot_index].sync_to_buffer(None, slot).unwrap();
@@ -328,7 +329,7 @@ impl Lot {
 
         self.set_block_seq_num_based_on_lot_start_seq_num(lot_start_seq_num);
 
-        self.sync_block_to_slot();
+        self.sync_blocks_to_slots();
     }
 
     fn hash(&self, ctx: &mut hash::Ctx) {
@@ -404,14 +405,51 @@ impl Lot {
         self.padding_byte_count_in_non_padding_blocks
     }
 
-    fn write(&mut self, seek: bool, writer: &mut FileWriter) -> Result<(), Error> {
+    fn write(&mut self, seek: bool, writer: &mut Writer) -> Result<(), Error> {
         self.calc_slot_write_pos();
 
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
             if slot_index < self.slots_used {
                 if let Some(write_pos) = self.slot_write_pos[slot_index] {
                     if seek {
-                        writer.seek(SeekFrom::Start(write_pos))?;
+                        writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
+                    }
+
+                    if self.skip_good {
+                        let cur_pos = writer.cur_pos().unwrap()?;
+
+                        let check_buffer = match self.output_type {
+                            OutputType::Block => self.check_buffer,
+                            OutputType::Data => &mut self.check_buffer[..self.data_size];
+                        };
+
+                        let read_res = writer.read(check_buffer).unwrap()?;
+                        writer.seek(SeekFrom::Start(cur_pos)).unwrap()?;
+
+                        let skip = match self.output_type {
+                            OutputType::Block => {
+                                let block = &self.blocks[slot_index];
+
+                                read_res.eof_seen || {
+                                    match self.check_block.sync_from_buffer(
+                                        check_buffer,
+                                        None,
+                                        None,
+                                    ) {
+                                        Ok(()) => self.check_block.get_version() == self.version
+                                            && self.get_uid() == block.get_uid()
+                                            && self.check_block.get_seq_num() == block.get_seq_num(),
+                                        Err(_) => false,
+                                    }
+                                }
+                            }
+                            OutputType::Data => {
+                                read_res.eof_seen ||
+                                    misc_utils::buffer_is_blank(check_buffer)
+                            }
+                        };
+
+                        if skip { continue; }
                     }
 
                     let slot = match self.output_type {
@@ -600,6 +638,12 @@ impl DataBlockBuffer {
     pub fn hash(&self, ctx: &mut hash::Ctx) {
         for lot in self.lots.iter() {
             lot.hash(ctx);
+        }
+    }
+
+    pub fn sync_blocks_from_slots(&mut self) {
+        for lot in self.lots.iter_mut() {
+            lot.sync_blocks_from_slots();
         }
     }
 
