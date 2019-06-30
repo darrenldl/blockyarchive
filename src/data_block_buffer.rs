@@ -407,12 +407,14 @@ impl Lot {
         self.padding_byte_count_in_non_padding_blocks
     }
 
-    fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
+    fn write(&mut self, seek: bool, writer: &mut FileWriter) -> Result<(), Error> {
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
             if slot_index < self.slots_used {
-                let write_pos = self.slot_write_pos[slot_index];
+                if seek {
+                    let write_pos = self.slot_write_pos[slot_index];
 
-                writer.seek(SeekFrom::Start(write_pos))?;
+                    writer.seek(SeekFrom::Start(write_pos))?;
+                }
 
                 let slot = match self.output_type {
                     OutputType::Block => slot,
@@ -425,8 +427,6 @@ impl Lot {
                 break;
             }
         }
-
-        self.reset();
 
         Ok(())
     }
@@ -604,13 +604,21 @@ impl DataBlockBuffer {
         }
     }
 
-    pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
+    fn write_internal(&mut self, seek: bool, writer: &mut FileWriter) -> Result<(), Error> {
         for lot in self.lots.iter_mut() {
-            lot.write(writer)?;
+            lot.write(seek, writer)?;
         }
 
         self.reset();
 
         Ok(())
+    }
+
+    pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
+        self.write_internal(true, writer)
+    }
+
+    pub fn write_no_seek(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
+        self.write_internal(false, writer)
     }
 }
