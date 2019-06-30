@@ -922,6 +922,7 @@ pub fn decode(
                                     bytes_processed += read_res.len_read as u64;
 
                                     if read_res.eof_seen {
+                                        buffer.cancel_last_slot();
                                         run = false;
                                         break;
                                     }
