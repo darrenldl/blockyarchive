@@ -650,39 +650,37 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                         }
                     }
 
-                    {
-                        // read data in
-                        let Slot {
-                            slot,
-                            content_len_exc_header,
-                        } = buffer.get_slot().unwrap();
-                        match reader.read(slot) {
-                            Ok(read_res) => {
-                                bytes_processed += read_res.len_read as u64;
+                    // read data in
+                    let Slot {
+                        slot,
+                        content_len_exc_header,
+                    } = buffer.get_slot().unwrap();
+                    match reader.read(slot) {
+                        Ok(read_res) => {
+                            bytes_processed += read_res.len_read as u64;
 
-                                if read_res.len_read == 0 {
-                                    buffer.cancel_last_slot();
-                                    run = false;
-                                    break;
-                                }
-
-                                if let Err(_) = block_for_seq_num_check.add1_seq_num() {
-                                    error_tx_reader.send(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin")).unwrap();
-                                    run = false;
-                                    break;
-                                }
-
-                                hash_ctx.lock().unwrap().update(&slot[..read_res.len_read]);
-
-                                if read_res.len_read < data_size {
-                                    *content_len_exc_header = Some(read_res.len_read);
-                                }
-                            }
-                            Err(e) => {
-                                error_tx_reader.send(e).unwrap();
+                            if read_res.len_read == 0 {
+                                buffer.cancel_last_slot();
                                 run = false;
                                 break;
                             }
+
+                            if let Err(_) = block_for_seq_num_check.add1_seq_num() {
+                                error_tx_reader.send(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin")).unwrap();
+                                run = false;
+                                break;
+                            }
+
+                            hash_ctx.lock().unwrap().update(&slot[..read_res.len_read]);
+
+                            if read_res.len_read < data_size {
+                                *content_len_exc_header = Some(read_res.len_read);
+                            }
+                        }
+                        Err(e) => {
+                            error_tx_reader.send(e).unwrap();
+                            run = false;
+                            break;
                         }
                     }
                 }
