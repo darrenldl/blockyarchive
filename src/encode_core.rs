@@ -741,6 +741,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     break;
                 }
 
+                buffer.reset();
+
                 to_reader.send(Some(buffer)).unwrap();
             }
 
