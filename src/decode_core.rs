@@ -3,10 +3,10 @@ use crate::file_utils;
 use crate::misc_utils;
 use std::fmt;
 use std::io::SeekFrom;
-use std::sync::{Arc, Mutex};
-use std::sync::Barrier;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::sync_channel;
+use std::sync::Barrier;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 use crate::data_block_buffer::{BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot};
@@ -913,7 +913,10 @@ pub fn decode(
                                 break;
                             }
 
-                            let Slot { slot, content_len_exc_header: _} = buffer.get_slot().unwrap();
+                            let Slot {
+                                slot,
+                                content_len_exc_header: _,
+                            } = buffer.get_slot().unwrap();
                             match reader.read(slot) {
                                 Ok(read_res) => {
                                     bytes_processed += read_res.len_read as u64;
@@ -923,7 +926,9 @@ pub fn decode(
                                         break;
                                     }
 
-                                    if let Err(_) = block.sync_from_buffer(slot, Some(&header_pred), None) {
+                                    if let Err(_) =
+                                        block.sync_from_buffer(slot, Some(&header_pred), None)
+                                    {
                                         buffer.cancel_last_slot();
                                         blocks_decode_failed += 1;
                                         continue;

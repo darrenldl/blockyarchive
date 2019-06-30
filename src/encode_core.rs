@@ -21,8 +21,8 @@ use std::time::UNIX_EPOCH;
 
 use crate::file_reader::{FileReader, FileReaderParam};
 use crate::file_writer::{FileWriter, FileWriterParam};
-use crate::writer::{Writer, WriterType};
 use crate::reader::{Reader, ReaderType};
+use crate::writer::{Writer, WriterType};
 
 use crate::multihash;
 

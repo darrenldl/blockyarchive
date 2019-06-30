@@ -14,8 +14,8 @@ use crate::sbx_block;
 
 use crate::sbx_specs::{ver_to_block_size, ver_to_data_size, SBX_FILE_UID_LEN};
 
-use crate::writer::Writer;
 use crate::multihash::hash;
+use crate::writer::Writer;
 
 use crate::misc_utils;
 
@@ -429,7 +429,7 @@ impl Lot {
                         let check_buffer = match self.output_type {
                             OutputType::Block => &mut self.check_buffer,
                             OutputType::Data => &mut self.check_buffer[..self.data_size],
-                            OutputType::Disabled => panic!("Output is disabled")
+                            OutputType::Disabled => panic!("Output is disabled"),
                         };
 
                         let read_res = writer.read(check_buffer).unwrap()?;
@@ -445,21 +445,25 @@ impl Lot {
                                         None,
                                         None,
                                     ) {
-                                        Ok(()) => self.check_block.get_version() == block.get_version()
-                                            && self.check_block.get_uid() == block.get_uid()
-                                            && self.check_block.get_seq_num() == block.get_seq_num(),
+                                        Ok(()) => {
+                                            self.check_block.get_version() == block.get_version()
+                                                && self.check_block.get_uid() == block.get_uid()
+                                                && self.check_block.get_seq_num()
+                                                    == block.get_seq_num()
+                                        }
                                         Err(_) => false,
                                     }
                                 }
                             }
                             OutputType::Data => {
-                                read_res.eof_seen ||
-                                    misc_utils::buffer_is_blank(check_buffer)
+                                read_res.eof_seen || misc_utils::buffer_is_blank(check_buffer)
                             }
-                            OutputType::Disabled => panic!("Output is disabled")
+                            OutputType::Disabled => panic!("Output is disabled"),
                         };
 
-                        if skip { continue; }
+                        if skip {
+                            continue;
+                        }
                     }
 
                     let slot = match self.output_type {
