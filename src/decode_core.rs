@@ -46,6 +46,8 @@ const HASH_FILE_BLOCK_SIZE: usize = 4096;
 
 const BLANK_BUFFER: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
+const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
+
 pub enum WriteTo {
     File,
     Stdout,
@@ -823,6 +825,14 @@ pub fn decode(
         Some(ver_to_block_size(version) as u64),
     );
 
+    let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+    let (to_writer, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+    let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+    let (error_tx_reader, error_rx) = channel::<Error>();
+    let error_tx_writer = error_tx_reader.clone();
+
+    let worker_shutdown_barrier = Arc::new(Barrier::new(3));
+
     match param.out_file {
         Some(_) => {
             // output to file
@@ -842,12 +852,111 @@ pub fn decode(
                 param.json_printer.json_enabled(),
             );
 
-            // seek to calculated position
-            reader.seek(SeekFrom::Start(seek_to))?;
+            // push buffers into pipeline
+            for i in 0..PIPELINE_BUFFER_IN_ROTATION {
+                to_reader
+                    .send(Some(DataBlockBuffer::new(
+                        param.version,
+                        Some(&param.uid),
+                        InputType::Block,
+                        OutputType::Block,
+                        BlockArrangement::Unordered,
+                        param.data_par_burst,
+                        param.meta_enabled,
+                        i,
+                        PIPELINE_BUFFER_IN_ROTATION,
+                    )))
+                    .unwrap();
+            }
 
             reporter.start();
 
-            let mut bytes_processed: u64 = 0;
+            let reader_thread = {
+                let stats = Arc::clone(stats);
+
+                thread::spawn(move || {
+                    let mut run = true;
+                    let mut bytes_processed: u64 = 0;
+
+                    // seek to calculated position
+                    reader.seek(SeekFrom::Start(seek_to))?;
+
+                    while let Some(mut buffer) = from_writer.recv().unwrap() {
+                        if !run {
+                            break;
+                        }
+
+                        let mut meta_blocks_decoded = 0;
+                        let mut data_blocks_decoded = 0;
+                        let mut parity_blocks_decoded = 0;
+
+                        while !buffer.is_full() {
+                            break_if_atomic_bool!(ctrlc_stop_flag);
+
+                            if bytes_processed >= required_len {
+                                run = false;
+                                break;
+                            }
+
+                            // read at reference block block size
+                            match reader.read(sbx_block::slice_buf_mut(version, &mut buffer)) {
+                                Ok(read_res) => {
+                                    bytes_processed += read_res.len_read as u64;
+
+                                    if block.is_meta() {
+                                        // do nothing if block is meta
+                                        meta_blocks_decoded += 1;
+                                    } else {
+                                        match data_par_shards {
+                                            Some((data, par)) => {
+                                                if block.is_parity(data, par) {
+                                                    parity_blocks_decoded += 1;
+                                                } else {
+                                                    data_blocks_decoded += 1;
+                                                }
+                                            }
+                                            None => {
+                                                data_blocks_decoded += 1;
+                                            }
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error_tx_reader.send(e).unwrap();
+                                    run = false;
+                                    break;
+                                }
+                            }
+                        }
+
+                        {
+                            let mut stats = stats.lock().unwrap();
+
+                            stats.meta_blocks_decoded += meta_blocks_decoded;
+                            stats.data_blocks_decoded += data_blocks_decoded;
+                            stats.parity_blocks_decoded += parity_blocks_decoded;
+                        }
+
+                        break_if_atomic_bool!(ctrlc_stop_flag);
+                    }
+                })
+            };
+
+            let hasher_thread = {
+                thread::spawn(move || {
+                    while let Some(buffer) = from_reader.recv().unwrap() {
+                        
+                    }
+                })
+            };
+
+            let writer_thread = {
+                thread::spawn(move || {
+                    while let Some(mut buffer) = from_hasher.recv().unwrap() {
+                        buffer.write()
+                    }
+                })
+            };
 
             loop {
                 let mut stats = stats.lock().unwrap();
@@ -872,18 +981,6 @@ pub fn decode(
                     // do nothing if block is meta
                     stats.meta_blocks_decoded += 1;
                 } else {
-                    match data_par_shards {
-                        Some((data, par)) => {
-                            if block.is_parity(data, par) {
-                                stats.parity_blocks_decoded += 1;
-                            } else {
-                                stats.data_blocks_decoded += 1;
-                            }
-                        }
-                        None => {
-                            stats.data_blocks_decoded += 1;
-                        }
-                    }
 
                     // write data block
                     if let Some(write_pos) = sbx_block::calc_data_chunk_write_pos(
