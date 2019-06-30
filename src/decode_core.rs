@@ -853,7 +853,7 @@ pub fn decode(
             let (error_tx_reader, error_rx) = channel::<Error>();
             let error_tx_writer = error_tx_reader.clone();
 
-            let worker_shutdown_barrier = Arc::new(Barrier::new(3));
+            let worker_shutdown_barrier = Arc::new(Barrier::new(2));
 
             let skip_good = match param.multi_pass {
                 None | Some(MultiPassType::OverwriteAll) => false,
