@@ -3,9 +3,18 @@
 ## 7.2.1
 
 - Fixed `sbx_container_content::hash`
+  
     - Previously, it may produce incorrect hash due to incorrect termination determination logic of core loop
       
         - Specifically the core loop may end while reading a parity block, causing the final block set to be missed out entirely for hashing
+        - A simple way to reproduce the issue is as follows
+        - ```
+          $ touch dummy
+          $ truncate s- 4961
+          $ blkar encode dummy
+          $ blkar check --hash dummy.ecsbx
+          ```
+        - The hash check will fail due to the computed hash being different to the recorded hash
   
     - This only affects the following modes and usage
       
