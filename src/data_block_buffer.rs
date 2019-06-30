@@ -435,7 +435,7 @@ impl Lot {
                         let read_res = writer.read(check_buffer).unwrap()?;
                         writer.seek(SeekFrom::Start(cur_pos)).unwrap()?;
 
-                        let skip = match self.output_type {
+                        let do_write = match self.output_type {
                             OutputType::Block => {
                                 let block = &self.blocks[slot_index];
 
@@ -446,12 +446,12 @@ impl Lot {
                                         None,
                                     ) {
                                         Ok(()) => {
-                                            self.check_block.get_version() == block.get_version()
-                                                && self.check_block.get_uid() == block.get_uid()
-                                                && self.check_block.get_seq_num()
-                                                    == block.get_seq_num()
+                                            self.check_block.get_version() != block.get_version()
+                                                || self.check_block.get_uid() != block.get_uid()
+                                                || self.check_block.get_seq_num()
+                                                    != block.get_seq_num()
                                         }
-                                        Err(_) => false,
+                                        Err(_) => true,
                                     }
                                 }
                             }
@@ -461,7 +461,7 @@ impl Lot {
                             OutputType::Disabled => panic!("Output is disabled"),
                         };
 
-                        if skip {
+                        if !do_write {
                             continue;
                         }
                     }
