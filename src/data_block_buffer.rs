@@ -332,21 +332,6 @@ impl Lot {
         self.calc_slot_write_pos();
 
         self.sync_block_to_slot();
-
-        // for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-        //     if slot_index < self.slots_used {
-        //         let write_pos = calc_data_block_write_pos(
-        //             self.version,
-        //             self.block.get_seq_num(),
-        //             Some(self.meta_enabled),
-        //             self.data_par_burst,
-        //         );
-
-        //         self.slot_write_pos[slot_index] = write_pos;
-        //     } else {
-        //         break;
-        //     }
-        // }
     }
 
     fn hash(&self, ctx: &mut hash::Ctx) {
