@@ -52,7 +52,7 @@ const HASH_FILE_BLOCK_SIZE: usize = 4096;
 
 const BLANK_BUFFER: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
-const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
+const PIPELINE_BUFFER_IN_ROTATION: usize = 3;
 
 pub enum WriteTo {
     File,
