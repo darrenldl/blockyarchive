@@ -6,7 +6,7 @@ use std::io::SeekFrom;
 use std::sync::Arc;
 
 use crate::general_error::Error;
-use crate::sbx_specs::{Version, SBX_LAST_SEQ_NUM};
+use crate::sbx_specs::{Version, SBX_LAST_SEQ_NUM, SBX_LARGEST_BLOCK_SIZE};
 
 use crate::sbx_block::{calc_data_block_write_pos, calc_data_chunk_write_pos, Block, BlockType};
 
@@ -164,7 +164,7 @@ impl Lot {
             blocks,
             data: vec![0; block_size * lot_size],
             check_block: Block::dummy(),
-            check_buffer: vec![0; block_size],
+            check_buffer: vec![0; SBX_LARGEST_BLOCK_SIZE],
             slot_write_pos: vec![None; lot_size],
             slot_content_len_exc_header: vec![None; lot_size],
             slot_is_padding: vec![false; directly_writable_slots],
@@ -441,7 +441,7 @@ impl Lot {
 
                                 read_res.eof_seen || {
                                     match self.check_block.sync_from_buffer(
-                                        &check_buffer,
+                                        check_buffer,
                                         None,
                                         None,
                                     ) {
