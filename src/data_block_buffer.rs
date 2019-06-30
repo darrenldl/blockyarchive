@@ -429,6 +429,7 @@ impl Lot {
                         let check_buffer = match self.output_type {
                             OutputType::Block => &mut self.check_buffer,
                             OutputType::Data => &mut self.check_buffer[..self.data_size],
+                            OutputType::Disabled => panic!("Output is disabled")
                         };
 
                         let read_res = writer.read(check_buffer).unwrap()?;
@@ -455,6 +456,7 @@ impl Lot {
                                 read_res.eof_seen ||
                                     misc_utils::buffer_is_blank(check_buffer)
                             }
+                            OutputType::Disabled => panic!("Output is disabled")
                         };
 
                         if skip { continue; }
