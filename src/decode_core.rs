@@ -926,29 +926,29 @@ pub fn decode(
                                         break;
                                     }
 
-                                    if let Err(_) =
-                                        block.sync_from_buffer(slot, Some(&header_pred), None)
-                                    {
-                                        buffer.cancel_last_slot();
-                                        blocks_decode_failed += 1;
-                                        continue;
-                                    }
-
-                                    // update stats
-                                    if block.is_meta() {
-                                        meta_blocks_decoded += 1;
-                                    } else {
-                                        match data_par_shards {
-                                            Some((data, par)) => {
-                                                if block.is_parity(data, par) {
-                                                    parity_blocks_decoded += 1;
-                                                } else {
-                                                    data_blocks_decoded += 1;
+                                    match block.sync_from_buffer(slot, Some(&header_pred), None) {
+                                        Ok(()) => {
+                                            // update stats
+                                            if block.is_meta() {
+                                                meta_blocks_decoded += 1;
+                                            } else {
+                                                match data_par_shards {
+                                                    Some((data, par)) => {
+                                                        if block.is_parity(data, par) {
+                                                            parity_blocks_decoded += 1;
+                                                        } else {
+                                                            data_blocks_decoded += 1;
+                                                        }
+                                                    }
+                                                    None => {
+                                                        data_blocks_decoded += 1;
+                                                    }
                                                 }
                                             }
-                                            None => {
-                                                data_blocks_decoded += 1;
-                                            }
+                                        }
+                                        Err(_) => {
+                                            buffer.cancel_last_slot();
+                                            blocks_decode_failed += 1;
                                         }
                                     }
                                 }
