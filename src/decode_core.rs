@@ -778,7 +778,7 @@ pub fn decode(
                 read: param.multi_pass == Some(MultiPassType::SkipGood),
                 append: false,
                 truncate: param.multi_pass == None,
-                buffered: true,
+                buffered: false,
             },
         )?)),
         None => Writer::new(WriterType::Stdout(std::io::stdout())),
