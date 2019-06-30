@@ -21,6 +21,7 @@ use std::time::UNIX_EPOCH;
 
 use crate::file_reader::{FileReader, FileReaderParam};
 use crate::file_writer::{FileWriter, FileWriterParam};
+use crate::writer::{Writer, WriterType};
 use crate::reader::{Reader, ReaderType};
 
 use crate::multihash;
@@ -438,7 +439,7 @@ fn write_meta_blocks(
     file_metadata: &Option<fs::Metadata>,
     file_size: Option<u64>,
     hash: Option<multihash::HashBytes>,
-    writer: &mut FileWriter,
+    writer: &mut Writer,
     record_stats: bool,
 ) -> Result<(), Error> {
     let mut block = Block::new(param.version, &param.uid, BlockType::Meta);
@@ -469,7 +470,7 @@ fn write_meta_blocks(
         sbx_block::calc_meta_block_all_write_pos_s(param.version, param.data_par_burst);
 
     for &p in write_pos_s.iter() {
-        writer.seek(SeekFrom::Start(p))?;
+        writer.seek(SeekFrom::Start(p)).unwrap()?;
 
         writer.write(sbx_block::slice_buf(block.get_version(), &buffer))?;
 
@@ -496,7 +497,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         None => Reader::new(ReaderType::Stdin(std::io::stdin())),
     };
 
-    let writer = Arc::new(Mutex::new(FileWriter::new(
+    let writer = Arc::new(Mutex::new(Writer::new(WriterType::File(FileWriter::new(
         &param.out_file,
         FileWriterParam {
             read: false,
@@ -504,7 +505,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             truncate: true,
             buffered: false,
         },
-    )?));
+    )?))));
 
     let metadata = match reader.metadata() {
         Some(m) => Some(m?),
@@ -610,6 +611,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 param.version,
                 Some(&param.uid),
                 InputType::Data,
+                false,
                 OutputType::Block,
                 BlockArrangement::Ordered,
                 param.data_par_burst,

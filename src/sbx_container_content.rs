@@ -69,6 +69,7 @@ pub fn hash(
                 version,
                 None,
                 InputType::Block,
+                false,
                 OutputType::Disabled,
                 BlockArrangement::Ordered,
                 data_par_burst,

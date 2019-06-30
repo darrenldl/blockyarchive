@@ -4,6 +4,12 @@ use crate::misc_utils;
 use std::fmt;
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
+use std::sync::Barrier;
+use std::sync::mpsc::channel;
+use std::sync::mpsc::sync_channel;
+use std::thread;
+
+use crate::data_block_buffer::{BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot};
 
 use crate::misc_utils::RequiredLenAndSeekTo;
 
@@ -852,33 +858,36 @@ pub fn decode(
             let worker_shutdown_barrier = Arc::new(Barrier::new(3));
 
             // push buffers into pipeline
-            for i in 0..PIPELINE_BUFFER_IN_ROTATION {
-                to_reader
-                    .send(Some(DataBlockBuffer::new(
-                        version,
-                        Some(&param.uid),
-                        InputType::Block,
-                        OutputType::Block,
-                        BlockArrangement::Unordered,
-                        param.data_par_burst,
-                        param.meta_enabled,
-                        i,
-                        PIPELINE_BUFFER_IN_ROTATION,
-                    )))
-                    .unwrap();
-            }
+            // for i in 0..PIPELINE_BUFFER_IN_ROTATION {
+            //     to_reader
+            //         .send(Some(DataBlockBuffer::new(
+            //             version,
+            //             Some(&param.uid),
+            //             InputType::Block,
+            //             OutputType::Block,
+            //             BlockArrangement::Unordered,
+            //             param.data_par_burst,
+            //             param.meta_enabled,
+            //             i,
+            //             PIPELINE_BUFFER_IN_ROTATION,
+            //         )))
+            //         .unwrap();
+            // }
 
             reporter.start();
 
             let reader_thread = {
-                let stats = Arc::clone(stats);
+                let stats = Arc::clone(&stats);
 
                 thread::spawn(move || {
                     let mut run = true;
                     let mut bytes_processed: u64 = 0;
 
                     // seek to calculated position
-                    reader.seek(SeekFrom::Start(seek_to))?;
+                    if let Err(e) = reader.seek(SeekFrom::Start(seek_to)) {
+                        error_tx_reader.send(e).unwrap();
+                        run = false;
+                    }
 
                     while let Some(mut buffer) = from_writer.recv().unwrap() {
                         if !run {
@@ -932,32 +941,31 @@ pub fn decode(
                                         }
                                     }
 
-                                    let do_write =
-                                        !block.is_parity(data, par)
-                                        && {
-                                            match param.multi_pass {
-                                                None | Some(MultiPassType::OverwriteAll) => true,
-                                                Some(MultiPassType::SkipGood) => {
-                                                    // only write if the position to write to does not already contain a non-blank chunk
-                                                    writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
-                                                    let read_res = writer
-                                                        .read(sbx_block::slice_data_buf_mut(version, &mut check_buffer))
-                                                        .unwrap()?;
+                                    // let do_write =
+                                    //     !block.is_parity(data, par)
+                                    //     && {
+                                    //         match param.multi_pass {
+                                    //             None | Some(MultiPassType::OverwriteAll) => true,
+                                    //             Some(MultiPassType::SkipGood) => {
+                                    //                 // only write if the position to write to does not already contain a non-blank chunk
+                                    //                 writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
+                                    //                 let read_res = writer
+                                    //                     .read(sbx_block::slice_data_buf_mut(version, &mut check_buffer))
+                                    //                     .unwrap()?;
 
-                                                    read_res.eof_seen || {
-                                                        misc_utils::buffer_is_blank(sbx_block::slice_data_buf(
-                                                            version,
-                                                            &check_buffer,
-                                                        ))
-                                                    }
-                                                }
-                                            }
-                                        };
+                                    //                 read_res.eof_seen || {
+                                    //                     misc_utils::buffer_is_blank(sbx_block::slice_data_buf(
+                                    //                         version,
+                                    //                         &check_buffer,
+                                    //                     ))
+                                    //                 }
+                                    //             }
+                                    //         }
+                                    //     };
                                 }
                                 Err(e) => {
                                     error_tx_reader.send(e).unwrap();
                                     buffer.cancel_last_slot();
-                                    block_decode_failed = true;
                                     run = false;
                                     break;
                                 }
@@ -965,15 +973,15 @@ pub fn decode(
                         }
 
                         {
-                            let mut stats = stats.lock().unwrap();
+                            // let mut stats = stats.lock().unwrap();
 
-                            stats.meta_blocks_decoded += meta_blocks_decoded;
-                            stats.data_blocks_decoded += data_blocks_decoded;
-                            stats.parity_blocks_decoded += parity_blocks_decoded;
+                            // stats.meta_blocks_decoded += meta_blocks_decoded;
+                            // stats.data_blocks_decoded += data_blocks_decoded;
+                            // stats.parity_blocks_decoded += parity_blocks_decoded;
 
-                            for _ in 0..blocks_decode_failed {
-                                stats.incre_blocks_failed();
-                            }
+                            // for _ in 0..blocks_decode_failed {
+                            //     stats.incre_blocks_failed();
+                            // }
                         }
 
                         break_if_atomic_bool!(ctrlc_stop_flag);
@@ -983,7 +991,7 @@ pub fn decode(
 
             let writer_thread = {
                 thread::spawn(move || {
-                    while let Some(mut buffer) = from_hasher.recv().unwrap() {
+                    while let Some(mut buffer) = from_reader.recv().unwrap() {
                         buffer.sync_blocks_from_slots();
 
                         buffer.write(writer)
@@ -991,43 +999,43 @@ pub fn decode(
                 })
             };
 
-            loop {
-                if block.is_meta() {
-                    // do nothing if block is meta
-                    stats.meta_blocks_decoded += 1;
-                } else {
+            // loop {
+            //     if block.is_meta() {
+            //         // do nothing if block is meta
+            //         stats.meta_blocks_decoded += 1;
+            //     } else {
 
-                    // write data block
-                    if let Some(write_pos) = sbx_block::calc_data_chunk_write_pos(
-                        version,
-                        block.get_seq_num(),
-                        data_par_shards,
-                    ) {
-                        let do_write = match param.multi_pass {
-                            None | Some(MultiPassType::OverwriteAll) => true,
-                            Some(MultiPassType::SkipGood) => {
-                                // only write if the position to write to does not already contain a non-blank chunk
-                                writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
-                                let read_res = writer
-                                    .read(sbx_block::slice_data_buf_mut(version, &mut check_buffer))
-                                    .unwrap()?;
+            //         // write data block
+            //         if let Some(write_pos) = sbx_block::calc_data_chunk_write_pos(
+            //             version,
+            //             block.get_seq_num(),
+            //             data_par_shards,
+            //         ) {
+            //             let do_write = match param.multi_pass {
+            //                 None | Some(MultiPassType::OverwriteAll) => true,
+            //                 Some(MultiPassType::SkipGood) => {
+            //                     // only write if the position to write to does not already contain a non-blank chunk
+            //                     writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
+            //                     let read_res = writer
+            //                         .read(sbx_block::slice_data_buf_mut(version, &mut check_buffer))
+            //                         .unwrap()?;
 
-                                read_res.eof_seen || {
-                                    misc_utils::buffer_is_blank(sbx_block::slice_data_buf(
-                                        version,
-                                        &check_buffer,
-                                    ))
-                                }
-                            }
-                        };
+            //                     read_res.eof_seen || {
+            //                         misc_utils::buffer_is_blank(sbx_block::slice_data_buf(
+            //                             version,
+            //                             &check_buffer,
+            //                         ))
+            //                     }
+            //                 }
+            //             };
 
-                        if do_write {
-                            writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
-                            writer.write(sbx_block::slice_data_buf(version, &buffer))?;
-                        }
-                    }
-                }
-            }
+            //             if do_write {
+            //                 writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
+            //                 writer.write(sbx_block::slice_data_buf(version, &buffer))?;
+            //             }
+            //         }
+            //     }
+            // }
         }
         None => {
             // output to stdout

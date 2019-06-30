@@ -14,8 +14,10 @@ use crate::sbx_block;
 
 use crate::sbx_specs::{ver_to_block_size, ver_to_data_size, SBX_FILE_UID_LEN};
 
-use crate::file_writer::FileWriter;
+use crate::writer::Writer;
 use crate::multihash::hash;
+
+use crate::misc_utils;
 
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
@@ -93,10 +95,12 @@ struct Lot {
     directly_writable_slots: usize,
     blocks: Vec<Block>,
     data: Vec<u8>,
+    check_block: Block,
     check_buffer: Vec<u8>,
     slot_write_pos: Vec<Option<u64>>,
     slot_content_len_exc_header: Vec<Option<usize>>,
     slot_is_padding: Vec<bool>,
+    skip_good: bool,
     rs_codec: Arc<Option<ReedSolomon>>,
 }
 
@@ -118,6 +122,7 @@ impl Lot {
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
         lot_size: usize,
+        skip_good: bool,
         rs_codec: &Arc<Option<ReedSolomon>>,
     ) -> Self {
         let block_size = ver_to_block_size(version);
@@ -158,9 +163,12 @@ impl Lot {
             directly_writable_slots,
             blocks,
             data: vec![0; block_size * lot_size],
+            check_block: Block::dummy(),
+            check_buffer: vec![0; block_size],
             slot_write_pos: vec![None; lot_size],
             slot_content_len_exc_header: vec![None; lot_size],
             slot_is_padding: vec![false; directly_writable_slots],
+            skip_good,
             rs_codec,
         }
     }
@@ -419,8 +427,8 @@ impl Lot {
                         let cur_pos = writer.cur_pos().unwrap()?;
 
                         let check_buffer = match self.output_type {
-                            OutputType::Block => self.check_buffer,
-                            OutputType::Data => &mut self.check_buffer[..self.data_size];
+                            OutputType::Block => &mut self.check_buffer,
+                            OutputType::Data => &mut self.check_buffer[..self.data_size],
                         };
 
                         let read_res = writer.read(check_buffer).unwrap()?;
@@ -432,12 +440,12 @@ impl Lot {
 
                                 read_res.eof_seen || {
                                     match self.check_block.sync_from_buffer(
-                                        check_buffer,
+                                        &check_buffer,
                                         None,
                                         None,
                                     ) {
-                                        Ok(()) => self.check_block.get_version() == self.version
-                                            && self.get_uid() == block.get_uid()
+                                        Ok(()) => self.check_block.get_version() == block.get_version()
+                                            && self.check_block.get_uid() == block.get_uid()
                                             && self.check_block.get_seq_num() == block.get_seq_num(),
                                         Err(_) => false,
                                     }
@@ -474,6 +482,7 @@ impl DataBlockBuffer {
         version: Version,
         uid: Option<&[u8; SBX_FILE_UID_LEN]>,
         input_type: InputType,
+        skip_good: bool,
         output_type: OutputType,
         arrangement: BlockArrangement,
         data_par_burst: Option<(usize, usize, usize)>,
@@ -507,6 +516,7 @@ impl DataBlockBuffer {
                 data_par_burst,
                 meta_enabled,
                 lot_size,
+                skip_good,
                 &rs_codec,
             ))
         }
@@ -647,7 +657,7 @@ impl DataBlockBuffer {
         }
     }
 
-    fn write_internal(&mut self, seek: bool, writer: &mut FileWriter) -> Result<(), Error> {
+    fn write_internal(&mut self, seek: bool, writer: &mut Writer) -> Result<(), Error> {
         for lot in self.lots.iter_mut() {
             lot.write(seek, writer)?;
         }
@@ -657,11 +667,11 @@ impl DataBlockBuffer {
         Ok(())
     }
 
-    pub fn write(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
+    pub fn write(&mut self, writer: &mut Writer) -> Result<(), Error> {
         self.write_internal(true, writer)
     }
 
-    pub fn write_no_seek(&mut self, writer: &mut FileWriter) -> Result<(), Error> {
+    pub fn write_no_seek(&mut self, writer: &mut Writer) -> Result<(), Error> {
         self.write_internal(false, writer)
     }
 }
