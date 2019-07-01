@@ -1118,7 +1118,7 @@ pub fn decode(
                         InputType::Block,
                         false,
                         OutputType::Data,
-                        BlockArrangement::Unordered,
+                        BlockArrangement::Ordered,
                         data_par_burst,
                         true,
                         i,
