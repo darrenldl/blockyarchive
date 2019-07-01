@@ -1109,24 +1109,6 @@ pub fn decode(
 
             let worker_shutdown_barrier = Arc::new(Barrier::new(3));
 
-            // push buffers into pipeline
-            for i in 0..PIPELINE_BUFFER_IN_ROTATION {
-                to_reader
-                    .send(Some(DataBlockBuffer::new(
-                        version,
-                        Some(&ref_block.get_uid()),
-                        InputType::Block,
-                        false,
-                        OutputType::Data,
-                        BlockArrangement::Ordered,
-                        data_par_burst,
-                        true,
-                        i,
-                        PIPELINE_BUFFER_IN_ROTATION,
-                    )))
-                    .unwrap();
-            }
-
             reporter.start();
 
             match read_pattern {
@@ -1157,6 +1139,24 @@ pub fn decode(
                     }
 
                     // go through data and parity blocks
+
+                    // push buffers into pipeline
+                    for i in 0..PIPELINE_BUFFER_IN_ROTATION {
+                        to_reader
+                            .send(Some(DataBlockBuffer::new(
+                                version,
+                                Some(&ref_block.get_uid()),
+                                InputType::Block,
+                                false,
+                                OutputType::Data,
+                                BlockArrangement::Ordered,
+                                data_par_burst,
+                                true,
+                                i,
+                                PIPELINE_BUFFER_IN_ROTATION,
+                            )))
+                            .unwrap();
+                    }
 
                     let reader_thread = {
                         let ctrlc_stop_flag = Arc::clone(ctrlc_stop_flag);
@@ -1190,16 +1190,18 @@ pub fn decode(
                                         data_par_burst,
                                     );
 
-                                    let Slot {
-                                        block,
-                                        slot,
-                                        content_len_exc_header,
-                                    } = buffer.get_slot().unwrap();
                                     if let Err(e) = reader.seek(SeekFrom::Start(pos)) {
                                         error_tx_reader.send(e).unwrap();
                                         run = false;
                                         break;
                                     }
+
+                                    let Slot {
+                                        block,
+                                        slot,
+                                        content_len_exc_header,
+                                    } = buffer.get_slot().unwrap();
+
                                     match reader.read(slot) {
                                         Ok(read_res) => {
                                             let decode_successful = !read_res.eof_seen
@@ -1222,6 +1224,9 @@ pub fn decode(
                                                 } else {
                                                     parity_blocks_failed_this_iteration += 1;
                                                 }
+
+                                                // save space by not storing parity blocks
+                                                buffer.cancel_last_slot();
                                             } else {
                                                 if decode_successful {
                                                     data_blocks_decoded += 1;
@@ -1238,16 +1243,16 @@ pub fn decode(
 
                                                     block.sync_to_buffer(None, slot).unwrap();
                                                 }
-                                            }
 
-                                            if let Some(count) = total_data_chunk_count {
-                                                if data_blocks_decoded + data_blocks_failed == count
-                                                {
-                                                    *content_len_exc_header =
-                                                        data_size_of_last_data_block
+                                                if let Some(count) = total_data_chunk_count {
+                                                    if data_blocks_decoded + data_blocks_failed == count
+                                                    {
+                                                        *content_len_exc_header =
+                                                            data_size_of_last_data_block
                                                             .map(|x| x as usize);
-                                                    run = false;
-                                                    break;
+                                                        run = false;
+                                                        break;
+                                                    }
                                                 }
                                             }
                                         }
