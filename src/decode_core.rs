@@ -1260,9 +1260,9 @@ pub fn decode(
                                     }
                                 }
 
-                                to_hasher.send(Some(buffer)).unwrap();
-
                                 break_if_atomic_bool!(ctrlc_stop_flag);
+
+                                to_hasher.send(Some(buffer)).unwrap();
                             }
 
                             to_hasher.send(None).unwrap();
