@@ -992,8 +992,6 @@ pub fn decode(
 
                 thread::spawn(move || {
                     while let Some(mut buffer) = from_reader.recv().unwrap() {
-                        buffer.sync_blocks_from_slots();
-
                         if let Err(e) = buffer.write(&mut writer.lock().unwrap()) {
                             error_tx_writer.send(e).unwrap();
                             break;
