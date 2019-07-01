@@ -471,7 +471,10 @@ impl Lot {
 
                     let slot = match self.output_type {
                         OutputType::Block => slot,
-                        OutputType::Data => sbx_block::slice_data_buf(self.version, slot),
+                        OutputType::Data => match self.slot_content_len_exc_header[slot_index] {
+                            None => sbx_block::slice_data_buf(self.version, slot),
+                            Some(len) => &sbx_block::slice_data_buf(self.version, slot)[..len],
+                        },
                         OutputType::Disabled => panic!("Output is diabled"),
                     };
 
