@@ -39,6 +39,7 @@ use crate::sbx_block::Block;
 use crate::sbx_specs::{
     ver_to_block_size, ver_to_data_size, ver_to_usize, ver_uses_rs, SBX_FILE_UID_LEN,
     SBX_LARGEST_BLOCK_SIZE,
+    SBX_LAST_SEQ_NUM,
 };
 
 use crate::block_utils;
@@ -1168,15 +1169,17 @@ pub fn decode(
                             let mut run = true;
                             let mut seq_num = 1;
 
+                            let mut data_blocks_decoded = 0;
+                            let mut parity_blocks_decoded = 0;
+                            let mut data_blocks_failed = 0;
+
                             while let Some(mut buffer) = from_writer.recv().unwrap() {
                                 if !run {
                                     break;
                                 }
 
-                                let mut data_blocks_decoded = 0;
-                                let mut data_blocks_failed = 0;
-                                let mut parity_blocks_decoded = 0;
-                                let mut parity_blocks_failed = 0;
+                                let mut data_blocks_failed_this_iteration = 0;
+                                let mut parity_blocks_failed_this_iteration = 0;
 
                                 while !buffer.is_full() {
                                     break_if_atomic_bool!(ctrlc_stop_flag);
@@ -1212,12 +1215,13 @@ pub fn decode(
                                                 if decode_successful {
                                                     parity_blocks_decoded += 1;
                                                 } else {
-                                                    parity_blocks_failed += 1;
+                                                    parity_blocks_failed_this_iteration += 1;
                                                 }
                                             } else {
                                                 if decode_successful {
                                                     data_blocks_decoded += 1;
                                                 } else {
+                                                    data_blocks_failed_this_iteration += 1;
                                                     data_blocks_failed += 1;
 
                                                     // replace with a blank block
@@ -1231,10 +1235,12 @@ pub fn decode(
                                                 }
                                             }
 
-                                            if is_last_data_block(&stats.lock().unwrap(), total_data_chunk_count) {
-                                                *content_len_exc_header = data_size_of_last_data_block.map(|x| x as usize);
-                                                run = false;
-                                                break;
+                                            if let Some(count) = total_data_chunk_count {
+                                                if data_blocks_decoded + data_blocks_failed == count {
+                                                    *content_len_exc_header = data_size_of_last_data_block.map(|x| x as usize);
+                                                    run = false;
+                                                    break;
+                                                }
                                             }
                                         }
                                         Err(e) => {
@@ -1244,18 +1250,24 @@ pub fn decode(
                                         }
                                     }
 
+                                    if seq_num == SBX_LAST_SEQ_NUM {
+                                        run = false;
+                                        break;
+                                    }
+
                                     seq_num += 1;
                                 }
 
                                 {
                                     let mut stats = stats.lock().unwrap();
 
-                                    stats.data_blocks_decoded += data_blocks_decoded;
-                                    for _ in 0..data_blocks_failed {
+                                    stats.data_blocks_decoded = data_blocks_decoded;
+                                    for _ in 0..data_blocks_failed_this_iteration {
                                         stats.incre_data_blocks_failed();
                                     }
-                                    stats.parity_blocks_decoded += parity_blocks_decoded;
-                                    for _ in 0..parity_blocks_failed {
+
+                                    stats.parity_blocks_decoded = parity_blocks_decoded;
+                                    for _ in 0..parity_blocks_failed_this_iteration {
                                         stats.incre_parity_blocks_failed();
                                     }
                                 }
