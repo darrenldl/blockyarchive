@@ -64,7 +64,7 @@ pub enum InputType {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum BlockArrangement {
-    Ordered,
+    OrderedAndNoMissing,
     Unordered,
 }
 
@@ -223,7 +223,7 @@ impl Lot {
             }
 
             if let Some((data, _, _)) = self.data_par_burst {
-                assert!(self.arrangement == BlockArrangement::Ordered);
+                assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing);
                 assert!(self.slots_used <= data);
 
                 for i in self.slots_used..data {
@@ -332,7 +332,7 @@ impl Lot {
 
     fn encode(&mut self, lot_start_seq_num: u32) {
         assert!(self.input_type == InputType::Data);
-        assert!(self.arrangement == BlockArrangement::Ordered);
+        assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing);
 
         self.fill_in_padding();
 
@@ -344,11 +344,12 @@ impl Lot {
     }
 
     fn hash(&self, ctx: &mut hash::Ctx) {
-        assert!(self.arrangement == BlockArrangement::Ordered);
-
         let slots_to_hash = match self.data_par_burst {
             None => self.slots_used,
-            Some((data, _, _)) => min(data, self.slots_used),
+            Some((data, _, _)) => match self.arrangement {
+                BlockArrangement::OrderedAndNoMissing => min(data, self.slots_used),
+                BlockArrangement::Unordered => self.lots_used,
+            }
         };
 
         for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
