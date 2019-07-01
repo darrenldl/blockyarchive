@@ -1296,7 +1296,7 @@ pub fn decode(
 
                         thread::spawn(move || {
                             while let Some(mut buffer) = from_hasher.recv().unwrap() {
-                                if let Err(e) = buffer.write(&mut writer.lock().unwrap()) {
+                                if let Err(e) = buffer.write_no_seek(&mut writer.lock().unwrap()) {
                                     error_tx_writer.send(e).unwrap();
                                     break;
                                 }
