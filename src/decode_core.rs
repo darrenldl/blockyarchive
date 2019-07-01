@@ -1414,6 +1414,7 @@ pub fn decode(
                             &ref_block,
                             data_par_burst,
                         )?;
+                        let uid = ref_block.get_uid();
 
                         thread::spawn(move || {
                             let mut run = true;
@@ -1422,6 +1423,7 @@ pub fn decode(
                             let mut meta_blocks_decoded = 0;
                             let mut data_blocks_decoded = 0;
                             let mut parity_blocks_decoded = 0;
+                            let mut data_blocks_failed = 0;
 
                             while let Some(mut buffer) = from_writer.recv().unwrap() {
                                 if !run {
@@ -1519,6 +1521,13 @@ pub fn decode(
                                             break;
                                         }
                                     }
+
+                                    if block_index == std::u64::MAX {
+                                        run = false;
+                                        break;
+                                    }
+
+                                    block_index += 1;
                                 }
 
                                 {
@@ -1570,6 +1579,9 @@ pub fn decode(
                     };
 
                     let writer_thread = {
+                        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+                        let writer = Arc::clone(&writer);
+
                         thread::spawn(move || {
                             while let Some(mut buffer) = from_hasher.recv().unwrap() {
                                 if let Err(e) = buffer.write_no_seek(&mut writer.lock().unwrap()) {
@@ -1596,94 +1608,94 @@ pub fn decode(
                         return Err(err);
                     }
 
-                    let mut block_index = block_utils::guess_starting_block_index(
-                        &param.in_file,
-                        param.from_pos,
-                        param.force_misalign,
-                        &ref_block,
-                        data_par_burst,
-                    )?;
+                    // let mut block_index = block_utils::guess_starting_block_index(
+                    //     &param.in_file,
+                    //     param.from_pos,
+                    //     param.force_misalign,
+                    //     &ref_block,
+                    //     data_par_burst,
+                    // )?;
 
-                    loop {
-                        let mut stats = stats.lock().unwrap();
+                    // loop {
+                    //     let mut stats = stats.lock().unwrap();
 
-                        break_if_atomic_bool!(ctrlc_stop_flag);
+                    //     break_if_atomic_bool!(ctrlc_stop_flag);
 
-                        break_if_reached_required_len!(bytes_processed, required_len);
+                    //     break_if_reached_required_len!(bytes_processed, required_len);
 
-                        // read at reference block block size
-                        let read_res =
-                            reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
+                    //     // read at reference block block size
+                    //     let read_res =
+                    //         reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
-                        bytes_processed += read_res.len_read as u64;
+                    //     bytes_processed += read_res.len_read as u64;
 
-                        break_if_eof_seen!(read_res);
+                    //     break_if_eof_seen!(read_res);
 
-                        let seq_num = sbx_block::calc_seq_num_at_index(
-                            block_index,
-                            Some(true),
-                            data_par_burst,
-                        );
+                    //     let seq_num = sbx_block::calc_seq_num_at_index(
+                    //         block_index,
+                    //         Some(true),
+                    //         data_par_burst,
+                    //     );
 
-                        let block_okay =
-                            match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
-                                Ok(_) => block.get_seq_num() == seq_num,
-                                Err(_) => false,
-                            };
+                    //     let block_okay =
+                    //         match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
+                    //             Ok(_) => block.get_seq_num() == seq_num,
+                    //             Err(_) => false,
+                    //         };
 
-                        if block_okay {
-                            let block_seq_num = block.get_seq_num();
+                    //     if block_okay {
+                    //         let block_seq_num = block.get_seq_num();
 
-                            if block.is_meta() {
-                                // do nothing if block is meta
-                                stats.meta_blocks_decoded += 1;
-                            } else if sbx_block::seq_num_is_parity_w_data_par_burst(
-                                block_seq_num,
-                                data_par_burst,
-                            ) {
-                                stats.parity_blocks_decoded += 1;
-                            } else {
-                                stats.data_blocks_decoded += 1;
+                    //         if block.is_meta() {
+                    //             // do nothing if block is meta
+                    //             stats.meta_blocks_decoded += 1;
+                    //         } else if sbx_block::seq_num_is_parity_w_data_par_burst(
+                    //             block_seq_num,
+                    //             data_par_burst,
+                    //         ) {
+                    //             stats.parity_blocks_decoded += 1;
+                    //         } else {
+                    //             stats.data_blocks_decoded += 1;
 
-                                // write data block
-                                write_data_only_block(
-                                    None,
-                                    is_last_data_block(&stats, total_data_chunk_count),
-                                    data_size_of_last_data_block,
-                                    &ref_block,
-                                    &block,
-                                    &mut writer.lock().unwrap(),
-                                    &mut hash_ctx.lock().unwrap(),
-                                    &buffer,
-                                )?;
-                            }
-                        } else {
-                            if sbx_block::seq_num_is_meta(seq_num) {
-                                stats.incre_meta_blocks_failed();
-                            } else if sbx_block::seq_num_is_parity_w_data_par_burst(
-                                seq_num,
-                                data_par_burst,
-                            ) {
-                                stats.incre_parity_blocks_failed();
-                            } else {
-                                stats.incre_data_blocks_failed();
+                    //             // write data block
+                    //             write_data_only_block(
+                    //                 None,
+                    //                 is_last_data_block(&stats, total_data_chunk_count),
+                    //                 data_size_of_last_data_block,
+                    //                 &ref_block,
+                    //                 &block,
+                    //                 &mut writer.lock().unwrap(),
+                    //                 &mut hash_ctx.lock().unwrap(),
+                    //                 &buffer,
+                    //             )?;
+                    //         }
+                    //     } else {
+                    //         if sbx_block::seq_num_is_meta(seq_num) {
+                    //             stats.incre_meta_blocks_failed();
+                    //         } else if sbx_block::seq_num_is_parity_w_data_par_burst(
+                    //             seq_num,
+                    //             data_par_burst,
+                    //         ) {
+                    //             stats.incre_parity_blocks_failed();
+                    //         } else {
+                    //             stats.incre_data_blocks_failed();
 
-                                write_blank_chunk(
-                                    is_last_data_block(&stats, total_data_chunk_count),
-                                    data_size_of_last_data_block,
-                                    &ref_block,
-                                    &mut writer.lock().unwrap(),
-                                    &mut hash_ctx.lock().unwrap(),
-                                )?;
-                            }
-                        }
+                    //             write_blank_chunk(
+                    //                 is_last_data_block(&stats, total_data_chunk_count),
+                    //                 data_size_of_last_data_block,
+                    //                 &ref_block,
+                    //                 &mut writer.lock().unwrap(),
+                    //                 &mut hash_ctx.lock().unwrap(),
+                    //             )?;
+                    //         }
+                    //     }
 
-                        if is_last_data_block(&stats, total_data_chunk_count) {
-                            break;
-                        }
+                    //     if is_last_data_block(&stats, total_data_chunk_count) {
+                    //         break;
+                    //     }
 
-                        incre_or_break_if_last!(block_index => block_index);
-                    }
+                    //     incre_or_break_if_last!(block_index => block_index);
+                    // }
                 }
             }
 
