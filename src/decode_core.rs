@@ -38,8 +38,7 @@ use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_specs::{
     ver_to_block_size, ver_to_data_size, ver_to_usize, ver_uses_rs, SBX_FILE_UID_LEN,
-    SBX_LARGEST_BLOCK_SIZE,
-    SBX_LAST_SEQ_NUM,
+    SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM,
 };
 
 use crate::block_utils;
@@ -1204,14 +1203,20 @@ pub fn decode(
                                     match reader.read(slot) {
                                         Ok(read_res) => {
                                             let decode_successful = !read_res.eof_seen
-                                                && match block.sync_from_buffer(slot, Some(&header_pred), None) {
+                                                && match block.sync_from_buffer(
+                                                    slot,
+                                                    Some(&header_pred),
+                                                    None,
+                                                ) {
                                                     Ok(()) => block.get_seq_num() == seq_num,
                                                     _ => false,
                                                 };
 
                                             if sbx_block::seq_num_is_meta(seq_num) {
                                                 unreachable!();
-                                            } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
+                                            } else if sbx_block::seq_num_is_parity(
+                                                seq_num, data, parity,
+                                            ) {
                                                 if decode_successful {
                                                     parity_blocks_decoded += 1;
                                                 } else {
@@ -1236,8 +1241,11 @@ pub fn decode(
                                             }
 
                                             if let Some(count) = total_data_chunk_count {
-                                                if data_blocks_decoded + data_blocks_failed == count {
-                                                    *content_len_exc_header = data_size_of_last_data_block.map(|x| x as usize);
+                                                if data_blocks_decoded + data_blocks_failed == count
+                                                {
+                                                    *content_len_exc_header =
+                                                        data_size_of_last_data_block
+                                                            .map(|x| x as usize);
                                                     run = false;
                                                     break;
                                                 }

@@ -477,7 +477,7 @@ impl Lot {
                                 None => data,
                                 Some(len) => &data[..len],
                             }
-                        },
+                        }
                         OutputType::Disabled => panic!("Output is diabled"),
                     };
 
