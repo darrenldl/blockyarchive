@@ -71,7 +71,7 @@ pub fn hash(
                 InputType::Block,
                 false,
                 OutputType::Disabled,
-                BlockArrangement::Ordered,
+                BlockArrangement::OrderedAndNoMissing,
                 data_par_burst,
                 true,
                 i,

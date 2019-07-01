@@ -348,7 +348,7 @@ impl Lot {
             None => self.slots_used,
             Some((data, _, _)) => match self.arrangement {
                 BlockArrangement::OrderedAndNoMissing => min(data, self.slots_used),
-                BlockArrangement::Unordered => self.lots_used,
+                BlockArrangement::Unordered => self.slots_used,
             }
         };
 

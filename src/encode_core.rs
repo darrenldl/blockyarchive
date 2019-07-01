@@ -613,7 +613,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 InputType::Data,
                 false,
                 OutputType::Block,
-                BlockArrangement::Ordered,
+                BlockArrangement::OrderedAndNoMissing,
                 param.data_par_burst,
                 param.meta_enabled,
                 i,
