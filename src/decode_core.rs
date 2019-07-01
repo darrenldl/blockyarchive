@@ -914,6 +914,7 @@ pub fn decode(
                             }
 
                             let Slot {
+                                block,
                                 slot,
                                 content_len_exc_header: _,
                             } = buffer.get_slot().unwrap();

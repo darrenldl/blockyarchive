@@ -115,6 +115,7 @@ pub fn hash(
                     }
 
                     let Slot {
+                        block: _,
                         slot,
                         content_len_exc_header,
                     } = buffer.get_slot().unwrap();
