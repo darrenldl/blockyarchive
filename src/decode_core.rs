@@ -1830,7 +1830,48 @@ fn hash(
 
     let mut buffer: [u8; HASH_FILE_BLOCK_SIZE] = [0; HASH_FILE_BLOCK_SIZE];
 
+    let (to_writer, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+
+    let (error_tx_reader, error_rx) = channel::<Error>();
+    let error_tx_writer = error_tx_reader.clone();
+
+    let worker_shutdown_barrier = Arc::new(Barrier::new(2));
+
+    for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
+        to_reader.send(vec![0; HASH_FILE_BLOCK_SIZE]).unwrap();
+    }
+
     reporter.start();
+
+    let reader_thread = {
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+
+        thread::spawn(move || {
+            while let Some(mut buffer) = from_writer.recv().unwrap() {
+
+                match reader.res(&mut buffer) {
+                    Ok(read_res) => {
+                        to_writer.send(Some((read_res.len-read, buffer))).unwrap();
+                    }
+                    Err(e) => {
+                        error_tx_reader.send(e).unwrap();
+                        break;
+                    }
+                }
+            }
+
+            worker_shutdown!(to_writer, shutdown_barrier);
+        })
+    };
+
+    let writer_thread = {
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+
+        thread::spawn(move || {
+            
+        })
+    };
 
     loop {
         break_if_atomic_bool!(ctrlc_stop_flag);
