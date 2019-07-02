@@ -109,11 +109,7 @@ pub fn hash(
                         data_par_burst,
                     );
 
-                    if let Err(e) = reader.seek(SeekFrom::Start(pos)) {
-                        error_tx_reader.send(e).unwrap();
-                        run = false;
-                        break;
-                    }
+                    stop_run_if_error!(run => error_tx_reader => reader.seek(SeekFrom::Start(pos)));
 
                     let Slot {
                         block,
@@ -153,21 +149,14 @@ pub fn hash(
                                         break;
                                     }
                                 } else {
-                                    error_tx_reader
-                                        .send(Error::with_msg("Failed to decode data block"))
-                                        .unwrap();
-                                    run = false;
-                                    break;
+                                    stop_run_forward_error!(run => error_tx_reader => Error::with_msg("Failed to decode data block"));
                                 }
                             }
 
                             incre_or_stop_run_if_last!(run => seq_num => seq_num);
                         }
-                        Err(e) => {
-                            error_tx_reader.send(e).unwrap();
-                            run = false;
-                            break;
-                        }
+                        Err(e) =>
+                            stop_run_forward_error!(run => error_tx_reader => e)
                     }
                 }
 

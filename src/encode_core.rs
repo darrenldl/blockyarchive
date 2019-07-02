@@ -595,9 +595,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         )?;
     }
 
-    let (to_encoder, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
-    let (to_writer, from_encoder) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
-    let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+    let (to_encoder, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
+    let (to_writer, from_encoder) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
+    let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
     let (error_tx_reader, error_rx) = channel::<Error>();
     let error_tx_encoder = error_tx_reader.clone();
     let error_tx_writer = error_tx_reader.clone();
@@ -641,7 +641,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                 // fill up data buffer
                 while !buffer.is_full() {
-                    break_if_atomic_bool!(ctrlc_stop_flag);
+                    stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
 
                     if let Some(required_len) = required_len {
                         if bytes_processed >= required_len {
@@ -667,9 +667,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                             }
 
                             if let Err(_) = block_for_seq_num_check.add1_seq_num() {
-                                error_tx_reader.send(Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin")).unwrap();
-                                run = false;
-                                break;
+                                stop_run_forward_error!(run => error_tx_reader => Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
                             }
 
                             hash_ctx.lock().unwrap().update(&slot[..read_res.len_read]);
@@ -678,22 +676,15 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 *content_len_exc_header = Some(read_res.len_read);
                             }
                         }
-                        Err(e) => {
-                            error_tx_reader.send(e).unwrap();
-                            run = false;
-                            break;
-                        }
+                        Err(e) =>
+                            stop_run_forward_error!(run => error_tx_reader => e)
                     }
                 }
-
-                break_if_atomic_bool!(ctrlc_stop_flag);
 
                 to_encoder.send(Some(buffer)).unwrap();
             }
 
-            to_encoder.send(None).unwrap();
-
-            shutdown_barrier.wait();
+            worker_shutdown!(to_encoder, shutdown_barrier);
         })
     };
 
@@ -725,9 +716,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 to_writer.send(Some(buffer)).unwrap();
             }
 
-            to_writer.send(None).unwrap();
-
-            shutdown_barrier.wait();
+            worker_shutdown!(to_writer, shutdown_barrier);
         })
     };
 
@@ -747,9 +736,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 to_reader.send(Some(buffer)).unwrap();
             }
 
-            to_reader.send(None).unwrap();
-
-            shutdown_barrier.wait();
+            worker_shutdown!(to_reader, shutdown_barrier);
         })
     };
 

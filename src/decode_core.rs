@@ -949,10 +949,8 @@ pub fn decode(
                                     }
                                 }
                                 Err(e) => {
-                                    error_tx_reader.send(e).unwrap();
                                     buffer.cancel_last_slot();
-                                    run = false;
-                                    break;
+                                    stop_run_forward_error!(run => error_tx_reader => e);
                                 }
                             }
                         }
@@ -1240,11 +1238,7 @@ pub fn decode(
                                                 }
                                             }
                                         }
-                                        Err(e) => {
-                                            error_tx_reader.send(e).unwrap();
-                                            run = false;
-                                            break;
-                                        }
+                                        Err(e) => stop_run_forward_error!(run => error_tx_reader => e)
                                     }
 
                                     incre_or_stop_run_if_last!(run => seq_num => seq_num);
@@ -1554,11 +1548,7 @@ pub fn decode(
                                                 }
                                             }
                                         }
-                                        Err(e) => {
-                                            error_tx_reader.send(e).unwrap();
-                                            run = false;
-                                            break;
-                                        }
+                                        Err(e) => stop_run_forward_error!(run => error_tx_reader => e)
                                     }
 
                                     incre_or_stop_run_if_last!(run => block_index => block_index);

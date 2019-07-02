@@ -623,14 +623,22 @@ macro_rules! incre_or_stop_run_if_last {
     }};
 }
 
+macro_rules! stop_run_forward_error {
+    (
+        $run:expr => $error_tx:expr => $expr:expr
+    ) => {{
+        $error_tx.send($expr).unwrap();
+        $run = false;
+        break;
+    }}
+}
+
 macro_rules! stop_run_if_error {
     (
         $run:expr => $error_tx:expr => $expr:expr
     ) => {{
         if let Err(e) = $expr {
-            $error_tx.send(e).unwrap();
-            $run = false;
-            break;
+            stop_run_forward_error!($run => $error_tx => e);
         }
     }}
 }
