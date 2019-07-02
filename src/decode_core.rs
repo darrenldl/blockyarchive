@@ -972,9 +972,7 @@ pub fn decode(
                         to_writer.send(Some(buffer)).unwrap();
                     }
 
-                    to_writer.send(None).unwrap();
-
-                    shutdown_barrier.wait();
+                    worker_shutdown!(to_writer, shutdown_barrier);
                 })
             };
 
@@ -994,9 +992,7 @@ pub fn decode(
                         to_reader.send(Some(buffer)).unwrap();
                     }
 
-                    to_reader.send(None).unwrap();
-
-                    shutdown_barrier.wait();
+                    worker_shutdown!(to_reader, shutdown_barrier);
                 })
             };
 
@@ -1271,9 +1267,7 @@ pub fn decode(
                                 to_hasher.send(Some(buffer)).unwrap();
                             }
 
-                            to_hasher.send(None).unwrap();
-
-                            shutdown_barrier.wait();
+                            worker_shutdown!(to_hasher, shutdown_barrier);
                         })
                     };
 
@@ -1290,9 +1284,7 @@ pub fn decode(
                                 to_writer.send(Some(buffer)).unwrap();
                             }
 
-                            to_writer.send(None).unwrap();
-
-                            shutdown_barrier.wait();
+                            worker_shutdown!(to_writer, shutdown_barrier);
                         })
                     };
 
@@ -1312,9 +1304,7 @@ pub fn decode(
                                 to_reader.send(Some(buffer)).unwrap();
                             }
 
-                            to_reader.send(None).unwrap();
-
-                            shutdown_barrier.wait();
+                            worker_shutdown!(to_reader, shutdown_barrier);
                         })
                     };
 
@@ -1529,9 +1519,7 @@ pub fn decode(
                                 to_hasher.send(Some(buffer)).unwrap();
                             }
 
-                            to_hasher.send(None).unwrap();
-
-                            shutdown_barrier.wait();
+                            worker_shutdown!(to_hasher, shutdown_barrier);
                         })
                     };
 
@@ -1548,9 +1536,7 @@ pub fn decode(
                                 to_writer.send(Some(buffer)).unwrap();
                             }
 
-                            to_writer.send(None).unwrap();
-
-                            shutdown_barrier.wait();
+                            worker_shutdown!(to_writer, shutdown_barrier);
                         })
                     };
 
@@ -1570,9 +1556,7 @@ pub fn decode(
                                 to_reader.send(Some(buffer)).unwrap();
                             }
 
-                            to_reader.send(None).unwrap();
-
-                            shutdown_barrier.wait();
+                            worker_shutdown!(to_reader, shutdown_barrier);
                         })
                     };
 

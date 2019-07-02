@@ -634,3 +634,13 @@ macro_rules! stop_run_if_error {
         }
     }}
 }
+
+macro_rules! worker_shutdown {
+    (
+        $next_tx:expr, $shutdown_barrier:expr
+    ) => {{
+        $next_tx.send(None).unwrap();
+
+        $shutdown_barrier.wait();
+    }}
+}
