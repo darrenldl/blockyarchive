@@ -180,9 +180,7 @@ pub fn hash(
                 to_hasher.send(Some(buffer)).unwrap();
             }
 
-            to_hasher.send(None).unwrap();
-
-            shutdown_barrier.wait();
+            worker_shutdown!(to_hasher, shutdown_barrier);
         })
     };
 
@@ -198,13 +196,11 @@ pub fn hash(
                 to_reader.send(Some(buffer)).unwrap();
             }
 
-            to_reader.send(None).unwrap();
-
             hash_bytes_tx
                 .send(hash_ctx.finish_into_hash_bytes())
                 .unwrap();
 
-            shutdown_barrier.wait();
+            worker_shutdown!(to_reader, shutdown_barrier);
         })
     };
 
