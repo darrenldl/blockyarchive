@@ -596,14 +596,13 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     }
 
     let (to_encoder, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
-    let (to_hasher, from_encoder) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
-    let (to_writer, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_writer, from_encoder) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
     let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
     let (error_tx_reader, error_rx) = channel::<Error>();
     let error_tx_encoder = error_tx_reader.clone();
     let error_tx_writer = error_tx_reader.clone();
 
-    let worker_shutdown_barrier = Arc::new(Barrier::new(4));
+    let worker_shutdown_barrier = Arc::new(Barrier::new(3));
 
     // push buffers into pipeline
     for i in 0..PIPELINE_BUFFER_IN_ROTATION {
@@ -627,6 +626,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     let reader_thread = {
         let version = param.version;
+        let hash_ctx = Arc::clone(&hash_ctx);
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
         let data_size = ver_to_data_size(version);
 
@@ -670,6 +670,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 stop_run_forward_error!(run => error_tx_reader => Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
                             }
 
+                            hash_ctx.lock().unwrap().update(&slot[..read_res.len_read]);
+
                             if read_res.len_read < data_size {
                                 *content_len_exc_header = Some(read_res.len_read);
                             }
@@ -710,21 +712,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     stats.data_padding_bytes = padding_byte_count + padding_blocks * data_size;
                 }
 
-                to_hasher.send(Some(buffer)).unwrap();
-            }
-
-            worker_shutdown!(to_hasher, shutdown_barrier);
-        })
-    };
-
-    let hasher_thread = {
-        let hash_ctx = Arc::clone(&hash_ctx);
-        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
-
-        thread::spawn(move || {
-            while let Some(buffer) = from_encoder.recv().unwrap() {
-                buffer.hash(&mut hash_ctx.lock().unwrap());
-
                 to_writer.send(Some(buffer)).unwrap();
             }
 
@@ -737,7 +724,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
 
         thread::spawn(move || {
-            while let Some(mut buffer) = from_hasher.recv().unwrap() {
+            while let Some(mut buffer) = from_encoder.recv().unwrap() {
                 if let Err(e) = buffer.write(&mut writer.lock().unwrap()) {
                     error_tx_writer.send(e).unwrap();
                     break;
@@ -754,7 +741,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     reader_thread.join().unwrap();
     encoder_thread.join().unwrap();
-    hasher_thread.join().unwrap();
     writer_thread.join().unwrap();
 
     if let Ok(err) = error_rx.try_recv() {
