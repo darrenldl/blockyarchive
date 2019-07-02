@@ -39,10 +39,13 @@
 - Added multithreading and operation pipelining for `sbx_container_content::hash`
   
     - This speeds up the hashing step of the following modes and usage
-      
         - check mode `--hash`, `--hash-only`
       
         - update mode `--hash`
+
+- Added multithreading and operation pipelining for decode mode
+  
+    - This speeds up decoding in all scenarios
 
 ## 7.2.0 (yanked)
 
