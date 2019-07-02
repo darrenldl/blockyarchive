@@ -7,7 +7,7 @@ use crate::multihash::*;
 use crate::progress_report::{PRVerbosityLevel, ProgressReporter};
 use crate::sbx_block;
 use crate::sbx_block::Block;
-use crate::sbx_specs::{ver_to_data_size};
+use crate::sbx_specs::ver_to_data_size;
 
 use std::io::SeekFrom;
 use std::sync::atomic::AtomicBool;
@@ -55,8 +55,8 @@ pub fn hash(
 
     let header_pred = header_pred_same_ver_uid!(ref_block);
 
-    let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
-    let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
+    let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
     let (error_tx_reader, error_rx) = channel::<Error>();
     let (hash_bytes_tx, hash_bytes_rx) = channel();
 
@@ -155,8 +155,7 @@ pub fn hash(
 
                             incre_or_stop_run_if_last!(run => seq_num => seq_num);
                         }
-                        Err(e) =>
-                            stop_run_forward_error!(run => error_tx_reader => e)
+                        Err(e) => stop_run_forward_error!(run => error_tx_reader => e),
                     }
                 }
 

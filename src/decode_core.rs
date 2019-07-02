@@ -848,8 +848,8 @@ pub fn decode(
                 param.json_printer.json_enabled(),
             );
 
-            let (to_writer, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
-            let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
+            let (to_writer, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+            let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
             let (error_tx_reader, error_rx) = channel::<Error>();
             let error_tx_writer = error_tx_reader.clone();
 
@@ -1087,9 +1087,9 @@ pub fn decode(
 
             let read_pattern = ReadPattern::new(param.from_pos, param.to_pos, data_par_burst);
 
-            let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
-            let (to_writer, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
-            let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
+            let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+            let (to_writer, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+            let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
             let (error_tx_reader, error_rx) = channel::<Error>();
             let error_tx_writer = error_tx_reader.clone();
 
@@ -1227,18 +1227,21 @@ pub fn decode(
                                                 }
 
                                                 if let Some(count) = total_data_chunk_count {
-                                                    if data_blocks_decoded + data_blocks_failed == count
+                                                    if data_blocks_decoded + data_blocks_failed
+                                                        == count
                                                     {
                                                         *content_len_exc_header =
                                                             data_size_of_last_data_block
-                                                            .map(|x| x as usize);
+                                                                .map(|x| x as usize);
                                                         run = false;
                                                         break;
                                                     }
                                                 }
                                             }
                                         }
-                                        Err(e) => stop_run_forward_error!(run => error_tx_reader => e)
+                                        Err(e) => {
+                                            stop_run_forward_error!(run => error_tx_reader => e)
+                                        }
                                     }
 
                                     incre_or_stop_run_if_last!(run => seq_num => seq_num);
@@ -1446,11 +1449,14 @@ pub fn decode(
                                                 data_par_burst,
                                             );
 
-                                            let decode_successful =
-                                                match block.sync_from_buffer(slot, Some(&header_pred), None) {
-                                                    Ok(_) => block.get_seq_num() == seq_num,
-                                                    Err(_) => false,
-                                                };
+                                            let decode_successful = match block.sync_from_buffer(
+                                                slot,
+                                                Some(&header_pred),
+                                                None,
+                                            ) {
+                                                Ok(_) => block.get_seq_num() == seq_num,
+                                                Err(_) => false,
+                                            };
 
                                             let mut cancel_slot = false;
 
@@ -1538,7 +1544,8 @@ pub fn decode(
                                                 buffer.cancel_last_slot();
                                             } else {
                                                 if let Some(count) = total_data_chunk_count {
-                                                    if data_blocks_decoded + data_blocks_failed == count
+                                                    if data_blocks_decoded + data_blocks_failed
+                                                        == count
                                                     {
                                                         *content_len_exc_header =
                                                             data_size_of_last_data_block;
@@ -1548,7 +1555,9 @@ pub fn decode(
                                                 }
                                             }
                                         }
-                                        Err(e) => stop_run_forward_error!(run => error_tx_reader => e)
+                                        Err(e) => {
+                                            stop_run_forward_error!(run => error_tx_reader => e)
+                                        }
                                     }
 
                                     incre_or_stop_run_if_last!(run => block_index => block_index);

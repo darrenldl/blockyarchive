@@ -595,9 +595,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         )?;
     }
 
-    let (to_encoder, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
-    let (to_writer, from_encoder) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
-    let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
+    let (to_encoder, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_writer, from_encoder) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
     let (error_tx_reader, error_rx) = channel::<Error>();
     let error_tx_encoder = error_tx_reader.clone();
     let error_tx_writer = error_tx_reader.clone();
@@ -676,8 +676,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 *content_len_exc_header = Some(read_res.len_read);
                             }
                         }
-                        Err(e) =>
-                            stop_run_forward_error!(run => error_tx_reader => e)
+                        Err(e) => stop_run_forward_error!(run => error_tx_reader => e),
                     }
                 }
 

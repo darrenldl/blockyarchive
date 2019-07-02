@@ -345,7 +345,10 @@ impl Lot {
     }
 
     fn hash(&self, ctx: &mut hash::Ctx) {
-        assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing || self.arrangement == BlockArrangement::OrderedButSomeMissing);
+        assert!(
+            self.arrangement == BlockArrangement::OrderedAndNoMissing
+                || self.arrangement == BlockArrangement::OrderedButSomeMissing
+        );
 
         for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
             if slot_index < self.slots_used {

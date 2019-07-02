@@ -630,7 +630,7 @@ macro_rules! stop_run_forward_error {
         $error_tx.send($expr).unwrap();
         $run = false;
         break;
-    }}
+    }};
 }
 
 macro_rules! stop_run_if_error {
@@ -650,5 +650,5 @@ macro_rules! worker_shutdown {
         $next_tx.send(None).unwrap();
 
         $shutdown_barrier.wait();
-    }}
+    }};
 }
