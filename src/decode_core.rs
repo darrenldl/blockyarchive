@@ -1231,8 +1231,7 @@ pub fn decode(
                                                         == count
                                                     {
                                                         *content_len_exc_header =
-                                                            data_size_of_last_data_block
-                                                                .map(|x| x as usize);
+                                                            data_size_of_last_data_block;
                                                         run = false;
                                                         break;
                                                     }
