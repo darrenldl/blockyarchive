@@ -345,29 +345,26 @@ impl Lot {
     }
 
     fn hash(&self, ctx: &mut hash::Ctx) {
-        let slots_to_hash = match self.data_par_burst {
-            None => self.slots_used,
-            Some((data, _, _)) => match self.arrangement {
-                BlockArrangement::OrderedAndNoMissing => min(data, self.slots_used),
-                BlockArrangement::OrderedButSomeMissing => self.slots_used,
-                BlockArrangement::Unordered => panic!(),
-            }
-        };
+        assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing || self.arrangement == BlockArrangement::OrderedButSomeMissing);
 
         for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
-            if slot_index < slots_to_hash {
-                let content_len = match self.slot_content_len_exc_header[slot_index] {
-                    None => self.data_size,
-                    Some(len) => {
-                        assert!(len > 0);
-                        assert!(len <= self.data_size);
-                        len
-                    }
-                };
+            if slot_index < self.slots_used {
+                let block = &self.blocks[slot_index];
 
-                let data = &sbx_block::slice_data_buf(self.version, slot)[..content_len];
+                if block.is_data() && !block.is_parity_w_data_par_burst(self.data_par_burst) {
+                    let content_len = match self.slot_content_len_exc_header[slot_index] {
+                        None => self.data_size,
+                        Some(len) => {
+                            assert!(len > 0);
+                            assert!(len <= self.data_size);
+                            len
+                        }
+                    };
 
-                ctx.update(data);
+                    let data = &sbx_block::slice_data_buf(self.version, slot)[..content_len];
+
+                    ctx.update(data);
+                }
             } else {
                 break;
             }
