@@ -8,7 +8,7 @@
 
 [Documentation](https://github.com/darrenldl/blockyarchive/wiki)
 
-Blockyarchive/blkar (pronounced "bloc-kar") is an archiver written in Rust that offers bit rot protection, and makes it easier to recover archived data from failing storage devices.
+Blockyarchive/blkar (pronounced "bloc-kar") is a multithreaded archiver written in Rust that offers bit rot protection, and makes it easier to recover archived data from failing storage devices.
 
 ### Demo
 
@@ -34,6 +34,8 @@ Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
 - Supports burst (sector) error resistance for EC-SeqBox
     - This is done via an interleaving block arrangement scheme. It is mainly to address the data repair limitation of the simple archive design
     - More complex archive designs such as PAR2 can repair burst errors without any extra arrangement scheme, but they are also vastly more complex than EC-SeqBox
+- Multithreaded
+    - A lot of operations involved in everyday workflow are written to take advantage of multi-core CPU to provide high performance
 - JSON mode
     - Outputs information in JSON format instead of human readable text, allowing easy integration with scripts
 
