@@ -65,7 +65,7 @@ pub enum InputType {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum BlockArrangement {
     OrderedAndNoMissing,
-    OrderedButSomeMissing,
+    OrderedButSomeMayBeMissing,
     Unordered,
 }
 
@@ -347,7 +347,7 @@ impl Lot {
     fn hash(&self, ctx: &mut hash::Ctx) {
         assert!(
             self.arrangement == BlockArrangement::OrderedAndNoMissing
-                || self.arrangement == BlockArrangement::OrderedButSomeMissing
+                || self.arrangement == BlockArrangement::OrderedButSomeMayBeMissing
         );
 
         for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
