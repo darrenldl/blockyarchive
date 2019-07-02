@@ -1383,7 +1383,7 @@ pub fn decode(
                                 InputType::Block,
                                 false,
                                 OutputType::Data,
-                                BlockArrangement::Unordered,
+                                BlockArrangement::OrderedButSomeMissing,
                                 data_par_burst,
                                 true,
                                 i,
@@ -1458,15 +1458,7 @@ pub fn decode(
                                                     Err(_) => false,
                                                 };
 
-                                            if let Some(count) = total_data_chunk_count {
-                                                if data_blocks_decoded + data_blocks_failed == count
-                                                {
-                                                    *content_len_exc_header =
-                                                        data_size_of_last_data_block;
-                                                    run = false;
-                                                    break;
-                                                }
-                                            }
+                                            let mut cancel_slot = false;
 
                                             if sbx_block::seq_num_is_meta(seq_num) {
                                                 // do nothing if block is meta
@@ -1475,6 +1467,9 @@ pub fn decode(
                                                 } else {
                                                     meta_blocks_failed_this_iteration += 1;
                                                 }
+
+                                                // save space by not storing metadata blocks
+                                                cancel_slot = true;
                                             } else if sbx_block::seq_num_is_parity_w_data_par_burst(
                                                 seq_num,
                                                 data_par_burst,
@@ -1486,7 +1481,7 @@ pub fn decode(
                                                 }
 
                                                 // save space by not storing parity blocks
-                                                buffer.cancel_last_slot();
+                                                cancel_slot = true;
                                             } else {
                                                 if decode_successful {
                                                     data_blocks_decoded += 1;
@@ -1514,6 +1509,8 @@ pub fn decode(
                                             //     ) {
                                             //         parity_blocks_decoded += 1;
 
+                                            //         // save space by not storing parity blocks
+                                            //         buffer.cancel_last_slot();
                                             //     } else {
                                             //         data_blocks_decoded += 1;
                                             //     }
@@ -1542,6 +1539,20 @@ pub fn decode(
                                             //         block.sync_to_buffer(None, slot).unwrap();
                                             //     }
                                             // }
+
+                                            if cancel_slot {
+                                                buffer.cancel_last_slot();
+                                            } else {
+                                                if let Some(count) = total_data_chunk_count {
+                                                    if data_blocks_decoded + data_blocks_failed == count
+                                                    {
+                                                        *content_len_exc_header =
+                                                            data_size_of_last_data_block;
+                                                        run = false;
+                                                        break;
+                                                    }
+                                                }
+                                            }
                                         }
                                         Err(e) => {
                                             error_tx_reader.send(e).unwrap();
