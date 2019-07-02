@@ -506,11 +506,34 @@ macro_rules! break_if_atomic_bool {
     }};
 }
 
+macro_rules! stop_run_if_atomic_bool {
+    (
+        $run:expr => $atomic_bool:expr
+    ) => {{
+        use std::sync::atomic::Ordering;
+        if $atomic_bool.load(Ordering::SeqCst) {
+            $run = false;
+            break;
+        }
+    }};
+}
+
 macro_rules! break_if_reached_required_len {
     (
         $bytes_processed:expr, $required_len:expr
     ) => {{
         if $bytes_processed >= $required_len {
+            break;
+        }
+    }};
+}
+
+macro_rules! stop_run_if_reached_required_len {
+    (
+        $run:expr => $bytes_processed:expr, $required_len:expr
+    ) => {{
+        if $bytes_processed >= $required_len {
+            $run = false;
             break;
         }
     }};
@@ -527,7 +550,7 @@ macro_rules! shadow_to_avoid_use {
 
 macro_rules! break_if_last {
     (
-        $cur:expr, $last:expr
+        internal => $cur:expr, $last:expr
     ) => {{
         if $cur == $last {
             break;
@@ -538,32 +561,76 @@ macro_rules! break_if_last {
     ) => {{
         use crate::sbx_specs::SBX_LAST_SEQ_NUM;
 
-        break_if_last!($cur, SBX_LAST_SEQ_NUM);
+        break_if_last!(internal => $cur, SBX_LAST_SEQ_NUM);
     }};
     (
         block_index => $cur:expr
     ) => {{
-        break_if_last!($cur, std::u64::MAX);
+        break_if_last!(internal => $cur, std::u64::MAX);
     }};
 }
 
 macro_rules! incre_or_break_if_last {
     (
-        $cur:expr, $last:expr
+        seq_num => $cur:expr
     ) => {{
-        break_if_last!($cur, $last);
+        break_if_last!(seq_num => $cur);
         $cur += 1;
     }};
     (
-        seq_num => $cur:expr
-    ) => {
-        break_if_last!(seq_num => $cur);
-        $cur += 1;
-    };
-    (
         block_index => $cur:expr
-    ) => {
+    ) => {{
         break_if_last!(block_index => $cur);
         $cur += 1;
-    };
+    }};
+}
+
+macro_rules! stop_run_if_last {
+    (
+        internal => $run:expr => $cur:expr, $last:expr
+    ) => {{
+        if $cur == $last {
+            $run = false;
+            break;
+        }
+    }};
+    (
+        $run:expr => seq_num => $cur:expr
+    ) => {{
+        use crate::sbx_specs::SBX_LAST_SEQ_NUM;
+
+        stop_run_if_last!(internal => $run => $cur, SBX_LAST_SEQ_NUM);
+    }};
+    (
+        $run:expr => block_index => $cur:expr
+    ) => {{
+        stop_run_if_last!(internal => $run => $cur, std::u64::MAX);
+    }};
+}
+
+macro_rules! incre_or_stop_run_if_last {
+    (
+        $run:expr => seq_num => $cur:expr
+    ) => {{
+        stop_run_if_last!($run => seq_num => $cur);
+        $cur += 1;
+    }};
+    (
+        $run:expr => block_index => $cur:expr
+    ) => {{
+        stop_run_if_last!($run => block_index => $cur);
+        $cur += 1;
+    }};
+}
+
+macro_rules! stop_run_if_error {
+    (
+        $run:expr => $error_tx:expr => $expr:expr
+    ) => {{
+        if let Err(e) = $expr {
+            $error_tx.send(e).unwrap();
+            $run = false;
+            break;
+        }
+    }}
 }

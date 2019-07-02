@@ -38,7 +38,7 @@ use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_specs::{
     ver_to_block_size, ver_to_data_size, ver_to_usize, ver_uses_rs, SBX_FILE_UID_LEN,
-    SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM,
+    SBX_LARGEST_BLOCK_SIZE,
 };
 
 use crate::block_utils;
@@ -848,8 +848,8 @@ pub fn decode(
                 param.json_printer.json_enabled(),
             );
 
-            let (to_writer, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
-            let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+            let (to_writer, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
+            let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
             let (error_tx_reader, error_rx) = channel::<Error>();
             let error_tx_writer = error_tx_reader.clone();
 
@@ -885,15 +885,12 @@ pub fn decode(
                 let ctrlc_stop_flag = Arc::clone(ctrlc_stop_flag);
                 let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
 
+                // seek to calculated position
+                reader.seek(SeekFrom::Start(seek_to))?;
+
                 thread::spawn(move || {
                     let mut run = true;
                     let mut bytes_processed: u64 = 0;
-
-                    // seek to calculated position
-                    if let Err(e) = reader.seek(SeekFrom::Start(seek_to)) {
-                        error_tx_reader.send(e).unwrap();
-                        run = false;
-                    }
 
                     while let Some(mut buffer) = from_writer.recv().unwrap() {
                         if !run {
@@ -906,12 +903,9 @@ pub fn decode(
                         let mut blocks_decode_failed: u64 = 0;
 
                         while !buffer.is_full() {
-                            break_if_atomic_bool!(ctrlc_stop_flag);
+                            stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
 
-                            if bytes_processed >= required_len {
-                                run = false;
-                                break;
-                            }
+                            stop_run_if_reached_required_len!(run => bytes_processed, required_len);
 
                             let Slot {
                                 block,
@@ -974,8 +968,6 @@ pub fn decode(
                                 stats.incre_blocks_failed();
                             }
                         }
-
-                        break_if_atomic_bool!(ctrlc_stop_flag);
 
                         to_writer.send(Some(buffer)).unwrap();
                     }
@@ -1101,9 +1093,9 @@ pub fn decode(
 
             let read_pattern = ReadPattern::new(param.from_pos, param.to_pos, data_par_burst);
 
-            let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
-            let (to_writer, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
-            let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+            let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
+            let (to_writer, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
+            let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
             let (error_tx_reader, error_rx) = channel::<Error>();
             let error_tx_writer = error_tx_reader.clone();
 
@@ -1181,7 +1173,7 @@ pub fn decode(
                                 let mut parity_blocks_failed_this_iteration = 0;
 
                                 while !buffer.is_full() {
-                                    break_if_atomic_bool!(ctrlc_stop_flag);
+                                    stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
 
                                     let pos = sbx_block::calc_data_block_write_pos(
                                         version,
@@ -1190,11 +1182,7 @@ pub fn decode(
                                         data_par_burst,
                                     );
 
-                                    if let Err(e) = reader.seek(SeekFrom::Start(pos)) {
-                                        error_tx_reader.send(e).unwrap();
-                                        run = false;
-                                        break;
-                                    }
+                                    stop_run_if_error!(run => error_tx_reader => reader.seek(SeekFrom::Start(pos)));
 
                                     let Slot {
                                         block,
@@ -1263,12 +1251,7 @@ pub fn decode(
                                         }
                                     }
 
-                                    if seq_num == SBX_LAST_SEQ_NUM {
-                                        run = false;
-                                        break;
-                                    }
-
-                                    seq_num += 1;
+                                    incre_or_stop_run_if_last!(run => seq_num => seq_num);
                                 }
 
                                 {
@@ -1284,8 +1267,6 @@ pub fn decode(
                                         stats.incre_parity_blocks_failed();
                                     }
                                 }
-
-                                break_if_atomic_bool!(ctrlc_stop_flag);
 
                                 to_hasher.send(Some(buffer)).unwrap();
                             }
@@ -1435,7 +1416,7 @@ pub fn decode(
                                 let mut parity_blocks_failed_this_iteration = 0;
 
                                 while !buffer.is_full() {
-                                    break_if_atomic_bool!(ctrlc_stop_flag);
+                                    stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
 
                                     if bytes_processed >= required_len {
                                         run = false;
@@ -1522,16 +1503,13 @@ pub fn decode(
                                         }
                                     }
 
-                                    if block_index == std::u64::MAX {
-                                        run = false;
-                                        break;
-                                    }
-
-                                    block_index += 1;
+                                    incre_or_stop_run_if_last!(run => block_index => block_index);
                                 }
 
                                 {
                                     let mut stats = stats.lock().unwrap();
+
+                                    stats.meta_blocks_decoded = meta_blocks_decoded;
 
                                     for _ in 0..meta_blocks_failed_this_iteration {
                                         stats.incre_parity_blocks_failed();
@@ -1547,8 +1525,6 @@ pub fn decode(
                                         stats.incre_parity_blocks_failed();
                                     }
                                 }
-
-                                break_if_atomic_bool!(ctrlc_stop_flag);
 
                                 to_hasher.send(Some(buffer)).unwrap();
                             }
