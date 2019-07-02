@@ -755,8 +755,8 @@ pub fn decode(
     let data_size = ver_to_data_size(version);
     let data_size_of_last_data_block = match orig_file_size {
         Some(orig_file_size) => match orig_file_size % data_size as u64 {
-            0 => Some(data_size as u64),
-            x => Some(x),
+            0 => Some(data_size),
+            x => Some(x as usize),
         },
         None => None,
     };
@@ -1374,6 +1374,24 @@ pub fn decode(
                     // seek to calculated position
                     reader.seek(SeekFrom::Start(seek_to))?;
 
+                    // push buffers into pipeline
+                    for i in 0..PIPELINE_BUFFER_IN_ROTATION {
+                        to_reader
+                            .send(Some(DataBlockBuffer::new(
+                                version,
+                                Some(&ref_block.get_uid()),
+                                InputType::Block,
+                                false,
+                                OutputType::Data,
+                                BlockArrangement::Unordered,
+                                data_par_burst,
+                                true,
+                                i,
+                                PIPELINE_BUFFER_IN_ROTATION,
+                            )))
+                            .unwrap();
+                    }
+
                     let reader_thread = {
                         let ctrlc_stop_flag = Arc::clone(ctrlc_stop_flag);
                         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
@@ -1440,26 +1458,38 @@ pub fn decode(
                                                     Err(_) => false,
                                                 };
 
-                                            if decode_successful {
-                                                if block.is_meta() {
-                                                    // do nothing if block is meta
+                                            if let Some(count) = total_data_chunk_count {
+                                                if data_blocks_decoded + data_blocks_failed == count
+                                                {
+                                                    *content_len_exc_header =
+                                                        data_size_of_last_data_block;
+                                                    run = false;
+                                                    break;
+                                                }
+                                            }
+
+                                            if sbx_block::seq_num_is_meta(seq_num) {
+                                                // do nothing if block is meta
+                                                if decode_successful {
                                                     meta_blocks_decoded += 1;
-                                                } else if sbx_block::seq_num_is_parity_w_data_par_burst(
-                                                    seq_num,
-                                                    data_par_burst,
-                                                ) {
+                                                } else {
+                                                    meta_blocks_failed_this_iteration += 1;
+                                                }
+                                            } else if sbx_block::seq_num_is_parity_w_data_par_burst(
+                                                seq_num,
+                                                data_par_burst,
+                                            ) {
+                                                if decode_successful {
                                                     parity_blocks_decoded += 1;
                                                 } else {
-                                                    data_blocks_decoded += 1;
-                                                }
-                                            } else {
-                                                if sbx_block::seq_num_is_meta(seq_num) {
-                                                    meta_blocks_failed_this_iteration += 1;
-                                                } else if sbx_block::seq_num_is_parity_w_data_par_burst(
-                                                    seq_num,
-                                                    data_par_burst,
-                                                ) {
                                                     parity_blocks_failed_this_iteration += 1;
+                                                }
+
+                                                // save space by not storing parity blocks
+                                                buffer.cancel_last_slot();
+                                            } else {
+                                                if decode_successful {
+                                                    data_blocks_decoded += 1;
                                                 } else {
                                                     data_blocks_failed_this_iteration += 1;
                                                     data_blocks_failed += 1;
@@ -1475,16 +1505,43 @@ pub fn decode(
                                                 }
                                             }
 
-                                            if let Some(count) = total_data_chunk_count {
-                                                if data_blocks_decoded + data_blocks_failed == count
-                                                {
-                                                    *content_len_exc_header =
-                                                        data_size_of_last_data_block
-                                                        .map(|x| x as usize);
-                                                    run = false;
-                                                    break;
-                                                }
-                                            }
+                                            // if decode_successful {
+                                            //     if block.is_meta() {
+                                            //         meta_blocks_decoded += 1;
+                                            //     } else if sbx_block::seq_num_is_parity_w_data_par_burst(
+                                            //         seq_num,
+                                            //         data_par_burst,
+                                            //     ) {
+                                            //         parity_blocks_decoded += 1;
+
+                                            //     } else {
+                                            //         data_blocks_decoded += 1;
+                                            //     }
+                                            // } else {
+                                            //     if sbx_block::seq_num_is_meta(seq_num) {
+                                            //         meta_blocks_failed_this_iteration += 1;
+                                            //     } else if sbx_block::seq_num_is_parity_w_data_par_burst(
+                                            //         seq_num,
+                                            //         data_par_burst,
+                                            //     ) {
+                                            //         parity_blocks_failed_this_iteration += 1;
+
+                                            //         // save space by not storing parity blocks
+                                            //         buffer.cancel_last_slot();
+                                            //     } else {
+                                            //         data_blocks_failed_this_iteration += 1;
+                                            //         data_blocks_failed += 1;
+
+                                            //         // replace with a blank block
+                                            //         block.set_version(version);
+                                            //         block.set_uid(uid);
+                                            //         block.set_seq_num(seq_num);
+
+                                            //         misc_utils::wipe_buffer_w_zeros(slot);
+
+                                            //         block.sync_to_buffer(None, slot).unwrap();
+                                            //     }
+                                            // }
                                         }
                                         Err(e) => {
                                             error_tx_reader.send(e).unwrap();
