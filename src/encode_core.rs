@@ -633,6 +633,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         thread::spawn(move || {
             let mut run = true;
             let mut bytes_processed = 0;
+            let hash_ctx = &mut hash_ctx.lock().unwrap();
 
             while let Some(mut buffer) = from_writer.recv().unwrap() {
                 if !run {
@@ -670,7 +671,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 stop_run_forward_error!(run => error_tx_reader => Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
                             }
 
-                            hash_ctx.lock().unwrap().update(&slot[..read_res.len_read]);
+                            hash_ctx.update(&slot[..read_res.len_read]);
 
                             if read_res.len_read < data_size {
                                 *content_len_exc_header = Some(read_res.len_read);
