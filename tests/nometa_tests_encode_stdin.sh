@@ -4,6 +4,13 @@ exit_code=0
 
 VERSIONS=(1 2 3)
 
+file_size=$(ls -l dummy | awk '{ print $5 }')
+
+# make sure dummy file size is not multiple of any data size
+if [[ $((file_size % 2)) == 0 ]]; then
+  truncate -s $((file_size + 1)) dummy
+fi
+
 # Encode in all 3 versions
 for ver in ${VERSIONS[*]}; do
   echo -n "Encoding in version $ver"

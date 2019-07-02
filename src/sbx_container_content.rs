@@ -1,3 +1,4 @@
+use crate::data_block_buffer::{BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot};
 use crate::file_reader::{FileReader, FileReaderParam};
 use crate::general_error::Error;
 use crate::hash_stats::HashStats;
@@ -6,19 +7,23 @@ use crate::multihash::*;
 use crate::progress_report::{PRVerbosityLevel, ProgressReporter};
 use crate::sbx_block;
 use crate::sbx_block::Block;
-use crate::sbx_specs::{ver_to_data_size, SBX_LARGEST_BLOCK_SIZE};
+use crate::sbx_specs::ver_to_data_size;
 
 use std::io::SeekFrom;
-
-use std::sync::{Arc, Mutex};
-
 use std::sync::atomic::AtomicBool;
+use std::sync::mpsc::channel;
+use std::sync::mpsc::sync_channel;
+use std::sync::Barrier;
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+const PIPELINE_BUFFER_IN_ROTATION: usize = 2;
 
 pub fn hash(
     json_printer: &JSONPrinter,
     pr_verbosity_level: PRVerbosityLevel,
     data_par_burst: Option<(usize, usize, usize)>,
-    ctrlc_stop_flag: &AtomicBool,
+    ctrlc_stop_flag: &Arc<AtomicBool>,
     in_file: &str,
     orig_file_size: u64,
     ref_block: &Block,
@@ -30,17 +35,15 @@ pub fn hash(
 
     let data_chunk_size = ver_to_data_size(version) as u64;
 
-    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
-
     let mut reader = FileReader::new(
         &in_file,
         FileReaderParam {
             write: false,
-            buffered: true,
+            buffered: false,
         },
     )?;
 
-    let mut block = Block::dummy();
+    // let mut block = Block::dummy();
 
     let reporter = Arc::new(ProgressReporter::new(
         &stats,
@@ -52,61 +55,153 @@ pub fn hash(
 
     let header_pred = header_pred_same_ver_uid!(ref_block);
 
+    let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (error_tx_reader, error_rx) = channel::<Error>();
+    let (hash_bytes_tx, hash_bytes_rx) = channel();
+
+    let worker_shutdown_barrier = Arc::new(Barrier::new(2));
+
+    // push buffers into pipeline
+    for i in 0..PIPELINE_BUFFER_IN_ROTATION {
+        to_reader
+            .send(Some(DataBlockBuffer::new(
+                version,
+                None,
+                InputType::Block,
+                false,
+                OutputType::Disabled,
+                BlockArrangement::OrderedButSomeMissing,
+                data_par_burst,
+                true,
+                i,
+                PIPELINE_BUFFER_IN_ROTATION,
+            )))
+            .unwrap();
+    }
+
     reporter.start();
 
-    // go through data and parity blocks
-    let mut seq_num = 1;
-    loop {
-        let mut stats = stats.lock().unwrap();
+    let reader_thread = {
+        let ctrlc_stop_flag = Arc::clone(ctrlc_stop_flag);
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+        let stats = Arc::clone(&stats);
 
-        break_if_atomic_bool!(ctrlc_stop_flag);
+        thread::spawn(move || {
+            let mut run = true;
+            let mut seq_num = 1;
 
-        let pos = sbx_block::calc_data_block_write_pos(version, seq_num, None, data_par_burst);
+            let mut bytes_processed: u64 = 0;
+            let total_bytes = stats.lock().unwrap().total_bytes;
 
-        reader.seek(SeekFrom::Start(pos))?;
+            while let Some(mut buffer) = from_hasher.recv().unwrap() {
+                if !run {
+                    break;
+                }
 
-        // read at reference block block size
-        let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
+                while !buffer.is_full() {
+                    stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
 
-        let decode_successful = !read_res.eof_seen
-            && match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
-                Ok(_) => block.get_seq_num() == seq_num,
-                _ => false,
-            };
+                    let pos = sbx_block::calc_data_block_write_pos(
+                        version,
+                        seq_num,
+                        None,
+                        data_par_burst,
+                    );
 
-        let bytes_remaining = stats.total_bytes - stats.bytes_processed;
+                    stop_run_if_error!(run => error_tx_reader => reader.seek(SeekFrom::Start(pos)));
 
-        let is_last_data_block = bytes_remaining <= data_chunk_size;
+                    let Slot {
+                        block,
+                        slot,
+                        content_len_exc_header,
+                    } = buffer.get_slot().unwrap();
+                    match reader.read(slot) {
+                        Ok(read_res) => {
+                            let decode_successful = !read_res.eof_seen
+                                && match block.sync_from_buffer(slot, Some(&header_pred), None) {
+                                    Ok(_) => block.get_seq_num() == seq_num,
+                                    _ => false,
+                                };
 
-        if !sbx_block::seq_num_is_meta(seq_num)
-            && !sbx_block::seq_num_is_parity_w_data_par_burst(seq_num, data_par_burst)
-        {
-            if decode_successful {
-                let slice = if is_last_data_block {
-                    &sbx_block::slice_data_buf(version, &buffer)[0..bytes_remaining as usize]
-                } else {
-                    sbx_block::slice_data_buf(version, &buffer)
-                };
+                            let bytes_remaining = total_bytes - bytes_processed;
 
-                // hash data chunk
-                hash_ctx.update(slice);
+                            if sbx_block::seq_num_is_parity_w_data_par_burst(
+                                seq_num,
+                                data_par_burst,
+                            ) {
+                                buffer.cancel_last_slot();
+                            } else {
+                                if decode_successful {
+                                    let is_last_data_block = bytes_remaining <= data_chunk_size;
 
-                stats.bytes_processed += slice.len() as u64;
-            } else {
-                return Err(Error::with_msg("Failed to decode data block"));
+                                    let cur_block_bytes_processed = if is_last_data_block {
+                                        bytes_remaining
+                                    } else {
+                                        data_chunk_size
+                                    };
+
+                                    bytes_processed += cur_block_bytes_processed as u64;
+
+                                    if is_last_data_block {
+                                        *content_len_exc_header = Some(bytes_remaining as usize);
+                                        run = false;
+                                        break;
+                                    }
+                                } else {
+                                    stop_run_forward_error!(run => error_tx_reader => Error::with_msg("Failed to decode data block"));
+                                }
+                            }
+
+                            incre_or_stop_run_if_last!(run => seq_num => seq_num);
+                        }
+                        Err(e) => stop_run_forward_error!(run => error_tx_reader => e),
+                    }
+                }
+
+                {
+                    let mut stats = stats.lock().unwrap();
+
+                    stats.bytes_processed = bytes_processed;
+                }
+
+                to_hasher.send(Some(buffer)).unwrap();
             }
-        }
 
-        if is_last_data_block {
-            break;
-        }
+            worker_shutdown!(to_hasher, shutdown_barrier);
+        })
+    };
 
-        incre_or_break_if_last!(seq_num => seq_num);
+    let hasher_thread = {
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+
+        thread::spawn(move || {
+            while let Some(mut buffer) = from_reader.recv().unwrap() {
+                buffer.hash(&mut hash_ctx);
+
+                buffer.reset();
+
+                to_reader.send(Some(buffer)).unwrap();
+            }
+
+            hash_bytes_tx
+                .send(hash_ctx.finish_into_hash_bytes())
+                .unwrap();
+
+            worker_shutdown!(to_reader, shutdown_barrier);
+        })
+    };
+
+    reader_thread.join().unwrap();
+    hasher_thread.join().unwrap();
+
+    if let Ok(err) = error_rx.try_recv() {
+        return Err(err);
     }
 
     reporter.stop();
 
     let stats = stats.lock().unwrap().clone();
 
-    Ok((stats, hash_ctx.finish_into_hash_bytes()))
+    Ok((stats, hash_bytes_rx.recv().unwrap()))
 }

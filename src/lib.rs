@@ -86,6 +86,8 @@ mod log;
 
 mod rs_codec;
 
+mod data_block_buffer;
+
 mod check_core;
 mod decode_core;
 mod encode_core;

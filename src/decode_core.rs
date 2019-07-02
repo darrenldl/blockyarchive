@@ -3,7 +3,13 @@ use crate::file_utils;
 use crate::misc_utils;
 use std::fmt;
 use std::io::SeekFrom;
+use std::sync::mpsc::channel;
+use std::sync::mpsc::sync_channel;
+use std::sync::Barrier;
 use std::sync::{Arc, Mutex};
+use std::thread;
+
+use crate::data_block_buffer::{BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot};
 
 use crate::misc_utils::RequiredLenAndSeekTo;
 
@@ -45,6 +51,8 @@ use crate::block_utils::RefBlockChoice;
 const HASH_FILE_BLOCK_SIZE: usize = 4096;
 
 const BLANK_BUFFER: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
+const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
 pub enum WriteTo {
     File,
@@ -730,7 +738,7 @@ pub fn decode(
     param: &Param,
     ref_block_pos: u64,
     ref_block: &Block,
-    ctrlc_stop_flag: &AtomicBool,
+    ctrlc_stop_flag: &Arc<AtomicBool>,
 ) -> Result<(Stats, Option<HashBytes>), Error> {
     let version = ref_block.get_version();
 
@@ -747,8 +755,8 @@ pub fn decode(
     let data_size = ver_to_data_size(version);
     let data_size_of_last_data_block = match orig_file_size {
         Some(orig_file_size) => match orig_file_size % data_size as u64 {
-            0 => Some(data_size as u64),
-            x => Some(x),
+            0 => Some(data_size),
+            x => Some(x as usize),
         },
         None => None,
     };
@@ -763,18 +771,18 @@ pub fn decode(
         },
     )?;
 
-    let mut writer = match param.out_file {
+    let writer = Arc::new(Mutex::new(match param.out_file {
         Some(ref out_file) => Writer::new(WriterType::File(FileWriter::new(
             out_file,
             FileWriterParam {
                 read: param.multi_pass == Some(MultiPassType::SkipGood),
                 append: false,
                 truncate: param.multi_pass == None,
-                buffered: true,
+                buffered: false,
             },
         )?)),
         None => Writer::new(WriterType::Stdout(std::io::stdout())),
-    };
+    }));
 
     let stats: Arc<Mutex<Stats>>;
 
@@ -785,8 +793,6 @@ pub fn decode(
     let mut block = Block::dummy();
 
     let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
-
-    let mut check_buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
     // get hash possibly
     let recorded_hash = if ref_block.is_meta() {
@@ -842,80 +848,196 @@ pub fn decode(
                 param.json_printer.json_enabled(),
             );
 
-            // seek to calculated position
-            reader.seek(SeekFrom::Start(seek_to))?;
+            let (to_writer, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+            let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+            let (error_tx_reader, error_rx) = channel::<Error>();
+            let error_tx_writer = error_tx_reader.clone();
+
+            let worker_shutdown_barrier = Arc::new(Barrier::new(2));
+
+            let skip_good = match param.multi_pass {
+                None | Some(MultiPassType::OverwriteAll) => false,
+                Some(MultiPassType::SkipGood) => true,
+            };
+
+            // push buffers into pipeline
+            for i in 0..PIPELINE_BUFFER_IN_ROTATION {
+                to_reader
+                    .send(Some(DataBlockBuffer::new(
+                        version,
+                        Some(&ref_block.get_uid()),
+                        InputType::Block,
+                        skip_good,
+                        OutputType::Data,
+                        BlockArrangement::Unordered,
+                        data_par_burst,
+                        true,
+                        i,
+                        PIPELINE_BUFFER_IN_ROTATION,
+                    )))
+                    .unwrap();
+            }
 
             reporter.start();
 
-            let mut bytes_processed: u64 = 0;
+            let reader_thread = {
+                let stats = Arc::clone(&stats);
+                let ctrlc_stop_flag = Arc::clone(ctrlc_stop_flag);
+                let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
 
-            loop {
-                let mut stats = stats.lock().unwrap();
+                // seek to calculated position
+                reader.seek(SeekFrom::Start(seek_to))?;
 
-                break_if_atomic_bool!(ctrlc_stop_flag);
+                thread::spawn(move || {
+                    let mut run = true;
+                    let mut bytes_processed: u64 = 0;
 
-                break_if_reached_required_len!(bytes_processed, required_len);
-
-                // read at reference block block size
-                let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
-
-                bytes_processed += read_res.len_read as u64;
-
-                break_if_eof_seen!(read_res);
-
-                if let Err(_) = block.sync_from_buffer(&buffer, Some(&header_pred), None) {
-                    stats.incre_blocks_failed();
-                    continue;
-                }
-
-                if block.is_meta() {
-                    // do nothing if block is meta
-                    stats.meta_blocks_decoded += 1;
-                } else {
-                    match data_par_shards {
-                        Some((data, par)) => {
-                            if block.is_parity(data, par) {
-                                stats.parity_blocks_decoded += 1;
-                            } else {
-                                stats.data_blocks_decoded += 1;
-                            }
+                    while let Some(mut buffer) = from_writer.recv().unwrap() {
+                        if !run {
+                            break;
                         }
-                        None => {
-                            stats.data_blocks_decoded += 1;
-                        }
-                    }
 
-                    // write data block
-                    if let Some(write_pos) = sbx_block::calc_data_chunk_write_pos(
-                        version,
-                        block.get_seq_num(),
-                        data_par_shards,
-                    ) {
-                        let do_write = match param.multi_pass {
-                            None | Some(MultiPassType::OverwriteAll) => true,
-                            Some(MultiPassType::SkipGood) => {
-                                // only write if the position to write to does not already contain a non-blank chunk
-                                writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
-                                let read_res = writer
-                                    .read(sbx_block::slice_data_buf_mut(version, &mut check_buffer))
-                                    .unwrap()?;
+                        let mut meta_blocks_decoded = 0;
+                        let mut data_blocks_decoded = 0;
+                        let mut parity_blocks_decoded = 0;
+                        let mut blocks_decode_failed: u64 = 0;
 
-                                read_res.eof_seen || {
-                                    misc_utils::buffer_is_blank(sbx_block::slice_data_buf(
-                                        version,
-                                        &check_buffer,
-                                    ))
+                        while !buffer.is_full() {
+                            stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
+
+                            stop_run_if_reached_required_len!(run => bytes_processed, required_len);
+
+                            let Slot {
+                                block,
+                                slot,
+                                content_len_exc_header: _,
+                            } = buffer.get_slot().unwrap();
+                            match reader.read(slot) {
+                                Ok(read_res) => {
+                                    bytes_processed += read_res.len_read as u64;
+
+                                    if read_res.eof_seen {
+                                        buffer.cancel_last_slot();
+                                        run = false;
+                                        break;
+                                    }
+
+                                    match block.sync_from_buffer(slot, Some(&header_pred), None) {
+                                        Ok(()) => {
+                                            // update stats
+                                            if block.is_meta() {
+                                                meta_blocks_decoded += 1;
+                                            } else {
+                                                match data_par_shards {
+                                                    Some((data, par)) => {
+                                                        if block.is_parity(data, par) {
+                                                            parity_blocks_decoded += 1;
+                                                        } else {
+                                                            data_blocks_decoded += 1;
+                                                        }
+                                                    }
+                                                    None => {
+                                                        data_blocks_decoded += 1;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Err(_) => {
+                                            buffer.cancel_last_slot();
+                                            blocks_decode_failed += 1;
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    buffer.cancel_last_slot();
+                                    stop_run_forward_error!(run => error_tx_reader => e);
                                 }
                             }
-                        };
-
-                        if do_write {
-                            writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
-                            writer.write(sbx_block::slice_data_buf(version, &buffer))?;
                         }
+
+                        {
+                            let mut stats = stats.lock().unwrap();
+
+                            stats.meta_blocks_decoded += meta_blocks_decoded;
+                            stats.data_blocks_decoded += data_blocks_decoded;
+                            stats.parity_blocks_decoded += parity_blocks_decoded;
+
+                            for _ in 0..blocks_decode_failed {
+                                stats.incre_blocks_failed();
+                            }
+                        }
+
+                        to_writer.send(Some(buffer)).unwrap();
                     }
-                }
+
+                    worker_shutdown!(to_writer, shutdown_barrier);
+                })
+            };
+
+            let writer_thread = {
+                let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+                let writer = Arc::clone(&writer);
+
+                thread::spawn(move || {
+                    while let Some(mut buffer) = from_reader.recv().unwrap() {
+                        if let Err(e) = buffer.write(&mut writer.lock().unwrap()) {
+                            error_tx_writer.send(e).unwrap();
+                            break;
+                        }
+
+                        buffer.reset();
+
+                        to_reader.send(Some(buffer)).unwrap();
+                    }
+
+                    worker_shutdown!(to_reader, shutdown_barrier);
+                })
+            };
+
+            reader_thread.join().unwrap();
+            writer_thread.join().unwrap();
+
+            if let Ok(err) = error_rx.try_recv() {
+                return Err(err);
             }
+
+            // loop {
+            //     if block.is_meta() {
+            //         // do nothing if block is meta
+            //         stats.meta_blocks_decoded += 1;
+            //     } else {
+
+            //         // write data block
+            //         if let Some(write_pos) = sbx_block::calc_data_chunk_write_pos(
+            //             version,
+            //             block.get_seq_num(),
+            //             data_par_shards,
+            //         ) {
+            //             let do_write = match param.multi_pass {
+            //                 None | Some(MultiPassType::OverwriteAll) => true,
+            //                 Some(MultiPassType::SkipGood) => {
+            //                     // only write if the position to write to does not already contain a non-blank chunk
+            //                     writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
+            //                     let read_res = writer
+            //                         .read(sbx_block::slice_data_buf_mut(version, &mut check_buffer))
+            //                         .unwrap()?;
+
+            //                     read_res.eof_seen || {
+            //                         misc_utils::buffer_is_blank(sbx_block::slice_data_buf(
+            //                             version,
+            //                             &check_buffer,
+            //                         ))
+            //                     }
+            //                 }
+            //             };
+
+            //             if do_write {
+            //                 writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
+            //                 writer.write(sbx_block::slice_data_buf(version, &buffer))?;
+            //             }
+            //         }
+            //     }
+            // }
         }
         None => {
             // output to stdout
@@ -925,20 +1047,6 @@ pub fn decode(
                     None => false,
                 }
             }
-
-            // fn read_enough_blocks(stats: &mut Stats) -> bool {
-            //     let blocks_decode_failed = match stats.blocks_decode_failed {
-            //         DecodeFailStats::Breakdown(ref x) => {
-            //             x.meta_blocks_decode_failed
-            //                 + x.data_blocks_decode_failed
-            //                 + x.parity_blocks_decode_failed
-            //         }
-            //         DecodeFailStats::Total(x) => x,
-            //     };
-
-            //     (stats.meta_blocks_decoded + stats.data_blocks_decoded + blocks_decode_failed)
-            //         == stats.total_blocks
-            // }
 
             stats = Arc::new(Mutex::new(Stats::new(
                 &ref_block,
@@ -962,13 +1070,13 @@ pub fn decode(
                 ref_block.get_HSH().unwrap()
             };
 
-            let mut hash_ctx = match stored_hash_bytes {
+            let hash_ctx = Arc::new(Mutex::new(match stored_hash_bytes {
                 None => None,
                 Some(&(ht, _)) => match hash::Ctx::new(ht) {
                     Err(()) => None,
                     Ok(ctx) => Some(ctx),
                 },
-            };
+            }));
 
             let total_data_chunk_count = match orig_file_size {
                 Some(orig_file_size) => Some(
@@ -978,6 +1086,14 @@ pub fn decode(
             };
 
             let read_pattern = ReadPattern::new(param.from_pos, param.to_pos, data_par_burst);
+
+            let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+            let (to_writer, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+            let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+            let (error_tx_reader, error_rx) = channel::<Error>();
+            let error_tx_writer = error_tx_reader.clone();
+
+            let worker_shutdown_barrier = Arc::new(Barrier::new(3));
 
             reporter.start();
 
@@ -1009,172 +1125,611 @@ pub fn decode(
                     }
 
                     // go through data and parity blocks
-                    let mut seq_num = 1;
-                    loop {
-                        let mut stats = stats.lock().unwrap();
 
-                        break_if_atomic_bool!(ctrlc_stop_flag);
-
-                        let pos = sbx_block::calc_data_block_write_pos(
-                            version,
-                            seq_num,
-                            None,
-                            data_par_burst,
-                        );
-
-                        reader.seek(SeekFrom::Start(pos))?;
-
-                        // read at reference block block size
-                        let read_res =
-                            reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
-
-                        let decode_successful = !read_res.eof_seen
-                            && match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
-                                Ok(_) => block.get_seq_num() == seq_num,
-                                _ => false,
-                            };
-
-                        if sbx_block::seq_num_is_meta(seq_num) {
-                            unreachable!();
-                        } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
-                            if decode_successful {
-                                stats.parity_blocks_decoded += 1;
-                            } else {
-                                stats.incre_parity_blocks_failed();
-                            }
-                        } else {
-                            if decode_successful {
-                                stats.data_blocks_decoded += 1;
-
-                                // write data chunk
-                                write_data_only_block(
-                                    data_par_shards,
-                                    is_last_data_block(&stats, total_data_chunk_count),
-                                    data_size_of_last_data_block,
-                                    &ref_block,
-                                    &block,
-                                    &mut writer,
-                                    &mut hash_ctx,
-                                    &buffer,
-                                )?;
-                            } else {
-                                stats.incre_data_blocks_failed();
-
-                                write_blank_chunk(
-                                    is_last_data_block(&stats, total_data_chunk_count),
-                                    data_size_of_last_data_block,
-                                    &ref_block,
-                                    &mut writer,
-                                    &mut hash_ctx,
-                                )?;
-                            }
-                        }
-
-                        if is_last_data_block(&stats, total_data_chunk_count) {
-                            break;
-                        }
-
-                        incre_or_break_if_last!(seq_num => seq_num);
+                    // push buffers into pipeline
+                    for i in 0..PIPELINE_BUFFER_IN_ROTATION {
+                        to_reader
+                            .send(Some(DataBlockBuffer::new(
+                                version,
+                                Some(&ref_block.get_uid()),
+                                InputType::Block,
+                                false,
+                                OutputType::Data,
+                                BlockArrangement::OrderedButSomeMissing,
+                                data_par_burst,
+                                true,
+                                i,
+                                PIPELINE_BUFFER_IN_ROTATION,
+                            )))
+                            .unwrap();
                     }
+
+                    let reader_thread = {
+                        let ctrlc_stop_flag = Arc::clone(ctrlc_stop_flag);
+                        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+                        let stats = Arc::clone(&stats);
+                        let uid = ref_block.get_uid();
+
+                        thread::spawn(move || {
+                            let mut run = true;
+                            let mut seq_num = 1;
+
+                            let mut data_blocks_decoded = 0;
+                            let mut parity_blocks_decoded = 0;
+                            let mut data_blocks_failed = 0;
+
+                            while let Some(mut buffer) = from_writer.recv().unwrap() {
+                                if !run {
+                                    break;
+                                }
+
+                                let mut data_blocks_failed_this_iteration = 0;
+                                let mut parity_blocks_failed_this_iteration = 0;
+
+                                while !buffer.is_full() {
+                                    stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
+
+                                    let pos = sbx_block::calc_data_block_write_pos(
+                                        version,
+                                        seq_num,
+                                        None,
+                                        data_par_burst,
+                                    );
+
+                                    stop_run_if_error!(run => error_tx_reader => reader.seek(SeekFrom::Start(pos)));
+
+                                    let Slot {
+                                        block,
+                                        slot,
+                                        content_len_exc_header,
+                                    } = buffer.get_slot().unwrap();
+
+                                    match reader.read(slot) {
+                                        Ok(read_res) => {
+                                            let decode_successful = !read_res.eof_seen
+                                                && match block.sync_from_buffer(
+                                                    slot,
+                                                    Some(&header_pred),
+                                                    None,
+                                                ) {
+                                                    Ok(()) => block.get_seq_num() == seq_num,
+                                                    _ => false,
+                                                };
+
+                                            if sbx_block::seq_num_is_meta(seq_num) {
+                                                unreachable!();
+                                            } else if sbx_block::seq_num_is_parity(
+                                                seq_num, data, parity,
+                                            ) {
+                                                if decode_successful {
+                                                    parity_blocks_decoded += 1;
+                                                } else {
+                                                    parity_blocks_failed_this_iteration += 1;
+                                                }
+
+                                                // save space by not storing parity blocks
+                                                buffer.cancel_last_slot();
+                                            } else {
+                                                if decode_successful {
+                                                    data_blocks_decoded += 1;
+                                                } else {
+                                                    data_blocks_failed_this_iteration += 1;
+                                                    data_blocks_failed += 1;
+
+                                                    // replace with a blank block
+                                                    block.set_version(version);
+                                                    block.set_uid(uid);
+                                                    block.set_seq_num(seq_num);
+
+                                                    misc_utils::wipe_buffer_w_zeros(slot);
+
+                                                    block.sync_to_buffer(None, slot).unwrap();
+                                                }
+
+                                                if let Some(count) = total_data_chunk_count {
+                                                    if data_blocks_decoded + data_blocks_failed
+                                                        == count
+                                                    {
+                                                        *content_len_exc_header =
+                                                            data_size_of_last_data_block;
+                                                        run = false;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Err(e) => {
+                                            stop_run_forward_error!(run => error_tx_reader => e)
+                                        }
+                                    }
+
+                                    incre_or_stop_run_if_last!(run => seq_num => seq_num);
+                                }
+
+                                {
+                                    let mut stats = stats.lock().unwrap();
+
+                                    stats.data_blocks_decoded = data_blocks_decoded;
+                                    for _ in 0..data_blocks_failed_this_iteration {
+                                        stats.incre_data_blocks_failed();
+                                    }
+
+                                    stats.parity_blocks_decoded = parity_blocks_decoded;
+                                    for _ in 0..parity_blocks_failed_this_iteration {
+                                        stats.incre_parity_blocks_failed();
+                                    }
+                                }
+
+                                to_hasher.send(Some(buffer)).unwrap();
+                            }
+
+                            worker_shutdown!(to_hasher, shutdown_barrier);
+                        })
+                    };
+
+                    let hasher_thread = {
+                        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+                        let hash_ctx = Arc::clone(&hash_ctx);
+
+                        thread::spawn(move || {
+                            let mut hash_ctx = hash_ctx.lock().unwrap();
+
+                            while let Some(buffer) = from_reader.recv().unwrap() {
+                                if let Some(ref mut hash_ctx) = *hash_ctx {
+                                    buffer.hash(hash_ctx);
+                                }
+
+                                to_writer.send(Some(buffer)).unwrap();
+                            }
+
+                            worker_shutdown!(to_writer, shutdown_barrier);
+                        })
+                    };
+
+                    let writer_thread = {
+                        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+                        let writer = Arc::clone(&writer);
+
+                        thread::spawn(move || {
+                            while let Some(mut buffer) = from_hasher.recv().unwrap() {
+                                if let Err(e) = buffer.write_no_seek(&mut writer.lock().unwrap()) {
+                                    error_tx_writer.send(e).unwrap();
+                                    break;
+                                }
+
+                                buffer.reset();
+
+                                to_reader.send(Some(buffer)).unwrap();
+                            }
+
+                            worker_shutdown!(to_reader, shutdown_barrier);
+                        })
+                    };
+
+                    reader_thread.join().unwrap();
+                    hasher_thread.join().unwrap();
+                    writer_thread.join().unwrap();
+
+                    if let Ok(err) = error_rx.try_recv() {
+                        return Err(err);
+                    }
+
+                    // loop {
+                    //     // read at reference block block size
+                    //     let read_res =
+                    //         reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
+
+                    //     let decode_successful = !read_res.eof_seen
+                    //         && match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
+                    //             Ok(_) => block.get_seq_num() == seq_num,
+                    //             _ => false,
+                    //         };
+
+                    //     if sbx_block::seq_num_is_meta(seq_num) {
+                    //         unreachable!();
+                    //     } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
+                    //         if decode_successful {
+                    //             stats.parity_blocks_decoded += 1;
+                    //         } else {
+                    //             stats.incre_parity_blocks_failed();
+                    //         }
+                    //     } else {
+                    //         if decode_successful {
+                    //             stats.data_blocks_decoded += 1;
+
+                    //             // write data chunk
+                    //             write_data_only_block(
+                    //                 data_par_shards,
+                    //                 is_last_data_block(&stats, total_data_chunk_count),
+                    //                 data_size_of_last_data_block,
+                    //                 &ref_block,
+                    //                 &block,
+                    //                 &mut writer.lock().unwrap(),
+                    //                 &mut hash_ctx,
+                    //                 &buffer,
+                    //             )?;
+                    //         } else {
+                    //             stats.incre_data_blocks_failed();
+
+                    //             write_blank_chunk(
+                    //                 is_last_data_block(&stats, total_data_chunk_count),
+                    //                 data_size_of_last_data_block,
+                    //                 &ref_block,
+                    //                 &mut writer.lock().unwrap(),
+                    //                 &mut hash_ctx,
+                    //             )?;
+                    //         }
+                    //     }
+
+                    //     if is_last_data_block(&stats, total_data_chunk_count) {
+                    //         break;
+                    //     }
+
+                    //     incre_or_break_if_last!(seq_num => seq_num);
+                    // }
                 }
                 ReadPattern::Sequential(data_par_burst) => {
-                    let mut bytes_processed: u64 = 0;
-
                     // seek to calculated position
                     reader.seek(SeekFrom::Start(seek_to))?;
 
-                    let mut block_index = block_utils::guess_starting_block_index(
-                        &param.in_file,
-                        param.from_pos,
-                        param.force_misalign,
-                        &ref_block,
-                        data_par_burst,
-                    )?;
-
-                    loop {
-                        let mut stats = stats.lock().unwrap();
-
-                        break_if_atomic_bool!(ctrlc_stop_flag);
-
-                        break_if_reached_required_len!(bytes_processed, required_len);
-
-                        // read at reference block block size
-                        let read_res =
-                            reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
-
-                        bytes_processed += read_res.len_read as u64;
-
-                        break_if_eof_seen!(read_res);
-
-                        let seq_num = sbx_block::calc_seq_num_at_index(
-                            block_index,
-                            Some(true),
-                            data_par_burst,
-                        );
-
-                        let block_okay =
-                            match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
-                                Ok(_) => block.get_seq_num() == seq_num,
-                                Err(_) => false,
-                            };
-
-                        if block_okay {
-                            let block_seq_num = block.get_seq_num();
-
-                            if block.is_meta() {
-                                // do nothing if block is meta
-                                stats.meta_blocks_decoded += 1;
-                            } else if sbx_block::seq_num_is_parity_w_data_par_burst(
-                                block_seq_num,
+                    // push buffers into pipeline
+                    for i in 0..PIPELINE_BUFFER_IN_ROTATION {
+                        to_reader
+                            .send(Some(DataBlockBuffer::new(
+                                version,
+                                Some(&ref_block.get_uid()),
+                                InputType::Block,
+                                false,
+                                OutputType::Data,
+                                BlockArrangement::OrderedButSomeMissing,
                                 data_par_burst,
-                            ) {
-                                stats.parity_blocks_decoded += 1;
-                            } else {
-                                stats.data_blocks_decoded += 1;
-
-                                // write data block
-                                write_data_only_block(
-                                    None,
-                                    is_last_data_block(&stats, total_data_chunk_count),
-                                    data_size_of_last_data_block,
-                                    &ref_block,
-                                    &block,
-                                    &mut writer,
-                                    &mut hash_ctx,
-                                    &buffer,
-                                )?;
-                            }
-                        } else {
-                            if sbx_block::seq_num_is_meta(seq_num) {
-                                stats.incre_meta_blocks_failed();
-                            } else if sbx_block::seq_num_is_parity_w_data_par_burst(
-                                seq_num,
-                                data_par_burst,
-                            ) {
-                                stats.incre_parity_blocks_failed();
-                            } else {
-                                stats.incre_data_blocks_failed();
-
-                                write_blank_chunk(
-                                    is_last_data_block(&stats, total_data_chunk_count),
-                                    data_size_of_last_data_block,
-                                    &ref_block,
-                                    &mut writer,
-                                    &mut hash_ctx,
-                                )?;
-                            }
-                        }
-
-                        if is_last_data_block(&stats, total_data_chunk_count) {
-                            break;
-                        }
-
-                        incre_or_break_if_last!(block_index => block_index);
+                                true,
+                                i,
+                                PIPELINE_BUFFER_IN_ROTATION,
+                            )))
+                            .unwrap();
                     }
+
+                    let reader_thread = {
+                        let ctrlc_stop_flag = Arc::clone(ctrlc_stop_flag);
+                        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+                        let stats = Arc::clone(&stats);
+                        let mut block_index = block_utils::guess_starting_block_index(
+                            &param.in_file,
+                            param.from_pos,
+                            param.force_misalign,
+                            &ref_block,
+                            data_par_burst,
+                        )?;
+                        let uid = ref_block.get_uid();
+
+                        thread::spawn(move || {
+                            let mut run = true;
+                            let mut bytes_processed: u64 = 0;
+
+                            let mut meta_blocks_decoded = 0;
+                            let mut data_blocks_decoded = 0;
+                            let mut parity_blocks_decoded = 0;
+                            let mut data_blocks_failed = 0;
+
+                            while let Some(mut buffer) = from_writer.recv().unwrap() {
+                                if !run {
+                                    break;
+                                }
+
+                                let mut meta_blocks_failed_this_iteration = 0;
+                                let mut data_blocks_failed_this_iteration = 0;
+                                let mut parity_blocks_failed_this_iteration = 0;
+
+                                while !buffer.is_full() {
+                                    stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
+
+                                    if bytes_processed >= required_len {
+                                        run = false;
+                                        break;
+                                    }
+
+                                    let Slot {
+                                        block,
+                                        slot,
+                                        content_len_exc_header,
+                                    } = buffer.get_slot().unwrap();
+
+                                    match reader.read(slot) {
+                                        Ok(read_res) => {
+                                            bytes_processed += read_res.len_read as u64;
+
+                                            if read_res.eof_seen {
+                                                run = false;
+                                                break;
+                                            }
+
+                                            let seq_num = sbx_block::calc_seq_num_at_index(
+                                                block_index,
+                                                Some(true),
+                                                data_par_burst,
+                                            );
+
+                                            let decode_successful = match block.sync_from_buffer(
+                                                slot,
+                                                Some(&header_pred),
+                                                None,
+                                            ) {
+                                                Ok(_) => block.get_seq_num() == seq_num,
+                                                Err(_) => false,
+                                            };
+
+                                            let mut cancel_slot = false;
+
+                                            if sbx_block::seq_num_is_meta(seq_num) {
+                                                // do nothing if block is meta
+                                                if decode_successful {
+                                                    meta_blocks_decoded += 1;
+                                                } else {
+                                                    meta_blocks_failed_this_iteration += 1;
+                                                }
+
+                                                // save space by not storing metadata blocks
+                                                cancel_slot = true;
+                                            } else if sbx_block::seq_num_is_parity_w_data_par_burst(
+                                                seq_num,
+                                                data_par_burst,
+                                            ) {
+                                                if decode_successful {
+                                                    parity_blocks_decoded += 1;
+                                                } else {
+                                                    parity_blocks_failed_this_iteration += 1;
+                                                }
+
+                                                // save space by not storing parity blocks
+                                                cancel_slot = true;
+                                            } else {
+                                                if decode_successful {
+                                                    data_blocks_decoded += 1;
+                                                } else {
+                                                    data_blocks_failed_this_iteration += 1;
+                                                    data_blocks_failed += 1;
+
+                                                    // replace with a blank block
+                                                    block.set_version(version);
+                                                    block.set_uid(uid);
+                                                    block.set_seq_num(seq_num);
+
+                                                    misc_utils::wipe_buffer_w_zeros(slot);
+
+                                                    block.sync_to_buffer(None, slot).unwrap();
+                                                }
+                                            }
+
+                                            // if decode_successful {
+                                            //     if block.is_meta() {
+                                            //         meta_blocks_decoded += 1;
+                                            //     } else if sbx_block::seq_num_is_parity_w_data_par_burst(
+                                            //         seq_num,
+                                            //         data_par_burst,
+                                            //     ) {
+                                            //         parity_blocks_decoded += 1;
+
+                                            //         // save space by not storing parity blocks
+                                            //         buffer.cancel_last_slot();
+                                            //     } else {
+                                            //         data_blocks_decoded += 1;
+                                            //     }
+                                            // } else {
+                                            //     if sbx_block::seq_num_is_meta(seq_num) {
+                                            //         meta_blocks_failed_this_iteration += 1;
+                                            //     } else if sbx_block::seq_num_is_parity_w_data_par_burst(
+                                            //         seq_num,
+                                            //         data_par_burst,
+                                            //     ) {
+                                            //         parity_blocks_failed_this_iteration += 1;
+
+                                            //         // save space by not storing parity blocks
+                                            //         buffer.cancel_last_slot();
+                                            //     } else {
+                                            //         data_blocks_failed_this_iteration += 1;
+                                            //         data_blocks_failed += 1;
+
+                                            //         // replace with a blank block
+                                            //         block.set_version(version);
+                                            //         block.set_uid(uid);
+                                            //         block.set_seq_num(seq_num);
+
+                                            //         misc_utils::wipe_buffer_w_zeros(slot);
+
+                                            //         block.sync_to_buffer(None, slot).unwrap();
+                                            //     }
+                                            // }
+
+                                            if cancel_slot {
+                                                buffer.cancel_last_slot();
+                                            } else {
+                                                if let Some(count) = total_data_chunk_count {
+                                                    if data_blocks_decoded + data_blocks_failed
+                                                        == count
+                                                    {
+                                                        *content_len_exc_header =
+                                                            data_size_of_last_data_block;
+                                                        run = false;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Err(e) => {
+                                            stop_run_forward_error!(run => error_tx_reader => e)
+                                        }
+                                    }
+
+                                    incre_or_stop_run_if_last!(run => block_index => block_index);
+                                }
+
+                                {
+                                    let mut stats = stats.lock().unwrap();
+
+                                    stats.meta_blocks_decoded = meta_blocks_decoded;
+
+                                    for _ in 0..meta_blocks_failed_this_iteration {
+                                        stats.incre_parity_blocks_failed();
+                                    }
+
+                                    stats.data_blocks_decoded = data_blocks_decoded;
+                                    for _ in 0..data_blocks_failed_this_iteration {
+                                        stats.incre_data_blocks_failed();
+                                    }
+
+                                    stats.parity_blocks_decoded = parity_blocks_decoded;
+                                    for _ in 0..parity_blocks_failed_this_iteration {
+                                        stats.incre_parity_blocks_failed();
+                                    }
+                                }
+
+                                to_hasher.send(Some(buffer)).unwrap();
+                            }
+
+                            worker_shutdown!(to_hasher, shutdown_barrier);
+                        })
+                    };
+
+                    let hasher_thread = {
+                        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+                        let hash_ctx = Arc::clone(&hash_ctx);
+
+                        thread::spawn(move || {
+                            let mut hash_ctx = hash_ctx.lock().unwrap();
+
+                            while let Some(buffer) = from_reader.recv().unwrap() {
+                                if let Some(ref mut hash_ctx) = *hash_ctx {
+                                    buffer.hash(hash_ctx);
+                                }
+
+                                to_writer.send(Some(buffer)).unwrap();
+                            }
+
+                            worker_shutdown!(to_writer, shutdown_barrier);
+                        })
+                    };
+
+                    let writer_thread = {
+                        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+                        let writer = Arc::clone(&writer);
+
+                        thread::spawn(move || {
+                            while let Some(mut buffer) = from_hasher.recv().unwrap() {
+                                if let Err(e) = buffer.write_no_seek(&mut writer.lock().unwrap()) {
+                                    error_tx_writer.send(e).unwrap();
+                                    break;
+                                }
+
+                                buffer.reset();
+
+                                to_reader.send(Some(buffer)).unwrap();
+                            }
+
+                            worker_shutdown!(to_reader, shutdown_barrier);
+                        })
+                    };
+
+                    reader_thread.join().unwrap();
+                    hasher_thread.join().unwrap();
+                    writer_thread.join().unwrap();
+
+                    if let Ok(err) = error_rx.try_recv() {
+                        return Err(err);
+                    }
+
+                    // let mut block_index = block_utils::guess_starting_block_index(
+                    //     &param.in_file,
+                    //     param.from_pos,
+                    //     param.force_misalign,
+                    //     &ref_block,
+                    //     data_par_burst,
+                    // )?;
+
+                    // loop {
+                    //     let mut stats = stats.lock().unwrap();
+
+                    //     break_if_atomic_bool!(ctrlc_stop_flag);
+
+                    //     break_if_reached_required_len!(bytes_processed, required_len);
+
+                    //     // read at reference block block size
+                    //     let read_res =
+                    //         reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
+
+                    //     bytes_processed += read_res.len_read as u64;
+
+                    //     break_if_eof_seen!(read_res);
+
+                    //     let seq_num = sbx_block::calc_seq_num_at_index(
+                    //         block_index,
+                    //         Some(true),
+                    //         data_par_burst,
+                    //     );
+
+                    //     let block_okay =
+                    //         match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
+                    //             Ok(_) => block.get_seq_num() == seq_num,
+                    //             Err(_) => false,
+                    //         };
+
+                    //     if block_okay {
+                    //         let block_seq_num = block.get_seq_num();
+
+                    //         if block.is_meta() {
+                    //             // do nothing if block is meta
+                    //             stats.meta_blocks_decoded += 1;
+                    //         } else if sbx_block::seq_num_is_parity_w_data_par_burst(
+                    //             block_seq_num,
+                    //             data_par_burst,
+                    //         ) {
+                    //             stats.parity_blocks_decoded += 1;
+                    //         } else {
+                    //             stats.data_blocks_decoded += 1;
+
+                    //             // write data block
+                    //             write_data_only_block(
+                    //                 None,
+                    //                 is_last_data_block(&stats, total_data_chunk_count),
+                    //                 data_size_of_last_data_block,
+                    //                 &ref_block,
+                    //                 &block,
+                    //                 &mut writer.lock().unwrap(),
+                    //                 &mut hash_ctx.lock().unwrap(),
+                    //                 &buffer,
+                    //             )?;
+                    //         }
+                    //     } else {
+                    //         if sbx_block::seq_num_is_meta(seq_num) {
+                    //             stats.incre_meta_blocks_failed();
+                    //         } else if sbx_block::seq_num_is_parity_w_data_par_burst(
+                    //             seq_num,
+                    //             data_par_burst,
+                    //         ) {
+                    //             stats.incre_parity_blocks_failed();
+                    //         } else {
+                    //             stats.incre_data_blocks_failed();
+
+                    //             write_blank_chunk(
+                    //                 is_last_data_block(&stats, total_data_chunk_count),
+                    //                 data_size_of_last_data_block,
+                    //                 &ref_block,
+                    //                 &mut writer.lock().unwrap(),
+                    //                 &mut hash_ctx.lock().unwrap(),
+                    //             )?;
+                    //         }
+                    //     }
+
+                    //     if is_last_data_block(&stats, total_data_chunk_count) {
+                    //         break;
+                    //     }
+
+                    //     incre_or_break_if_last!(block_index => block_index);
+                    // }
                 }
             }
 
-            if let Some(ctx) = hash_ctx {
+            if let Some(ctx) = Arc::try_unwrap(hash_ctx).unwrap().into_inner().unwrap() {
                 hash_bytes = Some(ctx.finish_into_hash_bytes());
             }
         }
@@ -1187,7 +1742,7 @@ pub fn decode(
         match ref_block.get_FSZ().unwrap() {
             None => {}
             Some(stored_file_size) => {
-                if let Some(r) = writer.set_len(stored_file_size) {
+                if let Some(r) = writer.lock().unwrap().set_len(stored_file_size) {
                     r?;
                 }
             }
@@ -1211,7 +1766,7 @@ pub fn decode(
         None => None,
     };
 
-    stats.lock().unwrap().out_file_size = match writer.get_file_size() {
+    stats.lock().unwrap().out_file_size = match writer.lock().unwrap().get_file_size() {
         Some(r) => r?,
         None => match orig_file_size {
             Some(x) => x,
