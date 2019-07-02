@@ -136,9 +136,9 @@ pub fn hash(
                             ) {
                                 buffer.cancel_last_slot();
                             } else {
-                                let is_last_data_block = bytes_remaining <= data_chunk_size;
-
                                 if decode_successful {
+                                    let is_last_data_block = bytes_remaining <= data_chunk_size;
+
                                     let cur_block_bytes_processed = if is_last_data_block {
                                         bytes_remaining
                                     } else {
@@ -146,16 +146,16 @@ pub fn hash(
                                     };
 
                                     bytes_processed += cur_block_bytes_processed as u64;
+
+                                    if is_last_data_block {
+                                        *content_len_exc_header = Some(bytes_remaining as usize);
+                                        run = false;
+                                        break;
+                                    }
                                 } else {
                                     error_tx_reader
                                         .send(Error::with_msg("Failed to decode data block"))
                                         .unwrap();
-                                    run = false;
-                                    break;
-                                }
-
-                                if is_last_data_block {
-                                    *content_len_exc_header = Some(bytes_remaining as usize);
                                     run = false;
                                     break;
                                 }
