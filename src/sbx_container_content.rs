@@ -7,7 +7,7 @@ use crate::multihash::*;
 use crate::progress_report::{PRVerbosityLevel, ProgressReporter};
 use crate::sbx_block;
 use crate::sbx_block::Block;
-use crate::sbx_specs::{ver_to_data_size, SBX_LAST_SEQ_NUM};
+use crate::sbx_specs::{ver_to_data_size};
 
 use std::io::SeekFrom;
 use std::sync::atomic::AtomicBool;
@@ -43,7 +43,7 @@ pub fn hash(
         },
     )?;
 
-    let mut block = Block::dummy();
+    // let mut block = Block::dummy();
 
     let reporter = Arc::new(ProgressReporter::new(
         &stats,
@@ -55,8 +55,8 @@ pub fn hash(
 
     let header_pred = header_pred_same_ver_uid!(ref_block);
 
-    let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
-    let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION);
+    let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
+    let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION+1);
     let (error_tx_reader, error_rx) = channel::<Error>();
     let (hash_bytes_tx, hash_bytes_rx) = channel();
 
@@ -71,7 +71,7 @@ pub fn hash(
                 InputType::Block,
                 false,
                 OutputType::Disabled,
-                BlockArrangement::OrderedAndNoMissing,
+                BlockArrangement::OrderedButSomeMissing,
                 data_par_burst,
                 true,
                 i,
@@ -91,15 +91,16 @@ pub fn hash(
             let mut run = true;
             let mut seq_num = 1;
 
-            while let Some(mut buffer) = from_hasher.recv().unwrap() {
-                let mut stats = stats.lock().unwrap();
+            let mut bytes_processed: u64 = 0;
+            let total_bytes = stats.lock().unwrap().total_bytes;
 
+            while let Some(mut buffer) = from_hasher.recv().unwrap() {
                 if !run {
                     break;
                 }
 
                 while !buffer.is_full() {
-                    break_if_atomic_bool!(ctrlc_stop_flag);
+                    stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
 
                     let pos = sbx_block::calc_data_block_write_pos(
                         version,
@@ -115,7 +116,7 @@ pub fn hash(
                     }
 
                     let Slot {
-                        block: _,
+                        block,
                         slot,
                         content_len_exc_header,
                     } = buffer.get_slot().unwrap();
@@ -127,22 +128,24 @@ pub fn hash(
                                     _ => false,
                                 };
 
-                            let bytes_remaining = stats.total_bytes - stats.bytes_processed;
+                            let bytes_remaining = total_bytes - bytes_processed;
 
-                            if !sbx_block::seq_num_is_parity_w_data_par_burst(
+                            if sbx_block::seq_num_is_parity_w_data_par_burst(
                                 seq_num,
                                 data_par_burst,
                             ) {
+                                buffer.cancel_last_slot();
+                            } else {
                                 let is_last_data_block = bytes_remaining <= data_chunk_size;
 
                                 if decode_successful {
-                                    let bytes_processed = if is_last_data_block {
+                                    let cur_block_bytes_processed = if is_last_data_block {
                                         bytes_remaining
                                     } else {
                                         data_chunk_size
                                     };
 
-                                    stats.bytes_processed += bytes_processed as u64;
+                                    bytes_processed += cur_block_bytes_processed as u64;
                                 } else {
                                     error_tx_reader
                                         .send(Error::with_msg("Failed to decode data block"))
@@ -158,12 +161,7 @@ pub fn hash(
                                 }
                             }
 
-                            if seq_num == SBX_LAST_SEQ_NUM {
-                                run = false;
-                                break;
-                            }
-
-                            seq_num += 1;
+                            incre_or_stop_run_if_last!(run => seq_num => seq_num);
                         }
                         Err(e) => {
                             error_tx_reader.send(e).unwrap();
@@ -173,7 +171,11 @@ pub fn hash(
                     }
                 }
 
-                break_if_atomic_bool!(ctrlc_stop_flag);
+                {
+                    let mut stats = stats.lock().unwrap();
+
+                    stats.bytes_processed = bytes_processed;
+                }
 
                 to_hasher.send(Some(buffer)).unwrap();
             }
