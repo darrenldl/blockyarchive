@@ -1272,8 +1272,10 @@ pub fn decode(
                         let hash_ctx = Arc::clone(&hash_ctx);
 
                         thread::spawn(move || {
+                            let mut hash_ctx = hash_ctx.lock().unwrap();
+
                             while let Some(buffer) = from_reader.recv().unwrap() {
-                                if let Some(ref mut hash_ctx) = *hash_ctx.lock().unwrap() {
+                                if let Some(ref mut hash_ctx) = *hash_ctx {
                                     buffer.hash(hash_ctx);
                                 }
 
@@ -1594,8 +1596,10 @@ pub fn decode(
                         let hash_ctx = Arc::clone(&hash_ctx);
 
                         thread::spawn(move || {
+                            let mut hash_ctx = hash_ctx.lock().unwrap();
+
                             while let Some(buffer) = from_reader.recv().unwrap() {
-                                if let Some(ref mut hash_ctx) = *hash_ctx.lock().unwrap() {
+                                if let Some(ref mut hash_ctx) = *hash_ctx {
                                     buffer.hash(hash_ctx);
                                 }
 
