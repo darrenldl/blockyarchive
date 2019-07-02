@@ -259,25 +259,25 @@ impl Lot {
         }
     }
 
-    fn is_full(&self) -> bool {
-        self.slots_used >= self.directly_writable_slots
-    }
+    // fn is_full(&self) -> bool {
+    //     self.slots_used >= self.directly_writable_slots
+    // }
 
     fn active(&self) -> bool {
         self.slots_used > 0
     }
 
-    fn sync_blocks_from_slots(&mut self) {
-        for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-            if slot_index < self.slots_used {
-                self.blocks[slot_index]
-                    .sync_from_buffer(slot, None, None)
-                    .unwrap();
-            } else {
-                break;
-            }
-        }
-    }
+    // fn sync_blocks_from_slots(&mut self) {
+    //     for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+    //         if slot_index < self.slots_used {
+    //             self.blocks[slot_index]
+    //                 .sync_from_buffer(slot, None, None)
+    //                 .unwrap();
+    //         } else {
+    //             break;
+    //         }
+    //     }
+    // }
 
     fn calc_slot_write_pos(&mut self) {
         for slot_index in 0..self.slots_used {
@@ -671,11 +671,11 @@ impl DataBlockBuffer {
         }
     }
 
-    pub fn sync_blocks_from_slots(&mut self) {
-        for lot in self.lots.iter_mut() {
-            lot.sync_blocks_from_slots();
-        }
-    }
+    // pub fn sync_blocks_from_slots(&mut self) {
+    //     for lot in self.lots.iter_mut() {
+    //         lot.sync_blocks_from_slots();
+    //     }
+    // }
 
     fn write_internal(&mut self, seek: bool, writer: &mut Writer) -> Result<(), Error> {
         for lot in self.lots.iter_mut() {
