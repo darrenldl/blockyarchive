@@ -169,7 +169,7 @@ impl Lot {
             check_buffer: vec![0; SBX_LARGEST_BLOCK_SIZE],
             slot_write_pos: vec![None; lot_size],
             slot_content_len_exc_header: vec![None; lot_size],
-            slot_is_padding: vec![false; directly_writable_slots],
+            slot_is_padding: vec![false; lot_size],
             skip_good,
             rs_codec,
         }
@@ -354,7 +354,7 @@ impl Lot {
             if slot_index < self.slots_used {
                 let block = &self.blocks[slot_index];
 
-                if block.is_data() && !block.is_parity_w_data_par_burst(self.data_par_burst) {
+                if block.is_data() && !self.slot_is_padding[slot_index] && !block.is_parity_w_data_par_burst(self.data_par_burst) {
                     let content_len = match self.slot_content_len_exc_header[slot_index] {
                         None => self.data_size,
                         Some(len) => {
