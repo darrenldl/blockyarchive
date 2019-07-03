@@ -6,7 +6,7 @@ use std::io::SeekFrom;
 use std::sync::Arc;
 
 use crate::general_error::Error;
-use crate::sbx_specs::{Version, SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM};
+use crate::sbx_specs::{Version, SBX_LARGEST_BLOCK_SIZE, SBX_FIRST_DATA_SEQ_NUM, SBX_LAST_SEQ_NUM};
 
 use crate::sbx_block::{calc_data_block_write_pos, calc_data_chunk_write_pos, Block, BlockType};
 
@@ -385,7 +385,7 @@ impl Lot {
         let block = &mut self.blocks[slot_index];
         block.set_version(self.version);
         block.set_uid(self.uid);
-        block.set_seq_num(1);
+        block.set_seq_num(SBX_FIRST_DATA_SEQ_NUM);
 
         self.slot_write_pos[slot_index] = None;
         self.slot_content_len_exc_header[slot_index] = None;
@@ -396,6 +396,12 @@ impl Lot {
         self.slots_used = 0;
 
         self.padding_byte_count_in_non_padding_blocks = 0;
+
+        for block in self.blocks.iter_mut() {
+            block.set_version(self.version);
+            block.set_uid(self.uid);
+            block.set_seq_num(SBX_FIRST_DATA_SEQ_NUM);
+        }
 
         for pos in self.slot_write_pos.iter_mut() {
             *pos = None;
