@@ -206,9 +206,9 @@ impl Lot {
         assert!(self.slots_used > 0);
         assert!(self.slots_used <= self.directly_writable_slots);
 
-        self.reset_slot(self.slots_used);
-
         self.slots_used -= 1;
+
+        self.reset_slot(self.slots_used);
     }
 
     fn fill_in_padding(&mut self) {
