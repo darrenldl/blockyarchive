@@ -151,7 +151,8 @@ proptest! {
     }
 
     #[test]
-    fn pt_get_slot_result(size in 1usize..1000) {
+    fn pt_get_slot_result(size in 1usize..1000,
+                          tries in 2usize..100) {
         let mut lot = Lot::new(Version::V17,
                                None,
                                InputType::Block,
@@ -164,24 +165,30 @@ proptest! {
                                &Arc::new(None),
         );
 
-        for _ in 0..size-1 {
+        for _ in 0..tries {
+            for _ in 0..size-1 {
+                match lot.get_slot() {
+                    GetSlotResult::None => panic!(),
+                    GetSlotResult::Some(_, _, _) => {},
+                    GetSlotResult::LastSlot(_, _, _) => panic!(),
+                }
+            }
+
             match lot.get_slot() {
                 GetSlotResult::None => panic!(),
-                GetSlotResult::Some(_, _, _) => {},
+                GetSlotResult::Some(_, _, _) => panic!(),
+                GetSlotResult::LastSlot(_, _, _) => {},
+            }
+
+            match lot.get_slot() {
+                GetSlotResult::None => {},
+                GetSlotResult::Some(_, _, _) => panic!(),
                 GetSlotResult::LastSlot(_, _, _) => panic!(),
             }
-        }
 
-        match lot.get_slot() {
-            GetSlotResult::None => panic!(),
-            GetSlotResult::Some(_, _, _) => panic!(),
-            GetSlotResult::LastSlot(_, _, _) => {},
-        }
-
-        match lot.get_slot() {
-            GetSlotResult::None => {},
-            GetSlotResult::Some(_, _, _) => panic!(),
-            GetSlotResult::LastSlot(_, _, _) => panic!(),
+            for _ in 0..size {
+                lot.cancel_last_slot();
+            }
         }
     }
 }
