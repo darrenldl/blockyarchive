@@ -48,7 +48,7 @@ use crate::hash_stats::HashStats;
 
 use crate::block_utils::RefBlockChoice;
 
-const HASH_FILE_BUFFER_SIZE: usize = 4096 * 4;
+const HASH_FILE_BUFFER_SIZE: usize = 4096 * 50;
 
 const BLANK_BUFFER: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
@@ -1853,7 +1853,6 @@ fn hash(
 
                 match reader.read(&mut buffer) {
                     Ok(read_res) => {
-                        // update stats
                         stats.lock().unwrap().bytes_processed += read_res.len_read as u64;
 
                         to_hasher.send(Some((read_res.len_read, buffer))).unwrap();
