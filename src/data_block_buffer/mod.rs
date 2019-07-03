@@ -452,6 +452,8 @@ impl Lot {
     }
 
     fn write(&mut self, seek: bool, writer: &mut Writer) -> Result<(), Error> {
+        assert!(self.output_type != OutputType::Disabled);
+
         self.calc_slot_write_pos();
 
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {

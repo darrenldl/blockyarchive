@@ -5,6 +5,9 @@ use crate::sbx_specs::{Version};
 use crate::multihash::hash;
 use crate::multihash::{HashType};
 
+use crate::file_writer::{FileWriter, FileWriterParam};
+use crate::writer::{Writer, WriterType};
+
 #[test]
 #[should_panic]
 fn cancel_last_slot_panics_when_empty1() {
@@ -100,6 +103,34 @@ fn hash_panics_when_incorrect_arrangement() {
     let mut hash_ctx = hash::Ctx::new(HashType::SHA256).unwrap();
 
     lot.hash(&mut hash_ctx);
+}
+
+#[test]
+#[should_panic]
+fn write_panics_when_output_is_disabled() {
+    let mut lot = Lot::new(Version::V17,
+                       None,
+                       InputType::Block,
+                       OutputType::Disabled,
+                       BlockArrangement::Unordered,
+                       None,
+                       true,
+                       10,
+                       false,
+                       &Arc::new(None),
+    );
+
+    let mut writer = Writer::new(WriterType::File(FileWriter::new(
+        "tests/dummy",
+        FileWriterParam {
+            read: false,
+            append: false,
+            truncate: true,
+            buffered: false,
+        },
+    ).unwrap()));
+
+    lot.write(false, &mut writer).unwrap();
 }
 
 proptest! {
