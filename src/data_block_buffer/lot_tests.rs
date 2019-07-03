@@ -499,20 +499,22 @@ proptest! {
                                    &Arc::new(None),
             );
 
-            for i in 0..cancels {
-                assert_eq!(lot.slots_used, i);
+            for _ in 0..tries {
+                for i in 0..cancels {
+                    assert_eq!(lot.slots_used, i);
 
-                let _ = lot.get_slot();
+                    let _ = lot.get_slot();
 
-                assert_eq!(lot.slots_used, i+1);
-            }
+                    assert_eq!(lot.slots_used, i+1);
+                }
 
-            for i in (0..cancels).rev() {
-                assert_eq!(lot.slots_used, i+1);
+                for i in (0..cancels).rev() {
+                    assert_eq!(lot.slots_used, i+1);
 
-                lot.cancel_last_slot();
+                    lot.cancel_last_slot();
 
-                assert_eq!(lot.slots_used, i);
+                    assert_eq!(lot.slots_used, i);
+                }
             }
         }
         {
@@ -528,20 +530,22 @@ proptest! {
                                    &Arc::new(None),
             );
 
-            for i in 0..cancels {
-                assert_eq!(lot.slots_used, i);
+            for _ in 0..tries {
+                for i in 0..cancels {
+                    assert_eq!(lot.slots_used, i);
 
-                let _ = lot.get_slot();
+                    let _ = lot.get_slot();
 
-                assert_eq!(lot.slots_used, i+1);
-            }
+                    assert_eq!(lot.slots_used, i+1);
+                }
 
-            for i in (0..cancels).rev() {
-                assert_eq!(lot.slots_used, i+1);
+                for i in (0..cancels).rev() {
+                    assert_eq!(lot.slots_used, i+1);
 
-                lot.cancel_last_slot();
+                    lot.cancel_last_slot();
 
-                assert_eq!(lot.slots_used, i);
+                    assert_eq!(lot.slots_used, i);
+                }
             }
         }
     }
