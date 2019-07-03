@@ -2,10 +2,12 @@
 use super::*;
 use proptest::prelude::*;
 use crate::sbx_specs::{Version};
+use crate::multihash::hash;
+use crate::multihash::{HashType};
 
 #[test]
 #[should_panic]
-fn cancel_last_slot_when_empty1() {
+fn cancel_last_slot_panics_when_empty1() {
     let mut lot = Lot::new(Version::V17,
                            None,
                            InputType::Block,
@@ -23,7 +25,7 @@ fn cancel_last_slot_when_empty1() {
 
 #[test]
 #[should_panic]
-fn cancel_last_slot_when_empty2() {
+fn cancel_last_slot_panics_when_empty2() {
     let mut lot = Lot::new(Version::V17,
                        None,
                        InputType::Block,
@@ -42,10 +44,68 @@ fn cancel_last_slot_when_empty2() {
     lot.cancel_last_slot();
 }
 
+#[test]
+fn hash_when_correct_arrangment1() {
+    let lot = Lot::new(Version::V17,
+                       None,
+                       InputType::Block,
+                       OutputType::Block,
+                       BlockArrangement::OrderedAndNoMissing,
+                       None,
+                       true,
+                       10,
+                       false,
+                       &Arc::new(None),
+    );
+
+    let mut hash_ctx = hash::Ctx::new(HashType::SHA256).unwrap();
+
+    lot.hash(&mut hash_ctx);
+}
+
+#[test]
+fn hash_when_correct_arrangment2() {
+    let lot = Lot::new(Version::V17,
+                       None,
+                       InputType::Block,
+                       OutputType::Block,
+                       BlockArrangement::OrderedButSomeMayBeMissing,
+                       None,
+                       true,
+                       10,
+                       false,
+                       &Arc::new(None),
+    );
+
+    let mut hash_ctx = hash::Ctx::new(HashType::SHA256).unwrap();
+
+    lot.hash(&mut hash_ctx);
+}
+
+#[test]
+#[should_panic]
+fn hash_panics_when_incorrect_arrangement() {
+    let lot = Lot::new(Version::V17,
+                           None,
+                           InputType::Block,
+                           OutputType::Block,
+                           BlockArrangement::Unordered,
+                           None,
+                           true,
+                           10,
+                           false,
+                           &Arc::new(None),
+    );
+
+    let mut hash_ctx = hash::Ctx::new(HashType::SHA256).unwrap();
+
+    lot.hash(&mut hash_ctx);
+}
+
 proptest! {
     #[test]
     #[should_panic]
-    fn pt_cancel_last_slot_when_empty(size in 0usize..1000) {
+    fn pt_cancel_last_slot_panics_when_empty(size in 0usize..1000) {
         let mut lot = Lot::new(Version::V17,
                                None,
                                InputType::Block,
