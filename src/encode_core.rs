@@ -710,7 +710,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     stats.data_blocks_written += data_blocks as u64;
                     stats.parity_blocks_written += parity_blocks as u64;
 
-                    stats.data_padding_bytes = padding_byte_count + padding_blocks * data_size;
+                    stats.data_padding_bytes += padding_byte_count + padding_blocks * data_size;
                 }
 
                 to_writer.send(Some(buffer)).unwrap();
