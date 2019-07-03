@@ -106,6 +106,60 @@ fn hash_panics_when_incorrect_arrangement() {
 }
 
 #[test]
+fn write_panics_when_output_is_block() {
+    let mut lot = Lot::new(Version::V17,
+                           None,
+                           InputType::Block,
+                           OutputType::Block,
+                           BlockArrangement::Unordered,
+                           None,
+                           true,
+                           10,
+                           false,
+                           &Arc::new(None),
+    );
+
+    let mut writer = Writer::new(WriterType::File(FileWriter::new(
+        "tests/dummy",
+        FileWriterParam {
+            read: false,
+            append: false,
+            truncate: true,
+            buffered: false,
+        },
+    ).unwrap()));
+
+    lot.write(false, &mut writer).unwrap();
+}
+
+#[test]
+fn write_panics_when_output_is_data() {
+    let mut lot = Lot::new(Version::V17,
+                           None,
+                           InputType::Block,
+                           OutputType::Data,
+                           BlockArrangement::Unordered,
+                           None,
+                           true,
+                           10,
+                           false,
+                           &Arc::new(None),
+    );
+
+    let mut writer = Writer::new(WriterType::File(FileWriter::new(
+        "tests/dummy",
+        FileWriterParam {
+            read: false,
+            append: false,
+            truncate: true,
+            buffered: false,
+        },
+    ).unwrap()));
+
+    lot.write(false, &mut writer).unwrap();
+}
+
+#[test]
 #[should_panic]
 fn write_panics_when_output_is_disabled() {
     let mut lot = Lot::new(Version::V17,
@@ -134,11 +188,46 @@ fn write_panics_when_output_is_disabled() {
 }
 
 #[test]
+fn encode_when_input_type_is_data_and_arrangement_is_ordered_and_no_missing() {
+    let mut lot = Lot::new(Version::V17,
+                           None,
+                           InputType::Data,
+                           OutputType::Disabled,
+                           BlockArrangement::OrderedAndNoMissing,
+                           None,
+                           true,
+                           10,
+                           false,
+                           &Arc::new(None),
+    );
+
+    lot.encode(1);
+}
+
+#[test]
 #[should_panic]
-fn encode_panics_when_arrangement_not_ordered_and_no_missing1() {
+fn encode_panics_when_input_type_is_block_and_arrangement_is_ordered_and_no_missing() {
     let mut lot = Lot::new(Version::V17,
                            None,
                            InputType::Block,
+                           OutputType::Disabled,
+                           BlockArrangement::OrderedAndNoMissing,
+                           None,
+                           true,
+                           10,
+                           false,
+                           &Arc::new(None),
+    );
+
+    lot.encode(1);
+}
+
+#[test]
+#[should_panic]
+fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing1() {
+    let mut lot = Lot::new(Version::V17,
+                           None,
+                           InputType::Data,
                            OutputType::Disabled,
                            BlockArrangement::OrderedButSomeMayBeMissing,
                            None,
@@ -153,10 +242,10 @@ fn encode_panics_when_arrangement_not_ordered_and_no_missing1() {
 
 #[test]
 #[should_panic]
-fn encode_panics_when_arrangement_not_ordered_and_no_missing2() {
+fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing2() {
     let mut lot = Lot::new(Version::V17,
                            None,
-                           InputType::Block,
+                           InputType::Data,
                            OutputType::Disabled,
                            BlockArrangement::Unordered,
                            None,
