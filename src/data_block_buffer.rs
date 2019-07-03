@@ -398,8 +398,8 @@ impl Lot {
         };
 
         let mut padding = 0;
-        for &is_padding in self.slot_is_padding.iter() {
-            if is_padding {
+        for slot_index in 0..self.slots_used {
+            if self.slot_is_padding[slot_index] {
                 padding += 1;
             }
         }
