@@ -48,7 +48,7 @@ use crate::hash_stats::HashStats;
 
 use crate::block_utils::RefBlockChoice;
 
-const HASH_FILE_BLOCK_SIZE: usize = 4096;
+const HASH_FILE_BUFFER_SIZE: usize = 4096 * 4;
 
 const BLANK_BUFFER: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
@@ -1837,7 +1837,7 @@ fn hash(
     let worker_shutdown_barrier = Arc::new(Barrier::new(2));
 
     for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
-        to_reader.send(Some(vec![0; HASH_FILE_BLOCK_SIZE])).unwrap();
+        to_reader.send(Some(vec![0; HASH_FILE_BUFFER_SIZE])).unwrap();
     }
 
     reporter.start();
