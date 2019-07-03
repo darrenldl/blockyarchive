@@ -130,6 +130,8 @@ impl Lot {
         skip_good: bool,
         rs_codec: &Arc<Option<ReedSolomon>>,
     ) -> Self {
+        assert!(lot_size > 0);
+
         let block_size = ver_to_block_size(version);
         let data_size = ver_to_data_size(version);
 
