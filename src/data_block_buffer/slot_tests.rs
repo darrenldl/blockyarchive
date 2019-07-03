@@ -105,7 +105,7 @@ fn hash_panics_when_incorrect_arrangement() {
 proptest! {
     #[test]
     #[should_panic]
-    fn pt_cancel_last_slot_panics_when_empty(size in 0usize..1000) {
+    fn pt_cancel_last_slot_panics_when_empty(size in 1usize..1000) {
         let mut lot = Lot::new(Version::V17,
                                None,
                                InputType::Block,
@@ -128,7 +128,7 @@ proptest! {
     }
 
     #[test]
-    fn pt_cancel_last_slot_when_not_empty(size in 0usize..1000) {
+    fn pt_cancel_last_slot_when_not_empty(size in 1usize..1000) {
         let mut lot = Lot::new(Version::V17,
                                None,
                                InputType::Block,
@@ -147,6 +147,41 @@ proptest! {
 
         for _ in 0..size {
             lot.cancel_last_slot();
+        }
+    }
+
+    #[test]
+    fn pt_get_slot_result(size in 1usize..1000) {
+        let mut lot = Lot::new(Version::V17,
+                               None,
+                               InputType::Block,
+                               OutputType::Block,
+                               BlockArrangement::Unordered,
+                               None,
+                               true,
+                               size,
+                               false,
+                               &Arc::new(None),
+        );
+
+        for _ in 0..size-1 {
+            match lot.get_slot() {
+                GetSlotResult::None => panic!(),
+                GetSlotResult::Some(_, _, _) => {},
+                GetSlotResult::LastSlot(_, _, _) => panic!(),
+            }
+        }
+
+        match lot.get_slot() {
+            GetSlotResult::None => panic!(),
+            GetSlotResult::Some(_, _, _) => panic!(),
+            GetSlotResult::LastSlot(_, _, _) => {},
+        }
+
+        match lot.get_slot() {
+            GetSlotResult::None => {},
+            GetSlotResult::Some(_, _, _) => panic!(),
+            GetSlotResult::LastSlot(_, _, _) => panic!(),
         }
     }
 }
