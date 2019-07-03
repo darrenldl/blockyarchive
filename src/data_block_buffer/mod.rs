@@ -19,6 +19,8 @@ use crate::writer::Writer;
 
 use crate::misc_utils;
 
+mod slot_tests;
+
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
 const LOT_COUNT_PER_CPU: usize = 10;
