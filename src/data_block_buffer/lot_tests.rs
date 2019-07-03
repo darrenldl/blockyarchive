@@ -133,6 +133,42 @@ fn write_panics_when_output_is_disabled() {
     lot.write(false, &mut writer).unwrap();
 }
 
+#[test]
+#[should_panic]
+fn encode_panics_when_arrangement_not_ordered_and_no_missing1() {
+    let mut lot = Lot::new(Version::V17,
+                           None,
+                           InputType::Block,
+                           OutputType::Disabled,
+                           BlockArrangement::OrderedButSomeMayBeMissing,
+                           None,
+                           true,
+                           10,
+                           false,
+                           &Arc::new(None),
+    );
+
+    lot.encode(1);
+}
+
+#[test]
+#[should_panic]
+fn encode_panics_when_arrangement_not_ordered_and_no_missing2() {
+    let mut lot = Lot::new(Version::V17,
+                           None,
+                           InputType::Block,
+                           OutputType::Disabled,
+                           BlockArrangement::Unordered,
+                           None,
+                           true,
+                           10,
+                           false,
+                           &Arc::new(None),
+    );
+
+    lot.encode(1);
+}
+
 proptest! {
     #[test]
     #[should_panic]
