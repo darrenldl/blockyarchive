@@ -76,9 +76,8 @@ for ver in ${VERSIONS[*]}; do
 
         echo "Corrupting at $parity_shards random positions, burst error size is $burst"
         for (( p=0; p < $parity_shards; p++ )); do
-            pos=$(( (RANDOM % $file_size) / $block_size ))
-            # echo "#$p corruption, corrupting byte at position : $pos"
-            corrupt $pos $block_size $burst $container_name
+            pos=$(( RANDOM % $file_size ))
+            burst_corrupt $pos $block_size $burst $container_name
         done
 
         echo -n "Repairing"
