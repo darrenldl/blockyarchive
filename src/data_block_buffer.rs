@@ -84,6 +84,7 @@ pub struct Slot<'a> {
 
 struct Lot {
     version: Version,
+    uid: [u8; SBX_FILE_UID_LEN],
     input_type: InputType,
     output_type: OutputType,
     arrangement: BlockArrangement,
@@ -152,6 +153,7 @@ impl Lot {
 
         Lot {
             version,
+            uid: *uid,
             input_type,
             output_type,
             arrangement,
@@ -203,6 +205,8 @@ impl Lot {
     fn cancel_last_slot(&mut self) {
         assert!(self.slots_used > 0);
         assert!(self.slots_used <= self.directly_writable_slots);
+
+        self.reset_slot(self.slots_used);
 
         self.slots_used -= 1;
     }
@@ -377,10 +381,25 @@ impl Lot {
         }
     }
 
+    fn reset_slot(&mut self, slot_index: usize) {
+        let block = &mut self.blocks[slot_index];
+        block.set_version(self.version);
+        block.set_uid(self.uid);
+        block.set_seq_num(1);
+
+        self.slot_write_pos[slot_index] = None;
+        self.slot_content_len_exc_header[slot_index] = None;
+        self.slot_is_padding[slot_index] = false;
+    }
+
     fn reset(&mut self) {
         self.slots_used = 0;
 
         self.padding_byte_count_in_non_padding_blocks = 0;
+
+        for pos in self.slot_write_pos.iter_mut() {
+            *pos = None;
+        }
 
         for len in self.slot_content_len_exc_header.iter_mut() {
             *len = None;
