@@ -191,4 +191,83 @@ proptest! {
             }
         }
     }
+
+    #[test]
+    fn pt_new_lot_stats(size in 1usize..1000,
+                        data in 1usize..128,
+                        parity in 1usize..128,
+                        burst in 1usize..100) {
+        {
+            let lot = Lot::new(Version::V17,
+                               None,
+                               InputType::Block,
+                               OutputType::Block,
+                               BlockArrangement::Unordered,
+                               None,
+                               true,
+                               size,
+                               false,
+                               &Arc::new(None),
+            );
+
+            assert_eq!(lot.lot_size, size);
+            assert_eq!(lot.slots_used, 0);
+            assert_eq!(lot.padding_byte_count_in_non_padding_blocks, 0);
+            assert_eq!(lot.directly_writable_slots, size);
+        }
+        {
+            let lot = Lot::new(Version::V17,
+                               None,
+                               InputType::Block,
+                               OutputType::Block,
+                               BlockArrangement::Unordered,
+                               Some((data, parity, burst)),
+                               true,
+                               size,
+                               false,
+                               &Arc::new(None),
+            );
+
+            assert_eq!(lot.lot_size, size);
+            assert_eq!(lot.slots_used, 0);
+            assert_eq!(lot.padding_byte_count_in_non_padding_blocks, 0);
+            assert_eq!(lot.directly_writable_slots, size);
+        }
+        {
+            let lot = Lot::new(Version::V17,
+                               None,
+                               InputType::Data,
+                               OutputType::Block,
+                               BlockArrangement::Unordered,
+                               None,
+                               true,
+                               size,
+                               false,
+                               &Arc::new(None),
+            );
+
+            assert_eq!(lot.lot_size, size);
+            assert_eq!(lot.slots_used, 0);
+            assert_eq!(lot.padding_byte_count_in_non_padding_blocks, 0);
+            assert_eq!(lot.directly_writable_slots, size);
+        }
+        {
+            let lot = Lot::new(Version::V17,
+                               None,
+                               InputType::Data,
+                               OutputType::Block,
+                               BlockArrangement::Unordered,
+                               Some((data, parity, burst)),
+                               true,
+                               size,
+                               false,
+                               &Arc::new(None),
+            );
+
+            assert_eq!(lot.lot_size, size);
+            assert_eq!(lot.slots_used, 0);
+            assert_eq!(lot.padding_byte_count_in_non_padding_blocks, 0);
+            assert_eq!(lot.directly_writable_slots, data);
+        }
+    }
 }
