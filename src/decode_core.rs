@@ -1782,7 +1782,7 @@ pub fn decode(
 fn hash(
     param: &Param,
     ref_block: &Block,
-    ctrlc_stop_flag: &AtomicBool,
+    ctrlc_stop_flag: &Arc<AtomicBool>,
 ) -> Result<Option<(HashStats, HashBytes)>, Error> {
     let hash_bytes: Option<HashBytes> = if ref_block.is_data() {
         None
@@ -1793,7 +1793,7 @@ fn hash(
         }
     };
 
-    let mut hash_ctx: hash::Ctx = match hash_bytes {
+    let mut hash_ctx = match hash_bytes {
         None => {
             return Ok(None);
         }
@@ -1828,31 +1828,37 @@ fn hash(
         param.json_printer.json_enabled(),
     );
 
-    let mut buffer: [u8; HASH_FILE_BLOCK_SIZE] = [0; HASH_FILE_BLOCK_SIZE];
-
-    let (to_writer, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
-    let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
 
     let (error_tx_reader, error_rx) = channel::<Error>();
-    let error_tx_writer = error_tx_reader.clone();
+    let (hash_bytes_tx, hash_bytes_rx) = channel();
 
     let worker_shutdown_barrier = Arc::new(Barrier::new(2));
 
     for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
-        to_reader.send(vec![0; HASH_FILE_BLOCK_SIZE]).unwrap();
+        to_reader.send(Some(vec![0; HASH_FILE_BLOCK_SIZE])).unwrap();
     }
 
     reporter.start();
 
     let reader_thread = {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+        let stats = Arc::clone(&stats);
+        let ctrlc_stop_flag = Arc::clone(ctrlc_stop_flag);
 
         thread::spawn(move || {
-            while let Some(mut buffer) = from_writer.recv().unwrap() {
+            while let Some(mut buffer) = from_hasher.recv().unwrap() {
+                break_if_atomic_bool!(ctrlc_stop_flag);
 
-                match reader.res(&mut buffer) {
+                match reader.read(&mut buffer) {
                     Ok(read_res) => {
-                        to_writer.send(Some((read_res.len-read, buffer))).unwrap();
+                        // update stats
+                        stats.lock().unwrap().bytes_processed += read_res.len_read as u64;
+
+                        to_hasher.send(Some((read_res.len_read, buffer))).unwrap();
+
+                        break_if_eof_seen!(read_res);
                     }
                     Err(e) => {
                         error_tx_reader.send(e).unwrap();
@@ -1861,37 +1867,55 @@ fn hash(
                 }
             }
 
-            worker_shutdown!(to_writer, shutdown_barrier);
+            worker_shutdown!(to_hasher, shutdown_barrier);
         })
     };
 
-    let writer_thread = {
+    let hasher_thread = {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
 
         thread::spawn(move || {
-            
+            while let Some((len, buffer)) = from_reader.recv().unwrap() {
+                // update hash context/state
+                hash_ctx.update(&buffer[..len]);
+
+                to_reader.send(Some(buffer)).unwrap();
+            }
+
+            hash_bytes_tx
+                .send(hash_ctx.finish_into_hash_bytes())
+                .unwrap();
+
+            worker_shutdown!(to_reader, shutdown_barrier);
         })
     };
 
-    loop {
-        break_if_atomic_bool!(ctrlc_stop_flag);
+    reader_thread.join().unwrap();
+    hasher_thread.join().unwrap();
 
-        let read_res = reader.read(&mut buffer)?;
-
-        // update hash context/state
-        hash_ctx.update(&buffer[0..read_res.len_read]);
-
-        // update stats
-        stats.lock().unwrap().bytes_processed += read_res.len_read as u64;
-
-        break_if_eof_seen!(read_res);
+    if let Ok(err) = error_rx.try_recv() {
+        return Err(err);
     }
+
+    // loop {
+    //     break_if_atomic_bool!(ctrlc_stop_flag);
+
+    //     let read_res = reader.read(&mut buffer)?;
+
+    //     // update hash context/state
+    //     hash_ctx.update(&buffer[0..read_res.len_read]);
+
+    //     // update stats
+    //     stats.lock().unwrap().bytes_processed += read_res.len_read as u64;
+
+    //     break_if_eof_seen!(read_res);
+    // }
 
     reporter.stop();
 
     let stats = stats.lock().unwrap().clone();
 
-    Ok(Some((stats, hash_ctx.finish_into_hash_bytes())))
+    Ok(Some((stats, hash_bytes_rx.recv().unwrap())))
 }
 
 pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
