@@ -1837,7 +1837,9 @@ fn hash(
     let worker_shutdown_barrier = Arc::new(Barrier::new(2));
 
     for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
-        to_reader.send(Some(vec![0; HASH_FILE_BUFFER_SIZE])).unwrap();
+        to_reader
+            .send(Some(vec![0; HASH_FILE_BUFFER_SIZE]))
+            .unwrap();
     }
 
     reporter.start();
