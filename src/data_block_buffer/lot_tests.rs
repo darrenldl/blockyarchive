@@ -1127,6 +1127,8 @@ proptest! {
             let fill = std::cmp::min(size, fill);
 
             for _ in 0..tries {
+                assert!(!lot.active());
+
                 for _ in 0..fill {
                     let _ = lot.get_slot();
 
@@ -1138,6 +1140,8 @@ proptest! {
 
                     lot.cancel_slot();
                 }
+
+                assert!(!lot.active());
             }
         }
     }
