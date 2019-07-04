@@ -1,10 +1,10 @@
 #![cfg(test)]
 use super::*;
-use proptest::prelude::*;
-use crate::sbx_specs::{Version};
 use crate::multihash::hash;
-use crate::multihash::{HashType};
+use crate::multihash::HashType;
 use crate::sbx_block;
+use crate::sbx_specs::Version;
+use proptest::prelude::*;
 
 use crate::file_writer::{FileWriter, FileWriterParam};
 use crate::writer::{Writer, WriterType};
@@ -12,48 +12,51 @@ use crate::writer::{Writer, WriterType};
 #[test]
 #[should_panic]
 fn new_panics_if_version_inconsistent_with_data_par_burst1() {
-    Lot::new(Version::V17,
-             None,
-             InputType::Block,
-             OutputType::Block,
-             BlockArrangement::Unordered,
-             None,
-             true,
-             10,
-             false,
-             &Arc::new(None),
+    Lot::new(
+        Version::V17,
+        None,
+        InputType::Block,
+        OutputType::Block,
+        BlockArrangement::Unordered,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 }
 
 #[test]
 #[should_panic]
 fn new_panics_if_version_inconsistent_with_data_par_burst2() {
-    Lot::new(Version::V1,
-             None,
-             InputType::Block,
-             OutputType::Block,
-             BlockArrangement::Unordered,
-             Some((3, 2, 0)),
-             true,
-             10,
-             false,
-             &Arc::new(None),
+    Lot::new(
+        Version::V1,
+        None,
+        InputType::Block,
+        OutputType::Block,
+        BlockArrangement::Unordered,
+        Some((3, 2, 0)),
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 }
 
 #[test]
 #[should_panic]
 fn cancel_slot_panics_when_empty1() {
-    let mut lot = Lot::new(Version::V1,
-                           None,
-                           InputType::Block,
-                           OutputType::Block,
-                           BlockArrangement::Unordered,
-                           None,
-                           true,
-                           10,
-                           false,
-                           &Arc::new(None),
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Block,
+        OutputType::Block,
+        BlockArrangement::Unordered,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 
     lot.cancel_slot();
@@ -62,16 +65,17 @@ fn cancel_slot_panics_when_empty1() {
 #[test]
 #[should_panic]
 fn cancel_slot_panics_when_empty2() {
-    let mut lot = Lot::new(Version::V1,
-                           None,
-                           InputType::Block,
-                           OutputType::Block,
-                           BlockArrangement::Unordered,
-                           None,
-                           true,
-                           10,
-                           false,
-                           &Arc::new(None),
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Block,
+        OutputType::Block,
+        BlockArrangement::Unordered,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 
     let _ = lot.get_slot();
@@ -82,16 +86,17 @@ fn cancel_slot_panics_when_empty2() {
 
 #[test]
 fn hash_when_correct_arrangment1() {
-    let lot = Lot::new(Version::V1,
-                       None,
-                       InputType::Block,
-                       OutputType::Block,
-                       BlockArrangement::OrderedAndNoMissing,
-                       None,
-                       true,
-                       10,
-                       false,
-                       &Arc::new(None),
+    let lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Block,
+        OutputType::Block,
+        BlockArrangement::OrderedAndNoMissing,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 
     let mut hash_ctx = hash::Ctx::new(HashType::SHA256).unwrap();
@@ -101,16 +106,17 @@ fn hash_when_correct_arrangment1() {
 
 #[test]
 fn hash_when_correct_arrangment2() {
-    let lot = Lot::new(Version::V1,
-                       None,
-                       InputType::Block,
-                       OutputType::Block,
-                       BlockArrangement::OrderedButSomeMayBeMissing,
-                       None,
-                       true,
-                       10,
-                       false,
-                       &Arc::new(None),
+    let lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Block,
+        OutputType::Block,
+        BlockArrangement::OrderedButSomeMayBeMissing,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 
     let mut hash_ctx = hash::Ctx::new(HashType::SHA256).unwrap();
@@ -121,16 +127,17 @@ fn hash_when_correct_arrangment2() {
 #[test]
 #[should_panic]
 fn hash_panics_when_incorrect_arrangement() {
-    let lot = Lot::new(Version::V1,
-                           None,
-                           InputType::Block,
-                           OutputType::Block,
-                           BlockArrangement::Unordered,
-                           None,
-                           true,
-                           10,
-                           false,
-                           &Arc::new(None),
+    let lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Block,
+        OutputType::Block,
+        BlockArrangement::Unordered,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 
     let mut hash_ctx = hash::Ctx::new(HashType::SHA256).unwrap();
@@ -141,16 +148,17 @@ fn hash_panics_when_incorrect_arrangement() {
 #[test]
 #[should_panic]
 fn calc_slot_write_pos_panics_when_output_is_disabled() {
-    let mut lot = Lot::new(Version::V1,
-                           None,
-                           InputType::Block,
-                           OutputType::Disabled,
-                           BlockArrangement::Unordered,
-                           None,
-                           true,
-                           10,
-                           false,
-                           &Arc::new(None),
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Block,
+        OutputType::Disabled,
+        BlockArrangement::Unordered,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 
     lot.calc_slot_write_pos();
@@ -158,54 +166,62 @@ fn calc_slot_write_pos_panics_when_output_is_disabled() {
 
 #[test]
 fn write_does_not_panic_when_output_is_block() {
-    let mut lot = Lot::new(Version::V1,
-                           None,
-                           InputType::Block,
-                           OutputType::Block,
-                           BlockArrangement::Unordered,
-                           None,
-                           true,
-                           10,
-                           false,
-                           &Arc::new(None),
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Block,
+        OutputType::Block,
+        BlockArrangement::Unordered,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 
-    let mut writer = Writer::new(WriterType::File(FileWriter::new(
-        "tests/dummy",
-        FileWriterParam {
-            read: false,
-            append: false,
-            truncate: true,
-            buffered: false,
-        },
-    ).unwrap()));
+    let mut writer = Writer::new(WriterType::File(
+        FileWriter::new(
+            "tests/dummy",
+            FileWriterParam {
+                read: false,
+                append: false,
+                truncate: true,
+                buffered: false,
+            },
+        )
+        .unwrap(),
+    ));
 
     lot.write(false, &mut writer).unwrap();
 }
 
 #[test]
 fn write_does_not_panic_when_output_is_data() {
-    let mut lot = Lot::new(Version::V1,
-                           None,
-                           InputType::Block,
-                           OutputType::Data,
-                           BlockArrangement::Unordered,
-                           None,
-                           true,
-                           10,
-                           false,
-                           &Arc::new(None),
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Block,
+        OutputType::Data,
+        BlockArrangement::Unordered,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 
-    let mut writer = Writer::new(WriterType::File(FileWriter::new(
-        "tests/dummy",
-        FileWriterParam {
-            read: false,
-            append: false,
-            truncate: true,
-            buffered: false,
-        },
-    ).unwrap()));
+    let mut writer = Writer::new(WriterType::File(
+        FileWriter::new(
+            "tests/dummy",
+            FileWriterParam {
+                read: false,
+                append: false,
+                truncate: true,
+                buffered: false,
+            },
+        )
+        .unwrap(),
+    ));
 
     lot.write(false, &mut writer).unwrap();
 }
@@ -213,43 +229,48 @@ fn write_does_not_panic_when_output_is_data() {
 #[test]
 #[should_panic]
 fn write_panics_when_output_is_disabled() {
-    let mut lot = Lot::new(Version::V1,
-                       None,
-                       InputType::Block,
-                       OutputType::Disabled,
-                       BlockArrangement::Unordered,
-                       None,
-                       true,
-                       10,
-                       false,
-                       &Arc::new(None),
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Block,
+        OutputType::Disabled,
+        BlockArrangement::Unordered,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 
-    let mut writer = Writer::new(WriterType::File(FileWriter::new(
-        "tests/dummy",
-        FileWriterParam {
-            read: false,
-            append: false,
-            truncate: true,
-            buffered: false,
-        },
-    ).unwrap()));
+    let mut writer = Writer::new(WriterType::File(
+        FileWriter::new(
+            "tests/dummy",
+            FileWriterParam {
+                read: false,
+                append: false,
+                truncate: true,
+                buffered: false,
+            },
+        )
+        .unwrap(),
+    ));
 
     lot.write(false, &mut writer).unwrap();
 }
 
 #[test]
 fn encode_when_input_type_is_data_and_arrangement_is_ordered_and_no_missing() {
-    let mut lot = Lot::new(Version::V1,
-                           None,
-                           InputType::Data,
-                           OutputType::Disabled,
-                           BlockArrangement::OrderedAndNoMissing,
-                           None,
-                           true,
-                           10,
-                           false,
-                           &Arc::new(None),
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Data,
+        OutputType::Disabled,
+        BlockArrangement::OrderedAndNoMissing,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 
     lot.encode(1);
@@ -258,16 +279,17 @@ fn encode_when_input_type_is_data_and_arrangement_is_ordered_and_no_missing() {
 #[test]
 #[should_panic]
 fn encode_panics_when_input_type_is_block_and_arrangement_is_ordered_and_no_missing() {
-    let mut lot = Lot::new(Version::V1,
-                           None,
-                           InputType::Block,
-                           OutputType::Disabled,
-                           BlockArrangement::OrderedAndNoMissing,
-                           None,
-                           true,
-                           10,
-                           false,
-                           &Arc::new(None),
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Block,
+        OutputType::Disabled,
+        BlockArrangement::OrderedAndNoMissing,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 
     lot.encode(1);
@@ -276,16 +298,17 @@ fn encode_panics_when_input_type_is_block_and_arrangement_is_ordered_and_no_miss
 #[test]
 #[should_panic]
 fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing1() {
-    let mut lot = Lot::new(Version::V1,
-                           None,
-                           InputType::Data,
-                           OutputType::Disabled,
-                           BlockArrangement::OrderedButSomeMayBeMissing,
-                           None,
-                           true,
-                           10,
-                           false,
-                           &Arc::new(None),
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Data,
+        OutputType::Disabled,
+        BlockArrangement::OrderedButSomeMayBeMissing,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 
     lot.encode(1);
@@ -294,16 +317,17 @@ fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_m
 #[test]
 #[should_panic]
 fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing2() {
-    let mut lot = Lot::new(Version::V1,
-                           None,
-                           InputType::Data,
-                           OutputType::Disabled,
-                           BlockArrangement::Unordered,
-                           None,
-                           true,
-                           10,
-                           false,
-                           &Arc::new(None),
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Data,
+        OutputType::Disabled,
+        BlockArrangement::Unordered,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
     );
 
     lot.encode(1);
