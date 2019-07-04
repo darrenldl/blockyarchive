@@ -10,8 +10,40 @@ use crate::writer::{Writer, WriterType};
 
 #[test]
 #[should_panic]
+fn new_panics_if_version_inconsistent_with_data_par_burst1() {
+    Lot::new(Version::V1,
+             None,
+             InputType::Block,
+             OutputType::Block,
+             BlockArrangement::Unordered,
+             None,
+             true,
+             10,
+             false,
+             &Arc::new(None),
+    );
+}
+
+#[test]
+#[should_panic]
+fn new_panics_if_version_inconsistent_with_data_par_burst2() {
+    Lot::new(Version::V1,
+             None,
+             InputType::Block,
+             OutputType::Block,
+             BlockArrangement::Unordered,
+             Some((3, 2, 0)),
+             true,
+             10,
+             false,
+             &Arc::new(None),
+    );
+}
+
+#[test]
+#[should_panic]
 fn cancel_slot_panics_when_empty1() {
-    let mut lot = Lot::new(Version::V17,
+    let mut lot = Lot::new(Version::V1,
                            None,
                            InputType::Block,
                            OutputType::Block,
@@ -29,16 +61,16 @@ fn cancel_slot_panics_when_empty1() {
 #[test]
 #[should_panic]
 fn cancel_slot_panics_when_empty2() {
-    let mut lot = Lot::new(Version::V17,
-                       None,
-                       InputType::Block,
-                       OutputType::Block,
-                       BlockArrangement::Unordered,
-                       None,
-                       true,
-                       10,
-                       false,
-                       &Arc::new(None),
+    let mut lot = Lot::new(Version::V1,
+                           None,
+                           InputType::Block,
+                           OutputType::Block,
+                           BlockArrangement::Unordered,
+                           None,
+                           true,
+                           10,
+                           false,
+                           &Arc::new(None),
     );
 
     let _ = lot.get_slot();
@@ -49,7 +81,7 @@ fn cancel_slot_panics_when_empty2() {
 
 #[test]
 fn hash_when_correct_arrangment1() {
-    let lot = Lot::new(Version::V17,
+    let lot = Lot::new(Version::V1,
                        None,
                        InputType::Block,
                        OutputType::Block,
@@ -68,7 +100,7 @@ fn hash_when_correct_arrangment1() {
 
 #[test]
 fn hash_when_correct_arrangment2() {
-    let lot = Lot::new(Version::V17,
+    let lot = Lot::new(Version::V1,
                        None,
                        InputType::Block,
                        OutputType::Block,
@@ -88,7 +120,7 @@ fn hash_when_correct_arrangment2() {
 #[test]
 #[should_panic]
 fn hash_panics_when_incorrect_arrangement() {
-    let lot = Lot::new(Version::V17,
+    let lot = Lot::new(Version::V1,
                            None,
                            InputType::Block,
                            OutputType::Block,
@@ -107,7 +139,7 @@ fn hash_panics_when_incorrect_arrangement() {
 
 #[test]
 fn write_panics_when_output_is_block() {
-    let mut lot = Lot::new(Version::V17,
+    let mut lot = Lot::new(Version::V1,
                            None,
                            InputType::Block,
                            OutputType::Block,
@@ -134,7 +166,7 @@ fn write_panics_when_output_is_block() {
 
 #[test]
 fn write_panics_when_output_is_data() {
-    let mut lot = Lot::new(Version::V17,
+    let mut lot = Lot::new(Version::V1,
                            None,
                            InputType::Block,
                            OutputType::Data,
@@ -162,7 +194,7 @@ fn write_panics_when_output_is_data() {
 #[test]
 #[should_panic]
 fn write_panics_when_output_is_disabled() {
-    let mut lot = Lot::new(Version::V17,
+    let mut lot = Lot::new(Version::V1,
                        None,
                        InputType::Block,
                        OutputType::Disabled,
@@ -189,7 +221,7 @@ fn write_panics_when_output_is_disabled() {
 
 #[test]
 fn encode_when_input_type_is_data_and_arrangement_is_ordered_and_no_missing() {
-    let mut lot = Lot::new(Version::V17,
+    let mut lot = Lot::new(Version::V1,
                            None,
                            InputType::Data,
                            OutputType::Disabled,
@@ -207,7 +239,7 @@ fn encode_when_input_type_is_data_and_arrangement_is_ordered_and_no_missing() {
 #[test]
 #[should_panic]
 fn encode_panics_when_input_type_is_block_and_arrangement_is_ordered_and_no_missing() {
-    let mut lot = Lot::new(Version::V17,
+    let mut lot = Lot::new(Version::V1,
                            None,
                            InputType::Block,
                            OutputType::Disabled,
@@ -225,7 +257,7 @@ fn encode_panics_when_input_type_is_block_and_arrangement_is_ordered_and_no_miss
 #[test]
 #[should_panic]
 fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing1() {
-    let mut lot = Lot::new(Version::V17,
+    let mut lot = Lot::new(Version::V1,
                            None,
                            InputType::Data,
                            OutputType::Disabled,
@@ -243,7 +275,7 @@ fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_m
 #[test]
 #[should_panic]
 fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing2() {
-    let mut lot = Lot::new(Version::V17,
+    let mut lot = Lot::new(Version::V1,
                            None,
                            InputType::Data,
                            OutputType::Disabled,
@@ -265,7 +297,7 @@ proptest! {
                                              cancels in 1usize..1000) {
         let cancels = std::cmp::min(size, cancels);
 
-        let mut lot = Lot::new(Version::V17,
+        let mut lot = Lot::new(Version::V1,
                                None,
                                InputType::Block,
                                OutputType::Block,
@@ -291,7 +323,7 @@ proptest! {
                                           cancels in 1usize..1000) {
         let cancels = std::cmp::min(size, cancels);
 
-        let mut lot = Lot::new(Version::V17,
+        let mut lot = Lot::new(Version::V1,
                                None,
                                InputType::Block,
                                OutputType::Block,
@@ -321,7 +353,7 @@ proptest! {
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
-                    Lot::new(Version::V17,
+                    Lot::new(Version::V1,
                              None,
                              InputType::Block,
                              OutputType::Block,
@@ -380,7 +412,7 @@ proptest! {
                         parity in 1usize..128,
                         burst in 1usize..100) {
         {
-            let lot = Lot::new(Version::V17,
+            let lot = Lot::new(Version::V1,
                                None,
                                InputType::Block,
                                OutputType::Block,
@@ -416,7 +448,7 @@ proptest! {
             assert_eq!(lot.directly_writable_slots, size);
         }
         {
-            let lot = Lot::new(Version::V17,
+            let lot = Lot::new(Version::V1,
                                None,
                                InputType::Data,
                                OutputType::Block,
@@ -465,7 +497,7 @@ proptest! {
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
-                    Lot::new(Version::V17,
+                    Lot::new(Version::V1,
                              None,
                              InputType::Block,
                              OutputType::Block,
@@ -522,7 +554,7 @@ proptest! {
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
-                    Lot::new(Version::V17,
+                    Lot::new(Version::V1,
                              None,
                              InputType::Block,
                              OutputType::Block,
@@ -594,7 +626,7 @@ proptest! {
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
-                    Lot::new(Version::V17,
+                    Lot::new(Version::V1,
                              None,
                              InputType::Block,
                              OutputType::Block,
@@ -650,7 +682,7 @@ proptest! {
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
-                    Lot::new(Version::V17,
+                    Lot::new(Version::V1,
                              None,
                              InputType::Block,
                              OutputType::Block,
@@ -724,7 +756,7 @@ proptest! {
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
-                    Lot::new(Version::V17,
+                    Lot::new(Version::V1,
                              None,
                              InputType::Data,
                              OutputType::Block,
