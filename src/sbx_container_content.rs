@@ -130,7 +130,7 @@ pub fn hash(
                                 seq_num,
                                 data_par_burst,
                             ) {
-                                buffer.cancel_last_slot();
+                                buffer.cancel_slot();
                             } else {
                                 if decode_successful {
                                     let is_last_data_block = bytes_remaining <= data_chunk_size;

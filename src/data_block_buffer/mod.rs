@@ -206,7 +206,7 @@ impl Lot {
         }
     }
 
-    fn cancel_last_slot(&mut self) {
+    fn cancel_slot(&mut self) {
         assert!(self.slots_used > 0);
         assert!(self.slots_used <= self.directly_writable_slots);
 
@@ -628,7 +628,7 @@ impl DataBlockBuffer {
         }
     }
 
-    pub fn cancel_last_slot(&mut self) {
+    pub fn cancel_slot(&mut self) {
         assert!(self.active());
 
         let shift_back_one_slot = self.is_full() || self.lots[self.lots_used].slots_used == 0;
@@ -637,7 +637,7 @@ impl DataBlockBuffer {
             self.lots_used -= 1;
         }
 
-        self.lots[self.lots_used].cancel_last_slot();
+        self.lots[self.lots_used].cancel_slot();
     }
 
     pub fn encode(&mut self) -> Result<(), Error> {

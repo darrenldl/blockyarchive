@@ -10,7 +10,7 @@ use crate::writer::{Writer, WriterType};
 
 #[test]
 #[should_panic]
-fn cancel_last_slot_panics_when_empty1() {
+fn cancel_slot_panics_when_empty1() {
     let mut lot = Lot::new(Version::V17,
                            None,
                            InputType::Block,
@@ -23,12 +23,12 @@ fn cancel_last_slot_panics_when_empty1() {
                            &Arc::new(None),
     );
 
-    lot.cancel_last_slot();
+    lot.cancel_slot();
 }
 
 #[test]
 #[should_panic]
-fn cancel_last_slot_panics_when_empty2() {
+fn cancel_slot_panics_when_empty2() {
     let mut lot = Lot::new(Version::V17,
                        None,
                        InputType::Block,
@@ -43,8 +43,8 @@ fn cancel_last_slot_panics_when_empty2() {
 
     let _ = lot.get_slot();
 
-    lot.cancel_last_slot();
-    lot.cancel_last_slot();
+    lot.cancel_slot();
+    lot.cancel_slot();
 }
 
 #[test]
@@ -261,7 +261,7 @@ fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_m
 proptest! {
     #[test]
     #[should_panic]
-    fn pt_cancel_last_slot_panics_when_empty(size in 1usize..1000,
+    fn pt_cancel_slot_panics_when_empty(size in 1usize..1000,
                                              cancels in 1usize..1000) {
         let cancels = std::cmp::min(size, cancels);
 
@@ -282,12 +282,12 @@ proptest! {
         }
 
         for _ in 0..cancels+1 {
-            lot.cancel_last_slot();
+            lot.cancel_slot();
         }
     }
 
     #[test]
-    fn pt_cancel_last_slot_when_not_empty(size in 1usize..1000,
+    fn pt_cancel_slot_when_not_empty(size in 1usize..1000,
                                           cancels in 1usize..1000) {
         let cancels = std::cmp::min(size, cancels);
 
@@ -308,7 +308,7 @@ proptest! {
         }
 
         for _ in 0..cancels {
-            lot.cancel_last_slot();
+            lot.cancel_slot();
         }
     }
 
@@ -353,7 +353,7 @@ proptest! {
                 }
 
                 for _ in 0..size {
-                    lot.cancel_last_slot();
+                    lot.cancel_slot();
                 }
             }
         }
@@ -392,7 +392,7 @@ proptest! {
                 }
 
                 for _ in 0..size {
-                    lot.cancel_last_slot();
+                    lot.cancel_slot();
                 }
             }
         }
@@ -511,7 +511,7 @@ proptest! {
                 for i in (0..cancels).rev() {
                     assert_eq!(lot.slots_used, i+1);
 
-                    lot.cancel_last_slot();
+                    lot.cancel_slot();
 
                     assert_eq!(lot.slots_used, i);
                 }
@@ -542,7 +542,7 @@ proptest! {
                 for i in (0..cancels).rev() {
                     assert_eq!(lot.slots_used, i+1);
 
-                    lot.cancel_last_slot();
+                    lot.cancel_slot();
 
                     assert_eq!(lot.slots_used, i);
                 }

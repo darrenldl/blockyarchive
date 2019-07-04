@@ -917,7 +917,7 @@ pub fn decode(
                                     bytes_processed += read_res.len_read as u64;
 
                                     if read_res.eof_seen {
-                                        buffer.cancel_last_slot();
+                                        buffer.cancel_slot();
                                         run = false;
                                         break;
                                     }
@@ -943,13 +943,13 @@ pub fn decode(
                                             }
                                         }
                                         Err(_) => {
-                                            buffer.cancel_last_slot();
+                                            buffer.cancel_slot();
                                             blocks_decode_failed += 1;
                                         }
                                     }
                                 }
                                 Err(e) => {
-                                    buffer.cancel_last_slot();
+                                    buffer.cancel_slot();
                                     stop_run_forward_error!(run => error_tx_reader => e);
                                 }
                             }
@@ -1208,7 +1208,7 @@ pub fn decode(
                                                 }
 
                                                 // save space by not storing parity blocks
-                                                buffer.cancel_last_slot();
+                                                buffer.cancel_slot();
                                             } else {
                                                 if decode_successful {
                                                     data_blocks_decoded += 1;
@@ -1511,7 +1511,7 @@ pub fn decode(
                                             //         parity_blocks_decoded += 1;
 
                                             //         // save space by not storing parity blocks
-                                            //         buffer.cancel_last_slot();
+                                            //         buffer.cancel_slot();
                                             //     } else {
                                             //         data_blocks_decoded += 1;
                                             //     }
@@ -1525,7 +1525,7 @@ pub fn decode(
                                             //         parity_blocks_failed_this_iteration += 1;
 
                                             //         // save space by not storing parity blocks
-                                            //         buffer.cancel_last_slot();
+                                            //         buffer.cancel_slot();
                                             //     } else {
                                             //         data_blocks_failed_this_iteration += 1;
                                             //         data_blocks_failed += 1;
@@ -1542,7 +1542,7 @@ pub fn decode(
                                             // }
 
                                             if cancel_slot {
-                                                buffer.cancel_last_slot();
+                                                buffer.cancel_slot();
                                             } else {
                                                 if let Some(count) = total_data_chunk_count {
                                                     if data_blocks_decoded + data_blocks_failed

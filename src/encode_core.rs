@@ -662,7 +662,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                             bytes_processed += read_res.len_read as u64;
 
                             if read_res.len_read == 0 {
-                                buffer.cancel_last_slot();
+                                buffer.cancel_slot();
                                 run = false;
                                 break;
                             }
