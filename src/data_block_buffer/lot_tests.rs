@@ -11,7 +11,7 @@ use crate::writer::{Writer, WriterType};
 #[test]
 #[should_panic]
 fn new_panics_if_version_inconsistent_with_data_par_burst1() {
-    Lot::new(Version::V1,
+    Lot::new(Version::V17,
              None,
              InputType::Block,
              OutputType::Block,
@@ -492,8 +492,6 @@ proptest! {
                                          parity in 1usize..128,
                                          burst in 1usize..100,
                                          tries in 2usize..100) {
-        let cancels = std::cmp::min(size, cancels);
-
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -521,6 +519,15 @@ proptest! {
                              &Arc::new(None),
                     )
                 };
+
+            let size =
+                if lot_case == 0 {
+                    size
+                } else {
+                    data + parity
+                };
+
+            let cancels = std::cmp::min(size, cancels);
 
             for _ in 0..tries {
                 for i in 0..cancels {
@@ -801,16 +808,20 @@ proptest! {
                 let version = lot.version;
                 let uid = lot.uid;
 
-                match lot.get_slot() {
-                    GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(block, _data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
-                            assert_eq!(block.get_version(), version);
-                            assert_eq!(block.get_uid(), uid);
-                            assert_eq!(block.get_seq_num(), 1);
+                assert_eq!(lot.slots_used, 0);
 
-                            assert_eq!(*content_len_exc_header, None);
-                        },
+                for _ in 0..size {
+                    match lot.get_slot() {
+                        GetSlotResult::None => panic!(),
+                        GetSlotResult::Some(block, _data, content_len_exc_header)
+                            | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                                assert_eq!(block.get_version(), version);
+                                assert_eq!(block.get_uid(), uid);
+                                assert_eq!(block.get_seq_num(), 1);
+
+                                assert_eq!(*content_len_exc_header, None);
+                            },
+                    }
                 }
             }
         }

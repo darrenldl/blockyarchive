@@ -5,3 +5,4 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc e140c2ebb0186e4e7bc2fc5241e8447458981499b56a7f406994abbbcfaa8725 # shrinks to size = 1
+cc 3e3bc0cf8520b6f0882b9bd8263d5fe54340ad6256666fb0464a66e10e358199 # shrinks to size = 1, data = 2, parity = 1, burst = 1, fill = 1, tries = 2
