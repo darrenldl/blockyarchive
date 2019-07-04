@@ -459,7 +459,7 @@ proptest! {
                              true,
                              size,
                              false,
-                             &Arc::new(None),
+                             &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
 
@@ -531,7 +531,7 @@ proptest! {
                                true,
                                size,
                                false,
-                               &Arc::new(None),
+                               &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
             );
 
             assert_eq!(lot.lot_size, data + parity);
@@ -567,7 +567,7 @@ proptest! {
                                true,
                                size,
                                false,
-                               &Arc::new(None),
+                               &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
             );
 
             assert_eq!(lot.lot_size, data + parity);
@@ -608,7 +608,7 @@ proptest! {
                              true,
                              size,
                              false,
-                             &Arc::new(None),
+                             &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
 
@@ -672,7 +672,7 @@ proptest! {
                              true,
                              size,
                              false,
-                             &Arc::new(None),
+                             &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
 
@@ -753,7 +753,7 @@ proptest! {
                              true,
                              size,
                              false,
-                             &Arc::new(None),
+                             &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
 
@@ -813,7 +813,7 @@ proptest! {
                              true,
                              size,
                              false,
-                             &Arc::new(None),
+                             &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
 
@@ -891,7 +891,7 @@ proptest! {
                              true,
                              size,
                              false,
-                             &Arc::new(None),
+                             &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
 
@@ -956,7 +956,7 @@ proptest! {
                              true,
                              size,
                              false,
-                             &Arc::new(None),
+                             &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
 
