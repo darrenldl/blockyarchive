@@ -431,8 +431,8 @@ proptest! {
 
     #[test]
     fn pt_get_slot_result(size in 1usize..1000,
-                          data in 1usize..128,
-                          parity in 1usize..128,
+                          data in 1usize..20,
+                          parity in 1usize..20,
                           burst in 1usize..100,
                           tries in 2usize..100) {
         for lot_case in 0..2 {
@@ -500,8 +500,8 @@ proptest! {
 
     #[test]
     fn pt_new_lot_stats(size in 1usize..1000,
-                        data in 1usize..128,
-                        parity in 1usize..128,
+                        data in 1usize..20,
+                        parity in 1usize..20,
                         burst in 1usize..100) {
         {
             let lot = Lot::new(Version::V1,
@@ -580,8 +580,8 @@ proptest! {
     #[test]
     fn pt_get_slot_and_cancel_slot_stats(size in 1usize..1000,
                                          cancels in 1usize..1000,
-                                         data in 1usize..128,
-                                         parity in 1usize..128,
+                                         data in 1usize..20,
+                                         parity in 1usize..20,
                                          burst in 1usize..100,
                                          tries in 2usize..100) {
         for lot_case in 0..2 {
@@ -644,11 +644,11 @@ proptest! {
     #[test]
     fn pt_cancel_slot_resets_slot_correctly(size in 1usize..1000,
                                             cancels in 1usize..1000,
-                                            data in 1usize..128,
-                                            parity in 1usize..128,
+                                            data in 1usize..20,
+                                            parity in 1usize..20,
                                             burst in 1usize..100,
                                             tries in 2usize..100) {
-        for lot_case in 0..2 {
+        for lot_case in 1..2 {
             let mut lot =
                 if lot_case == 0 {
                     Lot::new(Version::V1,
@@ -726,8 +726,8 @@ proptest! {
 
     #[test]
     fn pt_new_slots_are_initialized_correctly(size in 1usize..1000,
-                                              data in 1usize..128,
-                                              parity in 1usize..128,
+                                              data in 1usize..20,
+                                              parity in 1usize..20,
                                               burst in 1usize..100) {
         for lot_case in 0..2 {
             let mut lot =
@@ -785,8 +785,8 @@ proptest! {
 
     #[test]
     fn pt_slots_are_reset_correctly_after_lot_reset(size in 1usize..1000,
-                                                    data in 1usize..128,
-                                                    parity in 1usize..128,
+                                                    data in 1usize..20,
+                                                    parity in 1usize..20,
                                                     burst in 1usize..100,
                                                     fill in 1usize..1000) {
         for lot_case in 0..2 {
@@ -863,8 +863,8 @@ proptest! {
 
     #[test]
     fn pt_stats_are_reset_correctly_after_lot_reset(size in 1usize..1000,
-                                                    data in 1usize..128,
-                                                    parity in 1usize..128,
+                                                    data in 1usize..20,
+                                                    parity in 1usize..20,
                                                     burst in 1usize..100,
                                                     fill in 1usize..1000) {
         for lot_case in 0..2 {
@@ -928,8 +928,8 @@ proptest! {
     #[test]
     fn pt_data_padding_parity_block_count_result_is_correct(size in 1usize..1000,
                                                             lot_start_seq_num in 1u32..1000,
-                                                            data in 1usize..128,
-                                                            parity in 1usize..128,
+                                                            data in 1usize..20,
+                                                            parity in 1usize..20,
                                                             burst in 1usize..100,
                                                             fill in 1usize..1000) {
         for lot_case in 0..2 {
