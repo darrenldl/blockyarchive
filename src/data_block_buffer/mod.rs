@@ -317,7 +317,7 @@ impl Lot {
                         data_par,
                     )
                 }
-                OutputType::Disabled => panic!("Output is disabled"),
+                OutputType::Disabled => panic!(),
             };
 
             self.slot_write_pos[slot_index] = write_pos;
@@ -478,7 +478,7 @@ impl Lot {
                         let check_buffer = match self.output_type {
                             OutputType::Block => &mut self.check_buffer,
                             OutputType::Data => &mut self.check_buffer[..self.data_size],
-                            OutputType::Disabled => panic!("Output is disabled"),
+                            OutputType::Disabled => panic!(),
                         };
 
                         let read_res = writer.read(check_buffer).unwrap()?;
@@ -507,7 +507,7 @@ impl Lot {
                             OutputType::Data => {
                                 read_res.eof_seen || misc_utils::buffer_is_blank(check_buffer)
                             }
-                            OutputType::Disabled => panic!("Output is disabled"),
+                            OutputType::Disabled => panic!(),
                         };
 
                         if !do_write {
@@ -524,7 +524,7 @@ impl Lot {
                                 Some(len) => &data[..len],
                             }
                         }
-                        OutputType::Disabled => panic!("Output is diabled"),
+                        OutputType::Disabled => panic!(),
                     };
 
                     writer.write(slot)?;
