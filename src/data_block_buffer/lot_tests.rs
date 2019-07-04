@@ -547,7 +547,6 @@ proptest! {
                     )
                 };
 
-
             for _ in 0..tries {
                 for _ in 0..cancels {
                     match lot.get_slot() {
@@ -563,11 +562,11 @@ proptest! {
                     }
                 }
 
+                let version = lot.version;
+                let uid = lot.uid;
+
                 for _ in 0..cancels {
                     lot.cancel_slot();
-
-                    let version = lot.version;
-                    let uid = lot.uid;
 
                     match lot.get_slot() {
                         GetSlotResult::None => panic!(),
@@ -582,6 +581,58 @@ proptest! {
                     }
 
                     lot.cancel_slot();
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn pt_new_slots_are_initialized_correctly(size in 1usize..1000,
+                                              data in 1usize..128,
+                                              parity in 1usize..128,
+                                              burst in 1usize..100) {
+        for lot_case in 0..2 {
+            let mut lot =
+                if lot_case == 0 {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Block,
+                             OutputType::Block,
+                             BlockArrangement::Unordered,
+                             None,
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                } else {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Block,
+                             OutputType::Block,
+                             BlockArrangement::Unordered,
+                             Some((data, parity, burst)),
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                };
+
+            let version = lot.version;
+            let uid = lot.uid;
+
+            for _ in 0..size {
+                match lot.get_slot() {
+                    GetSlotResult::None => {},
+                    GetSlotResult::Some(block, _data, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                            assert_eq!(block.get_version(), version);
+                            assert_eq!(block.get_uid(), uid);
+                            assert_eq!(block.get_seq_num(), 1);
+
+                            assert_eq!(*content_len_exc_header, None);
+                        },
                 }
             }
         }
