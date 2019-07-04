@@ -309,7 +309,10 @@ fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_m
 }
 
 proptest! {
-    #[test]
+    #![proptest_config(ProptestConfig {
+        cases: 1_000, .. ProptestConfig::default()
+    })]
+
     #[should_panic]
     fn pt_cancel_slot_panics_when_empty(size in 1usize..1000,
                                              cancels in 1usize..1000) {
@@ -855,6 +858,81 @@ proptest! {
 
             assert_eq!(lot.slots_used, 0);
             assert_eq!(lot.padding_byte_count_in_non_padding_blocks, 0);
+        }
+    }
+
+    #[test]
+    fn pt_data_padding_parity_block_count_result_is_correct(size in 1usize..1000,
+                                                            data in 1usize..128,
+                                                            parity in 1usize..128,
+                                                            burst in 1usize..100,
+                                                            mut seq_nums: Vec<u32>,
+                                                            fill in 1usize..1000) {
+        for lot_case in 0..2 {
+            let mut lot =
+                if lot_case == 0 {
+                    Lot::new(Version::V1,
+                             None,
+                             InputType::Data,
+                             OutputType::Block,
+                             BlockArrangement::Unordered,
+                             None,
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                } else {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Data,
+                             OutputType::Block,
+                             BlockArrangement::Unordered,
+                             Some((data, parity, burst)),
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                };
+
+            let writable_slots =
+                if lot_case == 0 {
+                    size
+                } else {
+                    data
+                };
+
+            let fill = std::cmp::min(writable_slots, fill);
+
+            let data_par_burst =
+                if lot_case == 0 {
+                    None
+                } else {
+                    Some((data, parity, burst))
+                };
+
+            seq_nums.push(1);
+
+            let seq_num_count = seq_nums.len();
+
+            for i in 0..fill {
+                match lot.get_slot() {
+                    GetSlotResult::None => panic!(),
+                    GetSlotResult::Some(block, _data, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                            block.set_seq_num(seq_nums[i % seq_num_count]);
+
+                            *content_len_exc_header = Some(100);
+                        },
+                }
+            }
+
+            let (d, pad, p) = lot.data_padding_parity_block_count();
+
+            assert_eq!(d, fill);
+            assert_eq!(pad, 0);
+            assert_eq!(p, 0);
         }
     }
 }
