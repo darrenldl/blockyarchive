@@ -1,7 +1,6 @@
 use rayon::prelude::*;
 use reed_solomon_erasure::ReedSolomon;
 use smallvec::SmallVec;
-use std::cmp::min;
 use std::io::SeekFrom;
 use std::sync::Arc;
 
@@ -423,7 +422,7 @@ impl Lot {
     fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
         let data = match self.data_par_burst {
             None => self.slots_used,
-            Some((data, _, _)) => min(data, self.slots_used),
+            Some((data, _, _)) => std::cmp::min(data, self.slots_used),
         };
 
         let mut padding = 0;
