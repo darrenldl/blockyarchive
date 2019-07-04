@@ -1009,4 +1009,75 @@ proptest! {
             }
         }
     }
+
+    #[test]
+    fn pt_encode_updates_stats_and_blocks_correctly(size in 1usize..1000,
+                                                    lot_start_seq_num in 1u32..1000,
+                                                    data in 1usize..30,
+                                                    parity in 1usize..30,
+                                                    burst in 1usize..100,
+                                                    fill in 1usize..1000) {
+        for lot_case in 0..2 {
+            let mut lot =
+                if lot_case == 0 {
+                    Lot::new(Version::V1,
+                             None,
+                             InputType::Data,
+                             OutputType::Block,
+                             BlockArrangement::OrderedAndNoMissing,
+                             None,
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                } else {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Data,
+                             OutputType::Block,
+                             BlockArrangement::OrderedAndNoMissing,
+                             Some((data, parity, burst)),
+                             true,
+                             size,
+                             false,
+                             &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
+                    )
+                };
+
+            let writable_slots =
+                if lot_case == 0 {
+                    size
+                } else {
+                    data
+                };
+
+            let size =
+                if lot_case == 0 {
+                    size
+                } else {
+                    data + parity
+                };
+
+            let fill = std::cmp::min(writable_slots, fill);
+
+            assert_eq!(lot.slots_used, 0);
+
+            for _ in 0..fill {
+                let _ = lot.get_slot();
+            }
+
+            lot.encode(lot_start_seq_num);
+
+            if lot_case == 0 {
+                assert_eq!(lot.slots_used, fill);
+            } else {
+                assert_eq!(lot.slots_used, size);
+            }
+
+            for i in 0..lot.slots_used {
+                assert_eq!(lot.blocks[i].get_seq_num(), lot_start_seq_num + i as u32);
+            }
+        }
+    }
 }
