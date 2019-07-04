@@ -129,7 +129,7 @@ impl Lot {
         skip_good: bool,
         rs_codec: &Arc<Option<ReedSolomon>>,
     ) -> Self {
-        assert!(lot_size > 0);
+        assert!(default_lot_size > 0);
 
         match data_par_burst {
             None => assert!(!ver_uses_rs(version)),
