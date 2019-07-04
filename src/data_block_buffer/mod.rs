@@ -138,6 +138,15 @@ impl Lot {
             Some(_) => assert!(ver_uses_rs(version)),
         }
 
+        match (data_par_burst, rs_codec) {
+            (None, None) => {}
+            (Some((data, par, _)), Some(codec)) => {
+                assert!(data == codec.data_shard_count());
+                assert!(parity == codec.parity_shard_count());
+            }
+            _ => panic!(),
+        }
+
         let lot_size = match data_par_burst {
             None => default_lot_size,
             Some((data, parity, _)) => data + parity,
