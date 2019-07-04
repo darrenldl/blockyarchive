@@ -138,13 +138,18 @@ impl Lot {
             Some(_) => assert!(ver_uses_rs(version)),
         }
 
-        match (data_par_burst, rs_codec) {
-            (None, None) => {}
-            (Some((data, par, _)), Some(codec)) => {
-                assert!(data == codec.data_shard_count());
-                assert!(parity == codec.parity_shard_count());
+        match data_par_burst {
+            None => match **rs_codec {
+                None => {},
+                Some(_) => panic!(),
+            },
+            Some((data, par, _)) => match **rs_codec {
+                None => panic!(),
+                Some(ref rs_codec) => {
+                    assert!(data == rs_codec.data_shard_count());
+                    assert!(par == rs_codec.parity_shard_count());
+                }
             }
-            _ => panic!(),
         }
 
         let lot_size = match data_par_burst {
@@ -236,6 +241,8 @@ impl Lot {
     }
 
     fn fill_in_padding(&mut self) {
+        assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing);
+
         if self.active() {
             for i in 0..self.slots_used {
                 if let Some(len) = self.slot_content_len_exc_header[i] {
@@ -269,6 +276,8 @@ impl Lot {
     }
 
     fn rs_encode(&mut self) {
+        assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing);
+
         if self.active() {
             if let Some(ref rs_codec) = *self.rs_codec {
                 assert!(self.slots_used == rs_codec.data_shard_count());
@@ -338,6 +347,8 @@ impl Lot {
     }
 
     fn set_block_seq_num_based_on_lot_start_seq_num(&mut self, lot_start_seq_num: u32) {
+        assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing);
+
         for slot_index in 0..self.slots_used {
             if slot_index < self.slots_used {
                 let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
