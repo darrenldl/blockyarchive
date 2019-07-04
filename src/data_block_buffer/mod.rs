@@ -5,7 +5,7 @@ use std::io::SeekFrom;
 use std::sync::Arc;
 
 use crate::general_error::Error;
-use crate::sbx_specs::{Version, SBX_FIRST_DATA_SEQ_NUM, SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM};
+use crate::sbx_specs::{Version, SBX_FIRST_DATA_SEQ_NUM, SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM, ver_uses_rs};
 
 use crate::sbx_block::{calc_data_block_write_pos, calc_data_chunk_write_pos, Block, BlockType};
 
@@ -130,6 +130,11 @@ impl Lot {
         rs_codec: &Arc<Option<ReedSolomon>>,
     ) -> Self {
         assert!(lot_size > 0);
+
+        match data_par_burst {
+            None => assert!(!ver_uses_rs(version)),
+            Some(_) => assert!(ver_uses_rs(version)),
+        }
 
         let block_size = ver_to_block_size(version);
         let data_size = ver_to_data_size(version);
@@ -544,6 +549,11 @@ impl DataBlockBuffer {
         let lot_count = num_cpus::get() * LOT_COUNT_PER_CPU;
 
         assert!(lot_count > 0);
+
+        match data_par_burst {
+            None => assert!(!ver_uses_rs(version)),
+            Some(_) => assert!(ver_uses_rs(version)),
+        }
 
         let mut lots = Vec::with_capacity(lot_count);
 
