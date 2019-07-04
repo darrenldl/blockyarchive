@@ -462,49 +462,33 @@ proptest! {
                                          tries in 2usize..100) {
         let cancels = std::cmp::min(size, cancels);
 
-        {
-            let mut lot = Lot::new(Version::V17,
-                                   None,
-                                   InputType::Block,
-                                   OutputType::Block,
-                                   BlockArrangement::Unordered,
-                                   None,
-                                   true,
-                                   size,
-                                   false,
-                                   &Arc::new(None),
-            );
-
-            for _ in 0..tries {
-                for i in 0..cancels {
-                    assert_eq!(lot.slots_used, i);
-
-                    let _ = lot.get_slot();
-
-                    assert_eq!(lot.slots_used, i+1);
-                }
-
-                for i in (0..cancels).rev() {
-                    assert_eq!(lot.slots_used, i+1);
-
-                    lot.cancel_slot();
-
-                    assert_eq!(lot.slots_used, i);
-                }
-            }
-        }
-        {
-            let mut lot = Lot::new(Version::V17,
-                                   None,
-                                   InputType::Block,
-                                   OutputType::Block,
-                                   BlockArrangement::Unordered,
-                                   Some((data, parity, burst)),
-                                   true,
-                                   size,
-                                   false,
-                                   &Arc::new(None),
-            );
+        for lot_case in 0..2 {
+            let mut lot =
+                if lot_case == 0 {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Block,
+                             OutputType::Block,
+                             BlockArrangement::Unordered,
+                             None,
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                } else {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Block,
+                             OutputType::Block,
+                             BlockArrangement::Unordered,
+                             Some((data, parity, burst)),
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                };
 
             for _ in 0..tries {
                 for i in 0..cancels {
@@ -535,18 +519,34 @@ proptest! {
                                             tries in 2usize..100) {
         let cancels = std::cmp::min(size, cancels);
 
-        {
-            let mut lot = Lot::new(Version::V17,
-                                   None,
-                                   InputType::Block,
-                                   OutputType::Block,
-                                   BlockArrangement::Unordered,
-                                   None,
-                                   true,
-                                   size,
-                                   false,
-                                   &Arc::new(None),
-            );
+        for lot_case in 0..2 {
+            let mut lot =
+                if lot_case == 0 {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Block,
+                             OutputType::Block,
+                             BlockArrangement::Unordered,
+                             None,
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                } else {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Block,
+                             OutputType::Block,
+                             BlockArrangement::Unordered,
+                             Some((data, parity, burst)),
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                };
+
 
             for _ in 0..tries {
                 for _ in 0..cancels {
