@@ -711,4 +711,76 @@ proptest! {
             }
         }
     }
+
+    #[test]
+    fn pt_stats_are_reset_correctly_after_lot_reset(size in 1usize..1000,
+                                                    data in 1usize..128,
+                                                    parity in 1usize..128,
+                                                    burst in 1usize..100,
+                                                    fill in 1usize..1000,
+                                                    tries in 2usize..100) {
+        let fill = std::cmp::min(size, fill);
+
+        for lot_case in 0..2 {
+            let mut lot =
+                if lot_case == 0 {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Data,
+                             OutputType::Block,
+                             BlockArrangement::Unordered,
+                             None,
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                } else {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Data,
+                             OutputType::Block,
+                             BlockArrangement::Unordered,
+                             Some((data, parity, burst)),
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                };
+
+            for _ in 0..tries {
+                for _ in 0..fill {
+                    match lot.get_slot() {
+                        GetSlotResult::None => {},
+                        GetSlotResult::Some(block, _data, content_len_exc_header)
+                            | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                                block.set_version(Version::V1);
+                                block.set_uid([0xFF; SBX_FILE_UID_LEN]);
+                                block.set_seq_num(2000);
+
+                                *content_len_exc_header = Some(100);
+                            },
+                    }
+                }
+
+                lot.reset();
+
+                let version = lot.version;
+                let uid = lot.uid;
+
+                match lot.get_slot() {
+                    GetSlotResult::None => panic!(),
+                    GetSlotResult::Some(block, _data, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                            assert_eq!(block.get_version(), version);
+                            assert_eq!(block.get_uid(), uid);
+                            assert_eq!(block.get_seq_num(), 1);
+
+                            assert_eq!(*content_len_exc_header, None);
+                        },
+                }
+            }
+        }
+    }
 }
