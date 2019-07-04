@@ -703,8 +703,7 @@ proptest! {
                                                     data in 1usize..128,
                                                     parity in 1usize..128,
                                                     burst in 1usize..100,
-                                                    fill in 1usize..1000,
-                                                    tries in 2usize..100) {
+                                                    fill in 1usize..1000) {
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -742,38 +741,36 @@ proptest! {
 
             let fill = std::cmp::min(size, fill);
 
-            for _ in 0..tries {
-                for _ in 0..fill {
-                    match lot.get_slot() {
-                        GetSlotResult::None => panic!(),
-                        GetSlotResult::Some(block, _data, content_len_exc_header)
-                            | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
-                                block.set_version(Version::V1);
-                                block.set_uid([0xFF; SBX_FILE_UID_LEN]);
-                                block.set_seq_num(2000);
+            for _ in 0..fill {
+                match lot.get_slot() {
+                    GetSlotResult::None => panic!(),
+                    GetSlotResult::Some(block, _data, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                            block.set_version(Version::V1);
+                            block.set_uid([0xFF; SBX_FILE_UID_LEN]);
+                            block.set_seq_num(2000);
 
-                                *content_len_exc_header = Some(100);
-                            },
-                    }
+                            *content_len_exc_header = Some(100);
+                        },
                 }
+            }
 
-                lot.reset();
+            lot.reset();
 
-                let version = lot.version;
-                let uid = lot.uid;
+            let version = lot.version;
+            let uid = lot.uid;
 
-                for _ in 0..size {
-                    match lot.get_slot() {
-                        GetSlotResult::None => panic!(),
-                        GetSlotResult::Some(block, _data, content_len_exc_header)
-                            | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
-                                assert_eq!(block.get_version(), version);
-                                assert_eq!(block.get_uid(), uid);
-                                assert_eq!(block.get_seq_num(), 1);
+            for _ in 0..size {
+                match lot.get_slot() {
+                    GetSlotResult::None => panic!(),
+                    GetSlotResult::Some(block, _data, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                            assert_eq!(block.get_version(), version);
+                            assert_eq!(block.get_uid(), uid);
+                            assert_eq!(block.get_seq_num(), 1);
 
-                                assert_eq!(*content_len_exc_header, None);
-                            },
-                    }
+                            assert_eq!(*content_len_exc_header, None);
+                        },
                 }
             }
         }
@@ -784,14 +781,13 @@ proptest! {
                                                     data in 1usize..128,
                                                     parity in 1usize..128,
                                                     burst in 1usize..100,
-                                                    fill in 1usize..1000,
-                                                    tries in 2usize..100) {
+                                                    fill in 1usize..1000) {
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Data,
+                             InputType::Block,
                              OutputType::Block,
                              BlockArrangement::Unordered,
                              None,
@@ -803,7 +799,7 @@ proptest! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Data,
+                             InputType::Block,
                              OutputType::Block,
                              BlockArrangement::Unordered,
                              Some((data, parity, burst)),
@@ -823,42 +819,23 @@ proptest! {
 
             let fill = std::cmp::min(size, fill);
 
-            for _ in 0..tries {
-                for _ in 0..fill {
-                    match lot.get_slot() {
-                        GetSlotResult::None => {},
-                        GetSlotResult::Some(block, _data, content_len_exc_header)
-                            | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
-                                block.set_version(Version::V1);
-                                block.set_uid([0xFF; SBX_FILE_UID_LEN]);
-                                block.set_seq_num(2000);
+            for _ in 0..fill {
+                match lot.get_slot() {
+                    GetSlotResult::None => panic!(),
+                    GetSlotResult::Some(block, _data, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                            block.set_version(Version::V1);
+                            block.set_uid([0xFF; SBX_FILE_UID_LEN]);
+                            block.set_seq_num(2000);
 
-                                *content_len_exc_header = Some(100);
-                            },
-                    }
-                }
-
-                lot.reset();
-
-                let version = lot.version;
-                let uid = lot.uid;
-
-                assert_eq!(lot.slots_used, 0);
-
-                for _ in 0..size {
-                    match lot.get_slot() {
-                        GetSlotResult::None => panic!(),
-                        GetSlotResult::Some(block, _data, content_len_exc_header)
-                            | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
-                                assert_eq!(block.get_version(), version);
-                                assert_eq!(block.get_uid(), uid);
-                                assert_eq!(block.get_seq_num(), 1);
-
-                                assert_eq!(*content_len_exc_header, None);
-                            },
-                    }
+                            *content_len_exc_header = Some(100);
+                        },
                 }
             }
+
+            lot.reset();
+
+            assert_eq!(lot.slots_used, 0);
         }
     }
 }
