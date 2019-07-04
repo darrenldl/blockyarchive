@@ -4,6 +4,7 @@ use crate::multihash::hash;
 use crate::multihash::HashType;
 use crate::sbx_specs::Version;
 use proptest::prelude::*;
+use reed_solomon_erasure::ReedSolomon;
 
 use crate::file_writer::{FileWriter, FileWriterParam};
 use crate::writer::{Writer, WriterType};
@@ -11,6 +12,8 @@ use crate::writer::{Writer, WriterType};
 #[test]
 #[should_panic]
 fn new_panics_if_version_inconsistent_with_data_par_burst1() {
+    let rs_codec = Arc::new(Some(ReedSolomon::new(10, 2).unwrap()));
+
     Lot::new(
         Version::V17,
         None,
@@ -21,13 +24,15 @@ fn new_panics_if_version_inconsistent_with_data_par_burst1() {
         true,
         10,
         false,
-        &Arc::new(None),
+        &rs_codec,
     );
 }
 
 #[test]
 #[should_panic]
 fn new_panics_if_version_inconsistent_with_data_par_burst2() {
+    let rs_codec = Arc::new(None);
+
     Lot::new(
         Version::V1,
         None,
@@ -38,7 +43,45 @@ fn new_panics_if_version_inconsistent_with_data_par_burst2() {
         true,
         10,
         false,
-        &Arc::new(None),
+        &rs_codec,
+    );
+}
+
+#[test]
+#[should_panic]
+fn new_panics_if_data_par_burst_inconsistent_with_rs_codec1() {
+    let rs_codec = Arc::new(None);
+
+    Lot::new(
+        Version::V17,
+        None,
+        InputType::Block,
+        OutputType::Block,
+        BlockArrangement::Unordered,
+        Some((3, 2, 0)),
+        true,
+        10,
+        false,
+        &rs_codec,
+    );
+}
+
+#[test]
+#[should_panic]
+fn new_panics_if_data_par_burst_inconsistent_with_rs_codec2() {
+    let rs_codec = Arc::new(Some(ReedSolomon::new(10, 2).unwrap()));
+
+    Lot::new(
+        Version::V1,
+        None,
+        InputType::Block,
+        OutputType::Block,
+        BlockArrangement::Unordered,
+        None,
+        true,
+        10,
+        false,
+        &rs_codec,
     );
 }
 
