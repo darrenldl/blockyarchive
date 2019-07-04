@@ -4,6 +4,7 @@ use proptest::prelude::*;
 use crate::sbx_specs::{Version};
 use crate::multihash::hash;
 use crate::multihash::{HashType};
+use crate::sbx_block;
 
 use crate::file_writer::{FileWriter, FileWriterParam};
 use crate::writer::{Writer, WriterType};
@@ -309,10 +310,7 @@ fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_m
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig {
-        cases: 1_000, .. ProptestConfig::default()
-    })]
-
+    #[test]
     #[should_panic]
     fn pt_cancel_slot_panics_when_empty(size in 1usize..1000,
                                              cancels in 1usize..1000) {
@@ -866,7 +864,7 @@ proptest! {
                                                             data in 1usize..128,
                                                             parity in 1usize..128,
                                                             burst in 1usize..100,
-                                                            mut seq_nums: Vec<u32>,
+                                                            seq_nums: [u32; 32],
                                                             fill in 1usize..1000) {
         for lot_case in 0..2 {
             let mut lot =
@@ -912,16 +910,26 @@ proptest! {
                     Some((data, parity, burst))
                 };
 
-            seq_nums.push(1);
-
             let seq_num_count = seq_nums.len();
+
+            let mut data_count = 0;
+            let mut parity_count = 0;
 
             for i in 0..fill {
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
                     GetSlotResult::Some(block, _data, content_len_exc_header)
                         | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
-                            block.set_seq_num(seq_nums[i % seq_num_count]);
+                            let seq_num = seq_nums[i % seq_num_count];
+
+                            if sbx_block::seq_num_is_meta(seq_num) {
+                            } else if sbx_block::seq_num_is_parity_w_data_par_burst(seq_num, data_par_burst) {
+                                parity_count += 1;
+                            } else {
+                                data_count += 1;
+                            }
+
+                            block.set_seq_num(seq_num);
 
                             *content_len_exc_header = Some(100);
                         },
@@ -930,9 +938,9 @@ proptest! {
 
             let (d, pad, p) = lot.data_padding_parity_block_count();
 
-            assert_eq!(d, fill);
+            assert_eq!(d, data_count);
             assert_eq!(pad, 0);
-            assert_eq!(p, 0);
+            assert_eq!(p, parity_count);
         }
     }
 }
