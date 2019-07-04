@@ -136,6 +136,11 @@ impl Lot {
             Some(_) => assert!(ver_uses_rs(version)),
         }
 
+        let lot_size = match data_par_burst {
+            None => lot_size,
+            Some((data, parity, _)) => data + parity,
+        };
+
         let block_size = ver_to_block_size(version);
         let data_size = ver_to_data_size(version);
 
@@ -557,11 +562,6 @@ impl DataBlockBuffer {
 
         let mut lots = Vec::with_capacity(lot_count);
 
-        let lot_size = match data_par_burst {
-            None => DEFAULT_SINGLE_LOT_SIZE,
-            Some((data, parity, _)) => data + parity,
-        };
-
         let rs_codec = Arc::new(match data_par_burst {
             None => None,
             Some((data, parity, _)) => Some(ReedSolomon::new(data, parity).unwrap()),
@@ -576,11 +576,13 @@ impl DataBlockBuffer {
                 arrangement,
                 data_par_burst,
                 meta_enabled,
-                lot_size,
+                DEFAULT_SINGLE_LOT_SIZE,
                 skip_good,
                 &rs_codec,
             ))
         }
+
+        let lot_size = lots[0].lot_size;
 
         let total_slot_count_per_buffer = lot_count * lot_size;
 
