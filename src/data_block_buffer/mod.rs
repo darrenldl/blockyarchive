@@ -432,10 +432,20 @@ impl Lot {
     }
 
     fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
-        let data = match self.data_par_burst {
-            None => self.slots_used,
-            Some((data, _, _)) => std::cmp::min(data, self.slots_used),
-        };
+        let mut data = 0;
+        let mut parity = 0;
+
+        for slot_index in 0..self.slots_used {
+            let block = &self.blocks[slot_index];
+
+            if !block.is_meta() {
+                if block.is_parity_w_data_par_burst(self.data_par_burst) {
+                    parity += 1;
+                } else {
+                    data += 1;
+                }
+            }
+        }
 
         let mut padding = 0;
         for slot_index in 0..self.slots_used {
@@ -443,17 +453,6 @@ impl Lot {
                 padding += 1;
             }
         }
-
-        let parity = match self.data_par_burst {
-            None => 0,
-            Some((data, _, _)) => {
-                if self.slots_used < data {
-                    0
-                } else {
-                    self.slots_used - data
-                }
-            }
-        };
 
         (data, padding, parity)
     }
