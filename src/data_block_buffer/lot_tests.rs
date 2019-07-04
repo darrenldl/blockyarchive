@@ -2,7 +2,6 @@
 use super::*;
 use crate::multihash::hash;
 use crate::multihash::HashType;
-use crate::sbx_block;
 use crate::sbx_specs::Version;
 use proptest::prelude::*;
 
@@ -885,10 +884,10 @@ proptest! {
 
     #[test]
     fn pt_data_padding_parity_block_count_result_is_correct(size in 1usize..1000,
+                                                            lot_start_seq_num in 1u32..1000,
                                                             data in 1usize..128,
                                                             parity in 1usize..128,
                                                             burst in 1usize..100,
-                                                            seq_nums: [u32; 32],
                                                             fill in 1usize..1000) {
         for lot_case in 0..2 {
             let mut lot =
@@ -897,7 +896,7 @@ proptest! {
                              None,
                              InputType::Data,
                              OutputType::Block,
-                             BlockArrangement::Unordered,
+                             BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
                              size,
@@ -909,7 +908,7 @@ proptest! {
                              None,
                              InputType::Data,
                              OutputType::Block,
-                             BlockArrangement::Unordered,
+                             BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
                              size,
@@ -927,44 +926,44 @@ proptest! {
 
             let fill = std::cmp::min(writable_slots, fill);
 
-            let data_par_burst =
+            for _ in 0..fill {
+                let _ = lot.get_slot();
+            }
+
+            {
+                let (d, pad, p) = lot.data_padding_parity_block_count();
+
                 if lot_case == 0 {
-                    None
+                    assert_eq!(d, fill);
+                    assert_eq!(pad, 0);
+                    assert_eq!(p, 0);
                 } else {
-                    Some((data, parity, burst))
-                };
-
-            let seq_num_count = seq_nums.len();
-
-            let mut data_count = 0;
-            let mut parity_count = 0;
-
-            for i in 0..fill {
-                match lot.get_slot() {
-                    GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(block, _data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
-                            let seq_num = seq_nums[i % seq_num_count];
-
-                            if sbx_block::seq_num_is_meta(seq_num) {
-                            } else if sbx_block::seq_num_is_parity_w_data_par_burst(seq_num, data_par_burst) {
-                                parity_count += 1;
-                            } else {
-                                data_count += 1;
-                            }
-
-                            block.set_seq_num(seq_num);
-
-                            *content_len_exc_header = Some(100);
-                        },
+                    if fill < data {
+                        assert_eq!(d, fill);
+                        assert_eq!(p, 0);
+                    } else {
+                        assert_eq!(d, data);
+                        assert_eq!(p, fill - data);
+                    }
+                    assert_eq!(pad, 0);
                 }
             }
 
-            let (d, pad, p) = lot.data_padding_parity_block_count();
+            lot.encode(lot_start_seq_num);
 
-            assert_eq!(d, data_count);
-            assert_eq!(pad, 0);
-            assert_eq!(p, parity_count);
+            {
+                let (d, pad, p) = lot.data_padding_parity_block_count();
+
+                if lot_case == 0 {
+                    assert_eq!(d, fill);
+                    assert_eq!(pad, 0);
+                    assert_eq!(p, 0);
+                } else {
+                    assert_eq!(d, data);
+                    assert_eq!(pad, data - fill);
+                    assert_eq!(p, parity);
+                }
+            }
         }
     }
 }

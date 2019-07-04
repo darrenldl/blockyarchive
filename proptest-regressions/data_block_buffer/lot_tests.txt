@@ -7,3 +7,4 @@
 cc e140c2ebb0186e4e7bc2fc5241e8447458981499b56a7f406994abbbcfaa8725 # shrinks to size = 1
 cc 3e3bc0cf8520b6f0882b9bd8263d5fe54340ad6256666fb0464a66e10e358199 # shrinks to size = 1, data = 2, parity = 1, burst = 1, fill = 1, tries = 2
 cc 3b57317f775b1487b51a6fcac47d99194489c769c31d4f047558cd28b56b1db6 # shrinks to size = 1, data = 1, parity = 1, burst = 1, seq_nums = [], fill = 1
+cc 573b6816091df2c4b9ad39bc7cbffe99b78fd94ce9a55516c2fc591b2b2b0407 # shrinks to size = 1, lot_start_seq_num = 1, data = 85, parity = 1, burst = 1, fill = 1
