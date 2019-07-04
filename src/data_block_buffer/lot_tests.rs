@@ -318,57 +318,33 @@ proptest! {
                           parity in 1usize..128,
                           burst in 1usize..100,
                           tries in 2usize..100) {
-        {
-            let mut lot = Lot::new(Version::V17,
-                                   None,
-                                   InputType::Block,
-                                   OutputType::Block,
-                                   BlockArrangement::Unordered,
-                                   None,
-                                   true,
-                                   size,
-                                   false,
-                                   &Arc::new(None),
-            );
-
-            for _ in 0..tries {
-                for _ in 0..size-1 {
-                    match lot.get_slot() {
-                        GetSlotResult::None => panic!(),
-                        GetSlotResult::Some(_, _, _) => {},
-                        GetSlotResult::LastSlot(_, _, _) => panic!(),
-                    }
-                }
-
-                match lot.get_slot() {
-                    GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(_, _, _) => panic!(),
-                    GetSlotResult::LastSlot(_, _, _) => {},
-                }
-
-                match lot.get_slot() {
-                    GetSlotResult::None => {},
-                    GetSlotResult::Some(_, _, _) => panic!(),
-                    GetSlotResult::LastSlot(_, _, _) => panic!(),
-                }
-
-                for _ in 0..size {
-                    lot.cancel_slot();
-                }
-            }
-        }
-        {
-            let mut lot = Lot::new(Version::V17,
-                                   None,
-                                   InputType::Block,
-                                   OutputType::Block,
-                                   BlockArrangement::Unordered,
-                                   Some((data, parity, burst)),
-                                   true,
-                                   size,
-                                   false,
-                                   &Arc::new(None),
-            );
+        for lot_case in 0..2 {
+            let mut lot =
+                if lot_case == 0 {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Block,
+                             OutputType::Block,
+                             BlockArrangement::Unordered,
+                             None,
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                } else {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Block,
+                             OutputType::Block,
+                             BlockArrangement::Unordered,
+                             Some((data, parity, burst)),
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                };
 
             for _ in 0..tries {
                 for _ in 0..size-1 {
@@ -545,6 +521,57 @@ proptest! {
                     lot.cancel_slot();
 
                     assert_eq!(lot.slots_used, i);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn pt_cancel_slot_resets_slot_correctly(size in 1usize..1000,
+                                            cancels in 1usize..1000,
+                                            data in 1usize..128,
+                                            parity in 1usize..128,
+                                            burst in 1usize..100,
+                                            tries in 2usize..100) {
+        let cancels = std::cmp::min(size, cancels);
+
+        {
+            let mut lot = Lot::new(Version::V17,
+                                   None,
+                                   InputType::Block,
+                                   OutputType::Block,
+                                   BlockArrangement::Unordered,
+                                   None,
+                                   true,
+                                   size,
+                                   false,
+                                   &Arc::new(None),
+            );
+
+            for _ in 0..tries {
+                for _ in 0..cancels {
+                    let _ = lot.get_slot();
+                }
+
+                for _ in 0..cancels {
+                    lot.cancel_slot();
+
+                    let version = lot.version;
+                    let uid = lot.uid;
+
+                    match lot.get_slot() {
+                        GetSlotResult::None => panic!(),
+                        GetSlotResult::Some(block, _data, content_len_exc_header)
+                            | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                                assert_eq!(block.get_version(), version);
+                                assert_eq!(block.get_uid(), uid);
+                                assert_eq!(block.get_seq_num(), 1);
+
+                                assert_eq!(*content_len_exc_header, None);
+                        },
+                    }
+
+                    lot.cancel_slot();
                 }
             }
         }
