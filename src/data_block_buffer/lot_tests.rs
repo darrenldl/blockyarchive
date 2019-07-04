@@ -836,6 +836,7 @@ proptest! {
             lot.reset();
 
             assert_eq!(lot.slots_used, 0);
+            assert_eq!(lot.padding_byte_count_in_non_padding_blocks, 0);
         }
     }
 }
