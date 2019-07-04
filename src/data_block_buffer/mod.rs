@@ -5,9 +5,7 @@ use std::io::SeekFrom;
 use std::sync::Arc;
 
 use crate::general_error::Error;
-use crate::sbx_specs::{
-    ver_uses_rs, Version, SBX_FIRST_DATA_SEQ_NUM, SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM,
-};
+use crate::sbx_specs::{Version, SBX_FIRST_DATA_SEQ_NUM, SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM, ver_uses_rs};
 
 use crate::sbx_block::{calc_data_block_write_pos, calc_data_chunk_write_pos, Block, BlockType};
 
@@ -434,20 +432,10 @@ impl Lot {
     }
 
     fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
-        let mut data = 0;
-        let mut parity = 0;
-
-        for slot_index in 0..self.slots_used {
-            let block = &self.blocks[slot_index];
-
-            if !block.is_meta() {
-                if block.is_parity_w_data_par_burst(self.data_par_burst) {
-                    parity += 1;
-                } else {
-                    data += 1;
-                }
-            }
-        }
+        let data = match self.data_par_burst {
+            None => self.slots_used,
+            Some((data, _, _)) => std::cmp::min(data, self.slots_used),
+        };
 
         let mut padding = 0;
         for slot_index in 0..self.slots_used {
@@ -455,6 +443,17 @@ impl Lot {
                 padding += 1;
             }
         }
+
+        let parity = match self.data_par_burst {
+            None => 0,
+            Some((data, _, _)) => {
+                if self.slots_used < data {
+                    0
+                } else {
+                    self.slots_used - data
+                }
+            }
+        };
 
         (data, padding, parity)
     }
