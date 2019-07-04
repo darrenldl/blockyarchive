@@ -550,7 +550,17 @@ proptest! {
 
             for _ in 0..tries {
                 for _ in 0..cancels {
-                    let _ = lot.get_slot();
+                    match lot.get_slot() {
+                        GetSlotResult::None => {},
+                        GetSlotResult::Some(block, _data, content_len_exc_header)
+                            | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                                block.set_version(Version::V1);
+                                block.set_uid([0xFF; SBX_FILE_UID_LEN]);
+                                block.set_seq_num(2000);
+
+                                *content_len_exc_header = Some(100);
+                            }
+                    }
                 }
 
                 for _ in 0..cancels {
