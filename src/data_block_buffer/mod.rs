@@ -297,6 +297,8 @@ impl Lot {
     // }
 
     fn calc_slot_write_pos(&mut self) {
+        assert!(self.output_type != OutputType::Disabled);
+
         for slot_index in 0..self.slots_used {
             let write_pos = match self.output_type {
                 OutputType::Block => Some(calc_data_block_write_pos(

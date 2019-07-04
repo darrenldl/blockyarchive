@@ -138,7 +138,25 @@ fn hash_panics_when_incorrect_arrangement() {
 }
 
 #[test]
-fn write_panics_when_output_is_block() {
+#[should_panic]
+fn calc_slot_write_pos_panics_when_output_is_disabled() {
+    let mut lot = Lot::new(Version::V1,
+                           None,
+                           InputType::Block,
+                           OutputType::Disabled,
+                           BlockArrangement::Unordered,
+                           None,
+                           true,
+                           10,
+                           false,
+                           &Arc::new(None),
+    );
+
+    lot.calc_slot_write_pos();
+}
+
+#[test]
+fn write_does_not_panic_when_output_is_block() {
     let mut lot = Lot::new(Version::V1,
                            None,
                            InputType::Block,
@@ -165,7 +183,7 @@ fn write_panics_when_output_is_block() {
 }
 
 #[test]
-fn write_panics_when_output_is_data() {
+fn write_does_not_panic_when_output_is_data() {
     let mut lot = Lot::new(Version::V1,
                            None,
                            InputType::Block,
