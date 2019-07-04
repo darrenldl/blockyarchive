@@ -1083,7 +1083,6 @@ proptest! {
 
     #[test]
     fn pt_active_if_and_only_if_at_least_one_slot_in_use(size in 1usize..1000,
-                                                         lot_start_seq_num in 1u32..1000,
                                                          data in 1usize..30,
                                                          parity in 1usize..30,
                                                          burst in 1usize..100,
