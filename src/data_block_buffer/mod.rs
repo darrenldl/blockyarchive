@@ -125,7 +125,7 @@ impl Lot {
         arrangement: BlockArrangement,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
-        lot_size: usize,
+        default_lot_size: usize,
         skip_good: bool,
         rs_codec: &Arc<Option<ReedSolomon>>,
     ) -> Self {
@@ -137,7 +137,7 @@ impl Lot {
         }
 
         let lot_size = match data_par_burst {
-            None => lot_size,
+            None => default_lot_size,
             Some((data, parity, _)) => data + parity,
         };
 
