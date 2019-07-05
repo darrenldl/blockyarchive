@@ -26,8 +26,8 @@ fn new_panics_if_version_inconsistent_with_data_par_burst1() {
         BlockArrangement::Unordered,
         None,
         true,
-        10,
         false,
+        10,
         &rs_codec,
     );
 }
@@ -45,8 +45,8 @@ fn new_panics_if_version_inconsistent_with_data_par_burst2() {
         BlockArrangement::Unordered,
         Some((3, 2, 0)),
         true,
-        10,
         false,
+        10,
         &rs_codec,
     );
 }
@@ -64,8 +64,8 @@ fn new_panics_if_data_par_burst_inconsistent_with_rs_codec1() {
         BlockArrangement::Unordered,
         Some((3, 2, 0)),
         true,
-        10,
         false,
+        10,
         &rs_codec,
     );
 }
@@ -83,8 +83,8 @@ fn new_panics_if_data_par_burst_inconsistent_with_rs_codec2() {
         BlockArrangement::Unordered,
         None,
         true,
-        10,
         false,
+        10,
         &rs_codec,
     );
 }
@@ -100,8 +100,8 @@ fn cancel_slot_panics_when_empty1() {
         BlockArrangement::Unordered,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -119,8 +119,8 @@ fn cancel_slot_panics_when_empty2() {
         BlockArrangement::Unordered,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -140,8 +140,8 @@ fn hash_when_correct_arrangment1() {
         BlockArrangement::OrderedAndNoMissing,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -160,8 +160,8 @@ fn hash_when_correct_arrangment2() {
         BlockArrangement::OrderedButSomeMayBeMissing,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -181,8 +181,8 @@ fn hash_panics_when_incorrect_arrangement() {
         BlockArrangement::Unordered,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -202,8 +202,8 @@ fn calc_slot_write_pos_panics_when_output_is_disabled() {
         BlockArrangement::Unordered,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -220,8 +220,8 @@ fn write_does_not_panic_when_output_is_block() {
         BlockArrangement::Unordered,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -251,8 +251,8 @@ fn write_does_not_panic_when_output_is_data() {
         BlockArrangement::Unordered,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -283,8 +283,8 @@ fn write_panics_when_output_is_disabled() {
         BlockArrangement::Unordered,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -314,8 +314,8 @@ fn fill_in_padding_when_input_type_is_data_and_arrangement_is_ordered_and_no_mis
         BlockArrangement::OrderedAndNoMissing,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -333,8 +333,8 @@ fn fill_in_padding_panics_when_input_type_is_block_and_arrangement_is_ordered_an
         BlockArrangement::OrderedAndNoMissing,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -352,8 +352,8 @@ fn fill_in_padding_panics_when_input_type_is_data_and_arrangement_is_not_ordered
         BlockArrangement::OrderedButSomeMayBeMissing,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -371,8 +371,8 @@ fn fill_in_padding_panics_when_input_type_is_data_and_arrangement_is_not_ordered
         BlockArrangement::Unordered,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -389,8 +389,8 @@ fn encode_when_input_type_is_data_and_arrangement_is_ordered_and_no_missing() {
         BlockArrangement::OrderedAndNoMissing,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -408,8 +408,8 @@ fn encode_panics_when_input_type_is_block_and_arrangement_is_ordered_and_no_miss
         BlockArrangement::OrderedAndNoMissing,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -427,8 +427,8 @@ fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_m
         BlockArrangement::OrderedButSomeMayBeMissing,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -446,8 +446,8 @@ fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_m
         BlockArrangement::Unordered,
         None,
         true,
-        10,
         false,
+        10,
         &Arc::new(None),
     );
 
@@ -468,8 +468,8 @@ proptest! {
                                BlockArrangement::Unordered,
                                None,
                                true,
-                               size,
                                false,
+                               size,
                                &Arc::new(None),
         );
 
@@ -494,8 +494,8 @@ proptest! {
                                BlockArrangement::Unordered,
                                None,
                                true,
-                               size,
                                false,
+                               size,
                                &Arc::new(None),
         );
 
@@ -524,8 +524,8 @@ proptest! {
                              BlockArrangement::Unordered,
                              None,
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(None),
                     )
                 } else {
@@ -536,8 +536,8 @@ proptest! {
                              BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
@@ -590,8 +590,8 @@ proptest! {
                                BlockArrangement::Unordered,
                                None,
                                true,
-                               size,
                                false,
+                               size,
                                &Arc::new(None),
             );
 
@@ -608,8 +608,8 @@ proptest! {
                                BlockArrangement::Unordered,
                                Some((data, parity, burst)),
                                true,
-                               size,
                                false,
+                               size,
                                &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
             );
 
@@ -626,8 +626,8 @@ proptest! {
                                BlockArrangement::Unordered,
                                None,
                                true,
-                               size,
                                false,
+                               size,
                                &Arc::new(None),
             );
 
@@ -644,8 +644,8 @@ proptest! {
                                BlockArrangement::Unordered,
                                Some((data, parity, burst)),
                                true,
-                               size,
                                false,
+                               size,
                                &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
             );
 
@@ -673,8 +673,8 @@ proptest! {
                              BlockArrangement::Unordered,
                              None,
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(None),
                     )
                 } else {
@@ -685,8 +685,8 @@ proptest! {
                              BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
@@ -737,8 +737,8 @@ proptest! {
                              BlockArrangement::Unordered,
                              None,
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(None),
                     )
                 } else {
@@ -749,8 +749,8 @@ proptest! {
                              BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
@@ -818,8 +818,8 @@ proptest! {
                              BlockArrangement::Unordered,
                              None,
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(None),
                     )
                 } else {
@@ -830,8 +830,8 @@ proptest! {
                              BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
@@ -878,8 +878,8 @@ proptest! {
                              BlockArrangement::Unordered,
                              None,
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(None),
                     )
                 } else {
@@ -890,8 +890,8 @@ proptest! {
                              BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
@@ -956,8 +956,8 @@ proptest! {
                              BlockArrangement::Unordered,
                              None,
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(None),
                     )
                 } else {
@@ -968,8 +968,8 @@ proptest! {
                              BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
@@ -1021,8 +1021,8 @@ proptest! {
                              BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(None),
                     )
                 } else {
@@ -1033,8 +1033,8 @@ proptest! {
                              BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
@@ -1106,8 +1106,8 @@ proptest! {
                              BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(None),
                     )
                 } else {
@@ -1118,8 +1118,8 @@ proptest! {
                              BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
@@ -1177,8 +1177,8 @@ proptest! {
                              BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(None),
                     )
                 } else {
@@ -1189,8 +1189,8 @@ proptest! {
                              BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
@@ -1244,8 +1244,8 @@ proptest! {
                              BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(None),
                     )
                 } else {
@@ -1256,8 +1256,8 @@ proptest! {
                              BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };
@@ -1327,8 +1327,8 @@ proptest! {
                              BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(None),
                     )
                 } else {
@@ -1339,8 +1339,8 @@ proptest! {
                              BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
-                             size,
                              false,
+                             size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
                 };

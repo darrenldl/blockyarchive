@@ -22,11 +22,11 @@ proptest! {
         let mut buffer = DataBlockBuffer::new(Version::V1,
                                               None,
                                               InputType::Block,
-                                              false,
                                               OutputType::Block,
                                               BlockArrangement::Unordered,
                                               None,
                                               true,
+                                              false,
                                               buffer_index,
                                               total_buffer_count,
         );
@@ -51,11 +51,11 @@ proptest! {
         let mut buffer = DataBlockBuffer::new(Version::V1,
                                               None,
                                               InputType::Block,
-                                              false,
                                               OutputType::Block,
                                               BlockArrangement::Unordered,
                                               None,
                                               true,
+                                              false,
                                               buffer_index,
                                               total_buffer_count,
         );
@@ -71,5 +71,11 @@ proptest! {
         for _ in 0..cancels {
             buffer.cancel_slot();
         }
+    }
+
+    #[test]
+    fn pt_stats_are_reset_correctly_after_buffer_reset(buffer_index in 1usize..1000,
+                                                       total_buffer_count in 1usize..1000,
+                                                       fills in 1usize..1000) {
     }
 }
