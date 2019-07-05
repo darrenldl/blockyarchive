@@ -64,6 +64,66 @@ proptest! {
     }
 
     #[test]
+    fn pt_active_if_and_only_if_at_least_one_slot_in_use(buffer_index in 1usize..1000,
+                                                         total_buffer_count in 1usize..1000,
+                                                         data in 1usize..30,
+                                                         parity in 1usize..30,
+                                                         burst in 1usize..100,
+                                                         fill in 1usize..1000,
+                                                         tries in 2usize..100) {
+        for buffer_case in 0..2 {
+            let mut buffer =
+                if buffer_case == 0 {
+                    DataBlockBuffer::new(Version::V1,
+                                         None,
+                                         InputType::Block,
+                                         OutputType::Block,
+                                         BlockArrangement::Unordered,
+                                         None,
+                                         true,
+                                         false,
+                                         buffer_index,
+                                         total_buffer_count,
+                    )
+                } else {
+                    DataBlockBuffer::new(Version::V17,
+                                         None,
+                                         InputType::Block,
+                                         OutputType::Block,
+                                         BlockArrangement::Unordered,
+                                         Some((data, parity, burst)),
+                                         true,
+                                         false,
+                                         buffer_index,
+                                         total_buffer_count,
+                    )
+                };
+
+            let size = buffer.lots.len() * buffer.lot_size;
+
+            let fill = std::cmp::min(size, fill);
+
+            for _ in 0..tries {
+                assert!(!buffer.active());
+
+                for _ in 0..fill {
+                    let _ = buffer.get_slot();
+
+                    assert!(buffer.active());
+                }
+
+                for _ in 0..fill {
+                    assert!(buffer.active());
+
+                    buffer.cancel_slot();
+                }
+
+                assert!(!buffer.active());
+            }
+        }
+    }
+
+    #[test]
     fn pt_stats_are_reset_correctly_after_buffer_reset(buffer_index in 1usize..1000,
                                                        total_buffer_count in 1usize..1000,
                                                        data in 1usize..30,
