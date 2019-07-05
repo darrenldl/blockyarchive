@@ -1221,11 +1221,15 @@ proptest! {
     }
 
     #[test]
-    fn pt_fill_in_padding_marks_padding_blocks_correctly(size in 1usize..1000,
-                                                         data in 1usize..30,
-                                                         parity in 1usize..30,
-                                                         burst in 1usize..100,
-                                                         fill in 1usize..1000) {
+    fn pt_fill_in_padding_counts_padding_bytes_and_marks_padding_blocks_correctly(
+        size in 1usize..1000,
+        data in 1usize..30,
+        parity in 1usize..30,
+        burst in 1usize..100,
+        fill in 1usize..1000,
+        content_len: [usize; 32],
+        data_is_partial: [bool; 32],
+    ) {
 
         for lot_case in 0..2 {
             let mut lot =
@@ -1264,11 +1268,25 @@ proptest! {
 
             let fill = std::cmp::min(writable_slots, fill);
 
-            for _ in 0..fill {
-                let _ = lot.get_slot();
+            let mut padding_bytes_in_non_padding_blocks = 0;
+
+            for i in 0..fill {
+                match lot.get_slot() {
+                    GetSlotResult::None => panic!(),
+                    GetSlotResult::Some(_block, _data, content_len_exc_header)
+                        | GetSlotResult::LastSlot(_block, _data, content_len_exc_header) => {
+                            if data_is_partial[i % 32] {
+                                let len = content_len[i % 32] % 496 + 1;
+                                *content_len_exc_header = Some(len);
+                                padding_bytes_in_non_padding_blocks += 496 - len;
+                            }
+                        },
+                }
             }
 
             lot.fill_in_padding();
+
+            assert_eq!(padding_bytes_in_non_padding_blocks, lot.padding_byte_count_in_non_padding_blocks);
 
             if lot_case == 0 {
                 for is_padding in lot.slot_is_padding.iter() {
