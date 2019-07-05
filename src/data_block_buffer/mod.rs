@@ -241,6 +241,7 @@ impl Lot {
     }
 
     fn fill_in_padding(&mut self) {
+        assert!(self.input_type == InputType::Data);
         assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing);
 
         if self.active() {
