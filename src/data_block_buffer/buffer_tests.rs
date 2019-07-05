@@ -34,6 +34,8 @@ quickcheck! {
         for _ in 0..cancels+1 {
             buffer.cancel_slot();
         }
+
+        true
     }
 
     fn qc_cancel_slot_when_not_empty(buffer_index: usize,
@@ -66,6 +68,8 @@ quickcheck! {
         for _ in 0..cancels {
             buffer.cancel_slot();
         }
+
+        true
     }
 
     fn qc_active_if_and_only_if_at_least_one_slot_in_use(buffer_index: usize,
@@ -116,31 +120,44 @@ quickcheck! {
             let fill = std::cmp::min(size, fill);
 
             for _ in 0..tries {
-                assert!(!buffer.active());
+                let mut res = true;
+
+                res = res && !buffer.active();
 
                 for _ in 0..fill {
                     let _ = buffer.get_slot();
 
-                    assert!(buffer.active());
+                    res = res && buffer.active();
                 }
 
                 for _ in 0..fill {
-                    assert!(buffer.active());
+                    res = res && buffer.active();
 
                     buffer.cancel_slot();
                 }
 
-                assert!(!buffer.active());
+                res = res && !buffer.active();
+
+                if !res { return false; }
             }
         }
+
+        true
     }
 
-    fn qc_stats_are_reset_correctly_after_buffer_reset(buffer_index in 1usize..1000,
-                                                       total_buffer_count in 1usize..1000,
-                                                       data in 1usize..30,
-                                                       parity in 1usize..30,
-                                                       burst in 1usize..100,
-                                                       fill in 1usize..1000) {
+    fn qc_stats_are_reset_correctly_after_buffer_reset(buffer_index: usize,
+                                                       total_buffer_count: usize,
+                                                       data: usize,
+                                                       parity: usize,
+                                                       burst: usize,
+                                                       fill: usize) -> bool {
+        let buffer_index = 1 + buffer_index % 1000;
+        let total_buffer_count = 1 + total_buffer_count % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+
         for buffer_case in 0..2 {
             let mut buffer =
                 if buffer_case == 0 {
@@ -179,7 +196,11 @@ quickcheck! {
 
             buffer.reset();
 
-            buffer.lots_used == 0
+            let res = buffer.lots_used == 0;
+
+            if !res { return false; }
         }
+
+        true
     }
 }
