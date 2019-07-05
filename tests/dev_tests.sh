@@ -93,6 +93,8 @@ while (( $i < $test_count )); do
              -not -name "log" \
              -not -name "stderr_log" \
              -not -name "dummy_file_size" \
+             -not -name "start_time" \
+             -not -name "end_time" \
              -delete
 
         cd ..
