@@ -20,8 +20,8 @@ use crate::writer::Writer;
 
 use crate::misc_utils;
 
-mod lot_tests;
 mod buffer_tests;
+mod lot_tests;
 
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
@@ -141,7 +141,7 @@ impl Lot {
 
         match data_par_burst {
             None => match **rs_codec {
-                None => {},
+                None => {}
                 Some(_) => panic!(),
             },
             Some((data, par, _)) => match **rs_codec {
@@ -150,7 +150,7 @@ impl Lot {
                     assert!(data == rs_codec.data_shard_count());
                     assert!(par == rs_codec.parity_shard_count());
                 }
-            }
+            },
         }
 
         let lot_size = match data_par_burst {
