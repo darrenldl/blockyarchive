@@ -1,12 +1,10 @@
 #![cfg(test)]
 use super::*;
 use crate::sbx_specs::Version;
-use proptest::prelude::*;
 
-proptest! {
-    #[test]
+quickcheck! {
     #[should_panic]
-    fn pt_cancel_slot_panics_when_empty(buffer_index in 1usize..1000,
+    fn qc_cancel_slot_panics_when_empty(buffer_index in 1usize..1000,
                                         total_buffer_count in 1usize..1000,
                                         cancels in 1usize..1000) {
         let mut buffer = DataBlockBuffer::new(Version::V1,
@@ -34,8 +32,7 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_cancel_slot_when_not_empty(buffer_index in 1usize..1000,
+    fn qc_cancel_slot_when_not_empty(buffer_index in 1usize..1000,
                                      total_buffer_count in 1usize..1000,
                                      cancels in 1usize..1000) {
         let mut buffer = DataBlockBuffer::new(Version::V1,
@@ -63,8 +60,7 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_active_if_and_only_if_at_least_one_slot_in_use(buffer_index in 1usize..1000,
+    fn qc_active_if_and_only_if_at_least_one_slot_in_use(buffer_index in 1usize..1000,
                                                          total_buffer_count in 1usize..1000,
                                                          data in 1usize..30,
                                                          parity in 1usize..30,
@@ -123,8 +119,7 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_stats_are_reset_correctly_after_buffer_reset(buffer_index in 1usize..1000,
+    fn qc_stats_are_reset_correctly_after_buffer_reset(buffer_index in 1usize..1000,
                                                        total_buffer_count in 1usize..1000,
                                                        data in 1usize..30,
                                                        parity in 1usize..30,

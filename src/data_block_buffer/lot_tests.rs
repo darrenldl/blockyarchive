@@ -3,7 +3,6 @@ use super::*;
 use crate::multihash::hash;
 use crate::multihash::HashType;
 use crate::sbx_specs::Version;
-use proptest::prelude::*;
 use reed_solomon_erasure::ReedSolomon;
 
 use crate::sbx_block;
@@ -357,11 +356,13 @@ fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_m
     lot.encode(1);
 }
 
-proptest! {
-    #[test]
+quickcheck! {
     #[should_panic]
-    fn pt_cancel_slot_panics_when_empty(size in 1usize..1000,
-                                             cancels in 1usize..1000) {
+    fn qc_cancel_slot_panics_when_empty(size: usize,
+                                        cancels: usize) -> bool {
+        let size = 1 + size % 1000;
+        let cancels = 1 + cancels % 1000;
+
         let cancels = std::cmp::min(size, cancels);
 
         let mut lot = Lot::new(Version::V1,
@@ -383,11 +384,15 @@ proptest! {
         for _ in 0..cancels+1 {
             lot.cancel_slot();
         }
+
+        true
     }
 
-    #[test]
-    fn pt_cancel_slot_when_not_empty(size in 1usize..1000,
-                                          cancels in 1usize..1000) {
+    fn qc_cancel_slot_when_not_empty(size: usize,
+                                     cancels: usize) -> bool {
+        let size = 1 + size % 1000;
+        let cancels = 1 + cancels % 1000;
+
         let cancels = std::cmp::min(size, cancels);
 
         let mut lot = Lot::new(Version::V1,
@@ -411,12 +416,17 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_get_slot_result(size in 1usize..1000,
-                          data in 1usize..30,
-                          parity in 1usize..30,
-                          burst in 1usize..100,
-                          tries in 2usize..100) {
+    fn qc_get_slot_result(size: usize,
+                          data: usize,
+                          parity: usize,
+                          burst: usize,
+                          tries: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let tries = 2 + tries % 100;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -480,11 +490,15 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_new_lot_stats(size in 1usize..1000,
-                        data in 1usize..30,
-                        parity in 1usize..30,
-                        burst in 1usize..100) {
+    fn qc_new_lot_stats(size: usize,
+                        data: usize,
+                        parity: usize,
+                        burst: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+
         {
             let lot = Lot::new(Version::V1,
                                None,
@@ -559,13 +573,18 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_get_slot_and_cancel_slot_stats(size in 1usize..1000,
-                                         cancels in 1usize..1000,
-                                         data in 1usize..30,
-                                         parity in 1usize..30,
-                                         burst in 1usize..100,
-                                         tries in 2usize..100) {
+    fn qc_get_slot_and_cancel_slot_stats(size: usize,
+                                         cancels: usize,
+                                         data: usize,
+                                         parity: usize,
+                                         burst: usize,
+                                         tries: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let tries = 2 + tries % 100;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -623,13 +642,19 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_cancel_slot_resets_slot_correctly(size in 1usize..1000,
-                                            cancels in 1usize..1000,
-                                            data in 1usize..30,
-                                            parity in 1usize..30,
-                                            burst in 1usize..100,
-                                            tries in 2usize..100) {
+    fn qc_cancel_slot_resets_slot_correctly(size: usize,
+                                            cancels: usize,
+                                            data: usize,
+                                            parity: usize,
+                                            burst: usize,
+                                            tries: usize) -> bool {
+        let size = 1 + size % 1000;
+        let cancels = 1 + cancels % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let tries = 2 + tries % 100;
+
         for lot_case in 1..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -706,11 +731,15 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_new_slots_are_initialized_correctly(size in 1usize..1000,
-                                              data in 1usize..30,
-                                              parity in 1usize..30,
-                                              burst in 1usize..100) {
+    fn qc_new_slots_are_initialized_correctly(size: usize,
+                                              data: usize,
+                                              parity: usize,
+                                              burst: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -765,12 +794,17 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_slots_are_reset_correctly_after_lot_reset(size in 1usize..1000,
-                                                    data in 1usize..30,
-                                                    parity in 1usize..30,
-                                                    burst in 1usize..100,
-                                                    fill in 1usize..1000) {
+    fn qc_slots_are_reset_correctly_after_lot_reset(size: usize,
+                                                    data: usize,
+                                                    parity: usize,
+                                                    burst: usize,
+                                                    fill: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -843,12 +877,17 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_stats_are_reset_correctly_after_lot_reset(size in 1usize..1000,
-                                                    data in 1usize..30,
-                                                    parity in 1usize..30,
-                                                    burst in 1usize..100,
-                                                    fill in 1usize..1000) {
+    fn qc_stats_are_reset_correctly_after_lot_reset(size: usize,
+                                                    data: usize,
+                                                    parity: usize,
+                                                    burst: usize,
+                                                    fill: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -907,13 +946,19 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_data_padding_parity_block_count_result_is_correct(size in 1usize..1000,
-                                                            lot_start_seq_num in 1u32..1000,
-                                                            data in 1usize..30,
-                                                            parity in 1usize..30,
-                                                            burst in 1usize..100,
-                                                            fill in 1usize..1000) {
+    fn qc_data_padding_parity_block_count_result_is_correct(size: usize,
+                                                            lot_start_seq_num: u32,
+                                                            data: usize,
+                                                            parity: usize,
+                                                            burst: usize,
+                                                            fill: usize) -> bool {
+        let size = 1 + size % 1000;
+        let lot_start_seq_num = 1 + lot_start_seq_num % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -992,13 +1037,19 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_encode_updates_stats_and_blocks_correctly(size in 1usize..1000,
-                                                    lot_start_seq_num in 1u32..1000,
-                                                    data in 1usize..30,
-                                                    parity in 1usize..30,
-                                                    burst in 1usize..100,
-                                                    fill in 1usize..1000) {
+    fn qc_encode_updates_stats_and_blocks_correctly(size: usize,
+                                                    lot_start_seq_num: u32,
+                                                    data: usize,
+                                                    parity: usize,
+                                                    burst: usize,
+                                                    fill: usize) -> bool {
+        let size = 1 + size % 1000;
+        let lot_start_seq_num = 1 + lot_start_seq_num % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -1063,13 +1114,19 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_active_if_and_only_if_at_least_one_slot_in_use(size in 1usize..1000,
-                                                         data in 1usize..30,
-                                                         parity in 1usize..30,
-                                                         burst in 1usize..100,
-                                                         fill in 1usize..1000,
-                                                         tries in 2usize..100) {
+    fn qc_active_if_and_only_if_at_least_one_slot_in_use(size: usize,
+                                                         data: usize,
+                                                         parity: usize,
+                                                         burst: usize,
+                                                         fill: usize,
+                                                         tries: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+        let tries = 2 + tries % 1000;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -1127,16 +1184,21 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_fill_in_padding_counts_padding_bytes_and_marks_padding_blocks_correctly(
-        size in 1usize..1000,
-        data in 1usize..30,
-        parity in 1usize..30,
-        burst in 1usize..100,
-        fill in 1usize..1000,
+    fn qc_fill_in_padding_counts_padding_bytes_and_marks_padding_blocks_correctly(
+        size: usize,
+        data: usize,
+        parity: usize,
+        burst: usize,
+        fill: usize,
         content_len: [usize; 32],
-        data_is_partial: [bool; 32],
-    ) {
+        data_is_partial: [bool; 32]
+    ) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -1209,8 +1271,7 @@ proptest! {
         }
     }
 
-    #[test]
-    fn pt_hash_ignores_metadata_and_parity_blocks_and_uses_content_len_correctly(
+    fn qc_hash_ignores_metadata_and_parity_blocks_and_uses_content_len_correctly(
         size in 1usize..1000,
         data in 1usize..30,
         parity in 1usize..30,

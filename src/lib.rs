@@ -2,9 +2,6 @@
 #[macro_use]
 extern crate quickcheck;
 
-#[cfg(test)]
-extern crate proptest;
-
 #[macro_use]
 extern crate nom;
 
