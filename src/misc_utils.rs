@@ -238,7 +238,7 @@ pub fn buffer_is_blank(buf: &[u8]) -> bool {
     true
 }
 
-pub fn wipe_buffer_w_zeros(buf: &mut [u8]) {
+pub fn fill_zeros(buf: &mut [u8]) {
     for p in buf.iter_mut() {
         *p = 0;
     }

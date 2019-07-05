@@ -1221,7 +1221,7 @@ pub fn decode(
                                                     block.set_uid(uid);
                                                     block.set_seq_num(seq_num);
 
-                                                    misc_utils::wipe_buffer_w_zeros(slot);
+                                                    misc_utils::fill_zeros(slot);
 
                                                     block.sync_to_buffer(None, slot).unwrap();
                                                 }
@@ -1495,7 +1495,7 @@ pub fn decode(
                                                     block.set_uid(uid);
                                                     block.set_seq_num(seq_num);
 
-                                                    misc_utils::wipe_buffer_w_zeros(slot);
+                                                    misc_utils::fill_zeros(slot);
 
                                                     block.sync_to_buffer(None, slot).unwrap();
                                                 }
@@ -1535,7 +1535,7 @@ pub fn decode(
                                             //         block.set_uid(uid);
                                             //         block.set_seq_num(seq_num);
 
-                                            //         misc_utils::wipe_buffer_w_zeros(slot);
+                                            //         misc_utils::fill_zeros(slot);
 
                                             //         block.sync_to_buffer(None, slot).unwrap();
                                             //     }
