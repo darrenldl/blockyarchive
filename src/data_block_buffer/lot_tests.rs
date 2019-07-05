@@ -9,6 +9,10 @@ use reed_solomon_erasure::ReedSolomon;
 use crate::file_writer::{FileWriter, FileWriterParam};
 use crate::writer::{Writer, WriterType};
 
+use crate::sbx_block;
+
+use crate::rand_utils::fill_random_bytes;
+
 #[test]
 #[should_panic]
 fn new_panics_if_version_inconsistent_with_data_par_burst1() {
@@ -1230,7 +1234,6 @@ proptest! {
         content_len: [usize; 32],
         data_is_partial: [bool; 32],
     ) {
-
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -1300,6 +1303,110 @@ proptest! {
                     assert_eq!(lot.slot_is_padding[i], true);
                 }
             }
+        }
+    }
+
+    #[test]
+    fn pt_hash_ignores_metadata_and_parity_blocks_and_uses_content_len_correctly(
+        size in 1usize..1000,
+        data in 1usize..30,
+        parity in 1usize..30,
+        burst in 1usize..100,
+        fill in 1usize..1000,
+        seq_nums: [u32; 32],
+        content_len: [usize; 32],
+        data_is_partial: [bool; 32],
+    ) {
+        for lot_case in 0..1 {
+            let mut lot =
+                if lot_case == 0 {
+                    Lot::new(Version::V1,
+                             None,
+                             InputType::Block,
+                             OutputType::Block,
+                             BlockArrangement::OrderedAndNoMissing,
+                             None,
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                } else {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Block,
+                             OutputType::Block,
+                             BlockArrangement::OrderedAndNoMissing,
+                             Some((data, parity, burst)),
+                             true,
+                             size,
+                             false,
+                             &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
+                    )
+                };
+
+            let data_par_burst =
+                if lot_case == 0 {
+                    None
+                } else {
+                    Some((data, parity, burst))
+                };
+
+            let size =
+                if lot_case == 0 {
+                    size
+                } else {
+                    data + parity
+                };
+
+            let version = if lot_case == 0 {
+                Version::V1
+            } else {
+                Version::V17
+            };
+
+            let fill = std::cmp::min(size, fill);
+
+            let mut hash_ctx1 = hash::Ctx::new(HashType::SHA256).unwrap();
+
+            for i in 0..fill {
+                match lot.get_slot() {
+                    GetSlotResult::None => panic!(),
+                    GetSlotResult::Some(block, data, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, data, content_len_exc_header) => {
+                            let seq_num = seq_nums[i % 32];
+
+                            fill_random_bytes(data);
+
+                            let len =
+                                if data_is_partial[i % 32] {
+                                    let len = content_len[i % 32] % 496 + 1;
+                                    *content_len_exc_header = Some(len);
+                                    len
+                                } else {
+                                    496
+                                };
+
+                            block.set_seq_num(seq_num);
+
+                            if block.is_meta() {
+                            } else if block.is_parity_w_data_par_burst(data_par_burst) {
+                            } else {
+                                hash_ctx1.update(&sbx_block::slice_data_buf(version, data)[..len]);
+                            }
+                        },
+                }
+            }
+
+            let hash_res1 = hash_ctx1.finish_into_hash_bytes();
+
+            let mut hash_ctx2 = hash::Ctx::new(HashType::SHA256).unwrap();
+
+            lot.hash(&mut hash_ctx2);
+
+            let hash_res2 = hash_ctx2.finish_into_hash_bytes();
+
+            assert_eq!(hash_res1, hash_res2);
         }
     }
 }
