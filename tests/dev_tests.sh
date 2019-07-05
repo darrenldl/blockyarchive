@@ -151,7 +151,11 @@ end_time=$(date "+%s")
 echo ""
 echo "Test end :" $end_date
 
+echo ""
+
 echo "Time elapsed :" $[(end_time - start_time) / 60] "minutes"
+
+echo ""
 
 echo "Reordering test list by time taken"
 
@@ -171,7 +175,7 @@ echo "" >> test_list.sh
 echo "tests=(" >> test_list.sh
 while IFS= read -r line; do
     test=$(echo $line | awk '{ print $1 }')
-    echo "\"$test\"" >> test_list.sh
+    echo "    \"$test\"" >> test_list.sh
 done < test_stats_sorted
 echo ")" >> test_list.sh
 
