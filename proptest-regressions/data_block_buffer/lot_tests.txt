@@ -1,0 +1,11 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc e140c2ebb0186e4e7bc2fc5241e8447458981499b56a7f406994abbbcfaa8725 # shrinks to size = 1
+cc 3e3bc0cf8520b6f0882b9bd8263d5fe54340ad6256666fb0464a66e10e358199 # shrinks to size = 1, data = 2, parity = 1, burst = 1, fill = 1, tries = 2
+cc 3b57317f775b1487b51a6fcac47d99194489c769c31d4f047558cd28b56b1db6 # shrinks to size = 1, data = 1, parity = 1, burst = 1, seq_nums = [], fill = 1
+cc 573b6816091df2c4b9ad39bc7cbffe99b78fd94ce9a55516c2fc591b2b2b0407 # shrinks to size = 1, lot_start_seq_num = 1, data = 85, parity = 1, burst = 1, fill = 1
+cc bf96607dc1985301a5ebb38ec1751b7ae89031048d78637ff06a1e8c21f33b03 # shrinks to size = 6, data = 1, parity = 1, burst = 1, fill = 6, content_len = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 10185736932142347431, 8433997192095184942, 7961453826374117769, 3417762564606129757, 7780281447607871446, 8472173019349515974, 7814835620460243742, 2475868065809145369, 11620171096674392237, 9402296233599038261, 3732787256179945289, 12783751475423953499, 4609788236475986951, 11136980635624097039, 17810476179922405508, 8238561418748948926], data_is_partial = [false, true, true, true, false, true, true, true, false, true, true, false, false, false, false, false, true, true, false, false, true, true, false, true, false, true, true, false, false, false, false, false]

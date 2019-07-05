@@ -15,3 +15,14 @@ corrupt() {
     rm $byte_orig
     rm $byte_cur
 }
+
+burst_corrupt() {
+    block_size=$2
+    start_pos=$(( $1 / $block_size * $block_size ))
+    burst=$3
+    file=$4
+    for i in $(seq 0 $[burst - 1]); do
+        pos=$(( $start_pos + $i * $block_size ))
+        corrupt $pos $file
+    done
+}

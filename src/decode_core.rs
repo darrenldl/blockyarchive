@@ -48,7 +48,7 @@ use crate::hash_stats::HashStats;
 
 use crate::block_utils::RefBlockChoice;
 
-const HASH_FILE_BLOCK_SIZE: usize = 4096;
+const HASH_FILE_BUFFER_SIZE: usize = 4096 * 50;
 
 const BLANK_BUFFER: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
@@ -867,11 +867,11 @@ pub fn decode(
                         version,
                         Some(&ref_block.get_uid()),
                         InputType::Block,
-                        skip_good,
                         OutputType::Data,
                         BlockArrangement::Unordered,
                         data_par_burst,
                         true,
+                        skip_good,
                         i,
                         PIPELINE_BUFFER_IN_ROTATION,
                     )))
@@ -917,7 +917,7 @@ pub fn decode(
                                     bytes_processed += read_res.len_read as u64;
 
                                     if read_res.eof_seen {
-                                        buffer.cancel_last_slot();
+                                        buffer.cancel_slot();
                                         run = false;
                                         break;
                                     }
@@ -943,13 +943,13 @@ pub fn decode(
                                             }
                                         }
                                         Err(_) => {
-                                            buffer.cancel_last_slot();
+                                            buffer.cancel_slot();
                                             blocks_decode_failed += 1;
                                         }
                                     }
                                 }
                                 Err(e) => {
-                                    buffer.cancel_last_slot();
+                                    buffer.cancel_slot();
                                     stop_run_forward_error!(run => error_tx_reader => e);
                                 }
                             }
@@ -1133,11 +1133,11 @@ pub fn decode(
                                 version,
                                 Some(&ref_block.get_uid()),
                                 InputType::Block,
-                                false,
                                 OutputType::Data,
                                 BlockArrangement::OrderedButSomeMayBeMissing,
                                 data_par_burst,
                                 true,
+                                false,
                                 i,
                                 PIPELINE_BUFFER_IN_ROTATION,
                             )))
@@ -1208,7 +1208,7 @@ pub fn decode(
                                                 }
 
                                                 // save space by not storing parity blocks
-                                                buffer.cancel_last_slot();
+                                                buffer.cancel_slot();
                                             } else {
                                                 if decode_successful {
                                                     data_blocks_decoded += 1;
@@ -1221,7 +1221,7 @@ pub fn decode(
                                                     block.set_uid(uid);
                                                     block.set_seq_num(seq_num);
 
-                                                    misc_utils::wipe_buffer_w_zeros(slot);
+                                                    misc_utils::fill_zeros(slot);
 
                                                     block.sync_to_buffer(None, slot).unwrap();
                                                 }
@@ -1379,11 +1379,11 @@ pub fn decode(
                                 version,
                                 Some(&ref_block.get_uid()),
                                 InputType::Block,
-                                false,
                                 OutputType::Data,
                                 BlockArrangement::OrderedButSomeMayBeMissing,
                                 data_par_burst,
                                 true,
+                                false,
                                 i,
                                 PIPELINE_BUFFER_IN_ROTATION,
                             )))
@@ -1495,7 +1495,7 @@ pub fn decode(
                                                     block.set_uid(uid);
                                                     block.set_seq_num(seq_num);
 
-                                                    misc_utils::wipe_buffer_w_zeros(slot);
+                                                    misc_utils::fill_zeros(slot);
 
                                                     block.sync_to_buffer(None, slot).unwrap();
                                                 }
@@ -1511,7 +1511,7 @@ pub fn decode(
                                             //         parity_blocks_decoded += 1;
 
                                             //         // save space by not storing parity blocks
-                                            //         buffer.cancel_last_slot();
+                                            //         buffer.cancel_slot();
                                             //     } else {
                                             //         data_blocks_decoded += 1;
                                             //     }
@@ -1525,7 +1525,7 @@ pub fn decode(
                                             //         parity_blocks_failed_this_iteration += 1;
 
                                             //         // save space by not storing parity blocks
-                                            //         buffer.cancel_last_slot();
+                                            //         buffer.cancel_slot();
                                             //     } else {
                                             //         data_blocks_failed_this_iteration += 1;
                                             //         data_blocks_failed += 1;
@@ -1535,14 +1535,14 @@ pub fn decode(
                                             //         block.set_uid(uid);
                                             //         block.set_seq_num(seq_num);
 
-                                            //         misc_utils::wipe_buffer_w_zeros(slot);
+                                            //         misc_utils::fill_zeros(slot);
 
                                             //         block.sync_to_buffer(None, slot).unwrap();
                                             //     }
                                             // }
 
                                             if cancel_slot {
-                                                buffer.cancel_last_slot();
+                                                buffer.cancel_slot();
                                             } else {
                                                 if let Some(count) = total_data_chunk_count {
                                                     if data_blocks_decoded + data_blocks_failed
@@ -1782,7 +1782,7 @@ pub fn decode(
 fn hash(
     param: &Param,
     ref_block: &Block,
-    ctrlc_stop_flag: &AtomicBool,
+    ctrlc_stop_flag: &Arc<AtomicBool>,
 ) -> Result<Option<(HashStats, HashBytes)>, Error> {
     let hash_bytes: Option<HashBytes> = if ref_block.is_data() {
         None
@@ -1793,7 +1793,7 @@ fn hash(
         }
     };
 
-    let mut hash_ctx: hash::Ctx = match hash_bytes {
+    let mut hash_ctx = match hash_bytes {
         None => {
             return Ok(None);
         }
@@ -1828,29 +1828,95 @@ fn hash(
         param.json_printer.json_enabled(),
     );
 
-    let mut buffer: [u8; HASH_FILE_BLOCK_SIZE] = [0; HASH_FILE_BLOCK_SIZE];
+    let (to_hasher, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_reader, from_hasher) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+
+    let (error_tx_reader, error_rx) = channel::<Error>();
+    let (hash_bytes_tx, hash_bytes_rx) = channel();
+
+    let worker_shutdown_barrier = Arc::new(Barrier::new(2));
+
+    for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
+        to_reader
+            .send(Some(vec![0; HASH_FILE_BUFFER_SIZE]))
+            .unwrap();
+    }
 
     reporter.start();
 
-    loop {
-        break_if_atomic_bool!(ctrlc_stop_flag);
+    let reader_thread = {
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+        let stats = Arc::clone(&stats);
+        let ctrlc_stop_flag = Arc::clone(ctrlc_stop_flag);
 
-        let read_res = reader.read(&mut buffer)?;
+        thread::spawn(move || {
+            while let Some(mut buffer) = from_hasher.recv().unwrap() {
+                break_if_atomic_bool!(ctrlc_stop_flag);
 
-        // update hash context/state
-        hash_ctx.update(&buffer[0..read_res.len_read]);
+                match reader.read(&mut buffer) {
+                    Ok(read_res) => {
+                        stats.lock().unwrap().bytes_processed += read_res.len_read as u64;
 
-        // update stats
-        stats.lock().unwrap().bytes_processed += read_res.len_read as u64;
+                        to_hasher.send(Some((read_res.len_read, buffer))).unwrap();
 
-        break_if_eof_seen!(read_res);
+                        break_if_eof_seen!(read_res);
+                    }
+                    Err(e) => {
+                        error_tx_reader.send(e).unwrap();
+                        break;
+                    }
+                }
+            }
+
+            worker_shutdown!(to_hasher, shutdown_barrier);
+        })
+    };
+
+    let hasher_thread = {
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+
+        thread::spawn(move || {
+            while let Some((len, buffer)) = from_reader.recv().unwrap() {
+                // update hash context/state
+                hash_ctx.update(&buffer[..len]);
+
+                to_reader.send(Some(buffer)).unwrap();
+            }
+
+            hash_bytes_tx
+                .send(hash_ctx.finish_into_hash_bytes())
+                .unwrap();
+
+            worker_shutdown!(to_reader, shutdown_barrier);
+        })
+    };
+
+    reader_thread.join().unwrap();
+    hasher_thread.join().unwrap();
+
+    if let Ok(err) = error_rx.try_recv() {
+        return Err(err);
     }
+
+    // loop {
+    //     break_if_atomic_bool!(ctrlc_stop_flag);
+
+    //     let read_res = reader.read(&mut buffer)?;
+
+    //     // update hash context/state
+    //     hash_ctx.update(&buffer[0..read_res.len_read]);
+
+    //     // update stats
+    //     stats.lock().unwrap().bytes_processed += read_res.len_read as u64;
+
+    //     break_if_eof_seen!(read_res);
+    // }
 
     reporter.stop();
 
     let stats = stats.lock().unwrap().clone();
 
-    Ok(Some((stats, hash_ctx.finish_into_hash_bytes())))
+    Ok(Some((stats, hash_bytes_rx.recv().unwrap())))
 }
 
 pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {

@@ -567,9 +567,15 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     );
 
     // set up hash state
-    let hash_ctx = Arc::new(Mutex::new(
-        multihash::hash::Ctx::new(param.hash_type).unwrap(),
-    ));
+    let hash_ctx = if param.meta_enabled {
+        Arc::new(Mutex::new(
+            Some(multihash::hash::Ctx::new(param.hash_type).unwrap()),
+        ))
+    } else {
+        Arc::new(Mutex::new(
+            None
+        ))
+    };
 
     // seek to calculated position
     if let Some(seek_to) = seek_to {
@@ -611,11 +617,11 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 param.version,
                 Some(&param.uid),
                 InputType::Data,
-                false,
                 OutputType::Block,
                 BlockArrangement::OrderedAndNoMissing,
                 param.data_par_burst,
                 param.meta_enabled,
+                false,
                 i,
                 PIPELINE_BUFFER_IN_ROTATION,
             )))
@@ -633,7 +639,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         thread::spawn(move || {
             let mut run = true;
             let mut bytes_processed = 0;
-            let hash_ctx = &mut hash_ctx.lock().unwrap();
+            let mut hash_ctx = hash_ctx.lock().unwrap();
 
             while let Some(mut buffer) = from_writer.recv().unwrap() {
                 if !run {
@@ -662,7 +668,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                             bytes_processed += read_res.len_read as u64;
 
                             if read_res.len_read == 0 {
-                                buffer.cancel_last_slot();
+                                buffer.cancel_slot();
                                 run = false;
                                 break;
                             }
@@ -671,7 +677,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 stop_run_forward_error!(run => error_tx_reader => Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
                             }
 
-                            hash_ctx.update(&slot[..read_res.len_read]);
+                            if let Some(ref mut hash_ctx) = *hash_ctx {
+                                hash_ctx.update(&slot[..read_res.len_read]);
+                            }
 
                             if read_res.len_read < data_size {
                                 *content_len_exc_header = Some(read_res.len_read);
@@ -710,7 +718,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     stats.data_blocks_written += data_blocks as u64;
                     stats.parity_blocks_written += parity_blocks as u64;
 
-                    stats.data_padding_bytes = padding_byte_count + padding_blocks * data_size;
+                    stats.data_padding_bytes += padding_byte_count + padding_blocks * data_size;
                 }
 
                 to_writer.send(Some(buffer)).unwrap();
@@ -757,6 +765,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         let hash_bytes = Arc::try_unwrap(hash_ctx)
             .unwrap()
             .into_inner()
+            .unwrap()
             .unwrap()
             .finish_into_hash_bytes();
 
