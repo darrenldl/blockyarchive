@@ -1,17 +1,7 @@
 #![cfg(test)]
 use super::*;
-use crate::multihash::hash;
-use crate::multihash::HashType;
 use crate::sbx_specs::Version;
 use proptest::prelude::*;
-use reed_solomon_erasure::ReedSolomon;
-
-use crate::file_writer::{FileWriter, FileWriterParam};
-use crate::writer::{Writer, WriterType};
-
-use crate::sbx_block;
-
-use crate::rand_utils::fill_random_bytes;
 
 proptest! {
     #[test]
@@ -79,7 +69,7 @@ proptest! {
                                                        data in 1usize..30,
                                                        parity in 1usize..30,
                                                        burst in 1usize..100,
-                                                       fills in 1usize..1000) {
+                                                       fill in 1usize..1000) {
         for buffer_case in 0..2 {
             let mut buffer =
                 if buffer_case == 0 {
@@ -112,11 +102,11 @@ proptest! {
 
             let fill = std::cmp::min(size, fill);
 
-            for _ in 0..size {
+            for _ in 0..fill {
                 let _ = buffer.get_slot();
             }
 
-            lot.reset();
+            buffer.reset();
 
             assert_eq!(buffer.lots_used, 0);
         }
