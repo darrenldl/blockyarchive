@@ -3,7 +3,6 @@ use super::*;
 use crate::multihash::hash;
 use crate::multihash::HashType;
 use crate::sbx_specs::Version;
-use proptest::prelude::*;
 use reed_solomon_erasure::ReedSolomon;
 
 use crate::sbx_block;
@@ -357,11 +356,13 @@ fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_m
     lot.encode(1);
 }
 
-proptest! {
-    #[test]
+quickcheck! {
     #[should_panic]
-    fn pt_cancel_slot_panics_when_empty(size in 1usize..1000,
-                                             cancels in 1usize..1000) {
+    fn qc_cancel_slot_panics_when_empty(size: usize,
+                                        cancels: usize) -> bool {
+        let size = 1 + size % 1000;
+        let cancels = 1 + cancels % 1000;
+
         let cancels = std::cmp::min(size, cancels);
 
         let mut lot = Lot::new(Version::V1,
@@ -383,11 +384,15 @@ proptest! {
         for _ in 0..cancels+1 {
             lot.cancel_slot();
         }
+
+        true
     }
 
-    #[test]
-    fn pt_cancel_slot_when_not_empty(size in 1usize..1000,
-                                          cancels in 1usize..1000) {
+    fn qc_cancel_slot_when_not_empty(size: usize,
+                                     cancels: usize) -> bool {
+        let size = 1 + size % 1000;
+        let cancels = 1 + cancels % 1000;
+
         let cancels = std::cmp::min(size, cancels);
 
         let mut lot = Lot::new(Version::V1,
@@ -409,14 +414,21 @@ proptest! {
         for _ in 0..cancels {
             lot.cancel_slot();
         }
+
+        true
     }
 
-    #[test]
-    fn pt_get_slot_result(size in 1usize..1000,
-                          data in 1usize..30,
-                          parity in 1usize..30,
-                          burst in 1usize..100,
-                          tries in 2usize..100) {
+    fn qc_get_slot_result(size: usize,
+                          data: usize,
+                          parity: usize,
+                          burst: usize,
+                          tries: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let tries = 2 + tries % 100;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -478,14 +490,20 @@ proptest! {
                 }
             }
         }
+
+        true
     }
 
-    #[test]
-    fn pt_new_lot_stats(size in 1usize..1000,
-                        data in 1usize..30,
-                        parity in 1usize..30,
-                        burst in 1usize..100) {
-        {
+    fn qc_new_lot_stats(size: usize,
+                        data: usize,
+                        parity: usize,
+                        burst: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+
+        ({
             let lot = Lot::new(Version::V1,
                                None,
                                InputType::Block,
@@ -498,12 +516,13 @@ proptest! {
                                &Arc::new(None),
             );
 
-            assert_eq!(lot.lot_size, size);
-            assert_eq!(lot.slots_used, 0);
-            assert_eq!(lot.padding_byte_count_in_non_padding_blocks, 0);
-            assert_eq!(lot.directly_writable_slots, size);
-        }
-        {
+            lot.lot_size == size
+                && lot.slots_used == 0
+                && lot.padding_byte_count_in_non_padding_blocks == 0
+                && lot.directly_writable_slots == size
+        })
+        &&
+        ({
             let lot = Lot::new(Version::V17,
                                None,
                                InputType::Block,
@@ -516,12 +535,13 @@ proptest! {
                                &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
             );
 
-            assert_eq!(lot.lot_size, data + parity);
-            assert_eq!(lot.slots_used, 0);
-            assert_eq!(lot.padding_byte_count_in_non_padding_blocks, 0);
-            assert_eq!(lot.directly_writable_slots, data + parity);
-        }
-        {
+            lot.lot_size == data + parity
+                && lot.slots_used == 0
+                && lot.padding_byte_count_in_non_padding_blocks == 0
+                && lot.directly_writable_slots == data + parity
+        })
+        &&
+        ({
             let lot = Lot::new(Version::V1,
                                None,
                                InputType::Data,
@@ -534,12 +554,13 @@ proptest! {
                                &Arc::new(None),
             );
 
-            assert_eq!(lot.lot_size, size);
-            assert_eq!(lot.slots_used, 0);
-            assert_eq!(lot.padding_byte_count_in_non_padding_blocks, 0);
-            assert_eq!(lot.directly_writable_slots, size);
-        }
-        {
+            lot.lot_size == size
+                && lot.slots_used == 0
+                && lot.padding_byte_count_in_non_padding_blocks == 0
+                && lot.directly_writable_slots == size
+        })
+        &&
+        ({
             let lot = Lot::new(Version::V17,
                                None,
                                InputType::Data,
@@ -552,20 +573,25 @@ proptest! {
                                &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
             );
 
-            assert_eq!(lot.lot_size, data + parity);
-            assert_eq!(lot.slots_used, 0);
-            assert_eq!(lot.padding_byte_count_in_non_padding_blocks, 0);
-            assert_eq!(lot.directly_writable_slots, data);
-        }
+            lot.lot_size == data + parity
+                && lot.slots_used == 0
+                && lot.padding_byte_count_in_non_padding_blocks == 0
+                && lot.directly_writable_slots == data
+        })
     }
 
-    #[test]
-    fn pt_get_slot_and_cancel_slot_stats(size in 1usize..1000,
-                                         cancels in 1usize..1000,
-                                         data in 1usize..30,
-                                         parity in 1usize..30,
-                                         burst in 1usize..100,
-                                         tries in 2usize..100) {
+    fn qc_get_slot_and_cancel_slot_stats(size: usize,
+                                         cancels: usize,
+                                         data: usize,
+                                         parity: usize,
+                                         burst: usize,
+                                         tries: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let tries = 2 + tries % 100;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -604,32 +630,44 @@ proptest! {
             let cancels = std::cmp::min(size, cancels);
 
             for _ in 0..tries {
+                let mut res = true;
+
                 for i in 0..cancels {
-                    assert_eq!(lot.slots_used, i);
+                    res = res && lot.slots_used == i;
 
                     let _ = lot.get_slot();
 
-                    assert_eq!(lot.slots_used, i+1);
+                    res = res && lot.slots_used == i + 1;
                 }
 
                 for i in (0..cancels).rev() {
-                    assert_eq!(lot.slots_used, i+1);
+                    res = res && lot.slots_used == i + 1;
 
                     lot.cancel_slot();
 
-                    assert_eq!(lot.slots_used, i);
+                    res = res && lot.slots_used == i;
                 }
+
+                if !res { return false; }
             }
         }
+
+        true
     }
 
-    #[test]
-    fn pt_cancel_slot_resets_slot_correctly(size in 1usize..1000,
-                                            cancels in 1usize..1000,
-                                            data in 1usize..30,
-                                            parity in 1usize..30,
-                                            burst in 1usize..100,
-                                            tries in 2usize..100) {
+    fn qc_cancel_slot_resets_slot_correctly(size: usize,
+                                            cancels: usize,
+                                            data: usize,
+                                            parity: usize,
+                                            burst: usize,
+                                            tries: usize) -> bool {
+        let size = 1 + size % 1000;
+        let cancels = 1 + cancels % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let tries = 2 + tries % 100;
+
         for lot_case in 1..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -668,6 +706,8 @@ proptest! {
             let cancels = std::cmp::min(size, cancels);
 
             for _ in 0..tries {
+                let mut res = true;
+
                 for _ in 0..cancels {
                     match lot.get_slot() {
                         GetSlotResult::None => {},
@@ -692,25 +732,33 @@ proptest! {
                         GetSlotResult::None => panic!(),
                         GetSlotResult::Some(block, _data, content_len_exc_header)
                             | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
-                                assert_eq!(block.get_version(), version);
-                                assert_eq!(block.get_uid(), uid);
-                                assert_eq!(block.get_seq_num(), 1);
+                                res = res && block.get_version() == version;
+                                res = res && block.get_uid() == uid;
+                                res = res && block.get_seq_num() == 1;
 
-                                assert_eq!(*content_len_exc_header, None);
+                                res = res && *content_len_exc_header == None;
                         },
                     }
 
                     lot.cancel_slot();
                 }
+
+                if !res { return false; }
             }
         }
+
+        true
     }
 
-    #[test]
-    fn pt_new_slots_are_initialized_correctly(size in 1usize..1000,
-                                              data in 1usize..30,
-                                              parity in 1usize..30,
-                                              burst in 1usize..100) {
+    fn qc_new_slots_are_initialized_correctly(size: usize,
+                                              data: usize,
+                                              parity: usize,
+                                              burst: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -748,29 +796,40 @@ proptest! {
 
             let version = lot.version;
             let uid = lot.uid;
+
+            let mut res = true;
 
             for _ in 0..size {
                 match lot.get_slot() {
                     GetSlotResult::None => {},
                     GetSlotResult::Some(block, _data, content_len_exc_header)
                         | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
-                            assert_eq!(block.get_version(), version);
-                            assert_eq!(block.get_uid(), uid);
-                            assert_eq!(block.get_seq_num(), 1);
+                            res = res && block.get_version() == version;
+                            res = res && block.get_uid() == uid;
+                            res = res && block.get_seq_num() == 1;
 
-                            assert_eq!(*content_len_exc_header, None);
+                            res = res && *content_len_exc_header == None;
                         },
                 }
             }
+
+            if !res { return false; }
         }
+
+        true
     }
 
-    #[test]
-    fn pt_slots_are_reset_correctly_after_lot_reset(size in 1usize..1000,
-                                                    data in 1usize..30,
-                                                    parity in 1usize..30,
-                                                    burst in 1usize..100,
-                                                    fill in 1usize..1000) {
+    fn qc_slots_are_reset_correctly_after_lot_reset(size: usize,
+                                                    data: usize,
+                                                    parity: usize,
+                                                    burst: usize,
+                                                    fill: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -827,28 +886,39 @@ proptest! {
             let version = lot.version;
             let uid = lot.uid;
 
+            let mut res = true;
+
             for _ in 0..size {
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
                     GetSlotResult::Some(block, _data, content_len_exc_header)
                         | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
-                            assert_eq!(block.get_version(), version);
-                            assert_eq!(block.get_uid(), uid);
-                            assert_eq!(block.get_seq_num(), 1);
+                            res = res && block.get_version() == version;
+                            res = res && block.get_uid() == uid;
+                            res = res && block.get_seq_num() == 1;
 
-                            assert_eq!(*content_len_exc_header, None);
+                            res = res && *content_len_exc_header == None;
                         },
                 }
             }
+
+            if !res { return false; }
         }
+
+        true
     }
 
-    #[test]
-    fn pt_stats_are_reset_correctly_after_lot_reset(size in 1usize..1000,
-                                                    data in 1usize..30,
-                                                    parity in 1usize..30,
-                                                    burst in 1usize..100,
-                                                    fill in 1usize..1000) {
+    fn qc_stats_are_reset_correctly_after_lot_reset(size: usize,
+                                                    data: usize,
+                                                    parity: usize,
+                                                    burst: usize,
+                                                    fill: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -902,18 +972,29 @@ proptest! {
 
             lot.reset();
 
-            assert_eq!(lot.slots_used, 0);
-            assert_eq!(lot.padding_byte_count_in_non_padding_blocks, 0);
+            let res =
+                lot.slots_used == 0
+                && lot.padding_byte_count_in_non_padding_blocks == 0;
+
+            if !res { return false; }
         }
+
+        true
     }
 
-    #[test]
-    fn pt_data_padding_parity_block_count_result_is_correct(size in 1usize..1000,
-                                                            lot_start_seq_num in 1u32..1000,
-                                                            data in 1usize..30,
-                                                            parity in 1usize..30,
-                                                            burst in 1usize..100,
-                                                            fill in 1usize..1000) {
+    fn qc_data_padding_parity_block_count_result_is_correct(size: usize,
+                                                            lot_start_seq_num: u32,
+                                                            data: usize,
+                                                            parity: usize,
+                                                            burst: usize,
+                                                            fill: usize) -> bool {
+        let size = 1 + size % 1000;
+        let lot_start_seq_num = 1 + lot_start_seq_num % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -959,18 +1040,24 @@ proptest! {
                 let (d, pad, p) = lot.data_padding_parity_block_count();
 
                 if lot_case == 0 {
-                    assert_eq!(d, fill);
-                    assert_eq!(pad, 0);
-                    assert_eq!(p, 0);
+                    let res =
+                        d == fill
+                        && pad == 0
+                        && p == 0;
+
+                    if !res { return false; }
                 } else {
                     if fill < data {
-                        assert_eq!(d, fill);
-                        assert_eq!(p, 0);
+                        let res = d == fill && p == 0;
+                        if !res { return false; }
                     } else {
-                        assert_eq!(d, data);
-                        assert_eq!(p, fill - data);
+                        let res = d == data && p == fill - data;
+                        if !res { return false; }
                     }
-                    assert_eq!(pad, 0);
+
+                    let res = pad == 0;
+
+                    if !res { return false; }
                 }
             }
 
@@ -980,25 +1067,39 @@ proptest! {
                 let (d, pad, p) = lot.data_padding_parity_block_count();
 
                 if lot_case == 0 {
-                    assert_eq!(d, fill);
-                    assert_eq!(pad, 0);
-                    assert_eq!(p, 0);
+                    let res =
+                        d == fill
+                        && pad == 0
+                        && p == 0;
+
+                    if !res { return false; }
                 } else {
-                    assert_eq!(d, data);
-                    assert_eq!(pad, data - fill);
-                    assert_eq!(p, parity);
+                    let res =
+                        d == data
+                        && pad == data - fill
+                        && p == parity;
+
+                    if !res { return false; }
                 }
             }
         }
+
+        true
     }
 
-    #[test]
-    fn pt_encode_updates_stats_and_blocks_correctly(size in 1usize..1000,
-                                                    lot_start_seq_num in 1u32..1000,
-                                                    data in 1usize..30,
-                                                    parity in 1usize..30,
-                                                    burst in 1usize..100,
-                                                    fill in 1usize..1000) {
+    fn qc_encode_updates_stats_and_blocks_correctly(size: usize,
+                                                    lot_start_seq_num: u32,
+                                                    data: usize,
+                                                    parity: usize,
+                                                    burst: usize,
+                                                    fill: usize) -> bool {
+        let size = 1 + size % 1000;
+        let lot_start_seq_num = 1 + lot_start_seq_num % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -1043,7 +1144,9 @@ proptest! {
 
             let fill = std::cmp::min(writable_slots, fill);
 
-            assert_eq!(lot.slots_used, 0);
+            let mut res = true;
+
+            res = res && lot.slots_used == 0;
 
             for _ in 0..fill {
                 let _ = lot.get_slot();
@@ -1052,24 +1155,34 @@ proptest! {
             lot.encode(lot_start_seq_num);
 
             if lot_case == 0 {
-                assert_eq!(lot.slots_used, fill);
+                res = res && lot.slots_used == fill;
             } else {
-                assert_eq!(lot.slots_used, size);
+                res = res && lot.slots_used == size;
             }
 
             for i in 0..lot.slots_used {
-                assert_eq!(lot.blocks[i].get_seq_num(), lot_start_seq_num + i as u32);
+                res = res && lot.blocks[i].get_seq_num() == lot_start_seq_num + i as u32;
             }
+
+            if !res { return false; }
         }
+
+        true
     }
 
-    #[test]
-    fn pt_active_if_and_only_if_at_least_one_slot_in_use(size in 1usize..1000,
-                                                         data in 1usize..30,
-                                                         parity in 1usize..30,
-                                                         burst in 1usize..100,
-                                                         fill in 1usize..1000,
-                                                         tries in 2usize..100) {
+    fn qc_active_if_and_only_if_at_least_one_slot_in_use(size: usize,
+                                                         data: usize,
+                                                         parity: usize,
+                                                         burst: usize,
+                                                         fill: usize,
+                                                         tries: usize) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+        let tries = 2 + tries % 1000;
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -1108,35 +1221,52 @@ proptest! {
             let fill = std::cmp::min(size, fill);
 
             for _ in 0..tries {
-                assert!(!lot.active());
+                let mut res = true;
+
+                res = res && !lot.active();
 
                 for _ in 0..fill {
                     let _ = lot.get_slot();
 
-                    assert!(lot.active());
+                    res = res && lot.active();
                 }
 
                 for _ in 0..fill {
-                    assert!(lot.active());
+                    res = res && lot.active();
 
                     lot.cancel_slot();
                 }
 
-                assert!(!lot.active());
+                res = res && !lot.active();
+
+                if !res { return false; }
             }
         }
+
+        true
     }
 
-    #[test]
-    fn pt_fill_in_padding_counts_padding_bytes_and_marks_padding_blocks_correctly(
-        size in 1usize..1000,
-        data in 1usize..30,
-        parity in 1usize..30,
-        burst in 1usize..100,
-        fill in 1usize..1000,
-        content_len: [usize; 32],
-        data_is_partial: [bool; 32],
-    ) {
+    fn qc_fill_in_padding_counts_padding_bytes_and_marks_padding_blocks_correctly(
+        size: usize,
+        data: usize,
+        parity: usize,
+        burst: usize,
+        fill: usize,
+        content_len: Vec<usize>,
+        data_is_partial: Vec<bool>
+    ) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+
+        let mut content_len = content_len;
+        let mut data_is_partial = data_is_partial;
+
+        content_len.push(1);
+        data_is_partial.push(true);
+
         for lot_case in 0..2 {
             let mut lot =
                 if lot_case == 0 {
@@ -1181,8 +1311,8 @@ proptest! {
                     GetSlotResult::None => panic!(),
                     GetSlotResult::Some(_block, _data, content_len_exc_header)
                         | GetSlotResult::LastSlot(_block, _data, content_len_exc_header) => {
-                            if data_is_partial[i % 32] {
-                                let len = content_len[i % 32] % 496 + 1;
+                            if data_is_partial[i % data_is_partial.len()] {
+                                let len = content_len[i % content_len.len()] % 496 + 1;
                                 *content_len_exc_header = Some(len);
                                 padding_bytes_in_non_padding_blocks += 496 - len;
                             }
@@ -1192,34 +1322,53 @@ proptest! {
 
             lot.fill_in_padding();
 
-            assert_eq!(padding_bytes_in_non_padding_blocks, lot.padding_byte_count_in_non_padding_blocks);
+            let mut res = true;
+
+            res = res && padding_bytes_in_non_padding_blocks == lot.padding_byte_count_in_non_padding_blocks;
 
             if lot_case == 0 {
                 for is_padding in lot.slot_is_padding.iter() {
-                    assert_eq!(*is_padding, false);
+                    res = res && !*is_padding;
                 }
             } else {
                 for i in 0..fill {
-                    assert_eq!(lot.slot_is_padding[i], false);
+                    res = res && !lot.slot_is_padding[i];
                 }
                 for i in fill..data {
-                    assert_eq!(lot.slot_is_padding[i], true);
+                    res = res && lot.slot_is_padding[i];
                 }
             }
+
+            if !res { return false; }
         }
+
+        true
     }
 
-    #[test]
-    fn pt_hash_ignores_metadata_and_parity_blocks_and_uses_content_len_correctly(
-        size in 1usize..1000,
-        data in 1usize..30,
-        parity in 1usize..30,
-        burst in 1usize..100,
-        fill in 1usize..1000,
-        seq_nums: [u32; 32],
-        content_len: [usize; 32],
-        data_is_partial: [bool; 32],
-    ) {
+    fn qc_hash_ignores_metadata_and_parity_blocks_and_uses_content_len_correctly(
+        size: usize,
+        data: usize,
+        parity: usize,
+        burst: usize,
+        fill: usize,
+        seq_nums: Vec<u32>,
+        content_len: Vec<usize>,
+        data_is_partial: Vec<bool>
+    ) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let fill = 1 + fill % 1000;
+
+        let mut seq_nums = seq_nums;
+        let mut content_len = content_len;
+        let mut data_is_partial = data_is_partial;
+
+        seq_nums.push(1);
+        content_len.push(1);
+        data_is_partial.push(true);
+
         for lot_case in 0..1 {
             let mut lot =
                 if lot_case == 0 {
@@ -1277,13 +1426,13 @@ proptest! {
                     GetSlotResult::None => panic!(),
                     GetSlotResult::Some(block, data, content_len_exc_header)
                         | GetSlotResult::LastSlot(block, data, content_len_exc_header) => {
-                            let seq_num = seq_nums[i % 32];
+                            let seq_num = seq_nums[i % seq_nums.len()];
 
                             fill_random_bytes(data);
 
                             let len =
-                                if data_is_partial[i % 32] {
-                                    let len = content_len[i % 32] % 496 + 1;
+                                if data_is_partial[i % data_is_partial.len()] {
+                                    let len = content_len[i % content_len.len()] % 496 + 1;
                                     *content_len_exc_header = Some(len);
                                     len
                                 } else {
@@ -1311,5 +1460,7 @@ proptest! {
 
             assert_eq!(hash_res1, hash_res2);
         }
+
+        true
     }
 }
