@@ -1261,6 +1261,9 @@ quickcheck! {
         let burst = 1 + burst % 100;
         let fill = 1 + fill % 1000;
 
+        let mut content_len = content_len;
+        let mut data_is_partial = data_is_partial;
+
         content_len.push(1);
         data_is_partial.push(true);
 
@@ -1357,6 +1360,10 @@ quickcheck! {
         let parity = 1 + parity % 30;
         let burst = 1 + burst % 100;
         let fill = 1 + fill % 1000;
+
+        let mut seq_nums = seq_nums;
+        let mut content_len = content_len;
+        let mut data_is_partial = data_is_partial;
 
         seq_nums.push(1);
         content_len.push(1);
