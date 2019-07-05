@@ -301,6 +301,81 @@ fn write_panics_when_output_is_disabled() {
 }
 
 #[test]
+fn fill_in_padding_when_input_type_is_data_and_arrangement_is_ordered_and_no_missing() {
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Data,
+        OutputType::Disabled,
+        BlockArrangement::OrderedAndNoMissing,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
+    );
+
+    lot.fill_in_padding();
+}
+
+#[test]
+#[should_panic]
+fn fill_in_padding_panics_when_input_type_is_block_and_arrangement_is_ordered_and_no_missing() {
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Block,
+        OutputType::Disabled,
+        BlockArrangement::OrderedAndNoMissing,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
+    );
+
+    lot.fill_in_padding();
+}
+
+#[test]
+#[should_panic]
+fn fill_in_padding_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing1() {
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Data,
+        OutputType::Disabled,
+        BlockArrangement::OrderedButSomeMayBeMissing,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
+    );
+
+    lot.fill_in_padding();
+}
+
+#[test]
+#[should_panic]
+fn fill_in_padding_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing2() {
+    let mut lot = Lot::new(
+        Version::V1,
+        None,
+        InputType::Data,
+        OutputType::Disabled,
+        BlockArrangement::Unordered,
+        None,
+        true,
+        10,
+        false,
+        &Arc::new(None),
+    );
+
+    lot.fill_in_padding();
+}
+
+#[test]
 fn encode_when_input_type_is_data_and_arrangement_is_ordered_and_no_missing() {
     let mut lot = Lot::new(
         Version::V1,
@@ -1141,6 +1216,71 @@ proptest! {
                 }
 
                 assert!(!lot.active());
+            }
+        }
+    }
+
+    #[test]
+    fn pt_fill_in_padding_marks_padding_blocks_correctly(size in 1usize..1000,
+                                                         data in 1usize..30,
+                                                         parity in 1usize..30,
+                                                         burst in 1usize..100,
+                                                         fill in 1usize..1000) {
+
+        for lot_case in 0..2 {
+            let mut lot =
+                if lot_case == 0 {
+                    Lot::new(Version::V1,
+                             None,
+                             InputType::Data,
+                             OutputType::Block,
+                             BlockArrangement::OrderedAndNoMissing,
+                             None,
+                             true,
+                             size,
+                             false,
+                             &Arc::new(None),
+                    )
+                } else {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Data,
+                             OutputType::Block,
+                             BlockArrangement::OrderedAndNoMissing,
+                             Some((data, parity, burst)),
+                             true,
+                             size,
+                             false,
+                             &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
+                    )
+                };
+
+            let writable_slots =
+                if lot_case == 0 {
+                    size
+                } else {
+                    data
+                };
+
+            let fill = std::cmp::min(writable_slots, fill);
+
+            for _ in 0..fill {
+                let _ = lot.get_slot();
+            }
+
+            lot.fill_in_padding();
+
+            if lot_case == 0 {
+                for is_padding in lot.slot_is_padding.iter() {
+                    assert_eq!(*is_padding, false);
+                }
+            } else {
+                for i in 0..fill {
+                    assert_eq!(lot.slot_is_padding[i], false);
+                }
+                for i in fill..data {
+                    assert_eq!(lot.slot_is_padding[i], true);
+                }
             }
         }
     }
