@@ -128,8 +128,8 @@ impl Lot {
         arrangement: BlockArrangement,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
-        default_lot_size: usize,
         skip_good: bool,
+        default_lot_size: usize,
         rs_codec: &Arc<Option<ReedSolomon>>,
     ) -> Self {
         assert!(default_lot_size > 0);
@@ -604,8 +604,8 @@ impl DataBlockBuffer {
                 arrangement,
                 data_par_burst,
                 meta_enabled,
-                DEFAULT_SINGLE_LOT_SIZE,
                 skip_good,
+                DEFAULT_SINGLE_LOT_SIZE,
                 &rs_codec,
             ))
         }
