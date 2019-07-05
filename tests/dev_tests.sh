@@ -131,6 +131,7 @@ for t in ${tests[@]}; do
     tests_failed+=("$t")
   fi
 done
+
 echo "========================================"
 
 if [[ $test_fail_count == 0 ]]; then
