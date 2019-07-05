@@ -69,11 +69,11 @@ pub fn hash(
                 version,
                 None,
                 InputType::Block,
-                false,
                 OutputType::Disabled,
                 BlockArrangement::OrderedButSomeMayBeMissing,
                 data_par_burst,
                 true,
+                false,
                 i,
                 PIPELINE_BUFFER_IN_ROTATION,
             )))

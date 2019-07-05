@@ -611,11 +611,11 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                 param.version,
                 Some(&param.uid),
                 InputType::Data,
-                false,
                 OutputType::Block,
                 BlockArrangement::OrderedAndNoMissing,
                 param.data_par_burst,
                 param.meta_enabled,
+                false,
                 i,
                 PIPELINE_BUFFER_IN_ROTATION,
             )))

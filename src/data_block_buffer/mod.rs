@@ -571,11 +571,11 @@ impl DataBlockBuffer {
         version: Version,
         uid: Option<&[u8; SBX_FILE_UID_LEN]>,
         input_type: InputType,
-        skip_good: bool,
         output_type: OutputType,
         arrangement: BlockArrangement,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
+        skip_good: bool,
         buffer_index: usize,
         total_buffer_count: usize,
     ) -> Self {
