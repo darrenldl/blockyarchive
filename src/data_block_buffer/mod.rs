@@ -601,8 +601,6 @@ impl DataBlockBuffer {
 
         check_data_par_burst_consistent_with_version!(data_par_burst, version);
 
-        check_data_par_burst_consistent_with_rs_codec!(data_par_burst, rs_codec);
-
         let mut lots = Vec::with_capacity(lot_count);
 
         let rs_codec = Arc::new(match data_par_burst {
