@@ -29,6 +29,14 @@ rm -f sort_*.ecsbx.*
 
 rm -f exit_code
 
+rm -f start_time
+
+rm -f end_time
+
+rm -f test_stats
+
+rm -f test_stats_sorted
+
 rm -f ../blkar
 
 rm -f data_chunk
