@@ -77,8 +77,8 @@ macro_rules! check_data_par_burst_consistent_with_rs_codec {
             Some((data, par, _)) => match **$rs_codec {
                 None => panic!(),
                 Some(ref rs_codec) => {
-                    assert!(data == $rs_codec.data_shard_count());
-                    assert!(par == $rs_codec.parity_shard_count());
+                    assert!(data == rs_codec.data_shard_count());
+                    assert!(par == rs_codec.parity_shard_count());
                 }
             },
         }
