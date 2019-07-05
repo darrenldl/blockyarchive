@@ -1311,8 +1311,8 @@ quickcheck! {
                     GetSlotResult::None => panic!(),
                     GetSlotResult::Some(_block, _data, content_len_exc_header)
                         | GetSlotResult::LastSlot(_block, _data, content_len_exc_header) => {
-                            if data_is_partial[i % 32] {
-                                let len = content_len[i % 32] % 496 + 1;
+                            if data_is_partial[i % data_is_partial.len()] {
+                                let len = content_len[i % content_len.len()] % 496 + 1;
                                 *content_len_exc_header = Some(len);
                                 padding_bytes_in_non_padding_blocks += 496 - len;
                             }
@@ -1426,13 +1426,13 @@ quickcheck! {
                     GetSlotResult::None => panic!(),
                     GetSlotResult::Some(block, data, content_len_exc_header)
                         | GetSlotResult::LastSlot(block, data, content_len_exc_header) => {
-                            let seq_num = seq_nums[i % 32];
+                            let seq_num = seq_nums[i % seq_nums.len()];
 
                             fill_random_bytes(data);
 
                             let len =
-                                if data_is_partial[i % 32] {
-                                    let len = content_len[i % 32] % 496 + 1;
+                                if data_is_partial[i % data_is_partial.len()] {
+                                    let len = content_len[i % content_len.len()] % 496 + 1;
                                     *content_len_exc_header = Some(len);
                                     len
                                 } else {
