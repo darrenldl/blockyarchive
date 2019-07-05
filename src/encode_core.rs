@@ -568,13 +568,11 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
     // set up hash state
     let hash_ctx = if param.meta_enabled {
-        Arc::new(Mutex::new(
-            Some(multihash::hash::Ctx::new(param.hash_type).unwrap()),
-        ))
+        Arc::new(Mutex::new(Some(
+            multihash::hash::Ctx::new(param.hash_type).unwrap(),
+        )))
     } else {
-        Arc::new(Mutex::new(
-            None
-        ))
+        Arc::new(Mutex::new(None))
     };
 
     // seek to calculated position
