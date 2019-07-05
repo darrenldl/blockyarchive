@@ -54,6 +54,37 @@ macro_rules! lot_is_full {
     }};
 }
 
+macro_rules! check_data_par_burst_consistent_with_version {
+    (
+        $data_par_burst:expr, $version:expr
+    ) => {{
+        match $data_par_burst {
+            None => assert!(!ver_uses_rs($version)),
+            Some(_) => assert!(ver_uses_rs($version)),
+        }
+    }};
+}
+
+macro_rules! check_data_par_burst_consistent_with_rs_codec {
+    (
+        $data_par_burst:expr, $rs_codec:expr
+    ) => {{
+        match $data_par_burst {
+            None => match **$rs_codec {
+                None => {}
+                Some(_) => panic!(),
+            },
+            Some((data, par, _)) => match **$rs_codec {
+                None => panic!(),
+                Some(ref rs_codec) => {
+                    assert!(data == $rs_codec.data_shard_count());
+                    assert!(par == $rs_codec.parity_shard_count());
+                }
+            },
+        }
+    }};
+}
+
 enum GetSlotResult<'a> {
     None,
     Some(&'a mut Block, &'a mut [u8], &'a mut Option<usize>),
@@ -134,24 +165,9 @@ impl Lot {
     ) -> Self {
         assert!(default_lot_size > 0);
 
-        match data_par_burst {
-            None => assert!(!ver_uses_rs(version)),
-            Some(_) => assert!(ver_uses_rs(version)),
-        }
+        check_data_par_burst_consistent_with_version!(data_par_burst, version);
 
-        match data_par_burst {
-            None => match **rs_codec {
-                None => {}
-                Some(_) => panic!(),
-            },
-            Some((data, par, _)) => match **rs_codec {
-                None => panic!(),
-                Some(ref rs_codec) => {
-                    assert!(data == rs_codec.data_shard_count());
-                    assert!(par == rs_codec.parity_shard_count());
-                }
-            },
-        }
+        check_data_par_burst_consistent_with_rs_codec!(data_par_burst, rs_codec);
 
         let lot_size = match data_par_burst {
             None => default_lot_size,
@@ -583,10 +599,9 @@ impl DataBlockBuffer {
 
         assert!(lot_count > 0);
 
-        match data_par_burst {
-            None => assert!(!ver_uses_rs(version)),
-            Some(_) => assert!(ver_uses_rs(version)),
-        }
+        check_data_par_burst_consistent_with_version!(data_par_burst, version);
+
+        check_data_par_burst_consistent_with_rs_codec!(data_par_burst, rs_codec);
 
         let mut lots = Vec::with_capacity(lot_count);
 
