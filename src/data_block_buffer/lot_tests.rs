@@ -6,9 +6,6 @@ use crate::sbx_specs::Version;
 use proptest::prelude::*;
 use reed_solomon_erasure::ReedSolomon;
 
-use crate::file_writer::{FileWriter, FileWriterParam};
-use crate::writer::{Writer, WriterType};
-
 use crate::sbx_block;
 
 use crate::rand_utils::fill_random_bytes;
@@ -208,100 +205,6 @@ fn calc_slot_write_pos_panics_when_output_is_disabled() {
     );
 
     lot.calc_slot_write_pos();
-}
-
-#[test]
-fn write_does_not_panic_when_output_is_block() {
-    let mut lot = Lot::new(
-        Version::V1,
-        None,
-        InputType::Block,
-        OutputType::Block,
-        BlockArrangement::Unordered,
-        None,
-        true,
-        false,
-        10,
-        &Arc::new(None),
-    );
-
-    let mut writer = Writer::new(WriterType::File(
-        FileWriter::new(
-            "tests/dummy",
-            FileWriterParam {
-                read: false,
-                append: false,
-                truncate: true,
-                buffered: false,
-            },
-        )
-        .unwrap(),
-    ));
-
-    lot.write(false, &mut writer).unwrap();
-}
-
-#[test]
-fn write_does_not_panic_when_output_is_data() {
-    let mut lot = Lot::new(
-        Version::V1,
-        None,
-        InputType::Block,
-        OutputType::Data,
-        BlockArrangement::Unordered,
-        None,
-        true,
-        false,
-        10,
-        &Arc::new(None),
-    );
-
-    let mut writer = Writer::new(WriterType::File(
-        FileWriter::new(
-            "tests/dummy",
-            FileWriterParam {
-                read: false,
-                append: false,
-                truncate: true,
-                buffered: false,
-            },
-        )
-        .unwrap(),
-    ));
-
-    lot.write(false, &mut writer).unwrap();
-}
-
-#[test]
-#[should_panic]
-fn write_panics_when_output_is_disabled() {
-    let mut lot = Lot::new(
-        Version::V1,
-        None,
-        InputType::Block,
-        OutputType::Disabled,
-        BlockArrangement::Unordered,
-        None,
-        true,
-        false,
-        10,
-        &Arc::new(None),
-    );
-
-    let mut writer = Writer::new(WriterType::File(
-        FileWriter::new(
-            "tests/dummy",
-            FileWriterParam {
-                read: false,
-                append: false,
-                truncate: true,
-                buffered: false,
-            },
-        )
-        .unwrap(),
-    ));
-
-    lot.write(false, &mut writer).unwrap();
 }
 
 #[test]
