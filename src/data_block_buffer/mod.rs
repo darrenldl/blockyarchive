@@ -21,6 +21,7 @@ use crate::writer::Writer;
 use crate::misc_utils;
 
 mod lot_tests;
+mod buffer_tests;
 
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
