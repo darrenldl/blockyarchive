@@ -232,9 +232,9 @@ mod parsers {
     use super::UncheckedMetadata;
     use super::UncheckedMetadata::*;
 
-    use nom::be_i64;
-    use nom::be_u64;
-    use nom::be_u8;
+    use nom::number::complete::be_i64;
+    use nom::number::complete::be_u64;
+    use nom::number::complete::be_u8;
 
     macro_rules! make_meta_parser {
         (
@@ -246,7 +246,7 @@ mod parsers {
                 do_parse!(
                     _id: tag!($id)
                         >> n: be_u8
-                        >> res: cond_reduce!(n >= 1 && n == $n_must_be, $res_parser)
+                        >> res: map_opt!(cond!(n >= 1 && n == $n_must_be, $res_parser), move |x| x)
                         >> ($constructor(res))
                 )
             );
@@ -259,7 +259,7 @@ mod parsers {
                 do_parse!(
                     tag!($id)
                         >> n: be_u8
-                        >> res: cond_reduce!(n >= 1, take!(n))
+                        >> res: map_opt!(cond!(n >= 1, take!(n)), move |x| x)
                         >> ($constructor(misc_utils::slice_to_vec(res)))
                 )
             );
@@ -281,14 +281,15 @@ mod parsers {
 
     named!(pub meta_p <Vec<UncheckedMetadata>>,
            many0!(
-               alt_complete!(fnm_p |
-                             snm_p |
-                             fsz_p |
-                             fdt_p |
-                             sdt_p |
-                             hsh_p |
-                             rsd_p |
-                             rsp_p
+               alt!(
+                   complete!(fnm_p)
+                       | complete!(snm_p)
+                       | complete!(fsz_p)
+                       | complete!(fdt_p)
+                       | complete!(sdt_p)
+                       | complete!(hsh_p)
+                       | complete!(rsd_p)
+                       | complete!(rsp_p)
                )
            )
     );

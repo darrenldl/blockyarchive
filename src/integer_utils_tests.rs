@@ -28,8 +28,8 @@ fn test_round_up_to_multiple_simple_cases() {
 }
 
 quickcheck! {
-    fn qc_round_down_to_multiple(val         : usize,
-                                 multiple_of : usize) -> bool {
+    fn qc_round_down_to_multiple(val: usize,
+                                 multiple_of: usize) -> bool {
         let multiple_of = if multiple_of == 0 { 1 } else { multiple_of };
 
         let res = usize::round_down_to_multiple(val, multiple_of);
@@ -41,8 +41,8 @@ quickcheck! {
             && usize::round_down_to_multiple(val, multiple_of) % multiple_of == 0
     }
 
-    fn qc_round_up_to_multiple(val         : usize,
-                               multiple_of : usize) -> bool {
+    fn qc_round_up_to_multiple(val: usize,
+                               multiple_of: usize) -> bool {
         let multiple_of = if multiple_of == 0 { 1 } else { multiple_of };
 
         let res = usize::round_up_to_multiple(val, multiple_of);
@@ -54,13 +54,13 @@ quickcheck! {
             && usize::round_up_to_multiple(val, multiple_of) % multiple_of == 0
     }
 
-    fn qc_ensure_at_least(val      : usize,
-                          at_least : usize) -> bool {
+    fn qc_ensure_at_least(val: usize,
+                          at_least: usize) -> bool {
         usize::ensure_at_least(val, at_least) >= at_least
     }
 
-    fn qc_ensure_at_most(val     : usize,
-                         at_most : usize) -> bool {
+    fn qc_ensure_at_most(val: usize,
+                         at_most: usize) -> bool {
         usize::ensure_at_most(val, at_most) <= at_most
     }
 }

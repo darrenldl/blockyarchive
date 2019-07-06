@@ -77,9 +77,9 @@ fn test_encoder_encode_correctly_simple_cases() {
 }
 
 quickcheck! {
-    fn qc_encoder_encode_same_as_encode(data   : usize,
-                                        parity : usize,
-                                        reuse  : usize) -> bool {
+    fn qc_encoder_encode_same_as_encode(data: usize,
+                                        parity: usize,
+                                        reuse: usize) -> bool {
         let data   = 1 + data % 10;
         let parity = 1 + parity % 10;
 

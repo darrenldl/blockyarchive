@@ -373,14 +373,15 @@ pub mod parsers {
     );
 
     named!(pub multihash_w_len_p <HashBytes>,
-           alt_complete!(sha1_w_len_p         |
-                         sha256_w_len_p       |
-                         sha2_512_256_w_len_p |
-                         sha512_w_len_p       |
-                         blake2b_256_w_len_p  |
-                         blake2b_512_w_len_p  |
-                         blake2s_128_w_len_p  |
-                         blake2s_256_w_len_p
+           alt!(
+               complete!(sha1_w_len_p)
+                   | complete!(sha256_w_len_p)
+                   | complete!(sha2_512_256_w_len_p)
+                   | complete!(sha512_w_len_p)
+                   | complete!(blake2b_256_w_len_p)
+                   | complete!(blake2b_512_w_len_p)
+                   | complete!(blake2s_128_w_len_p)
+                   | complete!(blake2s_256_w_len_p)
            )
     );
 }

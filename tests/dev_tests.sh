@@ -68,7 +68,7 @@ while (( $i < $test_count )); do
       cd $t
       ./../gen_dummy.sh
       cp ../functions.sh .
-      ./../$t.sh > log 2> stderr_log &
+      (echo $(date "+%s") > start_time; ./../$t.sh > log 2> stderr_log; echo $(date "+%s") > end_time) &
       cd ..
 
       i=$[i+1]
@@ -93,6 +93,8 @@ while (( $i < $test_count )); do
              -not -name "log" \
              -not -name "stderr_log" \
              -not -name "dummy_file_size" \
+             -not -name "start_time" \
+             -not -name "end_time" \
              -delete
 
         cd ..
@@ -129,6 +131,7 @@ for t in ${tests[@]}; do
     tests_failed+=("$t")
   fi
 done
+
 echo "========================================"
 
 if [[ $test_fail_count == 0 ]]; then
@@ -149,6 +152,34 @@ end_time=$(date "+%s")
 echo ""
 echo "Test end :" $end_date
 
+echo ""
+
 echo "Time elapsed :" $[(end_time - start_time) / 60] "minutes"
+
+if [[ "$1" == "reorder" || "$2" == "reorder" ]]; then
+    echo ""
+
+    echo "Reordering test list by time taken"
+
+    rm -f test_stats
+    for t in ${tests[@]}; do
+        start_time=$(cat $t/start_time)
+        end_time=$(cat $t/end_time)
+        time_elapsed=$[(end_time - start_time) / 10 * 10]
+
+        echo "$t $time_elapsed" >> test_stats
+    done
+
+    sort test_stats -k2n > test_stats_sorted
+
+    echo '#!/bin/bash' > test_list.sh
+    echo "" >> test_list.sh
+    echo "tests=(" >> test_list.sh
+    while IFS= read -r line; do
+        test=$(echo $line | awk '{ print $1 }')
+        echo "    \"$test\"" >> test_list.sh
+    done < test_stats_sorted
+    echo ")" >> test_list.sh
+fi
 
 exit $exit_code
