@@ -861,21 +861,20 @@ pub fn decode(
             };
 
             // push buffers into pipeline
-            for i in 0..PIPELINE_BUFFER_IN_ROTATION {
-                to_reader
-                    .send(Some(DataBlockBuffer::new(
-                        version,
-                        Some(&ref_block.get_uid()),
-                        InputType::Block,
-                        OutputType::Data,
-                        BlockArrangement::Unordered,
-                        data_par_burst,
-                        true,
-                        skip_good,
-                        i,
-                        PIPELINE_BUFFER_IN_ROTATION,
-                    )))
-                    .unwrap();
+            let buffers = DataBlockBuffer::new_multi(
+                version,
+                Some(&ref_block.get_uid()),
+                InputType::Block,
+                OutputType::Data,
+                BlockArrangement::Unordered,
+                data_par_burst,
+                true,
+                skip_good,
+                PIPELINE_BUFFER_IN_ROTATION,
+            );
+
+            for buffer in buffers.into_iter() {
+                to_reader.send(Some(buffer)).unwrap();
             }
 
             reporter.start();
@@ -1127,21 +1126,20 @@ pub fn decode(
                     // go through data and parity blocks
 
                     // push buffers into pipeline
-                    for i in 0..PIPELINE_BUFFER_IN_ROTATION {
-                        to_reader
-                            .send(Some(DataBlockBuffer::new(
-                                version,
-                                Some(&ref_block.get_uid()),
-                                InputType::Block,
-                                OutputType::Data,
-                                BlockArrangement::OrderedButSomeMayBeMissing,
-                                data_par_burst,
-                                true,
-                                false,
-                                i,
-                                PIPELINE_BUFFER_IN_ROTATION,
-                            )))
-                            .unwrap();
+                    let buffers = DataBlockBuffer::new_multi(
+                        version,
+                        Some(&ref_block.get_uid()),
+                        InputType::Block,
+                        OutputType::Data,
+                        BlockArrangement::OrderedButSomeMayBeMissing,
+                        data_par_burst,
+                        true,
+                        false,
+                        PIPELINE_BUFFER_IN_ROTATION,
+                    );
+
+                    for buffer in buffers.into_iter() {
+                        to_reader.send(Some(buffer)).unwrap();
                     }
 
                     let reader_thread = {
@@ -1373,21 +1371,20 @@ pub fn decode(
                     reader.seek(SeekFrom::Start(seek_to))?;
 
                     // push buffers into pipeline
-                    for i in 0..PIPELINE_BUFFER_IN_ROTATION {
-                        to_reader
-                            .send(Some(DataBlockBuffer::new(
-                                version,
-                                Some(&ref_block.get_uid()),
-                                InputType::Block,
-                                OutputType::Data,
-                                BlockArrangement::OrderedButSomeMayBeMissing,
-                                data_par_burst,
-                                true,
-                                false,
-                                i,
-                                PIPELINE_BUFFER_IN_ROTATION,
-                            )))
-                            .unwrap();
+                    let buffers = DataBlockBuffer::new_multi(
+                        version,
+                        Some(&ref_block.get_uid()),
+                        InputType::Block,
+                        OutputType::Data,
+                        BlockArrangement::OrderedButSomeMayBeMissing,
+                        data_par_burst,
+                        true,
+                        false,
+                        PIPELINE_BUFFER_IN_ROTATION,
+                    );
+
+                    for buffer in buffers.into_iter() {
+                        to_reader.send(Some(buffer)).unwrap();
                     }
 
                     let reader_thread = {

@@ -43,8 +43,6 @@ pub fn hash(
         },
     )?;
 
-    // let mut block = Block::dummy();
-
     let reporter = Arc::new(ProgressReporter::new(
         &stats,
         "Stored data hashing progress",
@@ -63,21 +61,20 @@ pub fn hash(
     let worker_shutdown_barrier = Arc::new(Barrier::new(2));
 
     // push buffers into pipeline
-    for i in 0..PIPELINE_BUFFER_IN_ROTATION {
-        to_reader
-            .send(Some(DataBlockBuffer::new(
-                version,
-                None,
-                InputType::Block,
-                OutputType::Disabled,
-                BlockArrangement::OrderedButSomeMayBeMissing,
-                data_par_burst,
-                true,
-                false,
-                i,
-                PIPELINE_BUFFER_IN_ROTATION,
-            )))
-            .unwrap();
+    let buffers = DataBlockBuffer::new_multi(
+        version,
+        None,
+        InputType::Block,
+        OutputType::Disabled,
+        BlockArrangement::OrderedButSomeMayBeMissing,
+        data_par_burst,
+        true,
+        false,
+        PIPELINE_BUFFER_IN_ROTATION,
+    );
+
+    for buffer in buffers.into_iter() {
+        to_reader.send(Some(buffer)).unwrap();
     }
 
     reporter.start();

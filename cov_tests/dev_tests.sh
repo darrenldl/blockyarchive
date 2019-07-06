@@ -85,14 +85,15 @@ while (( $i < $test_count )); do
       cd $t
 
       if [[ $? == 0 ]]; then
-        find . -type f \
-             -not -name "exit_code" \
-             -not -name "log" \
-             -not -name "stderr_log" \
-             -not -name "dummy_file_size" \
-             -not -name "start_time" \
-             -not -name "end_time" \
-             -delete
+          find . -maxdepth 1 \
+               -type f \
+               -not -name "exit_code" \
+               -not -name "log" \
+               -not -name "stderr_log" \
+               -not -name "dummy_file_size" \
+               -not -name "start_time" \
+               -not -name "end_time" \
+               -delete
 
         cd ..
       fi
