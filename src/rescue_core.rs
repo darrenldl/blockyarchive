@@ -122,8 +122,8 @@ impl ProgressReport for Stats {
 }
 
 mod parsers {
-    use nom::digit;
-    use nom::newline;
+    use nom::character::complete::digit1;
+    use nom::character::complete::newline;
     use std::num::ParseIntError;
 
     type StatsParseResult = Result<(u64, u64, u64, u64), ParseIntError>;

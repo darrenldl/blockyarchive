@@ -232,9 +232,9 @@ mod parsers {
     use super::UncheckedMetadata;
     use super::UncheckedMetadata::*;
 
-    use nom::be_i64;
-    use nom::be_u64;
-    use nom::be_u8;
+    use nom::number::complete::be_i64;
+    use nom::number::complete::be_u64;
+    use nom::number::complete::be_u8;
 
     macro_rules! make_meta_parser {
         (

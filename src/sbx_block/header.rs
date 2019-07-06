@@ -87,19 +87,19 @@ impl Header {
 mod parsers {
     use super::Header;
     use super::Version;
-    use nom::{be_u16, be_u32};
+    use nom::number::complete::{be_u16, be_u32};
 
     named!(sig_p, tag!(b"SBx"));
 
     named!(
         ver_p<Version>,
-        alt_complete!(
-            do_parse!(_v: tag!(&[1]) >> (Version::V1))
-                | do_parse!(_v: tag!(&[2]) >> (Version::V2))
-                | do_parse!(_v: tag!(&[3]) >> (Version::V3))
-                | do_parse!(_v: tag!(&[17]) >> (Version::V17))
-                | do_parse!(_v: tag!(&[18]) >> (Version::V18))
-                | do_parse!(_v: tag!(&[19]) >> (Version::V19))
+        alt!(
+            complete!(do_parse!(_v: tag!(&[1]) >> (Version::V1)))
+                | complete!(do_parse!(_v: tag!(&[2]) >> (Version::V2)))
+                | complete!(do_parse!(_v: tag!(&[3]) >> (Version::V3)))
+                | complete!(do_parse!(_v: tag!(&[17]) >> (Version::V17)))
+                | complete!(do_parse!(_v: tag!(&[18]) >> (Version::V18)))
+                | complete!(do_parse!(_v: tag!(&[19]) >> (Version::V19)))
         )
     );
 
