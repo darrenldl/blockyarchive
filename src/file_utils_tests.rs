@@ -20,8 +20,8 @@ fn test_calc_meta_block_count_exc_burst_gaps_rs_disabled() {
 }
 
 quickcheck! {
-    fn qc_calc_meta_block_count_exc_burst_gaps_rs_enabled(meta_enabled   : Option<bool>,
-                                                          data_par_burst : (usize, usize, usize)) -> bool {
+    fn qc_calc_meta_block_count_exc_burst_gaps_rs_enabled(meta_enabled: Option<bool>,
+                                                          data_par_burst: (usize, usize, usize)) -> bool {
         let (_, parity, _) = data_par_burst;
 
         (1 + parity as u64) == calc_meta_block_count_exc_burst_gaps(Version::V17, meta_enabled, Some(data_par_burst))
@@ -36,7 +36,7 @@ mod from_orig_file_size {
     use crate::sbx_specs::*;
 
     quickcheck! {
-        fn qc_calc_data_only_and_parity_block_count_exc_burst_gaps_rs_disabled(size : u64) -> bool {
+        fn qc_calc_data_only_and_parity_block_count_exc_burst_gaps_rs_disabled(size: u64) -> bool {
             ({
                 let version = Version::V1;
 
@@ -83,7 +83,7 @@ mod from_orig_file_size {
                 })
         }
 
-        fn qc_calc_data_only_and_parity_block_count_exc_burst_gaps_rs_enabled(data_par_burst : (usize, usize, usize),
+        fn qc_calc_data_only_and_parity_block_count_exc_burst_gaps_rs_enabled(data_par_burst: (usize, usize, usize),
                                                                               size           : u64)
                                                                               -> bool {
             let mut data_par_burst = data_par_burst;
@@ -157,7 +157,7 @@ mod from_orig_file_size {
                         && data_total / data == block_set_count
                 })
         }
-        fn qc_calc_data_block_count_exc_burst_gaps_consistent_rs_disabled(size : u64)
+        fn qc_calc_data_block_count_exc_burst_gaps_consistent_rs_disabled(size: u64)
                                                                           -> bool {
             ({
                 let version = Version::V1;
@@ -196,8 +196,8 @@ mod from_orig_file_size {
                 })
         }
 
-        fn qc_calc_data_block_count_exc_burst_gaps_consistent_rs_enabled(data_par_burst : (usize, usize, usize),
-                                                                         size           : u64)
+        fn qc_calc_data_block_count_exc_burst_gaps_consistent_rs_enabled(data_par_burst: (usize, usize, usize),
+                                                                         size: u64)
                                                                          -> bool {
             let mut data_par_burst = data_par_burst;
             data_par_burst.0 = if data_par_burst.0 == 0 { 1 } else { data_par_burst.0 };
@@ -240,7 +240,7 @@ mod from_orig_file_size {
                 })
         }
 
-        fn qc_calc_total_block_count_exc_burst_gaps_consistent_rs_disabled(size : u64) -> bool {
+        fn qc_calc_total_block_count_exc_burst_gaps_consistent_rs_disabled(size: u64) -> bool {
             ({
                 let version = Version::V1;
                 calc_meta_block_count_exc_burst_gaps(version, Some(false), None)
@@ -305,7 +305,7 @@ mod from_orig_file_size {
                 })
         }
 
-        fn qc_calc_total_block_count_exc_burst_gaps_consistent_rs_enabled(data_par_burst : (usize, usize, usize),
+        fn qc_calc_total_block_count_exc_burst_gaps_consistent_rs_enabled(data_par_burst: (usize, usize, usize),
                                                                           size           : u64)
                                                                           -> bool {
             let mut data_par_burst = data_par_burst;
@@ -618,7 +618,7 @@ mod from_orig_file_size {
     }
 
     quickcheck! {
-        fn qc_calc_container_size_rs_enabled_no_data(data_par_burst : (usize, usize, usize)) -> bool {
+        fn qc_calc_container_size_rs_enabled_no_data(data_par_burst: (usize, usize, usize)) -> bool {
             let mut data_par_burst = data_par_burst;
             data_par_burst.0 = if data_par_burst.0 == 0 { 1 } else { data_par_burst.0 };
             data_par_burst.1 = if data_par_burst.1 == 0 { 1 } else { data_par_burst.1 };
@@ -630,7 +630,7 @@ mod from_orig_file_size {
                 && (ver_to_block_size(Version::V19) * ((1 + parity) + parity * burst)) as u64 == calc_container_size(Version::V19, None, Some(data_par_burst), 0)
         }
 
-        fn qc_calc_container_size_rs_enabled_not_too_off(data_par_burst : (usize, usize, usize),
+        fn qc_calc_container_size_rs_enabled_not_too_off(data_par_burst: (usize, usize, usize),
                                                          size           : u64) -> bool {
             let size = if size == 0 { 1 } else { size };
 

@@ -121,11 +121,11 @@ fn test_f64_max_simple_cases() {
 }
 
 quickcheck! {
-    fn qc_calc_required_len_and_seek_to_from_byte_range(from_byte         : Option<u64>,
-                                                        to_byte_inc       : Option<u64>,
-                                                        force_misalign    : bool,
-                                                        bytes_so_far      : u64,
-                                                        last_possible_pos : u64) -> bool {
+    fn qc_calc_required_len_and_seek_to_from_byte_range(from_byte: Option<u64>,
+                                                        to_byte_inc: Option<u64>,
+                                                        force_misalign: bool,
+                                                        bytes_so_far: u64,
+                                                        last_possible_pos: u64) -> bool {
         let to_byte = match to_byte_inc {
             None    => None,
             Some(x) => Some(RangeEnd::Inc(x)),

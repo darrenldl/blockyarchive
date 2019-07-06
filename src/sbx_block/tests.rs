@@ -216,7 +216,7 @@ fn test_calc_rs_enabled_seq_num_at_index_simple_cases() {
 }
 
 quickcheck! {
-    fn qc_data_seq_num_to_index_to_seq_num_meta_disabled(seq_num : u32) -> bool {
+    fn qc_data_seq_num_to_index_to_seq_num_meta_disabled(seq_num: u32) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
 
         let index = calc_data_block_write_index(seq_num,
@@ -230,7 +230,7 @@ quickcheck! {
         seq_num_from_index == seq_num
     }
 
-    fn qc_data_seq_num_to_index_to_seq_num_meta_enabled(seq_num : u32) -> bool {
+    fn qc_data_seq_num_to_index_to_seq_num_meta_enabled(seq_num: u32) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
 
         let index = calc_data_block_write_index(seq_num,
@@ -244,7 +244,7 @@ quickcheck! {
         seq_num_from_index == seq_num
     }
 
-    fn qc_data_seq_num_to_index_to_seq_num_meta_default(seq_num : u32) -> bool {
+    fn qc_data_seq_num_to_index_to_seq_num_meta_default(seq_num: u32) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
 
         let index = calc_data_block_write_index(seq_num,
@@ -258,10 +258,10 @@ quickcheck! {
         seq_num_from_index == seq_num
     }
 
-    fn qc_data_seq_num_to_index_to_seq_num_rs_enabled(seq_num       : u32,
-                                                      data_shards   : usize,
-                                                      parity_shards : usize,
-                                                      burst         : usize) -> bool {
+    fn qc_data_seq_num_to_index_to_seq_num_rs_enabled(seq_num: u32,
+                                                      data_shards: usize,
+                                                      parity_shards: usize,
+                                                      burst: usize) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
         let data_shards   = 1 + data_shards % 256;
         let parity_shards = 1 + parity_shards % 256;
@@ -280,8 +280,8 @@ quickcheck! {
         seq_num_from_index == seq_num
     }
 
-    fn qc_data_block_write_pos_consistent_rs_disabled(seq_num : u32,
-                                                      meta_enabled : Option<bool>) -> bool {
+    fn qc_data_block_write_pos_consistent_rs_disabled(seq_num: u32,
+                                                      meta_enabled: Option<bool>) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
         calc_data_block_write_index(seq_num,
                                     meta_enabled,
@@ -306,9 +306,9 @@ quickcheck! {
                                          None)
     }
 
-    fn qc_data_block_write_pos_consistent_rs_enabled(seq_num        : u32,
-                                                     meta_enabled   : Option<bool>,
-                                                     data_par_burst : (usize, usize, usize)) -> bool {
+    fn qc_data_block_write_pos_consistent_rs_enabled(seq_num: u32,
+                                                     meta_enabled: Option<bool>,
+                                                     data_par_burst: (usize, usize, usize)) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
         let mut data_par_burst = data_par_burst;
         data_par_burst.0 = if data_par_burst.0 == 0 { 1 } else { data_par_burst.0 };
@@ -338,7 +338,7 @@ quickcheck! {
                                          data_par_burst)
     }
 
-    fn qc_meta_block_write_indices_data_block_write_indices_disjoint_rs_disabled(seq_num : u32) -> bool {
+    fn qc_meta_block_write_indices_data_block_write_indices_disjoint_rs_disabled(seq_num: u32) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
 
         let meta_indices = calc_meta_block_all_write_indices(None);
@@ -354,8 +354,8 @@ quickcheck! {
         true
     }
 
-    fn qc_meta_block_write_indices_data_block_write_indices_disjoint_rs_enabled(seq_num        : u32,
-                                                                                data_par_burst : (usize, usize, usize)) -> bool {
+    fn qc_meta_block_write_indices_data_block_write_indices_disjoint_rs_enabled(seq_num: u32,
+                                                                                data_par_burst: (usize, usize, usize)) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
 
         let mut data_par_burst = data_par_burst;
@@ -422,7 +422,7 @@ quickcheck! {
         true
     }
 
-    fn qc_meta_block_write_pos_s_consistent_rs_enabled(data_par_burst : (usize, usize, usize)) -> bool {
+    fn qc_meta_block_write_pos_s_consistent_rs_enabled(data_par_burst: (usize, usize, usize)) -> bool {
         let data_par_burst = Some(data_par_burst);
         {
             let version      = Version::V17;
@@ -597,13 +597,13 @@ fn test_calc_data_chunk_write_index_simple_cases() {
 }
 
 quickcheck! {
-    fn qc_calc_data_chunk_write_index_rs_disabled(seq_num : u32) -> bool {
+    fn qc_calc_data_chunk_write_index_rs_disabled(seq_num: u32) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
         seq_num as u64 - 1 == calc_data_chunk_write_index(seq_num, None).unwrap()
     }
 
-    fn qc_calc_data_chunk_write_index_rs_enabled_ret_opt_correctly(seq_num  : u32,
-                                                                   data_par : (usize, usize))
+    fn qc_calc_data_chunk_write_index_rs_enabled_ret_opt_correctly(seq_num: u32,
+                                                                   data_par: (usize, usize))
                                                                    -> bool {
         let mut data_par = data_par;
         data_par.0 = if data_par.0 == 0 { 1 } else { data_par.0 };
@@ -621,7 +621,7 @@ quickcheck! {
                 && calc_data_chunk_write_index(seq_num, Some(data_par)) != None)
     }
 
-    fn qc_calc_data_chunk_write_index_rs_enabled_calc_correctly(data_par : (usize, usize)) -> bool {
+    fn qc_calc_data_chunk_write_index_rs_enabled_calc_correctly(data_par: (usize, usize)) -> bool {
         let mut data_par = data_par;
         data_par.0 = if data_par.0 == 0 { 1 } else { data_par.0 };
         data_par.1 = if data_par.1 == 0 { 1 } else { data_par.1 };
@@ -791,7 +791,7 @@ fn test_set_uid() {
 }
 
 quickcheck! {
-    fn qc_set_get_seq_num(seq_num : u32) -> bool {
+    fn qc_set_get_seq_num(seq_num: u32) -> bool {
         let mut block = Block::dummy();
 
         block.set_seq_num(seq_num);
@@ -799,8 +799,8 @@ quickcheck! {
         seq_num == block.get_seq_num()
     }
 
-    fn qc_add_seq_num(seq_num : u32,
-                      val : u32) -> bool {
+    fn qc_add_seq_num(seq_num: u32,
+                      val: u32) -> bool {
         let seq_num = seq_num / 2;
         let val     = val / 2;
         let mut block = Block::dummy();
@@ -814,7 +814,7 @@ quickcheck! {
 }
 
 quickcheck! {
-    fn qc_calc_data_chunk_write_pos_consistent_rs_disabled(seq_num : u32) -> bool {
+    fn qc_calc_data_chunk_write_pos_consistent_rs_disabled(seq_num: u32) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
 
         calc_data_chunk_write_index(seq_num,
@@ -834,8 +834,8 @@ quickcheck! {
                                          None).unwrap()
     }
 
-    fn qc_calc_data_chunk_write_pos_consistent_rs_enabled(seq_num  : u32,
-                                                          data_par : (usize, usize)) -> bool {
+    fn qc_calc_data_chunk_write_pos_consistent_rs_enabled(seq_num: u32,
+                                                          data_par: (usize, usize)) -> bool {
         let seq_num = if seq_num == 0 { 1 } else { seq_num };
         let mut data_par = data_par;
         data_par.0 = if data_par.0 == 0 { 1 } else { data_par.0 };
@@ -883,8 +883,8 @@ quickcheck! {
 }
 
 quickcheck! {
-    fn qc_block_is_parity_matches_seq_num_is_parity(seq_num  : u32,
-                                                    data_par : (usize, usize))
+    fn qc_block_is_parity_matches_seq_num_is_parity(seq_num: u32,
+                                                    data_par: (usize, usize))
                                                     -> bool {
         let mut data_par = data_par;
         data_par.0 = if data_par.0 == 0 { 1 } else { data_par.0 };

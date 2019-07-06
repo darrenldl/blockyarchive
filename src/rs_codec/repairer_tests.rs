@@ -213,12 +213,12 @@ fn test_repairer_repair_properly_simple_cases() {
 }
 
 quickcheck! {
-    fn qc_repairer_repair_properly(data    : usize,
-                                   parity  : usize,
-                                   burst   : usize,
-                                   corrupt : usize,
-                                   reuse   : usize,
-                                   seq_num : u32) -> bool {
+    fn qc_repairer_repair_properly(data: usize,
+                                   parity: usize,
+                                   burst: usize,
+                                   corrupt: usize,
+                                   reuse: usize,
+                                   seq_num: u32) -> bool {
         let json_printer = Arc::new(JSONPrinter::new(false, OutputChannel::Stdout));
 
         let data   = 1 + data % 10;
