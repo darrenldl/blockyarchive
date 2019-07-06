@@ -19,6 +19,4 @@ tests=(
     "version_tests_encode_stdin"
     "hash_tests"
     "file_size_calc_tests"
-    "sort_multi_pass_no_skip"
-    "sort_multi_pass"
 )
