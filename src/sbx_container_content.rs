@@ -43,8 +43,6 @@ pub fn hash(
         },
     )?;
 
-    // let mut block = Block::dummy();
-
     let reporter = Arc::new(ProgressReporter::new(
         &stats,
         "Stored data hashing progress",
