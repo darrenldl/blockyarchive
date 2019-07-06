@@ -46,6 +46,9 @@
 - Added multithreading and operation pipelining for decode mode
   
     - This speeds up decoding in all scenarios
+- Dependencies update
+    - Updated `rand` from `~0.6.1` to `~0.7.0`
+    - Updated `nom` from `~4.2.3` to `~5.0.0`
 
 ## 7.2.0 (yanked)
 
