@@ -246,7 +246,7 @@ mod parsers {
                 do_parse!(
                     _id: tag!($id)
                         >> n: be_u8
-                        >> res: cond_reduce!(n >= 1 && n == $n_must_be, $res_parser)
+                        >> res: map_opt!(cond!(n >= 1 && n == $n_must_be, $res_parser), |r| r)
                         >> ($constructor(res))
                 )
             );
@@ -259,7 +259,7 @@ mod parsers {
                 do_parse!(
                     tag!($id)
                         >> n: be_u8
-                        >> res: cond_reduce!(n >= 1, take!(n))
+                        >> res: map_opt!(cond!(n >= 1, take!(n)), |r| r)
                         >> ($constructor(misc_utils::slice_to_vec(res)))
                 )
             );

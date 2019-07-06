@@ -147,13 +147,13 @@ mod parsers {
     named!(pub stats_p <StatsParseResult>,
            do_parse!(
                _id : tag!(b"bytes_processed=") >>
-                   bytes  : digit >> _n : newline >>
+                   bytes  : digit1 >> _n : newline >>
                    _id : tag!(b"blocks_processed=") >>
-                   blocks : digit >> _n : newline >>
+                   blocks : digit1 >> _n : newline >>
                    _id : tag!(b"meta_blocks_processed=") >>
-                   meta   : digit >> _n : newline >>
+                   meta   : digit1 >> _n : newline >>
                    _id : tag!(b"data_blocks_processed=") >>
-                   data   : digit >> _n : newline >>
+                   data   : digit1 >> _n : newline >>
                    (parse_digits(bytes, blocks, meta, data))
            )
     );
