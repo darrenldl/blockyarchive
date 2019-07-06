@@ -281,14 +281,15 @@ mod parsers {
 
     named!(pub meta_p <Vec<UncheckedMetadata>>,
            many0!(
-               alt_complete!(fnm_p |
-                             snm_p |
-                             fsz_p |
-                             fdt_p |
-                             sdt_p |
-                             hsh_p |
-                             rsd_p |
-                             rsp_p
+               alt!(
+                   complete!(fnm_p)
+                       | complete!(snm_p)
+                       | complete!(fsz_p)
+                       | complete!(fdt_p)
+                       | complete!(sdt_p)
+                       | complete!(hsh_p)
+                       | complete!(rsd_p)
+                       | complete!(rsp_p)
                )
            )
     );
