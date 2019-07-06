@@ -8,7 +8,7 @@ VERSIONS=(1 17)
 
 source functions.sh
 
-truncate -s $[1024 * 1024] dummy
+truncate -s $[1024 * 300] dummy
 
 file_size=$(ls -l dummy | awk '{ print $5 }')
 
@@ -18,23 +18,23 @@ dd if=/dev/zero of=dummy_blank bs=1024 count=$[file_size / 1024] 2>/dev/null
 for ver in ${VERSIONS[*]}; do
     for (( i=0; i < 1; i++ )); do
         if   [[ $ver ==  1 ]]; then
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 10))
+            parity_shards=$((1 + RANDOM % 10))
         elif [[ $ver ==  2 ]]; then
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 10))
+            parity_shards=$((1 + RANDOM % 10))
         elif [[ $ver ==  3 ]]; then
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 10))
+            parity_shards=$((1 + RANDOM % 10))
         elif [[ $ver == 17 ]]; then
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 10))
+            parity_shards=$((1 + RANDOM % 10))
         elif [[ $ver == 18 ]]; then
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 10))
+            parity_shards=$((1 + RANDOM % 10))
         else
-            data_shards=$((1 + RANDOM % 128))
-            parity_shards=$((1 + RANDOM % 128))
+            data_shards=$((1 + RANDOM % 10))
+            parity_shards=$((1 + RANDOM % 10))
         fi
 
         burst=$((RANDOM % 15))
@@ -155,33 +155,33 @@ for ver in ${VERSIONS[*]}; do
   for (( i=0; i < 1; i++ )); do
     if   [[ $ver ==  1 ]]; then
       block_size=512
-      data_shards=$((1 + RANDOM % 128))
-      parity_shards=$((1 + RANDOM % 128))
+      data_shards=$((1 + RANDOM % 10))
+      parity_shards=$((1 + RANDOM % 10))
       meta_count=1
     elif [[ $ver ==  2 ]]; then
       block_size=128
-      data_shards=$((1 + RANDOM % 128))
-      parity_shards=$((1 + RANDOM % 128))
+      data_shards=$((1 + RANDOM % 10))
+      parity_shards=$((1 + RANDOM % 10))
       meta_count=1
     elif [[ $ver ==  3 ]]; then
       block_size=4096
-      data_shards=$((1 + RANDOM % 128))
-      parity_shards=$((1 + RANDOM % 128))
+      data_shards=$((1 + RANDOM % 10))
+      parity_shards=$((1 + RANDOM % 10))
       meta_count=1
     elif [[ $ver == 17 ]]; then
       block_size=512
-      data_shards=$((1 + RANDOM % 128))
-      parity_shards=$((1 + RANDOM % 128))
+      data_shards=$((1 + RANDOM % 10))
+      parity_shards=$((1 + RANDOM % 10))
       meta_count=$[parity_shards + 1]
     elif [[ $ver == 18 ]]; then
       block_size=128
-      data_shards=$((1 + RANDOM % 128))
-      parity_shards=$((1 + RANDOM % 128))
+      data_shards=$((1 + RANDOM % 10))
+      parity_shards=$((1 + RANDOM % 10))
       meta_count=$[parity_shards + 1]
     else
       block_size=4096
-      data_shards=$((1 + RANDOM % 128))
-      parity_shards=$((1 + RANDOM % 128))
+      data_shards=$((1 + RANDOM % 10))
+      parity_shards=$((1 + RANDOM % 10))
       meta_count=$[parity_shards + 1]
     fi
 

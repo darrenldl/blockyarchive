@@ -151,7 +151,7 @@ done
 for ver in ${VERSIONS[*]}; do
   for (( i=0; i < 3; i++ )); do
     if   [[ $ver ==  1 ]]; then
-      block_size=496
+      block_size=512
       data_shards=$((1 + RANDOM % 128))
       parity_shards=$((1 + RANDOM % 128))
     elif [[ $ver ==  2 ]]; then
@@ -163,7 +163,7 @@ for ver in ${VERSIONS[*]}; do
       data_shards=$((1 + RANDOM % 128))
       parity_shards=$((1 + RANDOM % 128))
     elif [[ $ver == 17 ]]; then
-      block_size=496
+      block_size=512
       data_shards=$((1 + RANDOM % 128))
       parity_shards=$((1 + RANDOM % 128))
     elif [[ $ver == 18 ]]; then

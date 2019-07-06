@@ -147,6 +147,8 @@ done
 
 echo "========================================"
 
+echo ""
+
 if [[ $test_fail_count == 0 ]]; then
     echo "All $test_count tests passed"
     exit_code=0

@@ -9,7 +9,7 @@ VERSIONS=(1 17)
 touch dummy
 
 for ver in ${VERSIONS[*]}; do
-    for (( i=0; i < 3; i++ )); do
+    for (( i=0; i < 1; i++ )); do
         actual_file_size=$((RANDOM % 4096))
         truncate -s $actual_file_size dummy
 
