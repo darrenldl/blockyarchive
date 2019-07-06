@@ -178,7 +178,7 @@ if [[ "$1" == "reorder" || "$2" == "reorder" ]]; then
     for t in ${tests[@]}; do
         start_time=$(cat $t/start_time)
         end_time=$(cat $t/end_time)
-        time_elapsed=$[end_time - start_time]
+        time_elapsed=$[(end_time - start_time) / 10 * 10]
 
         echo "$t $time_elapsed" >> test_stats
     done
