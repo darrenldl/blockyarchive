@@ -609,21 +609,20 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
     let worker_shutdown_barrier = Arc::new(Barrier::new(3));
 
     // push buffers into pipeline
-    for i in 0..PIPELINE_BUFFER_IN_ROTATION {
-        to_reader
-            .send(Some(DataBlockBuffer::new(
-                param.version,
-                Some(&param.uid),
-                InputType::Data,
-                OutputType::Block,
-                BlockArrangement::OrderedAndNoMissing,
-                param.data_par_burst,
-                param.meta_enabled,
-                false,
-                i,
-                PIPELINE_BUFFER_IN_ROTATION,
-            )))
-            .unwrap();
+    let buffers = DataBlockBuffer::new_multi(
+        param.version,
+        Some(&param.uid),
+        InputType::Data,
+        OutputType::Block,
+        BlockArrangement::OrderedAndNoMissing,
+        param.data_par_burst,
+        param.meta_enabled,
+        false,
+        PIPELINE_BUFFER_IN_ROTATION,
+    );
+
+    for buffer in buffers.into_iter() {
+        to_reader.send(Some(buffer)).unwrap();
     }
 
     reporter.start();

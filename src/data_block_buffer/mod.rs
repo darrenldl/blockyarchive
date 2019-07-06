@@ -583,7 +583,7 @@ impl Lot {
 }
 
 impl DataBlockBuffer {
-    pub fn new(
+    fn new(
         version: Version,
         uid: Option<&[u8; SBX_FILE_UID_LEN]>,
         input_type: InputType,
@@ -638,6 +638,37 @@ impl DataBlockBuffer {
             start_seq_num: Some(start_seq_num),
             seq_num_incre,
         }
+    }
+
+    pub fn new_multi(
+        version: Version,
+        uid: Option<&[u8; SBX_FILE_UID_LEN]>,
+        input_type: InputType,
+        output_type: OutputType,
+        arrangement: BlockArrangement,
+        data_par_burst: Option<(usize, usize, usize)>,
+        meta_enabled: bool,
+        skip_good: bool,
+        total_buffer_count: usize,
+    ) -> Vec<Self> {
+        let mut res = Vec::with_capacity(total_buffer_count);
+
+        for i in 0..total_buffer_count {
+            res.push(Self::new(
+                version,
+                uid,
+                input_type,
+                output_type,
+                arrangement,
+                data_par_burst,
+                meta_enabled,
+                skip_good,
+                i,
+                total_buffer_count,
+            ));
+        }
+
+        res
     }
 
     pub fn lot_count(&self) -> usize {
