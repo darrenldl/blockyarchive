@@ -10,7 +10,7 @@
         - A simple way to reproduce the issue is as follows
         - ```
           $ touch dummy
-          $ truncate s- 4961
+          $ truncate -s 4961
           $ blkar encode dummy
           $ blkar check --hash dummy.ecsbx
           ```
