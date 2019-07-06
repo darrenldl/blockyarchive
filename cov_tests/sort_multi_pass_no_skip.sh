@@ -8,7 +8,7 @@ VERSIONS=(1 17)
 
 source functions.sh
 
-truncate -s $[1024 * 1024] dummy
+truncate -s $[1024 * 50] dummy
 
 file_size=$(ls -l dummy | awk '{ print $5 }')
 
