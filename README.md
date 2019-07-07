@@ -12,7 +12,7 @@ Blockyarchive/blkar (pronounced "bloc-kar") is a multithreaded archiver written 
 
 ### Demo
 
-[![asciicast](https://asciinema.org/a/240491.svg)](https://asciinema.org/a/240491)
+[![asciicast](https://asciinema.org/a/256057.svg)](https://asciinema.org/a/256057)
 
 ### How does it work?
 
