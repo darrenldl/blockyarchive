@@ -12,7 +12,7 @@ Blockyarchive/blkar (pronounced "bloc-kar") is a multithreaded archiver written 
 
 ### Demo
 
-[![asciicast](https://asciinema.org/a/240491.svg)](https://asciinema.org/a/240491)
+[![asciicast](https://asciinema.org/a/256057.svg)](https://asciinema.org/a/256057)
 
 ### How does it work?
 
@@ -32,7 +32,7 @@ Blockyarchive/blkar was formerly known as rust-SeqBox/rsbx prior to renaming.
     - This allows data recovery even when data is fragmented and out of order
 - Supports error correction (via Reed-Solomon erasure code) for EC-SeqBox
 - Supports burst (sector) error resistance for EC-SeqBox
-    - This is done via an interleaving block arrangement scheme. It is mainly to address the data repair limitation of the simple archive design
+    - This is done via an interleaving block arrangement scheme. It is mainly to address the data repair limitation of the simple archive design.
     - More complex archive designs such as PAR2 can repair burst errors without any extra arrangement scheme, but they are also vastly more complex than EC-SeqBox
 - Multithreaded
     - A lot of operations involved in everyday workflow are written to take advantage of multi-core CPU to provide high performance
