@@ -1,5 +1,22 @@
 # Changelog
 
+## 7.2.2
+
+- Updated encode core to terminate if an incomplete data chunk is read as well
+    - Previously encode core only terminates when required number of byte count is reached or when reader returns 0 bytes
+  
+    - In practice, this should not cause any difference especially for file reader, and mainly serves as a better enforcement of termination determination logic by making less assumption about the input reader
+  
+    - For readers with jitters, however, the previous behaviour may have caused some inconsistencies. There was a single test case where encode mode with stdin input was used, blkar recorded more data than the original file has. I could not pinpoint the error in the code base after a lot of code review, so it seems to be an issue with the pipe rather than blkar itself. Following is what I suspect to have happened in that particular test case.
+      
+        - The decoded file contains more data than the original file, but there was no mismatch in the data up to the length of the original file. So data was recorded correctly, but with extra bytes at the end, indicating incorrect input data byte count.
+      
+        - If stdin does have very rare occasional jitter, then the encountered failure makes sense. It could be the case that the last chunk of data is split across, say, two read results due to the jitter, leading to two data chunks both smaller than 496 bytes (or data size of another SBX version) in length. And since in the previous logic, reading fewer than 496 bytes does not cause termination, this leads to two data blocks both having padding, while the SBX format design only assumes the last data block to have padding, if any at all. And if the padding pattern (0x1A) matches the last few bytes of the original file, then there would not be any mismatch up to the length of the original file.
+      
+        - Since encode core hashing code takes length of each individual reads into account, the hash result displayed during encoding would still be still correct, even though the decoded file would contain a mismatch and consequently mismatching hash.
+  
+    - Overall this should be a very rare occurance, as the reader code in blkar already has a retry 5 times logic for reading from file or stdin, so these types of jitters should not be visible. But the code logic is patched to reduce assumptions needed anyway.
+
 ## 7.2.1
 
 - Fixed `sbx_container_content::hash`
@@ -46,7 +63,9 @@
 - Added multithreading and operation pipelining for decode mode
   
     - This speeds up decoding in all scenarios
+
 - Dependencies update
+  
     - Updated `rand` from `~0.6.1` to `~0.7.0`
     - Updated `nom` from `~4.2.3` to `~5.0.0`
 
