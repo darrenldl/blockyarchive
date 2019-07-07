@@ -668,9 +668,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 buffer.cancel_slot();
                                 run = false;
                                 break;
-                            } else if read_res.len_read < data_size {
-                                *content_len_exc_header = Some(read_res.len_read);
-                                run = false;
                             }
 
                             if let Err(_) = block_for_seq_num_check.add1_seq_num() {
@@ -679,6 +676,11 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                             if let Some(ref mut hash_ctx) = *hash_ctx {
                                 hash_ctx.update(&slot[..read_res.len_read]);
+                            }
+
+                            if read_res.len_read < data_size {
+                                *content_len_exc_header = Some(read_res.len_read);
+                                run = false;
                             }
                         }
                         Err(e) => stop_run_forward_error!(run => error_tx_reader => e),
