@@ -681,6 +681,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                             if read_res.len_read < data_size {
                                 *content_len_exc_header = Some(read_res.len_read);
                                 run = false;
+                                break;
                             }
                         }
                         Err(e) => stop_run_forward_error!(run => error_tx_reader => e),
