@@ -15,7 +15,7 @@
       
         - Since encode core hashing code takes length of each individual reads into account, the hash result displayed during encoding would still be still correct, even though the decoded file would contain a mismatch and consequently mismatching hash.
   
-    - Overall this should be a very rare occurance, as the reader code in blkar already has a retry 5 times logic for reading from file or stdin, so these types of jitters should not be visible. But the code logic is patched to reduce assumptions needed anyway.
+    - Overall this should be a very rare occurance, as the reader code in blkar already has a retry 5 times logic for reading from file or stdin, so these types of jitters should not be visible. But the code logic is patched to reduce assumptions made about the reader anyway.
 
 ## 7.2.1
 
