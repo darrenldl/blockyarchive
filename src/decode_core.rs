@@ -909,6 +909,7 @@ pub fn decode(
                             let Slot {
                                 block,
                                 slot,
+                                read_pos: _,
                                 content_len_exc_header: _,
                             } = buffer.get_slot().unwrap();
                             match reader.read(slot) {
@@ -1179,6 +1180,7 @@ pub fn decode(
                                     let Slot {
                                         block,
                                         slot,
+                                        read_pos: _,
                                         content_len_exc_header,
                                     } = buffer.get_slot().unwrap();
 
@@ -1429,6 +1431,7 @@ pub fn decode(
                                     let Slot {
                                         block,
                                         slot,
+                                        read_pos: _,
                                         content_len_exc_header,
                                     } = buffer.get_slot().unwrap();
 

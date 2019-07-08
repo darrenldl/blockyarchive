@@ -658,6 +658,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     let Slot {
                         block: _,
                         slot,
+                        read_pos: _,
                         content_len_exc_header,
                     } = buffer.get_slot().unwrap();
                     match reader.read(slot) {

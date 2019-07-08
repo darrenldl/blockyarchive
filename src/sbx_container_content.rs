@@ -111,6 +111,7 @@ pub fn hash(
                     let Slot {
                         block,
                         slot,
+                        read_pos: _,
                         content_len_exc_header,
                     } = buffer.get_slot().unwrap();
                     match reader.read(slot) {

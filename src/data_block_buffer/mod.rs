@@ -87,8 +87,18 @@ macro_rules! check_data_par_burst_consistent_with_rs_codec {
 
 enum GetSlotResult<'a> {
     None,
-    Some(&'a mut Block, &'a mut [u8], &'a mut Option<usize>),
-    LastSlot(&'a mut Block, &'a mut [u8], &'a mut Option<usize>),
+    Some(
+        &'a mut Block,
+        &'a mut [u8],
+        &'a mut Option<u64>,
+        &'a mut Option<usize>,
+    ),
+    LastSlot(
+        &'a mut Block,
+        &'a mut [u8],
+        &'a mut Option<u64>,
+        &'a mut Option<usize>,
+    ),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -114,6 +124,7 @@ pub enum OutputType {
 pub struct Slot<'a> {
     pub block: &'a mut Block,
     pub slot: &'a mut [u8],
+    pub read_pos: &'a mut Option<u64>,
     pub content_len_exc_header: &'a mut Option<usize>,
 }
 
@@ -135,6 +146,7 @@ struct Lot {
     data: Vec<u8>,
     check_block: Block,
     check_buffer: Vec<u8>,
+    slot_read_pos: Vec<Option<u64>>,
     slot_write_pos: Vec<Option<u64>>,
     slot_content_len_exc_header: Vec<Option<usize>>,
     slot_is_padding: Vec<bool>,
@@ -215,6 +227,7 @@ impl Lot {
             data: vec![0; block_size * lot_size],
             check_block: Block::dummy(),
             check_buffer: vec![0; SBX_LARGEST_BLOCK_SIZE],
+            slot_read_pos: vec![None; lot_size],
             slot_write_pos: vec![None; lot_size],
             slot_content_len_exc_header: vec![None; lot_size],
             slot_is_padding: vec![false; lot_size],
@@ -234,14 +247,16 @@ impl Lot {
                 InputType::Data => sbx_block::slice_data_buf_mut(self.version, slot),
             };
 
+            let read_pos = &mut self.slot_read_pos[self.slots_used];
+
             let content_len = &mut self.slot_content_len_exc_header[self.slots_used];
 
             self.slots_used += 1;
 
             if lot_is_full!(self) {
-                GetSlotResult::LastSlot(block, slot, content_len)
+                GetSlotResult::LastSlot(block, slot, read_pos, content_len)
             } else {
-                GetSlotResult::Some(block, slot, content_len)
+                GetSlotResult::Some(block, slot, read_pos, content_len)
             }
         } else {
             GetSlotResult::None
@@ -456,6 +471,10 @@ impl Lot {
             block.set_version(self.version);
             block.set_uid(self.uid);
             block.set_seq_num(SBX_FIRST_DATA_SEQ_NUM);
+        }
+
+        for pos in self.slot_read_pos.iter_mut() {
+            *pos = None;
         }
 
         for pos in self.slot_write_pos.iter_mut() {
@@ -690,17 +709,19 @@ impl DataBlockBuffer {
             None
         } else {
             match self.lots[self.lots_used].get_slot() {
-                GetSlotResult::LastSlot(block, slot, content_len_exc_header) => {
+                GetSlotResult::LastSlot(block, slot, read_pos, content_len_exc_header) => {
                     self.lots_used += 1;
                     Some(Slot {
                         block,
                         slot,
+                        read_pos,
                         content_len_exc_header,
                     })
                 }
-                GetSlotResult::Some(block, slot, content_len_exc_header) => Some(Slot {
+                GetSlotResult::Some(block, slot, read_pos, content_len_exc_header) => Some(Slot {
                     block,
                     slot,
+                    read_pos,
                     content_len_exc_header,
                 }),
                 GetSlotResult::None => {
