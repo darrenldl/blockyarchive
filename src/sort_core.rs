@@ -4,6 +4,10 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc::channel;
+use std::sync::mpsc::sync_channel;
+use std::sync::Barrier;
+use std::thread;
 
 use crate::misc_utils::RequiredLenAndSeekTo;
 
@@ -13,6 +17,8 @@ use crate::json_printer::{BracketType, JSONPrinter};
 
 use crate::file_reader::{FileReader, FileReaderParam};
 use crate::file_writer::{FileWriter, FileWriterParam};
+
+use crate::data_block_buffer::{BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot};
 
 use crate::general_error::Error;
 use crate::sbx_specs::Version;
@@ -31,6 +37,8 @@ use crate::misc_utils::MultiPassType;
 use crate::block_utils::RefBlockChoice;
 
 use crate::misc_utils::{PositionOrLength, RangeEnd};
+
+const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
 pub struct Param {
     ref_block_choice: RefBlockChoice,
@@ -348,6 +356,31 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
     let mut check_block = Block::dummy();
 
     let mut check_buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
+
+    let (to_writer, from_reader) = sync_channel::<Option<(Option<Block>, DataBlockBuffer)>>(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_reader, from_writer) = sync_channel::<Option<DataBlockBuffer>>(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (error_tx_reader, error_rx) = channel::<Error>();
+    let error_tx_encoder = error_tx_reader.clone();
+    let error_tx_writer = error_tx_reader.clone();
+
+    let worker_shutdown_barrier = Arc::new(Barrier::new(3));
+
+    // push buffers into pipeline
+    let buffers = DataBlockBuffer::new_multi(
+        ref_block.get_version(),
+        Some(&ref_block.get_uid()),
+        InputType::Block,
+        OutputType::Block,
+        BlockArrangement::Unordered,
+        data_par_burst,
+        true,
+        false,
+        PIPELINE_BUFFER_IN_ROTATION,
+    );
+
+    for buffer in buffers.into_iter() {
+        to_reader.send(Some(buffer)).unwrap();
+    }
 
     loop {
         let mut stats = stats.lock().unwrap();
