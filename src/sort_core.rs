@@ -382,6 +382,35 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
         to_reader.send(Some(buffer)).unwrap();
     }
 
+    let reader_thread = {
+        let version = ref_block.get_version();
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+
+        thread::spawn(move || {
+            let mut run = true;
+
+            while let Some(mut buffer) = from_writer.recv().unwrap() {
+                if !run {
+                    break;
+                }
+            }
+
+            worker_shutdown!(to_writer, shutdown_barrier);
+        })
+    };
+
+    let writer_thread = {
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+
+        thread::spawn(move || {
+            while let Some((meta_block, mut buffer)) = from_reader.recv().unwrap() {
+                
+            }
+
+            worker_shutdown!(to_reader, shutdown_barrier);
+        })
+    };
+
     loop {
         let mut stats = stats.lock().unwrap();
 
