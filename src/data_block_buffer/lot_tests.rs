@@ -468,21 +468,21 @@ quickcheck! {
                 for _ in 0..size-1 {
                     match lot.get_slot() {
                         GetSlotResult::None => panic!(),
-                        GetSlotResult::Some(_, _, _) => {},
-                        GetSlotResult::LastSlot(_, _, _) => panic!(),
+                        GetSlotResult::Some(_, _, _, _) => {},
+                        GetSlotResult::LastSlot(_, _, _, _) => panic!(),
                     }
                 }
 
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(_, _, _) => panic!(),
-                    GetSlotResult::LastSlot(_, _, _) => {},
+                    GetSlotResult::Some(_, _, _, _) => panic!(),
+                    GetSlotResult::LastSlot(_, _, _, _) => {},
                 }
 
                 match lot.get_slot() {
                     GetSlotResult::None => {},
-                    GetSlotResult::Some(_, _, _) => panic!(),
-                    GetSlotResult::LastSlot(_, _, _) => panic!(),
+                    GetSlotResult::Some(_, _, _, _) => panic!(),
+                    GetSlotResult::LastSlot(_, _, _, _) => panic!(),
                 }
 
                 for _ in 0..size {
@@ -711,11 +711,13 @@ quickcheck! {
                 for _ in 0..cancels {
                     match lot.get_slot() {
                         GetSlotResult::None => {},
-                        GetSlotResult::Some(block, _data, content_len_exc_header)
-                            | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                        GetSlotResult::Some(block, _data, write_pos, content_len_exc_header)
+                            | GetSlotResult::LastSlot(block, _data, write_pos, content_len_exc_header) => {
                                 block.set_version(Version::V1);
                                 block.set_uid([0xFF; SBX_FILE_UID_LEN]);
                                 block.set_seq_num(2000);
+
+                                *write_pos = Some(10);
 
                                 *content_len_exc_header = Some(100);
                             }
@@ -730,11 +732,13 @@ quickcheck! {
 
                     match lot.get_slot() {
                         GetSlotResult::None => panic!(),
-                        GetSlotResult::Some(block, _data, content_len_exc_header)
-                            | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                        GetSlotResult::Some(block, _data, read_pos, content_len_exc_header)
+                            | GetSlotResult::LastSlot(block, _data, read_pos, content_len_exc_header) => {
                                 res = res && block.get_version() == version;
                                 res = res && block.get_uid() == uid;
                                 res = res && block.get_seq_num() == 1;
+
+                                res = res && *read_pos == None;
 
                                 res = res && *content_len_exc_header == None;
                         },
@@ -802,11 +806,13 @@ quickcheck! {
             for _ in 0..size {
                 match lot.get_slot() {
                     GetSlotResult::None => {},
-                    GetSlotResult::Some(block, _data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                    GetSlotResult::Some(block, _data, read_pos, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, read_pos, content_len_exc_header) => {
                             res = res && block.get_version() == version;
                             res = res && block.get_uid() == uid;
                             res = res && block.get_seq_num() == 1;
+
+                            res = res && *read_pos == None;
 
                             res = res && *content_len_exc_header == None;
                         },
@@ -870,11 +876,13 @@ quickcheck! {
             for _ in 0..fill {
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(block, _data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                    GetSlotResult::Some(block, _data, read_pos, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, read_pos, content_len_exc_header) => {
                             block.set_version(Version::V1);
                             block.set_uid([0xFF; SBX_FILE_UID_LEN]);
                             block.set_seq_num(2000);
+
+                            *read_pos = Some(10);
 
                             *content_len_exc_header = Some(100);
                         },
@@ -891,11 +899,13 @@ quickcheck! {
             for _ in 0..size {
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(block, _data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                    GetSlotResult::Some(block, _data, read_pos, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, read_pos, content_len_exc_header) => {
                             res = res && block.get_version() == version;
                             res = res && block.get_uid() == uid;
                             res = res && block.get_seq_num() == 1;
+
+                            res = res && *read_pos == None;
 
                             res = res && *content_len_exc_header == None;
                         },
@@ -959,11 +969,13 @@ quickcheck! {
             for _ in 0..fill {
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(block, _data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                    GetSlotResult::Some(block, _data, read_pos, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, read_pos, content_len_exc_header) => {
                             block.set_version(Version::V1);
                             block.set_uid([0xFF; SBX_FILE_UID_LEN]);
                             block.set_seq_num(2000);
+
+                            *read_pos = Some(10);
 
                             *content_len_exc_header = Some(100);
                         },
@@ -1309,13 +1321,15 @@ quickcheck! {
             for i in 0..fill {
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(_block, _data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(_block, _data, content_len_exc_header) => {
+                    GetSlotResult::Some(_block, _data, read_pos, content_len_exc_header)
+                        | GetSlotResult::LastSlot(_block, _data, read_pos, content_len_exc_header) => {
                             if data_is_partial[i % data_is_partial.len()] {
                                 let len = content_len[i % content_len.len()] % 496 + 1;
                                 *content_len_exc_header = Some(len);
                                 padding_bytes_in_non_padding_blocks += 496 - len;
                             }
+
+                            *read_pos = Some(10);
                         },
                 }
             }
@@ -1424,8 +1438,8 @@ quickcheck! {
             for i in 0..fill {
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(block, data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(block, data, content_len_exc_header) => {
+                    GetSlotResult::Some(block, data, read_pos, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, data, read_pos, content_len_exc_header) => {
                             let seq_num = seq_nums[i % seq_nums.len()];
 
                             fill_random_bytes(data);
@@ -1438,6 +1452,8 @@ quickcheck! {
                                 } else {
                                     496
                                 };
+
+                            *read_pos = Some(10);
 
                             block.set_seq_num(seq_num);
 
