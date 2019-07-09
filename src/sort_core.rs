@@ -404,6 +404,9 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                     break;
                 }
 
+                let mut meta_blocks_decoded = 0;
+                let mut parity_blocks_decoded = 0;
+                let mut data_blocks_decoded = 0;
                 let mut blocks_decode_failed = 0;
                 let mut okay_blank_blocks = 0;
 
@@ -482,8 +485,22 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                             meta_written = true;
                                         }
 
+                                        // reset read position
+                                        if let Err(e) = reader.seek(SeekFrom::Start(read_pos)) {
+                                            stop_run_forward_error!(run => error_tx_reader => e);
+                                        }
+
                                         buffer.cancel_slot();
+
+                                        meta_blocks_decoded += 1;
                                     } else {
+                                        eprintln!("\ndata seq num : {}", block.get_seq_num());
+                                        if block.is_parity_w_data_par_burst(data_par_burst) {
+                                            parity_blocks_decoded += 1;
+                                        } else {
+                                            data_blocks_decoded += 1;
+                                        }
+
                                         *slot_read_pos = Some(read_pos);
                                     }
                                 }
@@ -516,6 +533,9 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                 {
                     let mut stats = stats.lock().unwrap();
 
+                    stats.meta_blocks_decoded += meta_blocks_decoded;
+                    stats.parity_blocks_decoded += parity_blocks_decoded;
+                    stats.data_blocks_decoded += data_blocks_decoded;
                     stats.blocks_decode_failed += blocks_decode_failed;
                     stats.okay_blank_blocks += okay_blank_blocks;
                 }
@@ -549,43 +569,30 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                         let mut meta_blocks_diff_order = 0;
 
                         for (i, &p) in write_pos_s.iter().enumerate() {
+                            // read metadata blocks
+                            if let Err(e) = writer.seek(SeekFrom::Start(p)).unwrap() {
+                                stop_run_forward_error!(run => error_tx_writer => e);
+                            }
+
+                            let check_buffer = sbx_block::slice_buf_mut(
+                                version,
+                                &mut check_buffer,
+                            );
+
+                            let read_res = match writer
+                                .read(check_buffer)
+                                .unwrap()
+                            {
+                                Ok(read_res) => read_res,
+                                Err(e) => {
+                                    stop_run_forward_error!(run => error_tx_writer => e)
+                                }
+                            };
+
                             let do_write = match multi_pass {
                                 None | Some(MultiPassType::OverwriteAll) => true,
                                 Some(MultiPassType::SkipGood) => {
                                     if let Some(ref mut writer) = writer {
-                                        // read metadata blocks
-                                        if let Err(e) = writer.seek(SeekFrom::Start(p)).unwrap() {
-                                            stop_run_forward_error!(run => error_tx_writer => e);
-                                        }
-
-                                        let check_buffer = sbx_block::slice_buf_mut(
-                                            version,
-                                            &mut check_buffer,
-                                        );
-
-                                        let read_res = match writer
-                                            .read(check_buffer)
-                                            .unwrap()
-                                        {
-                                            Ok(read_res) => read_res,
-                                            Err(e) => {
-                                                stop_run_forward_error!(run => error_tx_writer => e)
-                                            }
-                                        };
-
-                                        { // check if metadata block being currently processed is in the same order
-                                            let (eof_seen, orig_buffer) = &orig_buffers[i];
-
-                                            let same_order = !eof_seen
-                                                && &orig_buffer[..] == check_buffer;
-
-                                            if same_order {
-                                                meta_blocks_same_order += 1;
-                                            } else {
-                                                meta_blocks_diff_order += 1;
-                                            }
-                                        }
-
                                         read_res.eof_seen || {
                                             // if block at output position is a valid metadata block,
                                             // then don't overwrite
@@ -616,6 +623,19 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                 }
                             }
 
+                            { // check if metadata block being currently processed is in the same order
+                                let (eof_seen, orig_buffer) = &orig_buffers[i];
+
+                                let same_order = !eof_seen
+                                    && &orig_buffer[..] == check_buffer;
+
+                                if same_order {
+                                    meta_blocks_same_order += 1;
+                                } else {
+                                    meta_blocks_diff_order += 1;
+                                }
+                            }
+
                             {
                                 let mut stats = stats.lock().unwrap();
 
@@ -625,6 +645,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                         }
                     }
                     SendToWriter::Data(mut buffer) => {
+                        buffer.calc_slot_write_pos();
+
                         if let Some(ref mut writer) = writer {
                             if let Err(e) = buffer.write(writer) {
                                 error_tx_writer.send(e).unwrap();
