@@ -277,15 +277,13 @@ impl Lot {
         let mut res = Vec::with_capacity(self.slots_used);
 
         for i in 0..self.slots_used {
-            res.push(
-                SlotView {
-                    block: &self.blocks[i],
-                    slot: slice_slot_w_index!(self, i),
-                    read_pos: &self.slot_read_pos[i],
-                    write_pos: &self.slot_write_pos[i],
-                    content_len_exc_header: &self.slot_content_len_exc_header[i],
-                }
-            );
+            res.push(SlotView {
+                block: &self.blocks[i],
+                slot: slice_slot_w_index!(self, i),
+                read_pos: &self.slot_read_pos[i],
+                write_pos: &self.slot_write_pos[i],
+                content_len_exc_header: &self.slot_content_len_exc_header[i],
+            });
         }
 
         res

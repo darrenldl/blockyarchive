@@ -2,10 +2,10 @@ use crate::file_utils;
 use crate::misc_utils;
 use std::fmt;
 use std::io::SeekFrom;
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::sync::mpsc::sync_channel;
 use std::sync::Barrier;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 use crate::misc_utils::RequiredLenAndSeekTo;
@@ -18,7 +18,9 @@ use crate::file_reader::{FileReader, FileReaderParam};
 use crate::file_writer::{FileWriter, FileWriterParam};
 use crate::writer::{Writer, WriterType};
 
-use crate::data_block_buffer::{BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot, SlotView};
+use crate::data_block_buffer::{
+    BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot, SlotView,
+};
 
 use crate::general_error::Error;
 use crate::sbx_specs::Version;
@@ -356,8 +358,10 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let mut check_buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
-    let (to_writer, from_reader) = sync_channel::<Option<ToWriterData>>(PIPELINE_BUFFER_IN_ROTATION + 2); // one extra space for the case of metadata block
-    let (to_reader, from_writer) = sync_channel::<Option<DataBlockBuffer>>(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_writer, from_reader) =
+        sync_channel::<Option<ToWriterData>>(PIPELINE_BUFFER_IN_ROTATION + 2); // one extra space for the case of metadata block
+    let (to_reader, from_writer) =
+        sync_channel::<Option<DataBlockBuffer>>(PIPELINE_BUFFER_IN_ROTATION + 1);
     let (error_tx_reader, error_rx) = channel::<Error>();
     let error_tx_writer = error_tx_reader.clone();
 
@@ -412,8 +416,9 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                     } = buffer.get_slot().unwrap();
                     let read_pos = match reader.cur_pos() {
                         Ok(pos) => pos,
-                        Err(e) => {error_tx_reader.send(e).unwrap();
-                                   break;
+                        Err(e) => {
+                            error_tx_reader.send(e).unwrap();
+                            break;
                         }
                     };
 
@@ -437,25 +442,38 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
                                             // read blocks in original container
                                             let write_pos_s =
-                                                sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst);
+                                                sbx_block::calc_meta_block_all_write_pos_s(
+                                                    version,
+                                                    data_par_burst,
+                                                );
 
-                                            let mut orig_buffers = Vec::with_capacity(write_pos_s.len());
+                                            let mut orig_buffers =
+                                                Vec::with_capacity(write_pos_s.len());
 
                                             for &p in write_pos_s.iter() {
                                                 let mut buffer = vec![0; block_size];
 
-                                                if let Err(e) = reader.seek(SeekFrom::Start(p + seek_to)) {
+                                                if let Err(e) =
+                                                    reader.seek(SeekFrom::Start(p + seek_to))
+                                                {
                                                     stop_run_forward_error!(run => error_tx_reader => e);
                                                 }
                                                 let read_res = match reader.read(&mut buffer) {
                                                     Ok(read_res) => read_res,
-                                                    Err(e) => stop_run_forward_error!(run => error_tx_reader => e)
+                                                    Err(e) => {
+                                                        stop_run_forward_error!(run => error_tx_reader => e)
+                                                    }
                                                 };
 
                                                 orig_buffers.push(buffer);
                                             }
 
-                                            to_writer.send(Some(ToWriterData::Meta(meta_buffer, orig_buffers))).unwrap();
+                                            to_writer
+                                                .send(Some(ToWriterData::Meta(
+                                                    meta_buffer,
+                                                    orig_buffers,
+                                                )))
+                                                .unwrap();
 
                                             meta_written = true;
                                         }
@@ -468,7 +486,9 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                 Err(e) => {
                                     // only consider it failed if the buffer is not completely blank
                                     // unless report blank is true
-                                    if misc_utils::buffer_is_blank(sbx_block::slice_buf(version, slot)) {
+                                    if misc_utils::buffer_is_blank(sbx_block::slice_buf(
+                                        version, slot,
+                                    )) {
                                         if report_blank {
                                             blocks_decode_failed += 1;
                                         } else {
@@ -481,7 +501,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                     buffer.cancel_slot();
                                 }
                             }
-                        },
+                        }
                         Err(e) => {
                             buffer.cancel_slot();
                             stop_run_forward_error!(run => error_tx_reader => e);
@@ -525,10 +545,17 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                         }
 
                                         let read_res = match writer
-                                            .read(sbx_block::slice_buf_mut(version, &mut check_buffer)).unwrap() {
-                                                Ok(read_res) => read_res,
-                                                Err(e) => stop_run_forward_error!(run => error_tx_writer => e),
-                                            };
+                                            .read(sbx_block::slice_buf_mut(
+                                                version,
+                                                &mut check_buffer,
+                                            ))
+                                            .unwrap()
+                                        {
+                                            Ok(read_res) => read_res,
+                                            Err(e) => {
+                                                stop_run_forward_error!(run => error_tx_writer => e)
+                                            }
+                                        };
 
                                         read_res.eof_seen || {
                                             // if block at output position is a valid metadata block,
@@ -560,7 +587,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                 }
                             }
                         }
-                    },
+                    }
                     ToWriterData::Data(mut buffer) => {
                         if let Some(ref mut writer) = writer {
                             if let Err(e) = buffer.write(writer) {
@@ -579,7 +606,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                             read_pos,
                             write_pos,
                             content_len_exc_header,
-                        } in buffer.view_slots() {
+                        } in buffer.view_slots()
+                        {
                             if read_pos.unwrap() - read_offset == write_pos.unwrap() {
                                 if block.is_parity_w_data_par_burst(data_par_burst) {
                                     parity_blocks_same_order += 1;
@@ -609,7 +637,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                         to_reader.send(Some(buffer)).unwrap();
                     }
                 }
-
             }
 
             worker_shutdown!(to_reader, shutdown_barrier);
