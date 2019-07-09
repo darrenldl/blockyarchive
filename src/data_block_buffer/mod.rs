@@ -263,6 +263,14 @@ impl Lot {
         }
     }
 
+    fn get_read_pos_s(&self) -> &[Option<u64>] {
+        &self.slot_read_pos[..self.slots_used]
+    }
+
+    fn get_write_pos_s(&self) -> &[Option<u64>] {
+        &self.slot_write_pos[..self.slots_used]
+    }
+
     fn cancel_slot(&mut self) {
         assert!(self.slots_used > 0);
         assert!(self.slots_used <= self.directly_writable_slots);
@@ -694,6 +702,10 @@ impl DataBlockBuffer {
         self.lots.len()
     }
 
+    pub fn total_slot_count(&self) -> usize {
+        self.lots[0].lot_size * self.lot_count()
+    }
+
     pub fn is_full(&self) -> bool {
         self.lots_used == self.lot_count()
     }
@@ -730,6 +742,30 @@ impl DataBlockBuffer {
                 }
             }
         }
+    }
+
+    pub fn get_read_pos_s(&self) -> Vec<Option<u64>> {
+        let mut res = Vec::with_capacity(self.total_slot_count());
+
+        for lot in self.lots.iter() {
+            for pos in lot.get_read_pos_s().iter() {
+                res.push(*pos);
+            }
+        }
+
+        res
+    }
+
+    pub fn get_write_pos_s(&self) -> Vec<Option<u64>> {
+        let mut res = Vec::with_capacity(self.total_slot_count());
+
+        for lot in self.lots.iter() {
+            for pos in lot.get_write_pos_s().iter() {
+                res.push(*pos);
+            }
+        }
+
+        res
     }
 
     pub fn cancel_slot(&mut self) {
