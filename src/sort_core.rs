@@ -518,7 +518,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
                                         meta_blocks_decoded += 1;
                                     } else {
-                                        eprintln!("\ndata seq num : {}", block.get_seq_num());
                                         if block.is_parity_w_data_par_burst(data_par_burst) {
                                             parity_blocks_decoded += 1;
                                         } else {

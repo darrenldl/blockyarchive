@@ -873,8 +873,6 @@ impl DataBlockBuffer {
             lot.write(seek, writer)?;
         }
 
-        self.reset();
-
         Ok(())
     }
 
