@@ -557,8 +557,6 @@ impl Lot {
     fn write(&mut self, seek: bool, writer: &mut Writer) -> Result<(), Error> {
         assert!(self.output_type != OutputType::Disabled);
 
-        self.calc_slot_write_pos();
-
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
             if slot_index < self.slots_used {
                 if let Some(write_pos) = self.slot_write_pos[slot_index] {
@@ -862,7 +860,15 @@ impl DataBlockBuffer {
     //     }
     // }
 
+    pub fn calc_slot_write_pos(&mut self) {
+        self.lots.par_iter_mut().for_each(|lot| {
+            lot.calc_slot_write_pos();
+        })
+    }
+
     fn write_internal(&mut self, seek: bool, writer: &mut Writer) -> Result<(), Error> {
+        self.calc_slot_write_pos();
+
         for lot in self.lots.iter_mut() {
             lot.write(seek, writer)?;
         }
