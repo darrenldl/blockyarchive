@@ -352,10 +352,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     reporter.start();
 
-    let (to_writer, from_reader) =
-        sync_channel(PIPELINE_BUFFER_IN_ROTATION + 2); // one extra space for the case of metadata block
-    let (to_reader, from_writer) =
-        sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_writer, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 2); // one extra space for the case of metadata block
+    let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
     let (error_tx_reader, error_rx) = channel::<Error>();
     let error_tx_writer = error_tx_reader.clone();
 
@@ -470,8 +468,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                                     }
                                                 };
 
-                                                let same_order = !read_res.eof_seen
-                                                    && check_buffer == slot;
+                                                let same_order =
+                                                    !read_res.eof_seen && check_buffer == slot;
 
                                                 if same_order {
                                                     meta_blocks_same_order += 1;
@@ -485,9 +483,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                             meta_buffer.clone_from_slice(slot);
 
                                             to_writer
-                                                .send(Some(SendToWriter::Meta(
-                                                    meta_buffer
-                                                )))
+                                                .send(Some(SendToWriter::Meta(meta_buffer)))
                                                 .unwrap();
 
                                             meta_written = true;
@@ -574,10 +570,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                     SendToWriter::Meta(meta_buffer) => {
                         let mut check_buffer = [0; SBX_LARGEST_BLOCK_SIZE];
 
-                        let check_buffer = sbx_block::slice_buf_mut(
-                            version,
-                            &mut check_buffer,
-                        );
+                        let check_buffer = sbx_block::slice_buf_mut(version, &mut check_buffer);
 
                         let mut check_block = Block::dummy();
 
@@ -594,10 +587,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                             stop_run_forward_error!(run => error_tx_writer => e);
                                         }
 
-                                        let read_res = match writer
-                                            .read(check_buffer)
-                                            .unwrap()
-                                        {
+                                        let read_res = match writer.read(check_buffer).unwrap() {
                                             Ok(read_res) => read_res,
                                             Err(e) => {
                                                 stop_run_forward_error!(run => error_tx_writer => e)
