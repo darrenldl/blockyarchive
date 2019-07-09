@@ -26,7 +26,7 @@ use crate::general_error::Error;
 use crate::sbx_specs::Version;
 
 use crate::sbx_block;
-use crate::sbx_block::Block;
+use crate::sbx_block::{Header, Block};
 use crate::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use crate::sbx_specs::{ver_to_block_size, ver_to_usize, ver_uses_rs};
 
@@ -287,11 +287,11 @@ impl fmt::Display for Stats {
     }
 }
 
-fn check_metadata_blocks_reader(
+fn check_meta_blocks_reader(
     version: Version,
     data_par_burst: Option<(usize, usize, usize)>,
-    metadata_block: &[u8],
     offset: u64,
+    meta_block: &[u8],
     reader: &mut FileReader,
 ) -> Result<(u64, u64), Error> {
     let mut meta_blocks_same_order = 0;
@@ -312,7 +312,7 @@ fn check_metadata_blocks_reader(
 
         let read_res = reader.read(check_buffer)?;
 
-        let same_order = !read_res.eof_seen && check_buffer == metadata_block;
+        let same_order = !read_res.eof_seen && check_buffer == meta_block;
 
         if same_order {
             meta_blocks_same_order += 1;
@@ -325,6 +325,63 @@ fn check_metadata_blocks_reader(
     reader.seek(SeekFrom::Start(initial_read_pos))?;
 
     Ok((meta_blocks_same_order, meta_blocks_diff_order))
+}
+
+fn write_meta_blocks_writer(
+    version: Version,
+    data_par_burst: Option<(usize, usize, usize)>,
+    multi_pass: Option<MultiPassType>,
+    header_pred: &Fn(&Header) -> bool,
+    meta_block: &[u8],
+    writer: &mut Option<Writer>,
+) -> Result<(), Error> {
+    let mut check_buffer = [0; SBX_LARGEST_BLOCK_SIZE];
+
+    let check_buffer = sbx_block::slice_buf_mut(version, &mut check_buffer);
+
+    let mut check_block = Block::dummy();
+
+    let write_pos_s =
+        sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst);
+
+    for &p in write_pos_s.iter() {
+        let do_write = match multi_pass {
+            None | Some(MultiPassType::OverwriteAll) => true,
+            Some(MultiPassType::SkipGood) => {
+                if let Some(ref mut writer) = writer {
+                    // read blocks in the output container
+                    writer.seek(SeekFrom::Start(p)).unwrap()?;
+
+                    let read_res = writer.read(check_buffer).unwrap()?;
+
+                    read_res.eof_seen || {
+                        // if block at output position is a valid metadata block,
+                        // then don't overwrite
+                        match check_block.sync_from_buffer(
+                            &check_buffer,
+                            Some(&header_pred),
+                            None,
+                        ) {
+                            Ok(()) => check_block.get_seq_num() != 0,
+                            Err(_) => true,
+                        }
+                    }
+                } else {
+                    // doesn't really matter what to put here, but let's pick default to true
+                    true
+                }
+            }
+        };
+
+        if do_write {
+            if let Some(ref mut writer) = writer {
+                writer.seek(SeekFrom::Start(p)).unwrap()?;
+                writer.write(&meta_block)?;
+            }
+        }
+    }
+
+    Ok(())
 }
 
 pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
@@ -479,11 +536,11 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                     if block.is_meta() {
                                         if !meta_written {
                                             let (same_order, diff_order) =
-                                                match check_metadata_blocks_reader(
+                                                match check_meta_blocks_reader(
                                                     version,
                                                     data_par_burst,
-                                                    slot,
                                                     seek_to,
+                                                    slot,
                                                     &mut reader,
                                                 ) {
                                                     Ok(x) => x,
@@ -578,62 +635,17 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                 }
 
                 match data {
-                    SendToWriter::Meta(meta_buffer) => {
-                        let mut check_buffer = [0; SBX_LARGEST_BLOCK_SIZE];
-
-                        let check_buffer = sbx_block::slice_buf_mut(version, &mut check_buffer);
-
-                        let mut check_block = Block::dummy();
-
-                        let write_pos_s =
-                            sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst);
-
-                        for &p in write_pos_s.iter() {
-                            let do_write = match multi_pass {
-                                None | Some(MultiPassType::OverwriteAll) => true,
-                                Some(MultiPassType::SkipGood) => {
-                                    if let Some(ref mut writer) = writer {
-                                        // read blocks in the output container
-                                        if let Err(e) = writer.seek(SeekFrom::Start(p)).unwrap() {
-                                            stop_run_forward_error!(run => error_tx_writer => e);
-                                        }
-
-                                        let read_res = match writer.read(check_buffer).unwrap() {
-                                            Ok(read_res) => read_res,
-                                            Err(e) => {
-                                                stop_run_forward_error!(run => error_tx_writer => e)
-                                            }
-                                        };
-
-                                        read_res.eof_seen || {
-                                            // if block at output position is a valid metadata block,
-                                            // then don't overwrite
-                                            match check_block.sync_from_buffer(
-                                                &check_buffer,
-                                                Some(&header_pred),
-                                                None,
-                                            ) {
-                                                Ok(()) => check_block.get_seq_num() != 0,
-                                                Err(_) => true,
-                                            }
-                                        }
-                                    } else {
-                                        // doesn't really matter what to put here, but let's pick default to true
-                                        true
-                                    }
-                                }
-                            };
-
-                            if do_write {
-                                if let Some(ref mut writer) = writer {
-                                    if let Err(e) = writer.seek(SeekFrom::Start(p)).unwrap() {
-                                        stop_run_forward_error!(run => error_tx_writer => e);
-                                    }
-                                    if let Err(e) = writer.write(&meta_buffer) {
-                                        stop_run_forward_error!(run => error_tx_writer => e);
-                                    }
-                                }
-                            }
+                    SendToWriter::Meta(meta_block) => {
+                        if let Err(e) = write_meta_blocks_writer(
+                            version,
+                            data_par_burst,
+                            multi_pass,
+                            &header_pred,
+                            &meta_block,
+                            &mut writer,
+                        ) {
+                            error_tx_writer.send(e).unwrap();
+                            break;
                         }
                     }
                     SendToWriter::Data(mut buffer) => {
