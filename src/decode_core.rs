@@ -1000,44 +1000,6 @@ pub fn decode(
             if let Ok(err) = error_rx.try_recv() {
                 return Err(err);
             }
-
-            // loop {
-            //     if block.is_meta() {
-            //         // do nothing if block is meta
-            //         stats.meta_blocks_decoded += 1;
-            //     } else {
-
-            //         // write data block
-            //         if let Some(write_pos) = sbx_block::calc_data_chunk_write_pos(
-            //             version,
-            //             block.get_seq_num(),
-            //             data_par_shards,
-            //         ) {
-            //             let do_write = match param.multi_pass {
-            //                 None | Some(MultiPassType::OverwriteAll) => true,
-            //                 Some(MultiPassType::SkipGood) => {
-            //                     // only write if the position to write to does not already contain a non-blank chunk
-            //                     writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
-            //                     let read_res = writer
-            //                         .read(sbx_block::slice_data_buf_mut(version, &mut check_buffer))
-            //                         .unwrap()?;
-
-            //                     read_res.eof_seen || {
-            //                         misc_utils::buffer_is_blank(sbx_block::slice_data_buf(
-            //                             version,
-            //                             &check_buffer,
-            //                         ))
-            //                     }
-            //                 }
-            //             };
-
-            //             if do_write {
-            //                 writer.seek(SeekFrom::Start(write_pos)).unwrap()?;
-            //                 writer.write(sbx_block::slice_data_buf(version, &buffer))?;
-            //             }
-            //         }
-            //     }
-            // }
         }
         None => {
             // output to stdout
@@ -1313,60 +1275,6 @@ pub fn decode(
                     if let Ok(err) = error_rx.try_recv() {
                         return Err(err);
                     }
-
-                    // loop {
-                    //     // read at reference block block size
-                    //     let read_res =
-                    //         reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
-
-                    //     let decode_successful = !read_res.eof_seen
-                    //         && match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
-                    //             Ok(_) => block.get_seq_num() == seq_num,
-                    //             _ => false,
-                    //         };
-
-                    //     if sbx_block::seq_num_is_meta(seq_num) {
-                    //         unreachable!();
-                    //     } else if sbx_block::seq_num_is_parity(seq_num, data, parity) {
-                    //         if decode_successful {
-                    //             stats.parity_blocks_decoded += 1;
-                    //         } else {
-                    //             stats.incre_parity_blocks_failed();
-                    //         }
-                    //     } else {
-                    //         if decode_successful {
-                    //             stats.data_blocks_decoded += 1;
-
-                    //             // write data chunk
-                    //             write_data_only_block(
-                    //                 data_par_shards,
-                    //                 is_last_data_block(&stats, total_data_chunk_count),
-                    //                 data_size_of_last_data_block,
-                    //                 &ref_block,
-                    //                 &block,
-                    //                 &mut writer.lock().unwrap(),
-                    //                 &mut hash_ctx,
-                    //                 &buffer,
-                    //             )?;
-                    //         } else {
-                    //             stats.incre_data_blocks_failed();
-
-                    //             write_blank_chunk(
-                    //                 is_last_data_block(&stats, total_data_chunk_count),
-                    //                 data_size_of_last_data_block,
-                    //                 &ref_block,
-                    //                 &mut writer.lock().unwrap(),
-                    //                 &mut hash_ctx,
-                    //             )?;
-                    //         }
-                    //     }
-
-                    //     if is_last_data_block(&stats, total_data_chunk_count) {
-                    //         break;
-                    //     }
-
-                    //     incre_or_break_if_last!(seq_num => seq_num);
-                    // }
                 }
                 ReadPattern::Sequential(data_par_burst) => {
                     // seek to calculated position
@@ -1501,46 +1409,6 @@ pub fn decode(
                                                 }
                                             }
 
-                                            // if decode_successful {
-                                            //     if block.is_meta() {
-                                            //         meta_blocks_decoded += 1;
-                                            //     } else if sbx_block::seq_num_is_parity_w_data_par_burst(
-                                            //         seq_num,
-                                            //         data_par_burst,
-                                            //     ) {
-                                            //         parity_blocks_decoded += 1;
-
-                                            //         // save space by not storing parity blocks
-                                            //         buffer.cancel_slot();
-                                            //     } else {
-                                            //         data_blocks_decoded += 1;
-                                            //     }
-                                            // } else {
-                                            //     if sbx_block::seq_num_is_meta(seq_num) {
-                                            //         meta_blocks_failed_this_iteration += 1;
-                                            //     } else if sbx_block::seq_num_is_parity_w_data_par_burst(
-                                            //         seq_num,
-                                            //         data_par_burst,
-                                            //     ) {
-                                            //         parity_blocks_failed_this_iteration += 1;
-
-                                            //         // save space by not storing parity blocks
-                                            //         buffer.cancel_slot();
-                                            //     } else {
-                                            //         data_blocks_failed_this_iteration += 1;
-                                            //         data_blocks_failed += 1;
-
-                                            //         // replace with a blank block
-                                            //         block.set_version(version);
-                                            //         block.set_uid(uid);
-                                            //         block.set_seq_num(seq_num);
-
-                                            //         misc_utils::fill_zeros(slot);
-
-                                            //         block.sync_to_buffer(None, slot).unwrap();
-                                            //     }
-                                            // }
-
                                             if cancel_slot {
                                                 buffer.cancel_slot();
                                             } else {
@@ -1637,95 +1505,6 @@ pub fn decode(
                     if let Ok(err) = error_rx.try_recv() {
                         return Err(err);
                     }
-
-                    // let mut block_index = block_utils::guess_starting_block_index(
-                    //     &param.in_file,
-                    //     param.from_pos,
-                    //     param.force_misalign,
-                    //     &ref_block,
-                    //     data_par_burst,
-                    // )?;
-
-                    // loop {
-                    //     let mut stats = stats.lock().unwrap();
-
-                    //     break_if_atomic_bool!(ctrlc_stop_flag);
-
-                    //     break_if_reached_required_len!(bytes_processed, required_len);
-
-                    //     // read at reference block block size
-                    //     let read_res =
-                    //         reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
-
-                    //     bytes_processed += read_res.len_read as u64;
-
-                    //     break_if_eof_seen!(read_res);
-
-                    //     let seq_num = sbx_block::calc_seq_num_at_index(
-                    //         block_index,
-                    //         Some(true),
-                    //         data_par_burst,
-                    //     );
-
-                    //     let block_okay =
-                    //         match block.sync_from_buffer(&buffer, Some(&header_pred), None) {
-                    //             Ok(_) => block.get_seq_num() == seq_num,
-                    //             Err(_) => false,
-                    //         };
-
-                    //     if block_okay {
-                    //         let block_seq_num = block.get_seq_num();
-
-                    //         if block.is_meta() {
-                    //             // do nothing if block is meta
-                    //             stats.meta_blocks_decoded += 1;
-                    //         } else if sbx_block::seq_num_is_parity_w_data_par_burst(
-                    //             block_seq_num,
-                    //             data_par_burst,
-                    //         ) {
-                    //             stats.parity_blocks_decoded += 1;
-                    //         } else {
-                    //             stats.data_blocks_decoded += 1;
-
-                    //             // write data block
-                    //             write_data_only_block(
-                    //                 None,
-                    //                 is_last_data_block(&stats, total_data_chunk_count),
-                    //                 data_size_of_last_data_block,
-                    //                 &ref_block,
-                    //                 &block,
-                    //                 &mut writer.lock().unwrap(),
-                    //                 &mut hash_ctx.lock().unwrap(),
-                    //                 &buffer,
-                    //             )?;
-                    //         }
-                    //     } else {
-                    //         if sbx_block::seq_num_is_meta(seq_num) {
-                    //             stats.incre_meta_blocks_failed();
-                    //         } else if sbx_block::seq_num_is_parity_w_data_par_burst(
-                    //             seq_num,
-                    //             data_par_burst,
-                    //         ) {
-                    //             stats.incre_parity_blocks_failed();
-                    //         } else {
-                    //             stats.incre_data_blocks_failed();
-
-                    //             write_blank_chunk(
-                    //                 is_last_data_block(&stats, total_data_chunk_count),
-                    //                 data_size_of_last_data_block,
-                    //                 &ref_block,
-                    //                 &mut writer.lock().unwrap(),
-                    //                 &mut hash_ctx.lock().unwrap(),
-                    //             )?;
-                    //         }
-                    //     }
-
-                    //     if is_last_data_block(&stats, total_data_chunk_count) {
-                    //         break;
-                    //     }
-
-                    //     incre_or_break_if_last!(block_index => block_index);
-                    // }
                 }
             }
 
@@ -1897,20 +1676,6 @@ fn hash(
     if let Ok(err) = error_rx.try_recv() {
         return Err(err);
     }
-
-    // loop {
-    //     break_if_atomic_bool!(ctrlc_stop_flag);
-
-    //     let read_res = reader.read(&mut buffer)?;
-
-    //     // update hash context/state
-    //     hash_ctx.update(&buffer[0..read_res.len_read]);
-
-    //     // update stats
-    //     stats.lock().unwrap().bytes_processed += read_res.len_read as u64;
-
-    //     break_if_eof_seen!(read_res);
-    // }
 
     reporter.stop();
 
