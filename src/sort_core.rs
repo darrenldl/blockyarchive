@@ -40,6 +40,11 @@ use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
+enum ToWriterData {
+    Meta(Vec<u8>, Vec<Vec<u8>>),
+    Data(DataBlockBuffer),
+}
+
 pub struct Param {
     ref_block_choice: RefBlockChoice,
     ref_block_from_pos: Option<u64>,
@@ -357,7 +362,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let mut check_buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
-    let (to_writer, from_reader) = sync_channel::<Option<(Option<(Vec<u8>, Vec<Vec<u8>>)>, DataBlockBuffer)>>(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_writer, from_reader) = sync_channel::<Option<ToWriterData>>(PIPELINE_BUFFER_IN_ROTATION + 2); // one extra space for the case of metadata block
     let (to_reader, from_writer) = sync_channel::<Option<DataBlockBuffer>>(PIPELINE_BUFFER_IN_ROTATION + 1);
     let (error_tx_reader, error_rx) = channel::<Error>();
     let error_tx_encoder = error_tx_reader.clone();
@@ -431,8 +436,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
                             match block.sync_from_buffer(slot, Some(&header_pred), None) {
                                 Ok(()) => {
-                                    let meta = if block.is_meta() {
-                                        let meta = if !meta_written {
+                                    if block.is_meta() {
+                                        if !meta_written {
                                             // copy current metadata block in the slot
                                             let mut meta_buffer = vec![0; block_size];
                                             meta_buffer.clone_from_slice(slot);
@@ -457,17 +462,13 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                                 orig_buffers.push(buffer);
                                             }
 
-                                            Some((meta_buffer, orig_buffers))
-                                        } else {
-                                            None
-                                        };
+                                            to_writer.send(Some(ToWriterData::Meta(meta_buffer, orig_buffers))).unwrap();
+
+                                            meta_written = true;
+                                        }
 
                                         buffer.cancel_slot();
-
-                                        meta
-                                    } else {
-                                        None
-                                    };
+                                    }
                                 }
                                 Err(e) => {
                                     // only consider it failed if the buffer is not completely blank
@@ -493,7 +494,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                     }
                 }
 
-                to_writer.send(Some((None, buffer))).unwrap();
+                to_writer.send(Some(ToWriterData::Data(buffer))).unwrap();
             }
 
             worker_shutdown!(to_writer, shutdown_barrier);
@@ -507,66 +508,70 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
         thread::spawn(move || {
             let mut run = true;
 
-            while let Some((meta, mut buffer)) = from_reader.recv().unwrap() {
+            while let Some(data) = from_reader.recv().unwrap() {
                 if !run {
                     break;
                 }
 
-                if let Some((meta_buffer, orig_buffers)) = meta {
-                    let write_pos_s =
-                        sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst);
+                match data {
+                    ToWriterData::Meta(meta_buffer, orig_buffers) => {
+                        let write_pos_s =
+                            sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst);
 
-                    for &p in write_pos_s.iter() {
-                        let do_write = match multi_pass {
-                            None | Some(MultiPassType::OverwriteAll) => true,
-                            Some(MultiPassType::SkipGood) => {
+                        for &p in write_pos_s.iter() {
+                            let do_write = match multi_pass {
+                                None | Some(MultiPassType::OverwriteAll) => true,
+                                Some(MultiPassType::SkipGood) => {
+                                    if let Some(ref mut writer) = writer {
+                                        // read metadata blocks
+                                        if let Err(e) = writer.seek(SeekFrom::Start(p)).unwrap() {
+                                            stop_run_forward_error!(run => error_tx_writer => e);
+                                        }
+
+                                        let read_res = match writer
+                                            .read(sbx_block::slice_buf_mut(version, &mut check_buffer)).unwrap() {
+                                                Ok(read_res) => read_res,
+                                                Err(e) => stop_run_forward_error!(run => error_tx_writer => e),
+                                            };
+
+                                        read_res.eof_seen || {
+                                            // if block at output position is a valid metadata block,
+                                            // then don't overwrite
+                                            match check_block.sync_from_buffer(
+                                                &check_buffer,
+                                                Some(&header_pred),
+                                                None,
+                                            ) {
+                                                Ok(()) => check_block.get_seq_num() != 0,
+                                                Err(_) => true,
+                                            }
+                                        }
+                                    } else {
+                                        // doesn't really matter what to put here, but let's pick default to true
+                                        true
+                                    }
+                                }
+                            };
+
+                            if do_write {
                                 if let Some(ref mut writer) = writer {
-                                    // read metadata blocks
                                     if let Err(e) = writer.seek(SeekFrom::Start(p)).unwrap() {
                                         stop_run_forward_error!(run => error_tx_writer => e);
                                     }
-
-                                    let read_res = match writer
-                                        .read(sbx_block::slice_buf_mut(version, &mut check_buffer)).unwrap() {
-                                            Ok(read_res) => read_res,
-                                            Err(e) => stop_run_forward_error!(run => error_tx_writer => e),
-                                        };
-
-                                    read_res.eof_seen || {
-                                        // if block at output position is a valid metadata block,
-                                        // then don't overwrite
-                                        match check_block.sync_from_buffer(
-                                            &check_buffer,
-                                            Some(&header_pred),
-                                            None,
-                                        ) {
-                                            Ok(()) => check_block.get_seq_num() != 0,
-                                            Err(_) => true,
-                                        }
+                                    if let Err(e) = writer.write(&meta_buffer) {
+                                        stop_run_forward_error!(run => error_tx_writer => e);
                                     }
-                                } else {
-                                    // doesn't really matter what to put here, but let's pick default to true
-                                    true
-                                }
-                            }
-                        };
-
-                        if do_write {
-                            if let Some(ref mut writer) = writer {
-                                if let Err(e) = writer.seek(SeekFrom::Start(p)).unwrap() {
-                                    stop_run_forward_error!(run => error_tx_writer => e);
-                                }
-                                if let Err(e) = writer.write(&meta_buffer) {
-                                    stop_run_forward_error!(run => error_tx_writer => e);
                                 }
                             }
                         }
+                    },
+                    ToWriterData::Data(mut buffer) => {
+                        buffer.reset();
+
+                        to_reader.send(Some(buffer)).unwrap();
                     }
                 }
 
-                buffer.reset();
-
-                to_reader.send(Some(buffer)).unwrap();
             }
 
             worker_shutdown!(to_reader, shutdown_barrier);
