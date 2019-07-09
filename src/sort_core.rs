@@ -1,6 +1,5 @@
 use crate::file_utils;
 use crate::misc_utils;
-use std::cmp::Ordering;
 use std::fmt;
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
@@ -17,6 +16,7 @@ use crate::json_printer::{BracketType, JSONPrinter};
 
 use crate::file_reader::{FileReader, FileReaderParam};
 use crate::file_writer::{FileWriter, FileWriterParam};
+use crate::writer::{Writer, WriterType};
 
 use crate::data_block_buffer::{BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot};
 
@@ -305,7 +305,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
     )?;
 
     let mut writer = match param.out_file {
-        Some(ref f) => Some(FileWriter::new(
+        Some(ref f) => Some(Writer::new(WriterType::File(FileWriter::new(
             f,
             FileWriterParam {
                 read: param.multi_pass == Some(MultiPassType::SkipGood),
@@ -313,7 +313,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                 truncate: param.multi_pass == None,
                 buffered: true,
             },
-        )?),
+        )?))),
         None => None,
     };
 
@@ -365,6 +365,11 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let worker_shutdown_barrier = Arc::new(Barrier::new(3));
 
+    let skip_good = match param.multi_pass {
+        None | Some(MultiPassType::OverwriteAll) => false,
+        Some(MultiPassType::SkipGood) => true,
+    };
+
     // push buffers into pipeline
     let buffers = DataBlockBuffer::new_multi(
         ref_block.get_version(),
@@ -374,7 +379,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
         BlockArrangement::Unordered,
         data_par_burst,
         true,
-        false,
+        skip_good,
         PIPELINE_BUFFER_IN_ROTATION,
     );
 
@@ -385,6 +390,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
     let reader_thread = {
         let version = ref_block.get_version();
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+        let report_blank = param.report_blank;
 
         thread::spawn(move || {
             let mut run = true;
@@ -393,6 +399,62 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                 if !run {
                     break;
                 }
+
+                let read_pos = match reader.cur_pos() {
+                    Ok(pos) => pos,
+                    Err(e) => {error_tx_reader.send(e).unwrap();
+                               break;
+                    }
+                };
+
+                let mut blocks_decode_failed = 0;
+                let mut okay_blank_blocks = 0;
+
+                while !buffer.is_full() {
+                    let Slot {
+                        block,
+                        slot,
+                        read_pos: slot_read_pos,
+                        content_len_exc_header: _,
+                    } = buffer.get_slot().unwrap();
+                    match reader.read(slot) {
+                        Ok(read_res) => {
+                            bytes_processed += read_res.len_read as u64;
+
+                            if read_res.eof_seen {
+                                buffer.cancel_slot();
+                                run = false;
+                                break;
+                            }
+
+                            match block.sync_from_buffer(slot, Some(&header_pred), None) {
+                                Ok(()) => {
+                                }
+                                Err(e) => {
+                                    // only consider it failed if the buffer is not completely blank
+                                    // unless report blank is true
+                                    if misc_utils::buffer_is_blank(sbx_block::slice_buf(version, slot)) {
+                                        if report_blank {
+                                            blocks_decode_failed += 1;
+                                        } else {
+                                            okay_blank_blocks += 1;
+                                        }
+                                    } else {
+                                        blocks_decode_failed += 1;
+                                    }
+
+                                    buffer.cancel_slot();
+                                }
+                            }
+                        },
+                        Err(e) => {
+                            buffer.cancel_slot();
+                            stop_run_forward_error!(run => error_tx_reader => e);
+                        }
+                    }
+                }
+
+                to_writer.send(Some((None, buffer))).unwrap();
             }
 
             worker_shutdown!(to_writer, shutdown_barrier);
@@ -404,177 +466,177 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
         thread::spawn(move || {
             while let Some((meta_block, mut buffer)) = from_reader.recv().unwrap() {
-                
+                to_reader.send(Some(buffer)).unwrap();
             }
 
             worker_shutdown!(to_reader, shutdown_barrier);
         })
     };
 
-    loop {
-        let mut stats = stats.lock().unwrap();
+    // loop {
+    //     let mut stats = stats.lock().unwrap();
 
-        break_if_atomic_bool!(ctrlc_stop_flag);
+    //     break_if_atomic_bool!(ctrlc_stop_flag);
 
-        break_if_reached_required_len!(bytes_processed, required_len);
+    //     break_if_reached_required_len!(bytes_processed, required_len);
 
-        let read_pos = reader.cur_pos()?;
+    //     let read_pos = reader.cur_pos()?;
 
-        let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
+    //     let read_res = reader.read(sbx_block::slice_buf_mut(version, &mut buffer))?;
 
-        bytes_processed += read_res.len_read as u64;
+    //     bytes_processed += read_res.len_read as u64;
 
-        break_if_eof_seen!(read_res);
+    //     break_if_eof_seen!(read_res);
 
-        if let Err(_) = block.sync_from_buffer(&buffer, Some(&header_pred), None) {
-            // only consider it failed if the buffer is not completely blank
-            // unless report blank is true
-            if misc_utils::buffer_is_blank(sbx_block::slice_buf(ref_block.get_version(), &buffer)) {
-                if param.report_blank {
-                    stats.blocks_decode_failed += 1;
-                } else {
-                    stats.okay_blank_blocks += 1;
-                }
-            } else {
-                stats.blocks_decode_failed += 1;
-            }
-            continue;
-        }
+    //     if let Err(_) = block.sync_from_buffer(&buffer, Some(&header_pred), None) {
+    //         // only consider it failed if the buffer is not completely blank
+    //         // unless report blank is true
+    //         if misc_utils::buffer_is_blank(sbx_block::slice_buf(ref_block.get_version(), &buffer)) {
+    //             if param.report_blank {
+    //                 stats.blocks_decode_failed += 1;
+    //             } else {
+    //                 stats.okay_blank_blocks += 1;
+    //             }
+    //         } else {
+    //             stats.blocks_decode_failed += 1;
+    //         }
+    //         continue;
+    //     }
 
-        if block.is_meta() {
-            if !meta_written {
-                let write_pos_s =
-                    sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst);
+    //     if block.is_meta() {
+    //         if !meta_written {
+    //             let write_pos_s =
+    //                 sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst);
 
-                // copy the value of current position in original container
-                let reader_cur_pos = reader.cur_pos()?;
+    //             // copy the value of current position in original container
+    //             let reader_cur_pos = reader.cur_pos()?;
 
-                for &p in write_pos_s.iter() {
-                    let do_write = match param.multi_pass {
-                        None | Some(MultiPassType::OverwriteAll) => true,
-                        Some(MultiPassType::SkipGood) => {
-                            if let Some(ref mut writer) = writer {
-                                // read metadata blocks
-                                writer.seek(SeekFrom::Start(p))?;
-                                let read_res = writer
-                                    .read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
+    //             for &p in write_pos_s.iter() {
+    //                 let do_write = match param.multi_pass {
+    //                     None | Some(MultiPassType::OverwriteAll) => true,
+    //                     Some(MultiPassType::SkipGood) => {
+    //                         if let Some(ref mut writer) = writer {
+    //                             // read metadata blocks
+    //                             writer.seek(SeekFrom::Start(p))?;
+    //                             let read_res = writer
+    //                                 .read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
 
-                                read_res.eof_seen || {
-                                    // if block at output position is a valid metadata block,
-                                    // then don't overwrite
-                                    match check_block.sync_from_buffer(
-                                        &check_buffer,
-                                        Some(&header_pred),
-                                        None,
-                                    ) {
-                                        Ok(()) => check_block.get_seq_num() != 0,
-                                        Err(_) => true,
-                                    }
-                                }
-                            } else {
-                                // doesn't really matter what to put here, but let's pick default to true
-                                true
-                            }
-                        }
-                    };
+    //                             read_res.eof_seen || {
+    //                                 // if block at output position is a valid metadata block,
+    //                                 // then don't overwrite
+    //                                 match check_block.sync_from_buffer(
+    //                                     &check_buffer,
+    //                                     Some(&header_pred),
+    //                                     None,
+    //                                 ) {
+    //                                     Ok(()) => check_block.get_seq_num() != 0,
+    //                                     Err(_) => true,
+    //                                 }
+    //                             }
+    //                         } else {
+    //                             // doesn't really matter what to put here, but let's pick default to true
+    //                             true
+    //                         }
+    //                     }
+    //                 };
 
-                    if do_write {
-                        if let Some(ref mut writer) = writer {
-                            // write metadata blocks
-                            writer.seek(SeekFrom::Start(p))?;
-                            writer.write(sbx_block::slice_buf(version, &buffer))?;
-                        }
-                    }
+    //                 if do_write {
+    //                     if let Some(ref mut writer) = writer {
+    //                         // write metadata blocks
+    //                         writer.seek(SeekFrom::Start(p))?;
+    //                         writer.write(sbx_block::slice_buf(version, &buffer))?;
+    //                     }
+    //                 }
 
-                    // read block in original container
-                    reader.seek(SeekFrom::Start(p + seek_to))?;
-                    let read_res =
-                        reader.read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
+    //                 // read block in original container
+    //                 reader.seek(SeekFrom::Start(p + seek_to))?;
+    //                 let read_res =
+    //                     reader.read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
 
-                    let same_order = !read_res.eof_seen
-                        && match buffer.cmp(&check_buffer) {
-                            Ordering::Equal => true,
-                            _ => false,
-                        };
+    //                 let same_order = !read_res.eof_seen
+    //                     && match buffer.cmp(&check_buffer) {
+    //                         Ordering::Equal => true,
+    //                         _ => false,
+    //                     };
 
-                    if same_order {
-                        stats.meta_blocks_same_order += 1
-                    } else {
-                        stats.meta_blocks_diff_order += 1
-                    }
-                }
+    //                 if same_order {
+    //                     stats.meta_blocks_same_order += 1
+    //                 } else {
+    //                     stats.meta_blocks_diff_order += 1
+    //                 }
+    //             }
 
-                // restore the position of reader
-                reader.seek(SeekFrom::Start(reader_cur_pos))?;
+    //             // restore the position of reader
+    //             reader.seek(SeekFrom::Start(reader_cur_pos))?;
 
-                meta_written = true;
-            }
-        } else {
-            let write_pos = sbx_block::calc_data_block_write_pos(
-                version,
-                block.get_seq_num(),
-                None,
-                data_par_burst,
-            );
+    //             meta_written = true;
+    //         }
+    //     } else {
+    //         let write_pos = sbx_block::calc_data_block_write_pos(
+    //             version,
+    //             block.get_seq_num(),
+    //             None,
+    //             data_par_burst,
+    //         );
 
-            let do_write = match param.multi_pass {
-                None | Some(MultiPassType::OverwriteAll) => true,
-                Some(MultiPassType::SkipGood) => {
-                    if let Some(ref mut writer) = writer {
-                        // read block in output container
-                        writer.seek(SeekFrom::Start(write_pos))?;
-                        let read_res =
-                            writer.read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
+    //         let do_write = match param.multi_pass {
+    //             None | Some(MultiPassType::OverwriteAll) => true,
+    //             Some(MultiPassType::SkipGood) => {
+    //                 if let Some(ref mut writer) = writer {
+    //                     // read block in output container
+    //                     writer.seek(SeekFrom::Start(write_pos))?;
+    //                     let read_res =
+    //                         writer.read(sbx_block::slice_buf_mut(version, &mut check_buffer))?;
 
-                        read_res.eof_seen || {
-                            // if block at output position is a valid block and has same seq number,
-                            // then don't overwrite
-                            match check_block.sync_from_buffer(
-                                &check_buffer,
-                                Some(&header_pred),
-                                None,
-                            ) {
-                                Ok(()) => check_block.get_seq_num() != block.get_seq_num(),
-                                Err(_) => true,
-                            }
-                        }
-                    } else {
-                        // doesn't really matter what to put here, but let's pick default to true
-                        true
-                    }
-                }
-            };
+    //                     read_res.eof_seen || {
+    //                         // if block at output position is a valid block and has same seq number,
+    //                         // then don't overwrite
+    //                         match check_block.sync_from_buffer(
+    //                             &check_buffer,
+    //                             Some(&header_pred),
+    //                             None,
+    //                         ) {
+    //                             Ok(()) => check_block.get_seq_num() != block.get_seq_num(),
+    //                             Err(_) => true,
+    //                         }
+    //                     }
+    //                 } else {
+    //                     // doesn't really matter what to put here, but let's pick default to true
+    //                     true
+    //                 }
+    //             }
+    //         };
 
-            if do_write {
-                if let Some(ref mut writer) = writer {
-                    writer.seek(SeekFrom::Start(write_pos))?;
-                    writer.write(sbx_block::slice_buf(version, &buffer))?;
-                }
-            }
+    //         if do_write {
+    //             if let Some(ref mut writer) = writer {
+    //                 writer.seek(SeekFrom::Start(write_pos))?;
+    //                 writer.write(sbx_block::slice_buf(version, &buffer))?;
+    //             }
+    //         }
 
-            if read_pos - read_offset == write_pos {
-                if block.is_parity_w_data_par_burst(data_par_burst) {
-                    stats.parity_blocks_same_order += 1;
-                } else {
-                    stats.data_blocks_same_order += 1;
-                }
-            } else {
-                if block.is_parity_w_data_par_burst(data_par_burst) {
-                    stats.parity_blocks_diff_order += 1;
-                } else {
-                    stats.data_blocks_diff_order += 1;
-                }
-            }
-        }
+    //         if read_pos - read_offset == write_pos {
+    //             if block.is_parity_w_data_par_burst(data_par_burst) {
+    //                 stats.parity_blocks_same_order += 1;
+    //             } else {
+    //                 stats.data_blocks_same_order += 1;
+    //             }
+    //         } else {
+    //             if block.is_parity_w_data_par_burst(data_par_burst) {
+    //                 stats.parity_blocks_diff_order += 1;
+    //             } else {
+    //                 stats.data_blocks_diff_order += 1;
+    //             }
+    //         }
+    //     }
 
-        if block.is_meta() {
-            stats.meta_blocks_decoded += 1;
-        } else if block.is_parity_w_data_par_burst(data_par_burst) {
-            stats.parity_blocks_decoded += 1;
-        } else {
-            stats.data_blocks_decoded += 1;
-        }
-    }
+    //     if block.is_meta() {
+    //         stats.meta_blocks_decoded += 1;
+    //     } else if block.is_parity_w_data_par_burst(data_par_burst) {
+    //         stats.parity_blocks_decoded += 1;
+    //     } else {
+    //         stats.data_blocks_decoded += 1;
+    //     }
+    // }
 
     reporter.stop();
 
