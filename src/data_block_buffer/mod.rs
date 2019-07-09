@@ -25,7 +25,7 @@ mod lot_tests;
 
 const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
 
-const LOT_COUNT_PER_CPU: usize = 10;
+const LOT_COUNT_PER_CPU: usize = 50;
 
 macro_rules! slice_slot_w_index {
     (
