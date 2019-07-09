@@ -407,13 +407,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                     break;
                 }
 
-                let read_pos = match reader.cur_pos() {
-                    Ok(pos) => pos,
-                    Err(e) => {error_tx_reader.send(e).unwrap();
-                               break;
-                    }
-                };
-
                 let mut blocks_decode_failed = 0;
                 let mut okay_blank_blocks = 0;
 
@@ -424,6 +417,13 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                         read_pos: slot_read_pos,
                         content_len_exc_header: _,
                     } = buffer.get_slot().unwrap();
+                    let read_pos = match reader.cur_pos() {
+                        Ok(pos) => pos,
+                        Err(e) => {error_tx_reader.send(e).unwrap();
+                                   break;
+                        }
+                    };
+
                     match reader.read(slot) {
                         Ok(read_res) => {
                             bytes_processed += read_res.len_read as u64;
@@ -468,6 +468,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                         }
 
                                         buffer.cancel_slot();
+                                    } else {
+                                        *slot_read_pos = Some(read_pos);
                                     }
                                 }
                                 Err(e) => {
@@ -566,6 +568,38 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                         }
                     },
                     ToWriterData::Data(mut buffer) => {
+                        if let Some(ref mut writer) = writer {
+                            if let Err(e) = buffer.write(writer) {
+                                stop_run_forward_error!(run => error_tx_writer => e);
+                            }
+                        }
+
+                        let read_pos_s = buffer.get_read_pos_s();
+                        let write_pos_s = buffer.get_write_pos_s();
+
+                        let mut data_blocks_same_order = 0;
+                        let mut data_blocks_diff_order = 0;
+                        let mut parity_blocks_same_order = 0;
+                        let mut parity_blocks_diff_order = 0;
+
+                        for (i, read_pos) in read_pos_s.iter().enumerate() {
+                            let write_pos = write_pos_s[i].unwrap();
+
+                            if read_pos.unwrap() - read_offset == write_pos {
+                                if block.is_parity_w_data_par_burst(data_par_burst) {
+                                    parity_blocks_same_order += 1;
+                                } else {
+                                    data_blocks_same_order += 1;
+                                }
+                            } else {
+                                if block.is_parity_w_data_par_burst(data_par_burst) {
+                                    parity_blocks_diff_order += 1;
+                                } else {
+                                    data_blocks_diff_order += 1;
+                                }
+                            }
+                        }
+
                         buffer.reset();
 
                         to_reader.send(Some(buffer)).unwrap();
