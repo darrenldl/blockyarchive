@@ -18,7 +18,7 @@ use crate::file_reader::{FileReader, FileReaderParam};
 use crate::file_writer::{FileWriter, FileWriterParam};
 use crate::writer::{Writer, WriterType};
 
-use crate::data_block_buffer::{BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot};
+use crate::data_block_buffer::{BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot, SlotView};
 
 use crate::general_error::Error;
 use crate::sbx_specs::Version;
@@ -299,8 +299,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     let data_par_burst = get_data_par_burst!(param, ref_block_pos, ref_block, "sort");
 
-    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
-
     let mut reader = FileReader::new(
         &param.in_file,
         FileReaderParam {
@@ -322,8 +320,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
         None => None,
     };
 
-    let mut block = Block::dummy();
-
     let reporter = Arc::new(ProgressReporter::new(
         &stats,
         "SBX block sorting progress",
@@ -331,8 +327,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
         param.pr_verbosity_level,
         param.json_printer.json_enabled(),
     ));
-
-    let mut meta_written = false;
 
     let header_pred = header_pred_same_ver_uid!(ref_block);
 
@@ -365,7 +359,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
     let (to_writer, from_reader) = sync_channel::<Option<ToWriterData>>(PIPELINE_BUFFER_IN_ROTATION + 2); // one extra space for the case of metadata block
     let (to_reader, from_writer) = sync_channel::<Option<DataBlockBuffer>>(PIPELINE_BUFFER_IN_ROTATION + 1);
     let (error_tx_reader, error_rx) = channel::<Error>();
-    let error_tx_encoder = error_tx_reader.clone();
     let error_tx_writer = error_tx_reader.clone();
 
     let worker_shutdown_barrier = Arc::new(Barrier::new(3));
@@ -506,6 +499,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
     let writer_thread = {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
         let multi_pass = param.multi_pass;
+        let stats = Arc::clone(&stats);
 
         thread::spawn(move || {
             let mut run = true;
@@ -574,18 +568,19 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                             }
                         }
 
-                        let read_pos_s = buffer.get_read_pos_s();
-                        let write_pos_s = buffer.get_write_pos_s();
-
                         let mut data_blocks_same_order = 0;
                         let mut data_blocks_diff_order = 0;
                         let mut parity_blocks_same_order = 0;
                         let mut parity_blocks_diff_order = 0;
 
-                        for (i, read_pos) in read_pos_s.iter().enumerate() {
-                            let write_pos = write_pos_s[i].unwrap();
-
-                            if read_pos.unwrap() - read_offset == write_pos {
+                        for SlotView {
+                            block,
+                            slot,
+                            read_pos,
+                            write_pos,
+                            content_len_exc_header,
+                        } in buffer.view_slots() {
+                            if read_pos.unwrap() - read_offset == write_pos.unwrap() {
                                 if block.is_parity_w_data_par_burst(data_par_burst) {
                                     parity_blocks_same_order += 1;
                                 } else {
@@ -600,6 +595,15 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                             }
                         }
 
+                        {
+                            let mut stats = stats.lock().unwrap();
+
+                            stats.data_blocks_same_order += data_blocks_same_order;
+                            stats.data_blocks_diff_order += data_blocks_diff_order;
+                            stats.parity_blocks_same_order += parity_blocks_same_order;
+                            stats.parity_blocks_diff_order += parity_blocks_diff_order;
+                        }
+
                         buffer.reset();
 
                         to_reader.send(Some(buffer)).unwrap();
@@ -611,6 +615,13 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
             worker_shutdown!(to_reader, shutdown_barrier);
         })
     };
+
+    reader_thread.join().unwrap();
+    writer_thread.join().unwrap();
+
+    if let Ok(err) = error_rx.try_recv() {
+        return Err(err);
+    }
 
     // loop {
     //     let mut stats = stats.lock().unwrap();

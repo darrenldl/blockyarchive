@@ -128,6 +128,14 @@ pub struct Slot<'a> {
     pub content_len_exc_header: &'a mut Option<usize>,
 }
 
+pub struct SlotView<'a> {
+    pub block: &'a Block,
+    pub slot: &'a [u8],
+    pub read_pos: &'a Option<u64>,
+    pub write_pos: &'a Option<u64>,
+    pub content_len_exc_header: &'a Option<usize>,
+}
+
 struct Lot {
     version: Version,
     uid: [u8; SBX_FILE_UID_LEN],
@@ -265,14 +273,22 @@ impl Lot {
         }
     }
 
-    fn get_read_pos_s(&self) -> &[Option<u64>] {
-        &self.slot_read_pos[..self.slots_used]
-    }
+    fn view_slots(&self) -> Vec<SlotView> {
+        let mut res = Vec::with_capacity(self.slots_used);
 
-    fn get_write_pos_s(&self) -> &[Option<u64>] {
-        assert!(self.slot_write_pos_usable);
+        for i in 0..self.slots_used {
+            res.push(
+                SlotView {
+                    block: &self.blocks[i],
+                    slot: slice_slot_w_index!(self, i),
+                    read_pos: &self.slot_read_pos[i],
+                    write_pos: &self.slot_write_pos[i],
+                    content_len_exc_header: &self.slot_content_len_exc_header[i],
+                }
+            );
+        }
 
-        &self.slot_write_pos[..self.slots_used]
+        res
     }
 
     fn cancel_slot(&mut self) {
@@ -752,24 +768,12 @@ impl DataBlockBuffer {
         }
     }
 
-    pub fn get_read_pos_s(&self) -> Vec<Option<u64>> {
+    pub fn view_slots(&self) -> Vec<SlotView> {
         let mut res = Vec::with_capacity(self.total_slot_count());
 
         for lot in self.lots.iter() {
-            for pos in lot.get_read_pos_s().iter() {
-                res.push(*pos);
-            }
-        }
-
-        res
-    }
-
-    pub fn get_write_pos_s(&self) -> Vec<Option<u64>> {
-        let mut res = Vec::with_capacity(self.total_slot_count());
-
-        for lot in self.lots.iter() {
-            for pos in lot.get_write_pos_s().iter() {
-                res.push(*pos);
+            for slot in lot.view_slots().into_iter() {
+                res.push(slot);
             }
         }
 
