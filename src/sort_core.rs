@@ -301,26 +301,18 @@ fn check_metadata_blocks_reader(
 
     let mut check_buffer = [0u8; SBX_LARGEST_BLOCK_SIZE];
 
-    let check_buffer = sbx_block::slice_buf_mut(
-        version,
-        &mut check_buffer,
-    );
+    let check_buffer = sbx_block::slice_buf_mut(version, &mut check_buffer);
 
     // read blocks in original container
     // and check against current metadata block
-    let write_pos_s =
-        sbx_block::calc_meta_block_all_write_pos_s(
-            version,
-            data_par_burst,
-        );
+    let write_pos_s = sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst);
 
     for &p in write_pos_s.iter() {
         reader.seek(SeekFrom::Start(p + offset))?;
 
         let read_res = reader.read(check_buffer)?;
 
-        let same_order =
-            !read_res.eof_seen && check_buffer == metadata_block;
+        let same_order = !read_res.eof_seen && check_buffer == metadata_block;
 
         if same_order {
             meta_blocks_same_order += 1;
@@ -492,7 +484,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                                     data_par_burst,
                                                     slot,
                                                     seek_to,
-                                                    &mut reader
+                                                    &mut reader,
                                                 ) {
                                                     Ok(x) => x,
                                                     Err(e) => {
