@@ -147,6 +147,7 @@ struct Lot {
     check_block: Block,
     check_buffer: Vec<u8>,
     slot_read_pos: Vec<Option<u64>>,
+    slot_write_pos_usable: bool,
     slot_write_pos: Vec<Option<u64>>,
     slot_content_len_exc_header: Vec<Option<usize>>,
     slot_is_padding: Vec<bool>,
@@ -228,6 +229,7 @@ impl Lot {
             check_block: Block::dummy(),
             check_buffer: vec![0; SBX_LARGEST_BLOCK_SIZE],
             slot_read_pos: vec![None; lot_size],
+            slot_write_pos_usable: false,
             slot_write_pos: vec![None; lot_size],
             slot_content_len_exc_header: vec![None; lot_size],
             slot_is_padding: vec![false; lot_size],
@@ -268,6 +270,8 @@ impl Lot {
     }
 
     fn get_write_pos_s(&self) -> &[Option<u64>] {
+        assert!(self.slot_write_pos_usable);
+
         &self.slot_write_pos[..self.slots_used]
     }
 
@@ -385,6 +389,8 @@ impl Lot {
 
             self.slot_write_pos[slot_index] = write_pos;
         }
+
+        self.slot_write_pos_usable = true;
     }
 
     fn set_block_seq_num_based_on_lot_start_seq_num(&mut self, lot_start_seq_num: u32) {
@@ -484,6 +490,8 @@ impl Lot {
         for pos in self.slot_read_pos.iter_mut() {
             *pos = None;
         }
+
+        self.slot_write_pos_usable = false;
 
         for pos in self.slot_write_pos.iter_mut() {
             *pos = None;
