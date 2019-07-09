@@ -287,6 +287,54 @@ impl fmt::Display for Stats {
     }
 }
 
+fn check_metadata_blocks_reader(
+    version: Version,
+    data_par_burst: Option<(usize, usize, usize)>,
+    metadata_block: &[u8],
+    offset: u64,
+    reader: &mut FileReader,
+) -> Result<(u64, u64), Error> {
+    let mut meta_blocks_same_order = 0;
+    let mut meta_blocks_diff_order = 0;
+
+    let initial_read_pos = reader.cur_pos()?;
+
+    let mut check_buffer = [0u8; SBX_LARGEST_BLOCK_SIZE];
+
+    let check_buffer = sbx_block::slice_buf_mut(
+        version,
+        &mut check_buffer,
+    );
+
+    // read blocks in original container
+    // and check against current metadata block
+    let write_pos_s =
+        sbx_block::calc_meta_block_all_write_pos_s(
+            version,
+            data_par_burst,
+        );
+
+    for &p in write_pos_s.iter() {
+        reader.seek(SeekFrom::Start(p + offset))?;
+
+        let read_res = reader.read(check_buffer)?;
+
+        let same_order =
+            !read_res.eof_seen && check_buffer == metadata_block;
+
+        if same_order {
+            meta_blocks_same_order += 1;
+        } else {
+            meta_blocks_diff_order += 1;
+        }
+    }
+
+    // reset read position
+    reader.seek(SeekFrom::Start(initial_read_pos))?;
+
+    Ok((meta_blocks_same_order, meta_blocks_diff_order))
+}
+
 pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
     let ctrlc_stop_flag = setup_ctrlc_handler(param.json_printer.json_enabled());
 
@@ -411,20 +459,19 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
                     stop_run_if_reached_required_len!(run => bytes_processed, required_len);
 
+                    let read_pos = match reader.cur_pos() {
+                        Ok(read_pos) => read_pos,
+                        Err(e) => {
+                            stop_run_forward_error!(run => error_tx_reader => e);
+                        }
+                    };
+
                     let Slot {
                         block,
                         slot,
                         read_pos: slot_read_pos,
                         content_len_exc_header: _,
                     } = buffer.get_slot().unwrap();
-                    let read_pos = match reader.cur_pos() {
-                        Ok(pos) => pos,
-                        Err(e) => {
-                            error_tx_reader.send(e).unwrap();
-                            break;
-                        }
-                    };
-
                     match reader.read(slot) {
                         Ok(read_res) => {
                             bytes_processed += read_res.len_read as u64;
@@ -439,44 +486,22 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                 Ok(()) => {
                                     if block.is_meta() {
                                         if !meta_written {
-                                            let mut check_buffer = [0u8; SBX_LARGEST_BLOCK_SIZE];
-
-                                            let check_buffer = sbx_block::slice_buf_mut(
-                                                version,
-                                                &mut check_buffer,
-                                            );
-
-                                            // read blocks in original container
-                                            // and check against current metadata block
-                                            let write_pos_s =
-                                                sbx_block::calc_meta_block_all_write_pos_s(
+                                            let (same_order, diff_order) =
+                                                match check_metadata_blocks_reader(
                                                     version,
                                                     data_par_burst,
-                                                );
-
-                                            for &p in write_pos_s.iter() {
-                                                if let Err(e) =
-                                                    reader.seek(SeekFrom::Start(p + seek_to))
-                                                {
-                                                    stop_run_forward_error!(run => error_tx_reader => e);
-                                                }
-
-                                                let read_res = match reader.read(check_buffer) {
-                                                    Ok(read_res) => read_res,
+                                                    slot,
+                                                    seek_to,
+                                                    &mut reader
+                                                ) {
+                                                    Ok(x) => x,
                                                     Err(e) => {
-                                                        stop_run_forward_error!(run => error_tx_reader => e)
+                                                        stop_run_forward_error!(run => error_tx_reader => e);
                                                     }
                                                 };
 
-                                                let same_order =
-                                                    !read_res.eof_seen && check_buffer == slot;
-
-                                                if same_order {
-                                                    meta_blocks_same_order += 1;
-                                                } else {
-                                                    meta_blocks_diff_order += 1;
-                                                }
-                                            }
+                                            meta_blocks_same_order = same_order;
+                                            meta_blocks_diff_order = diff_order;
 
                                             // copy current metadata block to send to writer
                                             let mut meta_buffer = vec![0u8; block_size];
@@ -487,11 +512,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                                 .unwrap();
 
                                             meta_written = true;
-                                        }
-
-                                        // reset read position
-                                        if let Err(e) = reader.seek(SeekFrom::Start(read_pos)) {
-                                            stop_run_forward_error!(run => error_tx_reader => e);
                                         }
 
                                         buffer.cancel_slot();
