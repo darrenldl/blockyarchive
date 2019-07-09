@@ -627,13 +627,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
         let stats = Arc::clone(&stats);
 
         thread::spawn(move || {
-            let mut run = true;
-
             while let Some(data) = from_reader.recv().unwrap() {
-                if !run {
-                    break;
-                }
-
                 match data {
                     SendToWriter::Meta(meta_block) => {
                         if let Err(e) = write_meta_blocks_writer(
