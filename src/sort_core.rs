@@ -26,7 +26,7 @@ use crate::general_error::Error;
 use crate::sbx_specs::Version;
 
 use crate::sbx_block;
-use crate::sbx_block::{Header, Block};
+use crate::sbx_block::{Block, Header};
 use crate::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use crate::sbx_specs::{ver_to_block_size, ver_to_usize, ver_uses_rs};
 
@@ -341,8 +341,7 @@ fn write_meta_blocks_writer(
 
     let mut check_block = Block::dummy();
 
-    let write_pos_s =
-        sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst);
+    let write_pos_s = sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst);
 
     for &p in write_pos_s.iter() {
         let do_write = match multi_pass {
@@ -357,11 +356,8 @@ fn write_meta_blocks_writer(
                     read_res.eof_seen || {
                         // if block at output position is a valid metadata block,
                         // then don't overwrite
-                        match check_block.sync_from_buffer(
-                            &check_buffer,
-                            Some(&header_pred),
-                            None,
-                        ) {
+                        match check_block.sync_from_buffer(&check_buffer, Some(&header_pred), None)
+                        {
                             Ok(()) => check_block.get_seq_num() != 0,
                             Err(_) => true,
                         }
