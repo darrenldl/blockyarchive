@@ -43,7 +43,7 @@ use crate::misc_utils::{PositionOrLength, RangeEnd};
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
 enum SendToWriter {
-    Meta(Vec<u8>, Vec<(bool, Vec<u8>)>),
+    Meta(Vec<u8>),
     Data(DataBlockBuffer),
 }
 
@@ -352,14 +352,10 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     reporter.start();
 
-    let mut check_block = Block::dummy();
-
-    let mut check_buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
-
     let (to_writer, from_reader) =
-        sync_channel::<Option<SendToWriter>>(PIPELINE_BUFFER_IN_ROTATION + 2); // one extra space for the case of metadata block
+        sync_channel(PIPELINE_BUFFER_IN_ROTATION + 2); // one extra space for the case of metadata block
     let (to_reader, from_writer) =
-        sync_channel::<Option<DataBlockBuffer>>(PIPELINE_BUFFER_IN_ROTATION + 1);
+        sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
     let (error_tx_reader, error_rx) = channel::<Error>();
     let error_tx_writer = error_tx_reader.clone();
 
@@ -404,6 +400,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                     break;
                 }
 
+                let mut meta_blocks_same_order = 0;
+                let mut meta_blocks_diff_order = 0;
                 let mut meta_blocks_decoded = 0;
                 let mut parity_blocks_decoded = 0;
                 let mut data_blocks_decoded = 0;
@@ -443,42 +441,52 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                 Ok(()) => {
                                     if block.is_meta() {
                                         if !meta_written {
-                                            // copy current metadata block in the slot
-                                            let mut meta_buffer = vec![0; block_size];
-                                            meta_buffer.clone_from_slice(slot);
+                                            let mut check_buffer = [0u8; SBX_LARGEST_BLOCK_SIZE];
+
+                                            let check_buffer = sbx_block::slice_buf_mut(
+                                                version,
+                                                &mut check_buffer,
+                                            );
 
                                             // read blocks in original container
+                                            // and check against current metadata block
                                             let write_pos_s =
                                                 sbx_block::calc_meta_block_all_write_pos_s(
                                                     version,
                                                     data_par_burst,
                                                 );
 
-                                            let mut orig_buffers =
-                                                Vec::with_capacity(write_pos_s.len());
-
                                             for &p in write_pos_s.iter() {
-                                                let mut buffer = vec![0; block_size];
-
                                                 if let Err(e) =
                                                     reader.seek(SeekFrom::Start(p + seek_to))
                                                 {
                                                     stop_run_forward_error!(run => error_tx_reader => e);
                                                 }
-                                                let read_res = match reader.read(&mut buffer) {
+
+                                                let read_res = match reader.read(check_buffer) {
                                                     Ok(read_res) => read_res,
                                                     Err(e) => {
                                                         stop_run_forward_error!(run => error_tx_reader => e)
                                                     }
                                                 };
 
-                                                orig_buffers.push((read_res.eof_seen, buffer));
+                                                let same_order = !read_res.eof_seen
+                                                    && check_buffer == slot;
+
+                                                if same_order {
+                                                    meta_blocks_same_order += 1;
+                                                } else {
+                                                    meta_blocks_diff_order += 1;
+                                                }
                                             }
+
+                                            // copy current metadata block to send to writer
+                                            let mut meta_buffer = vec![0u8; block_size];
+                                            meta_buffer.clone_from_slice(slot);
 
                                             to_writer
                                                 .send(Some(SendToWriter::Meta(
-                                                    meta_buffer,
-                                                    orig_buffers,
+                                                    meta_buffer
                                                 )))
                                                 .unwrap();
 
@@ -534,6 +542,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                     let mut stats = stats.lock().unwrap();
 
                     stats.meta_blocks_decoded += meta_blocks_decoded;
+                    stats.meta_blocks_same_order += meta_blocks_same_order;
+                    stats.meta_blocks_diff_order += meta_blocks_diff_order;
                     stats.parity_blocks_decoded += parity_blocks_decoded;
                     stats.data_blocks_decoded += data_blocks_decoded;
                     stats.blocks_decode_failed += blocks_decode_failed;
@@ -561,38 +571,39 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                 }
 
                 match data {
-                    SendToWriter::Meta(meta_buffer, orig_buffers) => {
+                    SendToWriter::Meta(meta_buffer) => {
+                        let mut check_buffer = [0; SBX_LARGEST_BLOCK_SIZE];
+
+                        let check_buffer = sbx_block::slice_buf_mut(
+                            version,
+                            &mut check_buffer,
+                        );
+
+                        let mut check_block = Block::dummy();
+
                         let write_pos_s =
                             sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst);
 
-                        let mut meta_blocks_same_order = 0;
-                        let mut meta_blocks_diff_order = 0;
-
-                        for (i, &p) in write_pos_s.iter().enumerate() {
-                            // read metadata blocks
-                            if let Err(e) = writer.seek(SeekFrom::Start(p)).unwrap() {
-                                stop_run_forward_error!(run => error_tx_writer => e);
-                            }
-
-                            let check_buffer = sbx_block::slice_buf_mut(
-                                version,
-                                &mut check_buffer,
-                            );
-
-                            let read_res = match writer
-                                .read(check_buffer)
-                                .unwrap()
-                            {
-                                Ok(read_res) => read_res,
-                                Err(e) => {
-                                    stop_run_forward_error!(run => error_tx_writer => e)
-                                }
-                            };
-
+                        for &p in write_pos_s.iter() {
                             let do_write = match multi_pass {
                                 None | Some(MultiPassType::OverwriteAll) => true,
                                 Some(MultiPassType::SkipGood) => {
                                     if let Some(ref mut writer) = writer {
+                                        // read blocks in the output container
+                                        if let Err(e) = writer.seek(SeekFrom::Start(p)).unwrap() {
+                                            stop_run_forward_error!(run => error_tx_writer => e);
+                                        }
+
+                                        let read_res = match writer
+                                            .read(check_buffer)
+                                            .unwrap()
+                                        {
+                                            Ok(read_res) => read_res,
+                                            Err(e) => {
+                                                stop_run_forward_error!(run => error_tx_writer => e)
+                                            }
+                                        };
+
                                         read_res.eof_seen || {
                                             // if block at output position is a valid metadata block,
                                             // then don't overwrite
@@ -621,26 +632,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                         stop_run_forward_error!(run => error_tx_writer => e);
                                     }
                                 }
-                            }
-
-                            { // check if metadata block being currently processed is in the same order
-                                let (eof_seen, orig_buffer) = &orig_buffers[i];
-
-                                let same_order = !eof_seen
-                                    && &orig_buffer[..] == check_buffer;
-
-                                if same_order {
-                                    meta_blocks_same_order += 1;
-                                } else {
-                                    meta_blocks_diff_order += 1;
-                                }
-                            }
-
-                            {
-                                let mut stats = stats.lock().unwrap();
-
-                                stats.meta_blocks_same_order += meta_blocks_same_order;
-                                stats.meta_blocks_diff_order += meta_blocks_diff_order;
                             }
                         }
                     }
