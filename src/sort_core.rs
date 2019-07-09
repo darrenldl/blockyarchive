@@ -42,8 +42,8 @@ use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
-enum ToWriterData {
-    Meta(Vec<u8>, Vec<Vec<u8>>),
+enum SendToWriter {
+    Meta(Vec<u8>, Vec<(bool, Vec<u8>)>),
     Data(DataBlockBuffer),
 }
 
@@ -352,20 +352,18 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     reporter.start();
 
-    let mut bytes_processed: u64 = 0;
-
     let mut check_block = Block::dummy();
 
     let mut check_buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
 
     let (to_writer, from_reader) =
-        sync_channel::<Option<ToWriterData>>(PIPELINE_BUFFER_IN_ROTATION + 2); // one extra space for the case of metadata block
+        sync_channel::<Option<SendToWriter>>(PIPELINE_BUFFER_IN_ROTATION + 2); // one extra space for the case of metadata block
     let (to_reader, from_writer) =
         sync_channel::<Option<DataBlockBuffer>>(PIPELINE_BUFFER_IN_ROTATION + 1);
     let (error_tx_reader, error_rx) = channel::<Error>();
     let error_tx_writer = error_tx_reader.clone();
 
-    let worker_shutdown_barrier = Arc::new(Barrier::new(3));
+    let worker_shutdown_barrier = Arc::new(Barrier::new(2));
 
     let skip_good = match param.multi_pass {
         None | Some(MultiPassType::OverwriteAll) => false,
@@ -394,6 +392,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
         let report_blank = param.report_blank;
         let block_size = ver_to_block_size(version);
+        let stats = Arc::clone(&stats);
+        let mut bytes_processed: u64 = 0;
 
         thread::spawn(move || {
             let mut run = true;
@@ -408,6 +408,10 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                 let mut okay_blank_blocks = 0;
 
                 while !buffer.is_full() {
+                    stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
+
+                    stop_run_if_reached_required_len!(run => bytes_processed, required_len);
+
                     let Slot {
                         block,
                         slot,
@@ -465,11 +469,11 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                                     }
                                                 };
 
-                                                orig_buffers.push(buffer);
+                                                orig_buffers.push((read_res.eof_seen, buffer));
                                             }
 
                                             to_writer
-                                                .send(Some(ToWriterData::Meta(
+                                                .send(Some(SendToWriter::Meta(
                                                     meta_buffer,
                                                     orig_buffers,
                                                 )))
@@ -483,7 +487,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                         *slot_read_pos = Some(read_pos);
                                     }
                                 }
-                                Err(e) => {
+                                Err(_) => {
                                     // only consider it failed if the buffer is not completely blank
                                     // unless report blank is true
                                     if misc_utils::buffer_is_blank(sbx_block::slice_buf(
@@ -509,7 +513,14 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                     }
                 }
 
-                to_writer.send(Some(ToWriterData::Data(buffer))).unwrap();
+                {
+                    let mut stats = stats.lock().unwrap();
+
+                    stats.blocks_decode_failed += blocks_decode_failed;
+                    stats.okay_blank_blocks += okay_blank_blocks;
+                }
+
+                to_writer.send(Some(SendToWriter::Data(buffer))).unwrap();
             }
 
             worker_shutdown!(to_writer, shutdown_barrier);
@@ -530,11 +541,14 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                 }
 
                 match data {
-                    ToWriterData::Meta(meta_buffer, orig_buffers) => {
+                    SendToWriter::Meta(meta_buffer, orig_buffers) => {
                         let write_pos_s =
                             sbx_block::calc_meta_block_all_write_pos_s(version, data_par_burst);
 
-                        for &p in write_pos_s.iter() {
+                        let mut meta_blocks_same_order = 0;
+                        let mut meta_blocks_diff_order = 0;
+
+                        for (i, &p) in write_pos_s.iter().enumerate() {
                             let do_write = match multi_pass {
                                 None | Some(MultiPassType::OverwriteAll) => true,
                                 Some(MultiPassType::SkipGood) => {
@@ -544,11 +558,13 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                             stop_run_forward_error!(run => error_tx_writer => e);
                                         }
 
+                                        let check_buffer = sbx_block::slice_buf_mut(
+                                            version,
+                                            &mut check_buffer,
+                                        );
+
                                         let read_res = match writer
-                                            .read(sbx_block::slice_buf_mut(
-                                                version,
-                                                &mut check_buffer,
-                                            ))
+                                            .read(check_buffer)
                                             .unwrap()
                                         {
                                             Ok(read_res) => read_res,
@@ -556,6 +572,19 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                                 stop_run_forward_error!(run => error_tx_writer => e)
                                             }
                                         };
+
+                                        { // check if metadata block being currently processed is in the same order
+                                            let (eof_seen, orig_buffer) = &orig_buffers[i];
+
+                                            let same_order = !eof_seen
+                                                && &orig_buffer[..] == check_buffer;
+
+                                            if same_order {
+                                                meta_blocks_same_order += 1;
+                                            } else {
+                                                meta_blocks_diff_order += 1;
+                                            }
+                                        }
 
                                         read_res.eof_seen || {
                                             // if block at output position is a valid metadata block,
@@ -586,12 +615,20 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                                     }
                                 }
                             }
+
+                            {
+                                let mut stats = stats.lock().unwrap();
+
+                                stats.meta_blocks_same_order += meta_blocks_same_order;
+                                stats.meta_blocks_diff_order += meta_blocks_diff_order;
+                            }
                         }
                     }
-                    ToWriterData::Data(mut buffer) => {
+                    SendToWriter::Data(mut buffer) => {
                         if let Some(ref mut writer) = writer {
                             if let Err(e) = buffer.write(writer) {
-                                stop_run_forward_error!(run => error_tx_writer => e);
+                                error_tx_writer.send(e).unwrap();
+                                break;
                             }
                         }
 
@@ -602,10 +639,10 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
                         for SlotView {
                             block,
-                            slot,
+                            slot: _,
                             read_pos,
                             write_pos,
-                            content_len_exc_header,
+                            content_len_exc_header: _,
                         } in buffer.view_slots()
                         {
                             if read_pos.unwrap() - read_offset == write_pos.unwrap() {

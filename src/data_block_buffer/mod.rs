@@ -485,6 +485,7 @@ impl Lot {
         block.set_uid(self.uid);
         block.set_seq_num(SBX_FIRST_DATA_SEQ_NUM);
 
+        self.slot_read_pos[slot_index] = None;
         self.slot_write_pos[slot_index] = None;
         self.slot_content_len_exc_header[slot_index] = None;
         self.slot_is_padding[slot_index] = false;
