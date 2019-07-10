@@ -1,6 +1,10 @@
 use std::fmt;
 use std::io::SeekFrom;
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc::channel;
+use std::sync::mpsc::sync_channel;
+use std::sync::Barrier;
+use std::thread;
 
 use crate::file_utils;
 
@@ -29,6 +33,12 @@ use crate::integer_utils::IntegerUtils;
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 use crate::json_printer::{BracketType, JSONPrinter};
+
+use crate::rescue_buffer::RescueBuffer;
+
+const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
+
+const BLOCK_COUNT_IN_BUFFER: usize = 100;
 
 pub struct Param {
     in_file: String,
@@ -279,9 +289,6 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
     // read from log file and update stats if the log file exists
     log_handler.read_from_file()?;
 
-    log_handler.start();
-    reporter.start();
-
     // now calculate the position to seek to with the final bytes processed count
     let RequiredLenAndSeekTo { seek_to, .. } =
         misc_utils::calc_required_len_and_seek_to_from_byte_range(
@@ -295,6 +302,122 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
 
     // seek to calculated position
     reader.seek(SeekFrom::Start(seek_to))?;
+
+    let (to_grouper, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_writer, from_grouper) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (error_tx_reader, error_rx) = channel::<Error>();
+    let error_tx_grouper = error_tx_reader.clone();
+    let error_tx_writer = error_tx_reader.clone();
+
+    let worker_shutdown_barrier = Arc::new(Barrier::new(3));
+
+    // push buffers into pipeline
+    for _ in PIPELINE_BUFFER_IN_ROTATION {
+        to_reader.send(
+            RescueBuffer::new(BLOCK_COUNT_IN_BUFFER)
+        ).unwrap();
+    }
+
+    log_handler.start();
+    reporter.start();
+
+    let reader_thread = {
+        let ctrlc_stop_flag = Arc::clone(&ctrlc_stop_flag);
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+
+        thread::spawn(move || {
+            let mut bytes_processed: u64 = 0;
+            let mut meta_or_par_blocks_processed = 0;
+            let mut data_or_par_blocks_processed = 0;
+            let mut block = Block::dummy();
+            let mut run = true;
+
+            while let Some(mut buffer) = from_writer.recv().unwrap() {
+                if !run {
+                    break;
+                }
+
+                stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
+
+                stop_run_if_reached_required_len!(bytes_processed, required_len);
+
+                let lazy_read_res = match block_utils::read_block_lazily(&mut block, &mut buffer, &mut reader){
+                    Ok(lazy_read_res) => lazy_read_res,
+                    Err(e) =>
+                        stop_run_forward_error!(run => error_tx_reader => e)
+                };
+
+                bytes_processed += lazy_read_res.len_read as u64;
+
+                if lazy_read_res.usable {
+                    // update stats
+                    match block.block_type() {
+                        BlockType::Meta => {
+                            meta_or_par_blocks_processed += 1;
+                        }
+                        BlockType::Data => {
+                            data_or_par_blocks_processed += 1;
+                        }
+                    }
+
+                    // check if block matches required block type
+                }
+
+                {
+                    let mut stats = stats.lock().unwrap();
+
+                    stats.bytes_processed = bytes_processed;
+                    stats.meta_or_par_blocks_processed = meta_or_par_blocks_processed;
+                    stats.data_or_par_blocks_processed = data_or_par_blocks_processed;
+                }
+            }
+
+            worker_shutdown!(to_grouper, shutdown_barrier);
+        })
+    };
+
+    let grouper_thread = {
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+
+        thread::spawn(move || {
+            while let Some(mut buffer) = from_reader.recv().unwrap() {
+                
+            }
+
+            worker_shutdown!(to_writer, shutdown_barrier);
+        })
+    };
+
+    let writer_thread = {
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+
+        thread::spawn(move || {
+            while let Some(mut buffer) = from_grouper.recv().unwrap() {
+                
+            }
+
+            worker_shutdown!(to_reader, shutdown_barrier);
+        })
+    };
+
+    reader_thread.join().unwrap();
+    grouper_thread.join().unwrap();
+    writer_thread.join().unwrap();
+
+    // // now calculate the position to seek to with the final bytes processed count
+    // let RequiredLenAndSeekTo { seek_to, .. } =
+    //     misc_utils::calc_required_len_and_seek_to_from_byte_range(
+    //         param.from_pos,
+    //         param.to_pos,
+    //         param.force_misalign,
+    //         stats.lock().unwrap().bytes_processed,
+    //         PositionOrLength::Len(file_size),
+    //         None,
+    //     );
+
+    // // seek to calculated position
+    // reader.seek(SeekFrom::Start(seek_to))?;
 
     loop {
         let mut stats = stats.lock().unwrap();
