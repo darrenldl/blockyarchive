@@ -85,6 +85,19 @@ macro_rules! check_data_par_burst_consistent_with_rs_codec {
     }};
 }
 
+macro_rules! check_input_type_consistent_with_block_arrangement {
+    (
+        $input_type:expr, $block_arrangement:expr
+    ) => {{
+        match $input_type {
+            InputType::Block => {}
+            InputType::Data => {
+                assert!($block_arrangement == BlockArrangement::OrderedAndNoMissing)
+            }
+        }
+    }};
+}
+
 enum GetSlotResult<'a> {
     None,
     Some(
@@ -189,6 +202,8 @@ impl Lot {
         check_data_par_burst_consistent_with_version!(data_par_burst, version);
 
         check_data_par_burst_consistent_with_rs_codec!(data_par_burst, rs_codec);
+
+        check_input_type_consistent_with_block_arrangement!(input_type, arrangement);
 
         let lot_size = match data_par_burst {
             None => default_lot_size,
@@ -648,6 +663,8 @@ impl DataBlockBuffer {
         assert!(lot_count > 0);
 
         check_data_par_burst_consistent_with_version!(data_par_burst, version);
+
+        check_input_type_consistent_with_block_arrangement!(input_type, arrangement);
 
         let mut lots = Vec::with_capacity(lot_count);
 
