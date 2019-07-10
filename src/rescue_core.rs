@@ -17,14 +17,12 @@ use crate::progress_report::*;
 use crate::cli_utils::setup_ctrlc_handler;
 
 use crate::file_reader::{FileReader, FileReaderParam};
-use crate::file_writer::{FileWriter, FileWriterParam};
 
 use crate::general_error::Error;
 
-use crate::sbx_specs::{SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE, SBX_SCAN_BLOCK_SIZE};
+use crate::sbx_specs::{SBX_FILE_UID_LEN, SBX_SCAN_BLOCK_SIZE};
 
-use crate::sbx_block;
-use crate::sbx_block::{Block, BlockType};
+use crate::sbx_block::BlockType;
 
 use crate::block_utils;
 
@@ -310,7 +308,6 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
     let (to_writer, from_grouper) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
     let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
     let (error_tx_reader, error_rx) = channel::<Error>();
-    let error_tx_grouper = error_tx_reader.clone();
     let error_tx_writer = error_tx_reader.clone();
 
     let worker_shutdown_barrier = Arc::new(Barrier::new(3));
@@ -335,7 +332,6 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
             let mut bytes_processed: u64 = 0;
             let mut meta_blocks_processed = 0;
             let mut data_or_par_blocks_processed = 0;
-            let mut block = Block::dummy();
             let mut run = true;
 
             while let Some(mut buffer) = from_writer.recv().unwrap() {
@@ -453,6 +449,10 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
     reader_thread.join().unwrap();
     grouper_thread.join().unwrap();
     writer_thread.join().unwrap();
+
+    if let Ok(err) = error_rx.try_recv() {
+        return Err(err);
+    }
 
     // // now calculate the position to seek to with the final bytes processed count
     // let RequiredLenAndSeekTo { seek_to, .. } =
