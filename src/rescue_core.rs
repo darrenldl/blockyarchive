@@ -34,7 +34,7 @@ use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 use crate::json_printer::{BracketType, JSONPrinter};
 
-use crate::rescue_buffer::RescueBuffer;
+use crate::rescue_buffer::{RescueBuffer, Slot};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
@@ -282,10 +282,6 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
         param.json_printer.json_enabled(),
     ));
 
-    let mut block = Block::dummy();
-
-    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
-
     // read from log file and update stats if the log file exists
     log_handler.read_from_file()?;
 
@@ -313,9 +309,9 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
     let worker_shutdown_barrier = Arc::new(Barrier::new(3));
 
     // push buffers into pipeline
-    for _ in PIPELINE_BUFFER_IN_ROTATION {
+    for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
         to_reader.send(
-            RescueBuffer::new(BLOCK_COUNT_IN_BUFFER)
+            Some(RescueBuffer::new(BLOCK_COUNT_IN_BUFFER))
         ).unwrap();
     }
 
@@ -325,6 +321,9 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
     let reader_thread = {
         let ctrlc_stop_flag = Arc::clone(&ctrlc_stop_flag);
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+        let stats = Arc::clone(&stats);
+        let only_pick_block = param.only_pick_block;
+        let only_pick_uid = param.only_pick_uid;
 
         thread::spawn(move || {
             let mut bytes_processed: u64 = 0;
@@ -338,30 +337,52 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
                     break;
                 }
 
-                stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
+                while !buffer.is_full() {
+                    stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
 
-                stop_run_if_reached_required_len!(bytes_processed, required_len);
+                    stop_run_if_reached_required_len!(run => bytes_processed, required_len);
 
-                let lazy_read_res = match block_utils::read_block_lazily(&mut block, &mut buffer, &mut reader){
-                    Ok(lazy_read_res) => lazy_read_res,
-                    Err(e) =>
-                        stop_run_forward_error!(run => error_tx_reader => e)
-                };
+                    let Slot {
+                        block,
+                        slot
+                    } = buffer.get_slot().unwrap();
 
-                bytes_processed += lazy_read_res.len_read as u64;
+                    let lazy_read_res = match block_utils::read_block_lazily(block, slot, &mut reader){
+                        Ok(lazy_read_res) => lazy_read_res,
+                        Err(e) =>
+                            stop_run_forward_error!(run => error_tx_reader => e)
+                    };
 
-                if lazy_read_res.usable {
-                    // update stats
-                    match block.block_type() {
-                        BlockType::Meta => {
-                            meta_or_par_blocks_processed += 1;
+                    bytes_processed += lazy_read_res.len_read as u64;
+
+                    if lazy_read_res.usable {
+                        // update stats
+                        match block.block_type() {
+                            BlockType::Meta => {
+                                meta_or_par_blocks_processed += 1;
+                            }
+                            BlockType::Data => {
+                                data_or_par_blocks_processed += 1;
+                            }
                         }
-                        BlockType::Data => {
-                            data_or_par_blocks_processed += 1;
+
+                        // check if block matches required block type
+                        if let Some(x) = param.only_pick_block {
+                            if block.block_type() != x {
+                                buffer.cancel_slot();
+                                break;
+                            }
                         }
+
+                        // check if block has the required UID
+                        if let Some(x) = param.only_pick_uid {
+                            if block.get_uid() != x {
+                                buffer.cancel_slot();
+                            }
+                        }
+                    } else {
+                        buffer.cancel_slot();
                     }
-
-                    // check if block matches required block type
                 }
 
                 {
@@ -371,6 +392,8 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
                     stats.meta_or_par_blocks_processed = meta_or_par_blocks_processed;
                     stats.data_or_par_blocks_processed = data_or_par_blocks_processed;
                 }
+
+                to_grouper.send(Some(buffer)).unwrap();
             }
 
             worker_shutdown!(to_grouper, shutdown_barrier);
@@ -382,7 +405,7 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
 
         thread::spawn(move || {
             while let Some(mut buffer) = from_reader.recv().unwrap() {
-                
+                to_writer.send(Some(buffer)).unwrap();
             }
 
             worker_shutdown!(to_writer, shutdown_barrier);
@@ -394,7 +417,9 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
 
         thread::spawn(move || {
             while let Some(mut buffer) = from_grouper.recv().unwrap() {
-                
+                buffer.reset();
+
+                to_reader.send(Some(buffer)).unwrap();
             }
 
             worker_shutdown!(to_reader, shutdown_barrier);
@@ -419,66 +444,66 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
     // // seek to calculated position
     // reader.seek(SeekFrom::Start(seek_to))?;
 
-    loop {
-        let mut stats = stats.lock().unwrap();
+    // loop {
+    //     let mut stats = stats.lock().unwrap();
 
-        break_if_atomic_bool!(ctrlc_stop_flag);
+    //     break_if_atomic_bool!(ctrlc_stop_flag);
 
-        break_if_reached_required_len!(stats.bytes_processed, required_len);
+    //     break_if_reached_required_len!(stats.bytes_processed, required_len);
 
-        let lazy_read_res = block_utils::read_block_lazily(&mut block, &mut buffer, &mut reader)?;
+    //     let lazy_read_res = block_utils::read_block_lazily(&mut block, &mut buffer, &mut reader)?;
 
-        stats.bytes_processed += lazy_read_res.len_read as u64;
+    //     stats.bytes_processed += lazy_read_res.len_read as u64;
 
-        break_if_eof_seen!(lazy_read_res);
+    //     break_if_eof_seen!(lazy_read_res);
 
-        if !lazy_read_res.usable {
-            continue;
-        }
+    //     if !lazy_read_res.usable {
+    //         continue;
+    //     }
 
-        // update stats
-        match block.block_type() {
-            BlockType::Meta => {
-                stats.meta_or_par_blocks_processed += 1;
-            }
-            BlockType::Data => {
-                stats.data_or_par_blocks_processed += 1;
-            }
-        }
+    //     // update stats
+    //     match block.block_type() {
+    //         BlockType::Meta => {
+    //             stats.meta_or_par_blocks_processed += 1;
+    //         }
+    //         BlockType::Data => {
+    //             stats.data_or_par_blocks_processed += 1;
+    //         }
+    //     }
 
-        // check if block matches required block type
-        if let Some(x) = param.only_pick_block {
-            if block.block_type() != x {
-                continue;
-            }
-        }
+    //     // check if block matches required block type
+    //     if let Some(x) = param.only_pick_block {
+    //         if block.block_type() != x {
+    //             continue;
+    //         }
+    //     }
 
-        // check if block has the required UID
-        if let Some(x) = param.only_pick_uid {
-            if block.get_uid() != x {
-                continue;
-            }
-        }
+    //     // check if block has the required UID
+    //     if let Some(x) = param.only_pick_uid {
+    //         if block.get_uid() != x {
+    //             continue;
+    //         }
+    //     }
 
-        // write block out
-        let uid_str = misc_utils::bytes_to_upper_hex_string(&block.get_uid());
-        let path = misc_utils::make_path(&[&param.out_dir, &uid_str]);
-        let mut writer = FileWriter::new(
-            &path,
-            FileWriterParam {
-                read: false,
-                append: true,
-                truncate: false,
-                buffered: false,
-            },
-        )?;
+    //     // write block out
+    //     let uid_str = misc_utils::bytes_to_upper_hex_string(&block.get_uid());
+    //     let path = misc_utils::make_path(&[&param.out_dir, &uid_str]);
+    //     let mut writer = FileWriter::new(
+    //         &path,
+    //         FileWriterParam {
+    //             read: false,
+    //             append: true,
+    //             truncate: false,
+    //             buffered: false,
+    //         },
+    //     )?;
 
-        // use the original bytes which are still in the buffer
-        writer.write(sbx_block::slice_buf(block.get_version(), &buffer))?;
+    //     // use the original bytes which are still in the buffer
+    //     writer.write(sbx_block::slice_buf(block.get_version(), &buffer))?;
 
-        // check if there's any error in log handling
-        log_handler.pop_error()?;
-    }
+    //     // check if there's any error in log handling
+    //     log_handler.pop_error()?;
+    // }
 
     reporter.stop();
     log_handler.stop();

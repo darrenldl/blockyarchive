@@ -1,5 +1,5 @@
 use crate::sbx_specs::{
-    ver_uses_rs, Version, SBX_FIRST_DATA_SEQ_NUM, SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM, SBX_FILE_UID_LEN,
+    ver_uses_rs, Version, SBX_FIRST_DATA_SEQ_NUM, SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM, SBX_FILE_UID_LEN, ver_to_block_size,
 };
 
 use crate::sbx_block::{calc_data_block_write_pos, calc_data_chunk_write_pos, Block, BlockType};
@@ -32,8 +32,8 @@ macro_rules! slice_slot_w_index {
 }
 
 pub struct Slot<'a> {
-    block: &'a mut Block,
-    slot: &'a mut [u8],
+    pub block: &'a mut Block,
+    pub slot: &'a mut [u8],
 }
 
 pub struct RescueBuffer {
@@ -43,11 +43,12 @@ pub struct RescueBuffer {
     data: Vec<u8>,
 }
 
-impl Buffer {
+impl RescueBuffer {
     pub fn new(size: usize) -> Self {
-        Buffer {
+        RescueBuffer {
             size,
-            ver: Vec::with_capacity(size),
+            slots_used: 0,
+            blocks: Vec::with_capacity(size),
             data: Vec::with_capacity(size * SBX_LARGEST_BLOCK_SIZE),
         }
     }
@@ -56,22 +57,24 @@ impl Buffer {
         if self.slots_used == self.size {
             None
         } else {
-            let slot = slice_slot_w_index(self, self.slots_used);
+            let slot = slice_slot_w_index!(mut => self, self.slots_used);
             let block = &mut self.blocks[self.slots_used];
 
             self.slots_used += 1;
 
-            Slot {
+            Some(Slot {
                 block,
                 slot,
-            }
+            })
         }
     }
 
     pub fn reset(&mut self) {
+        self.slots_used = 0;
+
         for block in self.blocks.iter_mut() {
             block.set_version(Version::V1);
-            block.set_uid(&[0; SBX_FILE_UID_LEN]);
+            block.set_uid([0; SBX_FILE_UID_LEN]);
             block.set_seq_num(SBX_FIRST_DATA_SEQ_NUM);
         }
     }
@@ -79,7 +82,7 @@ impl Buffer {
     pub fn reset_slot(&mut self, slot_index: usize) {
         let block = &mut self.blocks[slot_index];
         block.set_version(Version::V1);
-        block.set_uid(&[0; SBX_FILE_UID_LEN]);
+        block.set_uid([0; SBX_FILE_UID_LEN]);
         block.set_seq_num(SBX_FIRST_DATA_SEQ_NUM);
     }
 
@@ -87,5 +90,9 @@ impl Buffer {
         assert!(self.slots_used > 0);
 
         self.slots_used -= 1;
+    }
+
+    pub fn is_full(&self) -> bool {
+        self.slots_used == self.size
     }
 }
