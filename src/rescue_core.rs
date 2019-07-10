@@ -36,7 +36,7 @@ use crate::rescue_buffer::{RescueBuffer, Slot};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
-const BLOCK_COUNT_IN_BUFFER: usize = 100;
+const BLOCK_COUNT_IN_BUFFER: usize = 1000;
 
 pub struct Param {
     in_file: String,
