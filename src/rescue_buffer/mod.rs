@@ -126,7 +126,7 @@ impl RescueBuffer {
                 },
             )?;
 
-            for &i in l.iter() {
+            for &i in l.iter().rev() {
                 let slot = slice_slot_w_index!(depend_on_block_ver => self, i);
 
                 writer.write(slot)?;
