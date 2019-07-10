@@ -101,7 +101,7 @@ impl RescueBuffer {
             let uid = self.blocks[i].get_uid();
 
             match self.uid_to_slot_indices.get_mut(&uid) {
-                Some(l) => l.push_front(i),
+                Some(l) => l.push_back(i),
                 None => {
                     let mut l = LinkedList::new();
                     l.push_front(i);
@@ -126,7 +126,7 @@ impl RescueBuffer {
                 },
             )?;
 
-            for &i in l.iter().rev() {
+            for &i in l.iter() {
                 let slot = slice_slot_w_index!(depend_on_block_ver => self, i);
 
                 writer.write(slot)?;
