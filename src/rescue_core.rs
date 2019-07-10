@@ -327,11 +327,12 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
         let only_pick_block = param.only_pick_block;
         let only_pick_uid = param.only_pick_uid;
+        let stats = stats.lock().unwrap();
+        let mut bytes_processed = stats.bytes_processed;
+        let mut meta_blocks_processed = stats.meta_blocks_processed;
+        let mut data_or_par_blocks_processed = stats.data_or_par_blocks_processed;
 
         thread::spawn(move || {
-            let mut bytes_processed: u64 = 0;
-            let mut meta_blocks_processed = 0;
-            let mut data_or_par_blocks_processed = 0;
             let mut run = true;
 
             while let Some(mut buffer) = from_writer.recv().unwrap() {
@@ -365,19 +366,24 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
                             }
                         }
 
+                        let mut cancel_slot = false;
+
                         // check if block matches required block type
                         if let Some(x) = only_pick_block {
                             if block.block_type() != x {
-                                buffer.cancel_slot();
-                                break;
+                                cancel_slot = true;
                             }
                         }
 
                         // check if block has the required UID
                         if let Some(x) = only_pick_uid {
                             if block.get_uid() != x {
-                                buffer.cancel_slot();
+                                cancel_slot = true;
                             }
+                        }
+
+                        if cancel_slot {
+                            buffer.cancel_slot();
                         }
                     } else {
                         buffer.cancel_slot();
