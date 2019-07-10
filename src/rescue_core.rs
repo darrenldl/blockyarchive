@@ -89,7 +89,7 @@ impl Param {
 
 #[derive(Clone, Debug)]
 pub struct Stats {
-    pub meta_or_par_blocks_processed: u64,
+    pub meta_blocks_processed: u64,
     pub data_or_par_blocks_processed: u64,
     pub bytes_processed: u64,
     total_bytes: u64,
@@ -101,7 +101,7 @@ pub struct Stats {
 impl Stats {
     pub fn new(required_len: u64, json_printer: &Arc<JSONPrinter>) -> Result<Stats, Error> {
         let stats = Stats {
-            meta_or_par_blocks_processed: 0,
+            meta_blocks_processed: 0,
             data_or_par_blocks_processed: 0,
             bytes_processed: 0,
             total_bytes: required_len,
@@ -175,11 +175,11 @@ impl Log for Stats {
         string.push_str(&format!("bytes_processed={}\n", self.bytes_processed));
         string.push_str(&format!(
             "blocks_processed={}\n",
-            self.meta_or_par_blocks_processed + self.data_or_par_blocks_processed
+            self.meta_blocks_processed + self.data_or_par_blocks_processed
         ));
         string.push_str(&format!(
             "meta_blocks_processed={}\n",
-            self.meta_or_par_blocks_processed
+            self.meta_blocks_processed
         ));
         string.push_str(&format!(
             "data_blocks_processed={}\n",
@@ -196,7 +196,7 @@ impl Log for Stats {
                     u64::ensure_at_most(self.total_bytes, bytes),
                     SBX_SCAN_BLOCK_SIZE as u64,
                 );
-                self.meta_or_par_blocks_processed = meta;
+                self.meta_blocks_processed = meta;
                 self.data_or_par_blocks_processed = data;
                 Ok(())
             }
@@ -221,13 +221,13 @@ impl fmt::Display for Stats {
             f,
             json_printer,
             "Number of blocks processed            : {}",
-            self.meta_or_par_blocks_processed + self.data_or_par_blocks_processed
+            self.meta_blocks_processed + self.data_or_par_blocks_processed
         )?;
         write_maybe_json!(
             f,
             json_printer,
             "Number of blocks processed (metadata) : {}",
-            self.meta_or_par_blocks_processed
+            self.meta_blocks_processed
         )?;
         write_maybe_json!(
             f,
@@ -240,6 +240,13 @@ impl fmt::Display for Stats {
 
         Ok(())
     }
+}
+
+#[derive(Copy, Clone)]
+struct SendToWriter {
+    bytes_processed: u64,
+    meta_blocks_processed: u64,
+    data_or_par_blocks_processed: u64,
 }
 
 pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
@@ -321,13 +328,12 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
     let reader_thread = {
         let ctrlc_stop_flag = Arc::clone(&ctrlc_stop_flag);
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
-        let stats = Arc::clone(&stats);
         let only_pick_block = param.only_pick_block;
         let only_pick_uid = param.only_pick_uid;
 
         thread::spawn(move || {
             let mut bytes_processed: u64 = 0;
-            let mut meta_or_par_blocks_processed = 0;
+            let mut meta_blocks_processed = 0;
             let mut data_or_par_blocks_processed = 0;
             let mut block = Block::dummy();
             let mut run = true;
@@ -359,7 +365,7 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
                         // update stats
                         match block.block_type() {
                             BlockType::Meta => {
-                                meta_or_par_blocks_processed += 1;
+                                meta_blocks_processed += 1;
                             }
                             BlockType::Data => {
                                 data_or_par_blocks_processed += 1;
@@ -367,7 +373,7 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
                         }
 
                         // check if block matches required block type
-                        if let Some(x) = param.only_pick_block {
+                        if let Some(x) = only_pick_block {
                             if block.block_type() != x {
                                 buffer.cancel_slot();
                                 break;
@@ -375,7 +381,7 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
                         }
 
                         // check if block has the required UID
-                        if let Some(x) = param.only_pick_uid {
+                        if let Some(x) = only_pick_uid {
                             if block.get_uid() != x {
                                 buffer.cancel_slot();
                             }
@@ -385,15 +391,14 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
                     }
                 }
 
-                {
-                    let mut stats = stats.lock().unwrap();
+                let send_to_writer =
+                    SendToWriter {
+                        bytes_processed,
+                        meta_blocks_processed,
+                        data_or_par_blocks_processed,
+                    };
 
-                    stats.bytes_processed = bytes_processed;
-                    stats.meta_or_par_blocks_processed = meta_or_par_blocks_processed;
-                    stats.data_or_par_blocks_processed = data_or_par_blocks_processed;
-                }
-
-                to_grouper.send(Some(buffer)).unwrap();
+                to_grouper.send(Some((send_to_writer, buffer))).unwrap();
             }
 
             worker_shutdown!(to_grouper, shutdown_barrier);
@@ -404,8 +409,8 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
 
         thread::spawn(move || {
-            while let Some(mut buffer) = from_reader.recv().unwrap() {
-                to_writer.send(Some(buffer)).unwrap();
+            while let Some((send_to_writer, mut buffer)) = from_reader.recv().unwrap() {
+                to_writer.send(Some((send_to_writer, buffer))).unwrap();
             }
 
             worker_shutdown!(to_writer, shutdown_barrier);
@@ -414,10 +419,25 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
 
     let writer_thread = {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+        let stats = Arc::clone(&stats);
 
         thread::spawn(move || {
-            while let Some(mut buffer) = from_grouper.recv().unwrap() {
+            while let Some((send_to_writer, mut buffer)) = from_grouper.recv().unwrap() {
                 buffer.reset();
+
+                {
+                    let SendToWriter {
+                        bytes_processed,
+                        meta_blocks_processed,
+                        data_or_par_blocks_processed,
+                    } = send_to_writer;
+
+                    let mut stats = stats.lock().unwrap();
+
+                    stats.bytes_processed = bytes_processed;
+                    stats.meta_blocks_processed = meta_blocks_processed;
+                    stats.data_or_par_blocks_processed = data_or_par_blocks_processed;
+                }
 
                 to_reader.send(Some(buffer)).unwrap();
             }
@@ -464,7 +484,7 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
     //     // update stats
     //     match block.block_type() {
     //         BlockType::Meta => {
-    //             stats.meta_or_par_blocks_processed += 1;
+    //             stats.meta_blocks_processed += 1;
     //         }
     //         BlockType::Data => {
     //             stats.data_or_par_blocks_processed += 1;
