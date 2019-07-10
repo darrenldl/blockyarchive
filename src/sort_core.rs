@@ -446,11 +446,12 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
     reporter.start();
 
     let (to_writer, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 2); // one extra space for the case of metadata block
-    let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_counter, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_reader, from_counter) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
     let (error_tx_reader, error_rx) = channel::<Error>();
     let error_tx_writer = error_tx_reader.clone();
 
-    let worker_shutdown_barrier = Arc::new(Barrier::new(2));
+    let worker_shutdown_barrier = Arc::new(Barrier::new(3));
 
     let skip_good = match param.multi_pass {
         None | Some(MultiPassType::OverwriteAll) => false,
@@ -486,7 +487,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
             let mut run = true;
             let mut meta_written = false;
 
-            while let Some(mut buffer) = from_writer.recv().unwrap() {
+            while let Some(mut buffer) = from_counter.recv().unwrap() {
                 if !run {
                     break;
                 }
@@ -620,7 +621,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
     let writer_thread = {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
         let multi_pass = param.multi_pass;
-        let stats = Arc::clone(&stats);
 
         thread::spawn(move || {
             while let Some(data) = from_reader.recv().unwrap() {
@@ -648,48 +648,61 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                             }
                         }
 
-                        let mut data_blocks_same_order = 0;
-                        let mut data_blocks_diff_order = 0;
-                        let mut parity_blocks_same_order = 0;
-                        let mut parity_blocks_diff_order = 0;
-
-                        for SlotView {
-                            block,
-                            slot: _,
-                            read_pos,
-                            write_pos,
-                            content_len_exc_header: _,
-                        } in buffer.view_slots()
-                        {
-                            if read_pos.unwrap() - read_offset == write_pos.unwrap() {
-                                if block.is_parity_w_data_par_burst(data_par_burst) {
-                                    parity_blocks_same_order += 1;
-                                } else {
-                                    data_blocks_same_order += 1;
-                                }
-                            } else {
-                                if block.is_parity_w_data_par_burst(data_par_burst) {
-                                    parity_blocks_diff_order += 1;
-                                } else {
-                                    data_blocks_diff_order += 1;
-                                }
-                            }
-                        }
-
-                        {
-                            let mut stats = stats.lock().unwrap();
-
-                            stats.data_blocks_same_order += data_blocks_same_order;
-                            stats.data_blocks_diff_order += data_blocks_diff_order;
-                            stats.parity_blocks_same_order += parity_blocks_same_order;
-                            stats.parity_blocks_diff_order += parity_blocks_diff_order;
-                        }
-
-                        buffer.reset();
-
-                        to_reader.send(Some(buffer)).unwrap();
+                        to_counter.send(Some(buffer)).unwrap();
                     }
                 }
+            }
+
+            worker_shutdown!(to_counter, shutdown_barrier);
+        })
+    };
+
+    let counter_thread = {
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+        let stats = Arc::clone(&stats);
+
+        thread::spawn(move || {
+            while let Some(mut buffer) = from_writer.recv().unwrap() {
+                let mut data_blocks_same_order = 0;
+                let mut data_blocks_diff_order = 0;
+                let mut parity_blocks_same_order = 0;
+                let mut parity_blocks_diff_order = 0;
+
+                for SlotView {
+                    block,
+                    slot: _,
+                    read_pos,
+                    write_pos,
+                    content_len_exc_header: _,
+                } in buffer.view_slots()
+                {
+                    if read_pos.unwrap() - read_offset == write_pos.unwrap() {
+                        if block.is_parity_w_data_par_burst(data_par_burst) {
+                            parity_blocks_same_order += 1;
+                        } else {
+                            data_blocks_same_order += 1;
+                        }
+                    } else {
+                        if block.is_parity_w_data_par_burst(data_par_burst) {
+                            parity_blocks_diff_order += 1;
+                        } else {
+                            data_blocks_diff_order += 1;
+                        }
+                    }
+                }
+
+                {
+                    let mut stats = stats.lock().unwrap();
+
+                    stats.data_blocks_same_order += data_blocks_same_order;
+                    stats.data_blocks_diff_order += data_blocks_diff_order;
+                    stats.parity_blocks_same_order += parity_blocks_same_order;
+                    stats.parity_blocks_diff_order += parity_blocks_diff_order;
+                }
+
+                buffer.reset();
+
+                to_reader.send(Some(buffer)).unwrap();
             }
 
             worker_shutdown!(to_reader, shutdown_barrier);
@@ -698,6 +711,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
     reader_thread.join().unwrap();
     writer_thread.join().unwrap();
+    counter_thread.join().unwrap();
 
     if let Ok(err) = error_rx.try_recv() {
         return Err(err);
