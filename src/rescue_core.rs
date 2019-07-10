@@ -1,9 +1,9 @@
 use std::fmt;
 use std::io::SeekFrom;
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::sync::mpsc::sync_channel;
 use std::sync::Barrier;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 use crate::file_utils;
@@ -317,9 +317,9 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
 
     // push buffers into pipeline
     for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
-        to_reader.send(
-            Some(RescueBuffer::new(BLOCK_COUNT_IN_BUFFER))
-        ).unwrap();
+        to_reader
+            .send(Some(RescueBuffer::new(BLOCK_COUNT_IN_BUFFER)))
+            .unwrap();
     }
 
     log_handler.start();
@@ -348,16 +348,13 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
 
                     stop_run_if_reached_required_len!(run => bytes_processed, required_len);
 
-                    let Slot {
-                        block,
-                        slot
-                    } = buffer.get_slot().unwrap();
+                    let Slot { block, slot } = buffer.get_slot().unwrap();
 
-                    let lazy_read_res = match block_utils::read_block_lazily(block, slot, &mut reader){
-                        Ok(lazy_read_res) => lazy_read_res,
-                        Err(e) =>
-                            stop_run_forward_error!(run => error_tx_reader => e)
-                    };
+                    let lazy_read_res =
+                        match block_utils::read_block_lazily(block, slot, &mut reader) {
+                            Ok(lazy_read_res) => lazy_read_res,
+                            Err(e) => stop_run_forward_error!(run => error_tx_reader => e),
+                        };
 
                     bytes_processed += lazy_read_res.len_read as u64;
 
@@ -391,12 +388,11 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
                     }
                 }
 
-                let send_to_writer =
-                    SendToWriter {
-                        bytes_processed,
-                        meta_blocks_processed,
-                        data_or_par_blocks_processed,
-                    };
+                let send_to_writer = SendToWriter {
+                    bytes_processed,
+                    meta_blocks_processed,
+                    data_or_par_blocks_processed,
+                };
 
                 to_grouper.send(Some((send_to_writer, buffer))).unwrap();
             }
@@ -410,6 +406,8 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
 
         thread::spawn(move || {
             while let Some((send_to_writer, mut buffer)) = from_reader.recv().unwrap() {
+                buffer.group_by_uid();
+
                 to_writer.send(Some((send_to_writer, buffer))).unwrap();
             }
 
@@ -420,9 +418,15 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
     let writer_thread = {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
         let stats = Arc::clone(&stats);
+        let out_dir = param.out_dir.clone();
 
         thread::spawn(move || {
             while let Some((send_to_writer, mut buffer)) = from_grouper.recv().unwrap() {
+                if let Err(e) = buffer.write(&out_dir) {
+                    error_tx_writer.send(e).unwrap();
+                    break;
+                }
+
                 buffer.reset();
 
                 {

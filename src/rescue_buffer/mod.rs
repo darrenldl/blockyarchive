@@ -1,10 +1,17 @@
+use std::collections::HashMap;
+use std::collections::LinkedList;
+
+use crate::general_error::Error;
+use crate::misc_utils;
+
 use crate::sbx_specs::{
-    ver_uses_rs, Version, SBX_FIRST_DATA_SEQ_NUM, SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM, SBX_FILE_UID_LEN, ver_to_block_size,
+    ver_to_block_size, ver_uses_rs, Version, SBX_FILE_UID_LEN, SBX_FIRST_DATA_SEQ_NUM,
+    SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM,
 };
 
 use crate::sbx_block::{calc_data_block_write_pos, calc_data_chunk_write_pos, Block, BlockType};
 
-use crate::file_writer::FileWriter;
+use crate::file_writer::{FileWriter, FileWriterParam};
 
 macro_rules! slice_slot_w_index {
     (
@@ -41,6 +48,7 @@ pub struct RescueBuffer {
     slots_used: usize,
     blocks: Vec<Block>,
     data: Vec<u8>,
+    uid_to_slot_indices: HashMap<[u8; SBX_FILE_UID_LEN], LinkedList<usize>>,
 }
 
 impl RescueBuffer {
@@ -50,6 +58,7 @@ impl RescueBuffer {
             slots_used: 0,
             blocks: Vec::with_capacity(size),
             data: Vec::with_capacity(size * SBX_LARGEST_BLOCK_SIZE),
+            uid_to_slot_indices: HashMap::with_capacity(size),
         }
     }
 
@@ -62,15 +71,54 @@ impl RescueBuffer {
 
             self.slots_used += 1;
 
-            Some(Slot {
-                block,
-                slot,
-            })
+            Some(Slot { block, slot })
         }
+    }
+
+    pub fn group_by_uid(&mut self) {
+        for i in 0..self.slots_used {
+            let uid = self.blocks[i].get_uid();
+
+            match self.uid_to_slot_indices.get_mut(&uid) {
+                Some(l) => l.push_front(i),
+                None => {
+                    let mut l = LinkedList::new();
+                    l.push_front(i);
+                    self.uid_to_slot_indices.insert(uid, l);
+                }
+            }
+        }
+    }
+
+    pub fn write(&mut self, out_dir: &str) -> Result<(), Error> {
+        for (uid, l) in self.uid_to_slot_indices.iter() {
+            let uid_str = misc_utils::bytes_to_upper_hex_string(uid);
+            let path = misc_utils::make_path(&[out_dir, &uid_str]);
+
+            let mut writer = FileWriter::new(
+                &path,
+                FileWriterParam {
+                    read: false,
+                    append: true,
+                    truncate: false,
+                    buffered: false,
+                },
+            )?;
+
+            for &i in l.iter() {
+                let slot = slice_slot_w_index!(self, i);
+
+                writer.write(slot)?;
+            }
+        }
+
+        Ok(())
     }
 
     pub fn reset(&mut self) {
         self.slots_used = 0;
+
+        self.uid_to_slot_indices.clear();
 
         for block in self.blocks.iter_mut() {
             block.set_version(Version::V1);
