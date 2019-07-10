@@ -23,7 +23,7 @@ use crate::misc_utils;
 mod buffer_tests;
 mod lot_tests;
 
-const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
+const DEFAULT_SINGLE_LOT_SIZE: usize = 100;
 
 const LOT_COUNT_PER_CPU: usize = 50;
 
