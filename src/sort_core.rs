@@ -639,8 +639,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                         }
                     }
                     SendToWriter::Data(mut buffer) => {
-                        buffer.calc_slot_write_pos();
-
                         if let Some(ref mut writer) = writer {
                             if let Err(e) = buffer.write(writer) {
                                 error_tx_writer.send(e).unwrap();
