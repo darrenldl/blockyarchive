@@ -14,7 +14,23 @@ use crate::file_writer::{FileWriter, FileWriterParam};
 
 macro_rules! slice_slot_w_index {
     (
-        $self:expr, $index:expr
+        full => $self:expr, $index:expr
+    ) => {{
+        let start = $index * SBX_LARGEST_BLOCK_SIZE;
+        let end_exc = start + SBX_LARGEST_BLOCK_SIZE;
+
+        &$self.data[start..end_exc]
+    }};
+    (
+        full => mut => $self:expr, $index:expr
+    ) => {{
+        let start = $index * SBX_LARGEST_BLOCK_SIZE;
+        let end_exc = start + SBX_LARGEST_BLOCK_SIZE;
+
+        &mut $self.data[start..end_exc]
+    }};
+    (
+        depend_on_block_ver => $self:expr, $index:expr
     ) => {{
         let version = $self.blocks[$index].get_version();
         let block_size = ver_to_block_size(version);
@@ -25,7 +41,7 @@ macro_rules! slice_slot_w_index {
         &$self.data[start..end_exc]
     }};
     (
-        mut => $self:expr, $index:expr
+        depend_on_block_ver => mut => $self:expr, $index:expr
     ) => {{
         let version = $self.blocks[$index].get_version();
         let block_size = ver_to_block_size(version);
@@ -52,11 +68,17 @@ pub struct RescueBuffer {
 
 impl RescueBuffer {
     pub fn new(size: usize) -> Self {
+        let mut blocks = Vec::with_capacity(size);
+
+        for _ in 0..size {
+            blocks.push(Block::dummy());
+        }
+
         RescueBuffer {
             size,
             slots_used: 0,
-            blocks: Vec::with_capacity(size),
-            data: Vec::with_capacity(size * SBX_LARGEST_BLOCK_SIZE),
+            blocks,
+            data: vec![0; size * SBX_LARGEST_BLOCK_SIZE],
             uid_to_slot_indices: HashMap::with_capacity(size),
         }
     }
@@ -65,7 +87,7 @@ impl RescueBuffer {
         if self.slots_used == self.size {
             None
         } else {
-            let slot = slice_slot_w_index!(mut => self, self.slots_used);
+            let slot = slice_slot_w_index!(full => mut => self, self.slots_used);
             let block = &mut self.blocks[self.slots_used];
 
             self.slots_used += 1;
@@ -105,7 +127,7 @@ impl RescueBuffer {
             )?;
 
             for &i in l.iter() {
-                let slot = slice_slot_w_index!(self, i);
+                let slot = slice_slot_w_index!(depend_on_block_ver => self, i);
 
                 writer.write(slot)?;
             }
