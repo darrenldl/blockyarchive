@@ -122,7 +122,7 @@ impl RescueBuffer {
                     read: false,
                     append: true,
                     truncate: false,
-                    buffered: false,
+                    buffered: true,
                 },
             )?;
 
