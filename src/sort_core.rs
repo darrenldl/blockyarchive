@@ -639,10 +639,15 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                         }
                     }
                     SendToWriter::Data(mut buffer) => {
-                        if let Some(ref mut writer) = writer {
-                            if let Err(e) = buffer.write(writer) {
-                                error_tx_writer.send(e).unwrap();
-                                break;
+                        match writer {
+                            Some(ref mut writer) => {
+                                if let Err(e) = buffer.write(writer) {
+                                    error_tx_writer.send(e).unwrap();
+                                    break;
+                                }
+                            }
+                            None => {
+                                buffer.calc_slot_write_pos();
                             }
                         }
 
