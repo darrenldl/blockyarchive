@@ -319,18 +319,6 @@ impl Lot {
         self.slots_used > 0
     }
 
-    // fn sync_blocks_from_slots(&mut self) {
-    //     for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-    //         if slot_index < self.slots_used {
-    //             self.blocks[slot_index]
-    //                 .sync_from_buffer(slot, None, None)
-    //                 .unwrap();
-    //         } else {
-    //             break;
-    //         }
-    //     }
-    // }
-
     fn calc_slot_write_pos(&mut self) {
         assert!(self.output_type != OutputType::Disabled);
 
@@ -859,12 +847,6 @@ impl DataBlockBuffer {
             lot.hash(ctx);
         }
     }
-
-    // pub fn sync_blocks_from_slots(&mut self) {
-    //     for lot in self.lots.iter_mut() {
-    //         lot.sync_blocks_from_slots();
-    //     }
-    // }
 
     pub fn calc_slot_write_pos(&mut self) {
         self.lots.par_iter_mut().for_each(|lot| {
