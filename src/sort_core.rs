@@ -42,20 +42,9 @@ use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
-#[derive(Copy, Clone)]
-struct SendToCounter {
-    meta_blocks_decoded: u64,
-    data_blocks_decoded: u64,
-    parity_blocks_decoded: u64,
-    blocks_decode_failed: u64,
-    okay_blank_blocks: u64,
-    meta_blocks_same_order: u64,
-    meta_blocks_diff_order: u64,
-}
-
 enum SendToWriter {
     Meta(Vec<u8>),
-    Data(SendToCounter, DataBlockBuffer),
+    Data(DataBlockBuffer),
 }
 
 pub struct Param {
@@ -490,24 +479,25 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
         let report_blank = param.report_blank;
         let block_size = ver_to_block_size(version);
+        let stats = Arc::clone(&stats);
         let mut bytes_processed: u64 = 0;
 
         thread::spawn(move || {
             let mut run = true;
             let mut meta_written = false;
 
-            let mut meta_blocks_same_order = 0;
-            let mut meta_blocks_diff_order = 0;
-            let mut meta_blocks_decoded = 0;
-            let mut parity_blocks_decoded = 0;
-            let mut data_blocks_decoded = 0;
-            let mut blocks_decode_failed = 0;
-            let mut okay_blank_blocks = 0;
-
             while let Some(mut buffer) = from_counter.recv().unwrap() {
                 if !run {
                     break;
                 }
+
+                let mut meta_blocks_same_order = 0;
+                let mut meta_blocks_diff_order = 0;
+                let mut meta_blocks_decoded = 0;
+                let mut parity_blocks_decoded = 0;
+                let mut data_blocks_decoded = 0;
+                let mut blocks_decode_failed = 0;
+                let mut okay_blank_blocks = 0;
 
                 while !buffer.is_full() {
                     stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
@@ -608,19 +598,19 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                     }
                 }
 
-                let send_to_counter = SendToCounter {
-                    meta_blocks_decoded,
-                    meta_blocks_same_order,
-                    meta_blocks_diff_order,
-                    parity_blocks_decoded,
-                    data_blocks_decoded,
-                    blocks_decode_failed,
-                    okay_blank_blocks,
-                };
+                {
+                    let mut stats = stats.lock().unwrap();
 
-                to_writer
-                    .send(Some(SendToWriter::Data(send_to_counter, buffer)))
-                    .unwrap();
+                    stats.meta_blocks_decoded += meta_blocks_decoded;
+                    stats.meta_blocks_same_order += meta_blocks_same_order;
+                    stats.meta_blocks_diff_order += meta_blocks_diff_order;
+                    stats.parity_blocks_decoded += parity_blocks_decoded;
+                    stats.data_blocks_decoded += data_blocks_decoded;
+                    stats.blocks_decode_failed += blocks_decode_failed;
+                    stats.okay_blank_blocks += okay_blank_blocks;
+                }
+
+                to_writer.send(Some(SendToWriter::Data(buffer))).unwrap();
             }
 
             worker_shutdown!(to_writer, shutdown_barrier);
@@ -647,7 +637,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                             break;
                         }
                     }
-                    SendToWriter::Data(send_to_counter, mut buffer) => {
+                    SendToWriter::Data(mut buffer) => {
                         match writer {
                             Some(ref mut writer) => {
                                 if let Err(e) = buffer.write(writer) {
@@ -660,7 +650,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                             }
                         }
 
-                        to_counter.send(Some((send_to_counter, buffer))).unwrap();
+                        to_counter.send(Some(buffer)).unwrap();
                     }
                 }
             }
@@ -674,7 +664,7 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
         let stats = Arc::clone(&stats);
 
         thread::spawn(move || {
-            while let Some((send_to_counter, mut buffer)) = from_writer.recv().unwrap() {
+            while let Some(mut buffer) = from_writer.recv().unwrap() {
                 let mut data_blocks_same_order = 0;
                 let mut data_blocks_diff_order = 0;
                 let mut parity_blocks_same_order = 0;
@@ -710,24 +700,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                     stats.data_blocks_diff_order += data_blocks_diff_order;
                     stats.parity_blocks_same_order += parity_blocks_same_order;
                     stats.parity_blocks_diff_order += parity_blocks_diff_order;
-
-                    let SendToCounter {
-                        meta_blocks_decoded,
-                        data_blocks_decoded,
-                        parity_blocks_decoded,
-                        blocks_decode_failed,
-                        okay_blank_blocks,
-                        meta_blocks_same_order,
-                        meta_blocks_diff_order,
-                    } = send_to_counter;
-
-                    stats.meta_blocks_decoded = meta_blocks_decoded;
-                    stats.data_blocks_decoded = data_blocks_decoded;
-                    stats.parity_blocks_decoded = parity_blocks_decoded;
-                    stats.blocks_decode_failed = blocks_decode_failed;
-                    stats.okay_blank_blocks = okay_blank_blocks;
-                    stats.meta_blocks_same_order = meta_blocks_same_order;
-                    stats.meta_blocks_diff_order = meta_blocks_diff_order;
                 }
 
                 buffer.reset();
