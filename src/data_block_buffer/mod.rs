@@ -345,7 +345,7 @@ impl Lot {
                     assert!(len > 0);
                     assert!(len <= self.data_size);
 
-                    let slot = slice_slot_w_index!(mut => lot, i);
+                    let slot = slice_slot_w_index!(mut => self, i);
 
                     if len < self.data_size {
                         self.padding_byte_count_in_non_padding_blocks +=
@@ -358,7 +358,7 @@ impl Lot {
                 assert!(self.slots_used <= data);
 
                 for i in self.slots_used..data {
-                    let slot = slice_slot_w_index!(mut => lot, i);
+                    let slot = slice_slot_w_index!(mut => self, i);
 
                     sbx_block::write_padding(self.version, 0, slot);
 
