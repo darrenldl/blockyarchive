@@ -17,9 +17,8 @@ fn new_panics_if_version_inconsistent_with_data_par_burst1() {
     Lot::new(
         Version::V17,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -36,9 +35,8 @@ fn new_panics_if_version_inconsistent_with_data_par_burst2() {
     Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         Some((3, 2, 0)),
         true,
         false,
@@ -55,9 +53,8 @@ fn new_panics_if_data_par_burst_inconsistent_with_rs_codec1() {
     Lot::new(
         Version::V17,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         Some((3, 2, 0)),
         true,
         false,
@@ -74,9 +71,8 @@ fn new_panics_if_data_par_burst_inconsistent_with_rs_codec2() {
     Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -91,9 +87,8 @@ fn cancel_slot_panics_when_empty1() {
     let mut lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -110,9 +105,8 @@ fn cancel_slot_panics_when_empty2() {
     let mut lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -131,9 +125,8 @@ fn hash_when_correct_arrangment1() {
     let lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::OrderedAndNoMissing),
         OutputType::Block,
-        BlockArrangement::OrderedAndNoMissing,
         None,
         true,
         false,
@@ -151,9 +144,8 @@ fn hash_when_correct_arrangment2() {
     let lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::OrderedButSomeMayBeMissing),
         OutputType::Block,
-        BlockArrangement::OrderedButSomeMayBeMissing,
         None,
         true,
         false,
@@ -172,9 +164,8 @@ fn hash_panics_when_incorrect_arrangement() {
     let lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -193,9 +184,8 @@ fn calc_slot_write_pos_panics_when_output_is_disabled() {
     let mut lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Disabled,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -207,13 +197,12 @@ fn calc_slot_write_pos_panics_when_output_is_disabled() {
 }
 
 #[test]
-fn fill_in_padding_when_input_type_is_data_and_arrangement_is_ordered_and_no_missing() {
+fn fill_in_padding_when_input_type_is_data() {
     let mut lot = Lot::new(
         Version::V1,
         None,
         InputType::Data,
         OutputType::Disabled,
-        BlockArrangement::OrderedAndNoMissing,
         None,
         true,
         false,
@@ -230,9 +219,8 @@ fn fill_in_padding_panics_when_input_type_is_block_and_arrangement_is_ordered_an
     let mut lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::OrderedAndNoMissing),
         OutputType::Disabled,
-        BlockArrangement::OrderedAndNoMissing,
         None,
         true,
         false,
@@ -241,62 +229,6 @@ fn fill_in_padding_panics_when_input_type_is_block_and_arrangement_is_ordered_an
     );
 
     lot.fill_in_padding();
-}
-
-#[test]
-#[should_panic]
-fn fill_in_padding_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing1() {
-    let mut lot = Lot::new(
-        Version::V1,
-        None,
-        InputType::Data,
-        OutputType::Disabled,
-        BlockArrangement::OrderedButSomeMayBeMissing,
-        None,
-        true,
-        false,
-        10,
-        &Arc::new(None),
-    );
-
-    lot.fill_in_padding();
-}
-
-#[test]
-#[should_panic]
-fn fill_in_padding_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing2() {
-    let mut lot = Lot::new(
-        Version::V1,
-        None,
-        InputType::Data,
-        OutputType::Disabled,
-        BlockArrangement::Unordered,
-        None,
-        true,
-        false,
-        10,
-        &Arc::new(None),
-    );
-
-    lot.fill_in_padding();
-}
-
-#[test]
-fn encode_when_input_type_is_data_and_arrangement_is_ordered_and_no_missing() {
-    let mut lot = Lot::new(
-        Version::V1,
-        None,
-        InputType::Data,
-        OutputType::Disabled,
-        BlockArrangement::OrderedAndNoMissing,
-        None,
-        true,
-        false,
-        10,
-        &Arc::new(None),
-    );
-
-    lot.encode(1);
 }
 
 #[test]
@@ -305,47 +237,8 @@ fn encode_panics_when_input_type_is_block_and_arrangement_is_ordered_and_no_miss
     let mut lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::OrderedAndNoMissing),
         OutputType::Disabled,
-        BlockArrangement::OrderedAndNoMissing,
-        None,
-        true,
-        false,
-        10,
-        &Arc::new(None),
-    );
-
-    lot.encode(1);
-}
-
-#[test]
-#[should_panic]
-fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing1() {
-    let mut lot = Lot::new(
-        Version::V1,
-        None,
-        InputType::Data,
-        OutputType::Disabled,
-        BlockArrangement::OrderedButSomeMayBeMissing,
-        None,
-        true,
-        false,
-        10,
-        &Arc::new(None),
-    );
-
-    lot.encode(1);
-}
-
-#[test]
-#[should_panic]
-fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing2() {
-    let mut lot = Lot::new(
-        Version::V1,
-        None,
-        InputType::Data,
-        OutputType::Disabled,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -367,9 +260,8 @@ quickcheck! {
 
         let mut lot = Lot::new(Version::V1,
                                None,
-                               InputType::Block,
+                               InputType::Block(BlockArrangement::Unordered),
                                OutputType::Block,
-                               BlockArrangement::Unordered,
                                None,
                                true,
                                false,
@@ -397,9 +289,8 @@ quickcheck! {
 
         let mut lot = Lot::new(Version::V1,
                                None,
-                               InputType::Block,
+                               InputType::Block(BlockArrangement::Unordered),
                                OutputType::Block,
-                               BlockArrangement::Unordered,
                                None,
                                true,
                                false,
@@ -434,9 +325,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              None,
                              true,
                              false,
@@ -446,9 +336,8 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -506,9 +395,8 @@ quickcheck! {
         ({
             let lot = Lot::new(Version::V1,
                                None,
-                               InputType::Block,
+                               InputType::Block(BlockArrangement::Unordered),
                                OutputType::Block,
-                               BlockArrangement::Unordered,
                                None,
                                true,
                                false,
@@ -525,9 +413,8 @@ quickcheck! {
         ({
             let lot = Lot::new(Version::V17,
                                None,
-                               InputType::Block,
+                               InputType::Block(BlockArrangement::Unordered),
                                OutputType::Block,
-                               BlockArrangement::Unordered,
                                Some((data, parity, burst)),
                                true,
                                false,
@@ -546,7 +433,6 @@ quickcheck! {
                                None,
                                InputType::Data,
                                OutputType::Block,
-                               BlockArrangement::Unordered,
                                None,
                                true,
                                false,
@@ -565,7 +451,6 @@ quickcheck! {
                                None,
                                InputType::Data,
                                OutputType::Block,
-                               BlockArrangement::Unordered,
                                Some((data, parity, burst)),
                                true,
                                false,
@@ -597,9 +482,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              None,
                              true,
                              false,
@@ -609,9 +493,8 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -673,9 +556,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              None,
                              true,
                              false,
@@ -685,9 +567,8 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -768,9 +649,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              None,
                              true,
                              false,
@@ -780,9 +660,8 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -841,9 +720,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              None,
                              true,
                              false,
@@ -853,9 +731,8 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -934,9 +811,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              None,
                              true,
                              false,
@@ -946,9 +822,8 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -1014,7 +889,6 @@ quickcheck! {
                              None,
                              InputType::Data,
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
                              false,
@@ -1026,7 +900,6 @@ quickcheck! {
                              None,
                              InputType::Data,
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -1119,7 +992,6 @@ quickcheck! {
                              None,
                              InputType::Data,
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
                              false,
@@ -1131,7 +1003,6 @@ quickcheck! {
                              None,
                              InputType::Data,
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -1200,9 +1071,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::OrderedAndNoMissing),
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
                              false,
@@ -1212,9 +1082,8 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::OrderedAndNoMissing),
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
                              false,
