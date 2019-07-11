@@ -978,8 +978,10 @@ pub fn decode(
                 let writer = Arc::clone(&writer);
 
                 thread::spawn(move || {
+                    let writer = &mut writer.lock().unwrap();
+
                     while let Some(mut buffer) = from_reader.recv().unwrap() {
-                        if let Err(e) = buffer.write(&mut writer.lock().unwrap()) {
+                        if let Err(e) = buffer.write(writer) {
                             error_tx_writer.send(e).unwrap();
                             break;
                         }
@@ -1251,8 +1253,10 @@ pub fn decode(
                         let writer = Arc::clone(&writer);
 
                         thread::spawn(move || {
+                            let writer = &mut writer.lock().unwrap();
+
                             while let Some(mut buffer) = from_hasher.recv().unwrap() {
-                                if let Err(e) = buffer.write_no_seek(&mut writer.lock().unwrap()) {
+                                if let Err(e) = buffer.write_no_seek(writer) {
                                     error_tx_writer.send(e).unwrap();
                                     break;
                                 }
@@ -1480,8 +1484,10 @@ pub fn decode(
                         let writer = Arc::clone(&writer);
 
                         thread::spawn(move || {
+                            let writer = &mut writer.lock().unwrap();
+
                             while let Some(mut buffer) = from_hasher.recv().unwrap() {
-                                if let Err(e) = buffer.write_no_seek(&mut writer.lock().unwrap()) {
+                                if let Err(e) = buffer.write_no_seek(writer) {
                                     error_tx_writer.send(e).unwrap();
                                     break;
                                 }

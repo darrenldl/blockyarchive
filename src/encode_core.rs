@@ -732,8 +732,10 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
 
         thread::spawn(move || {
+            let writer = &mut writer.lock().unwrap();
+
             while let Some(mut buffer) = from_encoder.recv().unwrap() {
-                if let Err(e) = buffer.write(&mut writer.lock().unwrap()) {
+                if let Err(e) = buffer.write(writer) {
                     error_tx_writer.send(e).unwrap();
                     break;
                 }
