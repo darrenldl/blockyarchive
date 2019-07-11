@@ -338,91 +338,91 @@ impl Lot {
         self.slot_write_pos_usable = true;
     }
 
+    fn fill_in_padding(&mut self) {
+        if self.active() {
+            for i in 0..self.slots_used {
+                if let Some(len) = self.slot_content_len_exc_header[i] {
+                    assert!(len > 0);
+                    assert!(len <= self.data_size);
+
+                    let slot = slice_slot_w_index!(mut => lot, i);
+
+                    if len < self.data_size {
+                        self.padding_byte_count_in_non_padding_blocks +=
+                            sbx_block::write_padding(self.version, len, slot);
+                    }
+                }
+            }
+
+            if let Some((data, _, _)) = self.data_par_burst {
+                assert!(self.slots_used <= data);
+
+                for i in self.slots_used..data {
+                    let slot = slice_slot_w_index!(mut => lot, i);
+
+                    sbx_block::write_padding(self.version, 0, slot);
+
+                    self.slot_is_padding[i] = true;
+                }
+
+                self.slots_used = data;
+            }
+        }
+    }
+
+    fn rs_encode(&mut self) {
+        if self.active() {
+            if let Some(ref rs_codec) = *self.rs_codec {
+                assert!(self.slots_used == rs_codec.data_shard_count());
+
+                let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(self.lot_size);
+
+                // collect references to data segments
+                for slot in self.data.chunks_mut(self.block_size) {
+                    refs.push(sbx_block::slice_data_buf_mut(self.version, slot));
+                }
+
+                rs_codec.encode(&mut refs).unwrap();
+
+                self.slots_used = self.lot_size;
+            }
+        }
+    }
+
+    fn set_block_seq_num_based_on_lot_start_seq_num(&mut self, lot_start_seq_num: u32) {
+        for slot_index in 0..self.slots_used {
+            if slot_index < self.slots_used {
+                let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
+
+                assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
+
+                self.blocks[slot_index].set_seq_num(lot_start_seq_num + slot_index as u32);
+            } else {
+                break;
+            }
+        }
+    }
+
+    fn sync_blocks_to_slots(&mut self) {
+        for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
+            if slot_index < self.slots_used {
+                self.blocks[slot_index].sync_to_buffer(None, slot).unwrap();
+            } else {
+                break;
+            }
+        }
+    }
+
     fn encode(&mut self, lot_start_seq_num: u32) {
         assert!(self.input_type == InputType::Data);
 
-        fn fill_in_padding(lot: &mut Lot) {
-            if lot.active() {
-                for i in 0..lot.slots_used {
-                    if let Some(len) = lot.slot_content_len_exc_header[i] {
-                        assert!(len > 0);
-                        assert!(len <= lot.data_size);
+        self.fill_in_padding();
 
-                        let slot = slice_slot_w_index!(mut => lot, i);
+        self.rs_encode();
 
-                        if len < lot.data_size {
-                            lot.padding_byte_count_in_non_padding_blocks +=
-                                sbx_block::write_padding(lot.version, len, slot);
-                        }
-                    }
-                }
+        self.set_block_seq_num_based_on_lot_start_seq_num(lot_start_seq_num);
 
-                if let Some((data, _, _)) = lot.data_par_burst {
-                    assert!(lot.slots_used <= data);
-
-                    for i in lot.slots_used..data {
-                        let slot = slice_slot_w_index!(mut => lot, i);
-
-                        sbx_block::write_padding(lot.version, 0, slot);
-
-                        lot.slot_is_padding[i] = true;
-                    }
-
-                    lot.slots_used = data;
-                }
-            }
-        }
-
-        fn rs_encode(lot: &mut Lot) {
-            if lot.active() {
-                if let Some(ref rs_codec) = *lot.rs_codec {
-                    assert!(lot.slots_used == rs_codec.data_shard_count());
-
-                    let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(lot.lot_size);
-
-                    // collect references to data segments
-                    for slot in lot.data.chunks_mut(lot.block_size) {
-                        refs.push(sbx_block::slice_data_buf_mut(lot.version, slot));
-                    }
-
-                    rs_codec.encode(&mut refs).unwrap();
-
-                    lot.slots_used = lot.lot_size;
-                }
-            }
-        }
-
-        fn set_block_seq_num_based_on_lot_start_seq_num(lot: &mut Lot, lot_start_seq_num: u32) {
-            for slot_index in 0..lot.slots_used {
-                if slot_index < lot.slots_used {
-                    let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
-
-                    assert!(tentative_seq_num <= SBX_LAST_SEQ_NUM as u64);
-
-                    lot.blocks[slot_index].set_seq_num(lot_start_seq_num + slot_index as u32);
-                } else {
-                    break;
-                }
-            }
-        }
-
-        fn sync_blocks_to_slots(lot: &mut Lot) {
-            for (slot_index, slot) in lot.data.chunks_mut(lot.block_size).enumerate() {
-                if slot_index < lot.slots_used {
-                    lot.blocks[slot_index].sync_to_buffer(None, slot).unwrap();
-                } else {
-                    break;
-                }
-            }
-        }
-
-        fill_in_padding(self);
-
-        rs_encode(self);
-
-        set_block_seq_num_based_on_lot_start_seq_num(self, lot_start_seq_num);
-
-        sync_blocks_to_slots(self);
+        self.sync_blocks_to_slots();
     }
 
     fn hash(&self, ctx: &mut hash::Ctx) {
