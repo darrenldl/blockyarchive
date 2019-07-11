@@ -346,13 +346,6 @@ quickcheck! {
                     )
                 };
 
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
-                };
-
             for _ in 0..tries {
                 for _ in 0..size-1 {
                     match lot.get_slot() {
@@ -422,10 +415,10 @@ quickcheck! {
                                &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
             );
 
-            lot.lot_size == data + parity
+            lot.lot_size == size
                 && lot.slots_used == 0
                 && lot.padding_byte_count_in_non_padding_blocks == 0
-                && lot.directly_writable_slots == data + parity
+                && lot.directly_writable_slots == size
         })
         &&
         ({
@@ -503,13 +496,6 @@ quickcheck! {
                     )
                 };
 
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
-                };
-
             let cancels = std::cmp::min(size, cancels);
 
             for _ in 0..tries {
@@ -575,13 +561,6 @@ quickcheck! {
                              size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
-                };
-
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
                 };
 
             let cancels = std::cmp::min(size, cancels);
@@ -670,13 +649,6 @@ quickcheck! {
                     )
                 };
 
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
-                };
-
             let version = lot.version;
             let uid = lot.uid;
 
@@ -739,13 +711,6 @@ quickcheck! {
                              size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
-                };
-
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
                 };
 
             let fill = std::cmp::min(size, fill);
@@ -830,13 +795,6 @@ quickcheck! {
                              size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
-                };
-
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
                 };
 
             let fill = std::cmp::min(size, fill);
@@ -985,7 +943,7 @@ quickcheck! {
         let burst = 1 + burst % 100;
         let fill = 1 + fill % 1000;
 
-        for lot_case in 0..2 {
+        for lot_case in 1..2 {
             let mut lot =
                 if lot_case == 0 {
                     Lot::new(Version::V1,
@@ -1011,18 +969,18 @@ quickcheck! {
                     )
                 };
 
-            let writable_slots =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data
-                };
-
             let size =
                 if lot_case == 0 {
                     size
                 } else {
                     data + parity
+                };
+
+            let writable_slots =
+                if lot_case == 0 {
+                    size
+                } else {
+                    data
                 };
 
             let fill = std::cmp::min(writable_slots, fill);
@@ -1090,13 +1048,6 @@ quickcheck! {
                              size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
-                };
-
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
                 };
 
             let fill = std::cmp::min(size, fill);
@@ -1281,13 +1232,6 @@ quickcheck! {
                     None
                 } else {
                     Some((data, parity, burst))
-                };
-
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
                 };
 
             let version = if lot_case == 0 {
