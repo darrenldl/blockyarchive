@@ -192,8 +192,8 @@ impl Lot {
             InputType::Data => match data_par_burst {
                 None => default_lot_size,
                 Some((data, parity, _)) => data + parity,
-            }
-            InputType::Block => default_lot_size,
+            },
+            InputType::Block(_) => default_lot_size,
         };
 
         let block_size = ver_to_block_size(version);
@@ -206,7 +206,7 @@ impl Lot {
                 None => lot_size,
                 Some((data, _, _)) => data,
             },
-            InputType::Block => lot_size,
+            InputType::Block(_) => lot_size,
         };
 
         let uid = match uid {
@@ -428,11 +428,10 @@ impl Lot {
     fn hash(&self, ctx: &mut hash::Ctx) {
         match self.input_type {
             InputType::Data => {}
-            InputType::Block(arrangement) =>
-                assert!(
-                    arrangement == BlockArrangement::OrderedAndNoMissing
-                        || arrangement == BlockArrangement::OrderedButSomeMayBeMissing
-                )
+            InputType::Block(arrangement) => assert!(
+                arrangement == BlockArrangement::OrderedAndNoMissing
+                    || arrangement == BlockArrangement::OrderedButSomeMayBeMissing
+            ),
         }
 
         for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
@@ -506,9 +505,10 @@ impl Lot {
 
     fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
         match self.input_type {
-            InputType::Data => {},
-            InputType::Block(arrangement) =>
+            InputType::Data => {}
+            InputType::Block(arrangement) => {
                 assert!(arrangement == BlockArrangement::OrderedAndNoMissing)
+            }
         }
 
         let data = match self.data_par_burst {
