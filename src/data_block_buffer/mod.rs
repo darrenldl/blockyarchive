@@ -339,6 +339,8 @@ impl Lot {
     }
 
     fn fill_in_padding(&mut self) {
+        assert!(self.input_type == InputType::Data);
+
         if self.active() {
             for i in 0..self.slots_used {
                 if let Some(len) = self.slot_content_len_exc_header[i] {
@@ -371,6 +373,8 @@ impl Lot {
     }
 
     fn rs_encode(&mut self) {
+        assert!(self.input_type == InputType::Data);
+
         if self.active() {
             if let Some(ref rs_codec) = *self.rs_codec {
                 assert!(self.slots_used == rs_codec.data_shard_count());
@@ -390,6 +394,8 @@ impl Lot {
     }
 
     fn set_block_seq_num_based_on_lot_start_seq_num(&mut self, lot_start_seq_num: u32) {
+        assert!(self.input_type == InputType::Data);
+
         for slot_index in 0..self.slots_used {
             if slot_index < self.slots_used {
                 let tentative_seq_num = lot_start_seq_num as u64 + slot_index as u64;
