@@ -188,9 +188,12 @@ impl Lot {
 
         check_data_par_burst_consistent_with_rs_codec!(data_par_burst, rs_codec);
 
-        let lot_size = match data_par_burst {
-            None => default_lot_size,
-            Some((data, parity, _)) => data + parity,
+        let lot_size = match input_type {
+            InputType::Data => match data_par_burst {
+                None => default_lot_size,
+                Some((data, parity, _)) => data + parity,
+            }
+            InputType::Block => default_lot_size,
         };
 
         let block_size = ver_to_block_size(version);
@@ -199,11 +202,11 @@ impl Lot {
         let rs_codec = Arc::clone(rs_codec);
 
         let directly_writable_slots = match input_type {
-            InputType::Block => lot_size,
             InputType::Data => match data_par_burst {
                 None => lot_size,
                 Some((data, _, _)) => data,
             },
+            InputType::Block => lot_size,
         };
 
         let uid = match uid {
@@ -250,8 +253,8 @@ impl Lot {
             let slot = slice_slot_w_index!(mut => self, self.slots_used);
 
             let slot = match self.input_type {
-                InputType::Block => slot,
                 InputType::Data => sbx_block::slice_data_buf_mut(self.version, slot),
+                InputType::Block(_) => slot,
             };
 
             let read_pos = &mut self.slot_read_pos[self.slots_used];
@@ -504,7 +507,7 @@ impl Lot {
     fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
         match self.input_type {
             InputType::Data => {},
-            InputTYpe::Block(arrangement) =>
+            InputType::Block(arrangement) =>
                 assert!(arrangement == BlockArrangement::OrderedAndNoMissing)
         }
 
