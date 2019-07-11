@@ -486,8 +486,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
             let mut run = true;
             let mut meta_written = false;
 
-            let mut read_pos = seek_to;
-
             while let Some(mut buffer) = from_counter.recv().unwrap() {
                 if !run {
                     break;
@@ -506,6 +504,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
 
                     stop_run_if_reached_required_len!(run => bytes_processed, required_len);
 
+                    let read_pos = seek_to + bytes_processed;
+
                     let Slot {
                         block,
                         slot,
@@ -515,8 +515,6 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
                     match reader.read(slot) {
                         Ok(read_res) => {
                             bytes_processed += read_res.len_read as u64;
-
-                            read_pos += read_res.len_read as u64;
 
                             if read_res.eof_seen {
                                 buffer.cancel_slot();
