@@ -864,9 +864,8 @@ pub fn decode(
             let buffers = DataBlockBuffer::new_multi(
                 version,
                 Some(&ref_block.get_uid()),
-                InputType::Block,
+                InputType::Block(BlockArrangement::Unordered),
                 OutputType::Data,
-                BlockArrangement::Unordered,
                 data_par_burst,
                 true,
                 skip_good,
@@ -1092,9 +1091,8 @@ pub fn decode(
                     let buffers = DataBlockBuffer::new_multi(
                         version,
                         Some(&ref_block.get_uid()),
-                        InputType::Block,
+                        InputType::Block(BlockArrangement::OrderedButSomeMayBeMissing),
                         OutputType::Data,
-                        BlockArrangement::OrderedButSomeMayBeMissing,
                         data_par_burst,
                         true,
                         false,
@@ -1284,9 +1282,8 @@ pub fn decode(
                     let buffers = DataBlockBuffer::new_multi(
                         version,
                         Some(&ref_block.get_uid()),
-                        InputType::Block,
+                        InputType::Block(BlockArrangement::OrderedButSomeMayBeMissing),
                         OutputType::Data,
-                        BlockArrangement::OrderedButSomeMayBeMissing,
                         data_par_burst,
                         true,
                         false,

@@ -64,9 +64,8 @@ pub fn hash(
     let buffers = DataBlockBuffer::new_multi(
         version,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::OrderedButSomeMayBeMissing),
         OutputType::Disabled,
-        BlockArrangement::OrderedButSomeMayBeMissing,
         data_par_burst,
         true,
         false,

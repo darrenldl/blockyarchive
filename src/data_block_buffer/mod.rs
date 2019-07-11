@@ -85,17 +85,6 @@ macro_rules! check_data_par_burst_consistent_with_rs_codec {
     }};
 }
 
-macro_rules! check_input_type_consistent_with_block_arrangement {
-    (
-        $input_type:expr, $block_arrangement:expr
-    ) => {{
-        match $input_type {
-            InputType::Block => {}
-            InputType::Data => assert!($block_arrangement == BlockArrangement::OrderedAndNoMissing),
-        }
-    }};
-}
-
 enum GetSlotResult<'a> {
     None,
     Some(
@@ -114,8 +103,8 @@ enum GetSlotResult<'a> {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum InputType {
-    Block,
     Data,
+    Block(BlockArrangement),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -152,7 +141,6 @@ struct Lot {
     uid: [u8; SBX_FILE_UID_LEN],
     input_type: InputType,
     output_type: OutputType,
-    arrangement: BlockArrangement,
     data_par_burst: Option<(usize, usize, usize)>,
     meta_enabled: bool,
     block_size: usize,
@@ -188,7 +176,6 @@ impl Lot {
         uid: Option<&[u8; SBX_FILE_UID_LEN]>,
         input_type: InputType,
         output_type: OutputType,
-        arrangement: BlockArrangement,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
         skip_good: bool,
@@ -200,8 +187,6 @@ impl Lot {
         check_data_par_burst_consistent_with_version!(data_par_burst, version);
 
         check_data_par_burst_consistent_with_rs_codec!(data_par_burst, rs_codec);
-
-        check_input_type_consistent_with_block_arrangement!(input_type, arrangement);
 
         let lot_size = match data_par_burst {
             None => default_lot_size,
@@ -236,7 +221,6 @@ impl Lot {
             uid: *uid,
             input_type,
             output_type,
-            arrangement,
             data_par_burst,
             meta_enabled,
             block_size,
@@ -439,10 +423,14 @@ impl Lot {
     }
 
     fn hash(&self, ctx: &mut hash::Ctx) {
-        assert!(
-            self.arrangement == BlockArrangement::OrderedAndNoMissing
-                || self.arrangement == BlockArrangement::OrderedButSomeMayBeMissing
-        );
+        match self.input_type {
+            InputType::Data => {}
+            InputType::Block(arrangement) =>
+                assert!(
+                    arrangement == BlockArrangement::OrderedAndNoMissing
+                        || arrangement == BlockArrangement::OrderedButSomeMayBeMissing
+                )
+        }
 
         for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
             if slot_index < self.slots_used {
@@ -514,7 +502,11 @@ impl Lot {
     }
 
     fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
-        assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing);
+        match self.input_type {
+            InputType::Data => {},
+            InputTYpe::Block(arrangement) =>
+                assert!(arrangement == BlockArrangement::OrderedAndNoMissing)
+        }
 
         let data = match self.data_par_burst {
             None => self.slots_used,
@@ -628,7 +620,6 @@ impl DataBlockBuffer {
         uid: Option<&[u8; SBX_FILE_UID_LEN]>,
         input_type: InputType,
         output_type: OutputType,
-        arrangement: BlockArrangement,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
         skip_good: bool,
@@ -640,8 +631,6 @@ impl DataBlockBuffer {
         assert!(lot_count > 0);
 
         check_data_par_burst_consistent_with_version!(data_par_burst, version);
-
-        check_input_type_consistent_with_block_arrangement!(input_type, arrangement);
 
         let mut lots = Vec::with_capacity(lot_count);
 
@@ -656,7 +645,6 @@ impl DataBlockBuffer {
                 uid,
                 input_type,
                 output_type,
-                arrangement,
                 data_par_burst,
                 meta_enabled,
                 skip_good,
@@ -687,7 +675,6 @@ impl DataBlockBuffer {
         uid: Option<&[u8; SBX_FILE_UID_LEN]>,
         input_type: InputType,
         output_type: OutputType,
-        arrangement: BlockArrangement,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
         skip_good: bool,
@@ -701,7 +688,6 @@ impl DataBlockBuffer {
                 uid,
                 input_type,
                 output_type,
-                arrangement,
                 data_par_burst,
                 meta_enabled,
                 skip_good,

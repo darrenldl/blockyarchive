@@ -462,9 +462,8 @@ pub fn sort_file(param: &Param) -> Result<Option<Stats>, Error> {
     let buffers = DataBlockBuffer::new_multi(
         ref_block.get_version(),
         Some(&ref_block.get_uid()),
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         data_par_burst,
         true,
         skip_good,
