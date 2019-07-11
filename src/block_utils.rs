@@ -88,9 +88,11 @@ impl ProgressReport for ScanStats {
 
 pub fn read_block_lazily(
     block: &mut Block,
-    buffer: &mut [u8; SBX_LARGEST_BLOCK_SIZE],
+    buffer: &mut [u8],
     reader: &mut FileReader,
 ) -> Result<LazyReadResult, Error> {
+    assert!(buffer.len() >= SBX_LARGEST_BLOCK_SIZE);
+
     let mut total_len_read = 0;
 
     {

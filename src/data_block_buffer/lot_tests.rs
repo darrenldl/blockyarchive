@@ -17,9 +17,8 @@ fn new_panics_if_version_inconsistent_with_data_par_burst1() {
     Lot::new(
         Version::V17,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -36,9 +35,8 @@ fn new_panics_if_version_inconsistent_with_data_par_burst2() {
     Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         Some((3, 2, 0)),
         true,
         false,
@@ -55,9 +53,8 @@ fn new_panics_if_data_par_burst_inconsistent_with_rs_codec1() {
     Lot::new(
         Version::V17,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         Some((3, 2, 0)),
         true,
         false,
@@ -74,9 +71,8 @@ fn new_panics_if_data_par_burst_inconsistent_with_rs_codec2() {
     Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -91,9 +87,8 @@ fn cancel_slot_panics_when_empty1() {
     let mut lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -110,9 +105,8 @@ fn cancel_slot_panics_when_empty2() {
     let mut lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -131,9 +125,8 @@ fn hash_when_correct_arrangment1() {
     let lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::OrderedAndNoMissing),
         OutputType::Block,
-        BlockArrangement::OrderedAndNoMissing,
         None,
         true,
         false,
@@ -151,9 +144,8 @@ fn hash_when_correct_arrangment2() {
     let lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::OrderedButSomeMayBeMissing),
         OutputType::Block,
-        BlockArrangement::OrderedButSomeMayBeMissing,
         None,
         true,
         false,
@@ -172,9 +164,8 @@ fn hash_panics_when_incorrect_arrangement() {
     let lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Block,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -193,9 +184,8 @@ fn calc_slot_write_pos_panics_when_output_is_disabled() {
     let mut lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::Unordered),
         OutputType::Disabled,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -207,13 +197,12 @@ fn calc_slot_write_pos_panics_when_output_is_disabled() {
 }
 
 #[test]
-fn fill_in_padding_when_input_type_is_data_and_arrangement_is_ordered_and_no_missing() {
+fn fill_in_padding_when_input_type_is_data() {
     let mut lot = Lot::new(
         Version::V1,
         None,
         InputType::Data,
         OutputType::Disabled,
-        BlockArrangement::OrderedAndNoMissing,
         None,
         true,
         false,
@@ -230,9 +219,8 @@ fn fill_in_padding_panics_when_input_type_is_block_and_arrangement_is_ordered_an
     let mut lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::OrderedAndNoMissing),
         OutputType::Disabled,
-        BlockArrangement::OrderedAndNoMissing,
         None,
         true,
         false,
@@ -241,62 +229,6 @@ fn fill_in_padding_panics_when_input_type_is_block_and_arrangement_is_ordered_an
     );
 
     lot.fill_in_padding();
-}
-
-#[test]
-#[should_panic]
-fn fill_in_padding_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing1() {
-    let mut lot = Lot::new(
-        Version::V1,
-        None,
-        InputType::Data,
-        OutputType::Disabled,
-        BlockArrangement::OrderedButSomeMayBeMissing,
-        None,
-        true,
-        false,
-        10,
-        &Arc::new(None),
-    );
-
-    lot.fill_in_padding();
-}
-
-#[test]
-#[should_panic]
-fn fill_in_padding_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing2() {
-    let mut lot = Lot::new(
-        Version::V1,
-        None,
-        InputType::Data,
-        OutputType::Disabled,
-        BlockArrangement::Unordered,
-        None,
-        true,
-        false,
-        10,
-        &Arc::new(None),
-    );
-
-    lot.fill_in_padding();
-}
-
-#[test]
-fn encode_when_input_type_is_data_and_arrangement_is_ordered_and_no_missing() {
-    let mut lot = Lot::new(
-        Version::V1,
-        None,
-        InputType::Data,
-        OutputType::Disabled,
-        BlockArrangement::OrderedAndNoMissing,
-        None,
-        true,
-        false,
-        10,
-        &Arc::new(None),
-    );
-
-    lot.encode(1);
 }
 
 #[test]
@@ -305,47 +237,8 @@ fn encode_panics_when_input_type_is_block_and_arrangement_is_ordered_and_no_miss
     let mut lot = Lot::new(
         Version::V1,
         None,
-        InputType::Block,
+        InputType::Block(BlockArrangement::OrderedAndNoMissing),
         OutputType::Disabled,
-        BlockArrangement::OrderedAndNoMissing,
-        None,
-        true,
-        false,
-        10,
-        &Arc::new(None),
-    );
-
-    lot.encode(1);
-}
-
-#[test]
-#[should_panic]
-fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing1() {
-    let mut lot = Lot::new(
-        Version::V1,
-        None,
-        InputType::Data,
-        OutputType::Disabled,
-        BlockArrangement::OrderedButSomeMayBeMissing,
-        None,
-        true,
-        false,
-        10,
-        &Arc::new(None),
-    );
-
-    lot.encode(1);
-}
-
-#[test]
-#[should_panic]
-fn encode_panics_when_input_type_is_data_and_arrangement_is_not_ordered_and_no_missing2() {
-    let mut lot = Lot::new(
-        Version::V1,
-        None,
-        InputType::Data,
-        OutputType::Disabled,
-        BlockArrangement::Unordered,
         None,
         true,
         false,
@@ -367,9 +260,8 @@ quickcheck! {
 
         let mut lot = Lot::new(Version::V1,
                                None,
-                               InputType::Block,
+                               InputType::Block(BlockArrangement::Unordered),
                                OutputType::Block,
-                               BlockArrangement::Unordered,
                                None,
                                true,
                                false,
@@ -397,9 +289,8 @@ quickcheck! {
 
         let mut lot = Lot::new(Version::V1,
                                None,
-                               InputType::Block,
+                               InputType::Block(BlockArrangement::Unordered),
                                OutputType::Block,
-                               BlockArrangement::Unordered,
                                None,
                                true,
                                false,
@@ -434,9 +325,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              None,
                              true,
                              false,
@@ -446,9 +336,8 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -457,32 +346,25 @@ quickcheck! {
                     )
                 };
 
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
-                };
-
             for _ in 0..tries {
                 for _ in 0..size-1 {
                     match lot.get_slot() {
                         GetSlotResult::None => panic!(),
-                        GetSlotResult::Some(_, _, _) => {},
-                        GetSlotResult::LastSlot(_, _, _) => panic!(),
+                        GetSlotResult::Some(_, _, _, _) => {},
+                        GetSlotResult::LastSlot(_, _, _, _) => panic!(),
                     }
                 }
 
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(_, _, _) => panic!(),
-                    GetSlotResult::LastSlot(_, _, _) => {},
+                    GetSlotResult::Some(_, _, _, _) => panic!(),
+                    GetSlotResult::LastSlot(_, _, _, _) => {},
                 }
 
                 match lot.get_slot() {
                     GetSlotResult::None => {},
-                    GetSlotResult::Some(_, _, _) => panic!(),
-                    GetSlotResult::LastSlot(_, _, _) => panic!(),
+                    GetSlotResult::Some(_, _, _, _) => panic!(),
+                    GetSlotResult::LastSlot(_, _, _, _) => panic!(),
                 }
 
                 for _ in 0..size {
@@ -506,9 +388,8 @@ quickcheck! {
         ({
             let lot = Lot::new(Version::V1,
                                None,
-                               InputType::Block,
+                               InputType::Block(BlockArrangement::Unordered),
                                OutputType::Block,
-                               BlockArrangement::Unordered,
                                None,
                                true,
                                false,
@@ -525,9 +406,8 @@ quickcheck! {
         ({
             let lot = Lot::new(Version::V17,
                                None,
-                               InputType::Block,
+                               InputType::Block(BlockArrangement::Unordered),
                                OutputType::Block,
-                               BlockArrangement::Unordered,
                                Some((data, parity, burst)),
                                true,
                                false,
@@ -535,10 +415,10 @@ quickcheck! {
                                &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
             );
 
-            lot.lot_size == data + parity
+            lot.lot_size == size
                 && lot.slots_used == 0
                 && lot.padding_byte_count_in_non_padding_blocks == 0
-                && lot.directly_writable_slots == data + parity
+                && lot.directly_writable_slots == size
         })
         &&
         ({
@@ -546,7 +426,6 @@ quickcheck! {
                                None,
                                InputType::Data,
                                OutputType::Block,
-                               BlockArrangement::Unordered,
                                None,
                                true,
                                false,
@@ -565,7 +444,6 @@ quickcheck! {
                                None,
                                InputType::Data,
                                OutputType::Block,
-                               BlockArrangement::Unordered,
                                Some((data, parity, burst)),
                                true,
                                false,
@@ -597,9 +475,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              None,
                              true,
                              false,
@@ -609,22 +486,14 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
                              false,
                              size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
-                };
-
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
                 };
 
             let cancels = std::cmp::min(size, cancels);
@@ -673,9 +542,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              None,
                              true,
                              false,
@@ -685,22 +553,14 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
                              false,
                              size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
-                };
-
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
                 };
 
             let cancels = std::cmp::min(size, cancels);
@@ -711,11 +571,13 @@ quickcheck! {
                 for _ in 0..cancels {
                     match lot.get_slot() {
                         GetSlotResult::None => {},
-                        GetSlotResult::Some(block, _data, content_len_exc_header)
-                            | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                        GetSlotResult::Some(block, _data, write_pos, content_len_exc_header)
+                            | GetSlotResult::LastSlot(block, _data, write_pos, content_len_exc_header) => {
                                 block.set_version(Version::V1);
                                 block.set_uid([0xFF; SBX_FILE_UID_LEN]);
                                 block.set_seq_num(2000);
+
+                                *write_pos = Some(10);
 
                                 *content_len_exc_header = Some(100);
                             }
@@ -730,11 +592,13 @@ quickcheck! {
 
                     match lot.get_slot() {
                         GetSlotResult::None => panic!(),
-                        GetSlotResult::Some(block, _data, content_len_exc_header)
-                            | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                        GetSlotResult::Some(block, _data, read_pos, content_len_exc_header)
+                            | GetSlotResult::LastSlot(block, _data, read_pos, content_len_exc_header) => {
                                 res = res && block.get_version() == version;
                                 res = res && block.get_uid() == uid;
                                 res = res && block.get_seq_num() == 1;
+
+                                res = res && *read_pos == None;
 
                                 res = res && *content_len_exc_header == None;
                         },
@@ -764,9 +628,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              None,
                              true,
                              false,
@@ -776,22 +639,14 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
                              false,
                              size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
-                };
-
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
                 };
 
             let version = lot.version;
@@ -802,11 +657,13 @@ quickcheck! {
             for _ in 0..size {
                 match lot.get_slot() {
                     GetSlotResult::None => {},
-                    GetSlotResult::Some(block, _data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                    GetSlotResult::Some(block, _data, read_pos, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, read_pos, content_len_exc_header) => {
                             res = res && block.get_version() == version;
                             res = res && block.get_uid() == uid;
                             res = res && block.get_seq_num() == 1;
+
+                            res = res && *read_pos == None;
 
                             res = res && *content_len_exc_header == None;
                         },
@@ -835,9 +692,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              None,
                              true,
                              false,
@@ -847,9 +703,8 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -858,23 +713,18 @@ quickcheck! {
                     )
                 };
 
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
-                };
-
             let fill = std::cmp::min(size, fill);
 
             for _ in 0..fill {
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(block, _data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                    GetSlotResult::Some(block, _data, read_pos, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, read_pos, content_len_exc_header) => {
                             block.set_version(Version::V1);
                             block.set_uid([0xFF; SBX_FILE_UID_LEN]);
                             block.set_seq_num(2000);
+
+                            *read_pos = Some(10);
 
                             *content_len_exc_header = Some(100);
                         },
@@ -891,11 +741,13 @@ quickcheck! {
             for _ in 0..size {
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(block, _data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                    GetSlotResult::Some(block, _data, read_pos, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, read_pos, content_len_exc_header) => {
                             res = res && block.get_version() == version;
                             res = res && block.get_uid() == uid;
                             res = res && block.get_seq_num() == 1;
+
+                            res = res && *read_pos == None;
 
                             res = res && *content_len_exc_header == None;
                         },
@@ -924,9 +776,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              None,
                              true,
                              false,
@@ -936,9 +787,8 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::Unordered),
                              OutputType::Block,
-                             BlockArrangement::Unordered,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -947,23 +797,18 @@ quickcheck! {
                     )
                 };
 
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
-                };
-
             let fill = std::cmp::min(size, fill);
 
             for _ in 0..fill {
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(block, _data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(block, _data, content_len_exc_header) => {
+                    GetSlotResult::Some(block, _data, read_pos, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, _data, read_pos, content_len_exc_header) => {
                             block.set_version(Version::V1);
                             block.set_uid([0xFF; SBX_FILE_UID_LEN]);
                             block.set_seq_num(2000);
+
+                            *read_pos = Some(10);
 
                             *content_len_exc_header = Some(100);
                         },
@@ -1002,7 +847,6 @@ quickcheck! {
                              None,
                              InputType::Data,
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
                              false,
@@ -1014,7 +858,6 @@ quickcheck! {
                              None,
                              InputType::Data,
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -1100,14 +943,13 @@ quickcheck! {
         let burst = 1 + burst % 100;
         let fill = 1 + fill % 1000;
 
-        for lot_case in 0..2 {
+        for lot_case in 1..2 {
             let mut lot =
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
                              InputType::Data,
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
                              false,
@@ -1119,7 +961,6 @@ quickcheck! {
                              None,
                              InputType::Data,
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -1128,18 +969,18 @@ quickcheck! {
                     )
                 };
 
-            let writable_slots =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data
-                };
-
             let size =
                 if lot_case == 0 {
                     size
                 } else {
                     data + parity
+                };
+
+            let writable_slots =
+                if lot_case == 0 {
+                    size
+                } else {
+                    data
                 };
 
             let fill = std::cmp::min(writable_slots, fill);
@@ -1188,9 +1029,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::OrderedAndNoMissing),
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
                              false,
@@ -1200,22 +1040,14 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::OrderedAndNoMissing),
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
                              false,
                              size,
                              &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
                     )
-                };
-
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
                 };
 
             let fill = std::cmp::min(size, fill);
@@ -1274,7 +1106,6 @@ quickcheck! {
                              None,
                              InputType::Data,
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
                              false,
@@ -1286,7 +1117,6 @@ quickcheck! {
                              None,
                              InputType::Data,
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -1309,13 +1139,15 @@ quickcheck! {
             for i in 0..fill {
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(_block, _data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(_block, _data, content_len_exc_header) => {
+                    GetSlotResult::Some(_block, _data, read_pos, content_len_exc_header)
+                        | GetSlotResult::LastSlot(_block, _data, read_pos, content_len_exc_header) => {
                             if data_is_partial[i % data_is_partial.len()] {
                                 let len = content_len[i % content_len.len()] % 496 + 1;
                                 *content_len_exc_header = Some(len);
                                 padding_bytes_in_non_padding_blocks += 496 - len;
                             }
+
+                            *read_pos = Some(10);
                         },
                 }
             }
@@ -1374,9 +1206,8 @@ quickcheck! {
                 if lot_case == 0 {
                     Lot::new(Version::V1,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::OrderedAndNoMissing),
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              None,
                              true,
                              false,
@@ -1386,9 +1217,8 @@ quickcheck! {
                 } else {
                     Lot::new(Version::V17,
                              None,
-                             InputType::Block,
+                             InputType::Block(BlockArrangement::OrderedAndNoMissing),
                              OutputType::Block,
-                             BlockArrangement::OrderedAndNoMissing,
                              Some((data, parity, burst)),
                              true,
                              false,
@@ -1404,13 +1234,6 @@ quickcheck! {
                     Some((data, parity, burst))
                 };
 
-            let size =
-                if lot_case == 0 {
-                    size
-                } else {
-                    data + parity
-                };
-
             let version = if lot_case == 0 {
                 Version::V1
             } else {
@@ -1424,8 +1247,8 @@ quickcheck! {
             for i in 0..fill {
                 match lot.get_slot() {
                     GetSlotResult::None => panic!(),
-                    GetSlotResult::Some(block, data, content_len_exc_header)
-                        | GetSlotResult::LastSlot(block, data, content_len_exc_header) => {
+                    GetSlotResult::Some(block, data, read_pos, content_len_exc_header)
+                        | GetSlotResult::LastSlot(block, data, read_pos, content_len_exc_header) => {
                             let seq_num = seq_nums[i % seq_nums.len()];
 
                             fill_random_bytes(data);
@@ -1438,6 +1261,8 @@ quickcheck! {
                                 } else {
                                     496
                                 };
+
+                            *read_pos = Some(10);
 
                             block.set_seq_num(seq_num);
 

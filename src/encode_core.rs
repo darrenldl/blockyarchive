@@ -39,7 +39,7 @@ use crate::sbx_specs::{
 
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
-use crate::data_block_buffer::{BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot};
+use crate::data_block_buffer::{DataBlockBuffer, InputType, OutputType, Slot};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
@@ -614,7 +614,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         Some(&param.uid),
         InputType::Data,
         OutputType::Block,
-        BlockArrangement::OrderedAndNoMissing,
         param.data_par_burst,
         param.meta_enabled,
         false,
@@ -658,6 +657,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                     let Slot {
                         block: _,
                         slot,
+                        read_pos: _,
                         content_len_exc_header,
                     } = buffer.get_slot().unwrap();
                     match reader.read(slot) {
@@ -755,10 +755,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         return Err(err);
     }
 
-    let data_bytes_encoded = match required_len {
-        Some(x) => x,
-        None => stats.lock().unwrap().data_bytes_encoded(),
-    };
+    let data_bytes_encoded = stats.lock().unwrap().data_bytes_encoded();
 
     if param.meta_enabled {
         let hash_bytes = Arc::try_unwrap(hash_ctx)

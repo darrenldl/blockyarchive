@@ -1,6 +1,10 @@
 use std::fmt;
 use std::io::SeekFrom;
+use std::sync::mpsc::channel;
+use std::sync::mpsc::sync_channel;
+use std::sync::Barrier;
 use std::sync::{Arc, Mutex};
+use std::thread;
 
 use crate::file_utils;
 
@@ -13,14 +17,12 @@ use crate::progress_report::*;
 use crate::cli_utils::setup_ctrlc_handler;
 
 use crate::file_reader::{FileReader, FileReaderParam};
-use crate::file_writer::{FileWriter, FileWriterParam};
 
 use crate::general_error::Error;
 
-use crate::sbx_specs::{SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE, SBX_SCAN_BLOCK_SIZE};
+use crate::sbx_specs::{SBX_FILE_UID_LEN, SBX_SCAN_BLOCK_SIZE};
 
-use crate::sbx_block;
-use crate::sbx_block::{Block, BlockType};
+use crate::sbx_block::BlockType;
 
 use crate::block_utils;
 
@@ -29,6 +31,12 @@ use crate::integer_utils::IntegerUtils;
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 use crate::json_printer::{BracketType, JSONPrinter};
+
+use crate::rescue_buffer::{RescueBuffer, Slot};
+
+const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
+
+const BLOCK_COUNT_IN_BUFFER: usize = 1000;
 
 pub struct Param {
     in_file: String,
@@ -79,7 +87,7 @@ impl Param {
 
 #[derive(Clone, Debug)]
 pub struct Stats {
-    pub meta_or_par_blocks_processed: u64,
+    pub meta_blocks_processed: u64,
     pub data_or_par_blocks_processed: u64,
     pub bytes_processed: u64,
     total_bytes: u64,
@@ -91,7 +99,7 @@ pub struct Stats {
 impl Stats {
     pub fn new(required_len: u64, json_printer: &Arc<JSONPrinter>) -> Result<Stats, Error> {
         let stats = Stats {
-            meta_or_par_blocks_processed: 0,
+            meta_blocks_processed: 0,
             data_or_par_blocks_processed: 0,
             bytes_processed: 0,
             total_bytes: required_len,
@@ -165,11 +173,11 @@ impl Log for Stats {
         string.push_str(&format!("bytes_processed={}\n", self.bytes_processed));
         string.push_str(&format!(
             "blocks_processed={}\n",
-            self.meta_or_par_blocks_processed + self.data_or_par_blocks_processed
+            self.meta_blocks_processed + self.data_or_par_blocks_processed
         ));
         string.push_str(&format!(
             "meta_blocks_processed={}\n",
-            self.meta_or_par_blocks_processed
+            self.meta_blocks_processed
         ));
         string.push_str(&format!(
             "data_blocks_processed={}\n",
@@ -186,7 +194,7 @@ impl Log for Stats {
                     u64::ensure_at_most(self.total_bytes, bytes),
                     SBX_SCAN_BLOCK_SIZE as u64,
                 );
-                self.meta_or_par_blocks_processed = meta;
+                self.meta_blocks_processed = meta;
                 self.data_or_par_blocks_processed = data;
                 Ok(())
             }
@@ -211,13 +219,13 @@ impl fmt::Display for Stats {
             f,
             json_printer,
             "Number of blocks processed            : {}",
-            self.meta_or_par_blocks_processed + self.data_or_par_blocks_processed
+            self.meta_blocks_processed + self.data_or_par_blocks_processed
         )?;
         write_maybe_json!(
             f,
             json_printer,
             "Number of blocks processed (metadata) : {}",
-            self.meta_or_par_blocks_processed
+            self.meta_blocks_processed
         )?;
         write_maybe_json!(
             f,
@@ -230,6 +238,13 @@ impl fmt::Display for Stats {
 
         Ok(())
     }
+}
+
+#[derive(Copy, Clone)]
+struct SendToWriter {
+    bytes_processed: u64,
+    meta_blocks_processed: u64,
+    data_or_par_blocks_processed: u64,
 }
 
 pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
@@ -272,15 +287,8 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
         param.json_printer.json_enabled(),
     ));
 
-    let mut block = Block::dummy();
-
-    let mut buffer: [u8; SBX_LARGEST_BLOCK_SIZE] = [0; SBX_LARGEST_BLOCK_SIZE];
-
     // read from log file and update stats if the log file exists
     log_handler.read_from_file()?;
-
-    log_handler.start();
-    reporter.start();
 
     // now calculate the position to seek to with the final bytes processed count
     let RequiredLenAndSeekTo { seek_to, .. } =
@@ -296,66 +304,236 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
     // seek to calculated position
     reader.seek(SeekFrom::Start(seek_to))?;
 
-    loop {
-        let mut stats = stats.lock().unwrap();
+    let (to_grouper, from_reader) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_writer, from_grouper) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (to_reader, from_writer) = sync_channel(PIPELINE_BUFFER_IN_ROTATION + 1);
+    let (error_tx_reader, error_rx) = channel::<Error>();
+    let error_tx_writer = error_tx_reader.clone();
 
-        break_if_atomic_bool!(ctrlc_stop_flag);
+    let worker_shutdown_barrier = Arc::new(Barrier::new(3));
 
-        break_if_reached_required_len!(stats.bytes_processed, required_len);
-
-        let lazy_read_res = block_utils::read_block_lazily(&mut block, &mut buffer, &mut reader)?;
-
-        stats.bytes_processed += lazy_read_res.len_read as u64;
-
-        break_if_eof_seen!(lazy_read_res);
-
-        if !lazy_read_res.usable {
-            continue;
-        }
-
-        // update stats
-        match block.block_type() {
-            BlockType::Meta => {
-                stats.meta_or_par_blocks_processed += 1;
-            }
-            BlockType::Data => {
-                stats.data_or_par_blocks_processed += 1;
-            }
-        }
-
-        // check if block matches required block type
-        if let Some(x) = param.only_pick_block {
-            if block.block_type() != x {
-                continue;
-            }
-        }
-
-        // check if block has the required UID
-        if let Some(x) = param.only_pick_uid {
-            if block.get_uid() != x {
-                continue;
-            }
-        }
-
-        // write block out
-        let uid_str = misc_utils::bytes_to_upper_hex_string(&block.get_uid());
-        let path = misc_utils::make_path(&[&param.out_dir, &uid_str]);
-        let mut writer = FileWriter::new(
-            &path,
-            FileWriterParam {
-                read: false,
-                append: true,
-                truncate: false,
-                buffered: false,
-            },
-        )?;
-
-        // use the original bytes which are still in the buffer
-        writer.write(sbx_block::slice_buf(block.get_version(), &buffer))?;
-
-        // check if there's any error in log handling
-        log_handler.pop_error()?;
+    // push buffers into pipeline
+    for _ in 0..PIPELINE_BUFFER_IN_ROTATION {
+        to_reader
+            .send(Some(RescueBuffer::new(BLOCK_COUNT_IN_BUFFER)))
+            .unwrap();
     }
+
+    log_handler.start();
+    reporter.start();
+
+    let reader_thread = {
+        let ctrlc_stop_flag = Arc::clone(&ctrlc_stop_flag);
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+        let only_pick_block = param.only_pick_block;
+        let only_pick_uid = param.only_pick_uid;
+        let stats = stats.lock().unwrap();
+        let mut bytes_processed = stats.bytes_processed;
+        let mut meta_blocks_processed = stats.meta_blocks_processed;
+        let mut data_or_par_blocks_processed = stats.data_or_par_blocks_processed;
+
+        thread::spawn(move || {
+            let mut run = true;
+
+            while let Some(mut buffer) = from_writer.recv().unwrap() {
+                if !run {
+                    break;
+                }
+
+                while !buffer.is_full() {
+                    stop_run_if_atomic_bool!(run => ctrlc_stop_flag);
+
+                    stop_run_if_reached_required_len!(run => bytes_processed, required_len);
+
+                    let Slot { block, slot } = buffer.get_slot().unwrap();
+
+                    let lazy_read_res =
+                        match block_utils::read_block_lazily(block, slot, &mut reader) {
+                            Ok(lazy_read_res) => lazy_read_res,
+                            Err(e) => stop_run_forward_error!(run => error_tx_reader => e),
+                        };
+
+                    bytes_processed += lazy_read_res.len_read as u64;
+
+                    if lazy_read_res.usable {
+                        // update stats
+                        match block.block_type() {
+                            BlockType::Meta => {
+                                meta_blocks_processed += 1;
+                            }
+                            BlockType::Data => {
+                                data_or_par_blocks_processed += 1;
+                            }
+                        }
+
+                        let mut cancel_slot = false;
+
+                        // check if block matches required block type
+                        if let Some(x) = only_pick_block {
+                            if block.block_type() != x {
+                                cancel_slot = true;
+                            }
+                        }
+
+                        // check if block has the required UID
+                        if let Some(x) = only_pick_uid {
+                            if block.get_uid() != x {
+                                cancel_slot = true;
+                            }
+                        }
+
+                        if cancel_slot {
+                            buffer.cancel_slot();
+                        }
+                    } else {
+                        buffer.cancel_slot();
+                    }
+                }
+
+                let send_to_writer = SendToWriter {
+                    bytes_processed,
+                    meta_blocks_processed,
+                    data_or_par_blocks_processed,
+                };
+
+                to_grouper.send(Some((send_to_writer, buffer))).unwrap();
+            }
+
+            worker_shutdown!(to_grouper, shutdown_barrier);
+        })
+    };
+
+    let grouper_thread = {
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+
+        thread::spawn(move || {
+            while let Some((send_to_writer, mut buffer)) = from_reader.recv().unwrap() {
+                buffer.group_by_uid();
+
+                to_writer.send(Some((send_to_writer, buffer))).unwrap();
+            }
+
+            worker_shutdown!(to_writer, shutdown_barrier);
+        })
+    };
+
+    let writer_thread = {
+        let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
+        let stats = Arc::clone(&stats);
+        let out_dir = param.out_dir.clone();
+
+        thread::spawn(move || {
+            while let Some((send_to_writer, mut buffer)) = from_grouper.recv().unwrap() {
+                if let Err(e) = buffer.write(&out_dir) {
+                    error_tx_writer.send(e).unwrap();
+                    break;
+                }
+
+                buffer.reset();
+
+                {
+                    let SendToWriter {
+                        bytes_processed,
+                        meta_blocks_processed,
+                        data_or_par_blocks_processed,
+                    } = send_to_writer;
+
+                    let mut stats = stats.lock().unwrap();
+
+                    stats.bytes_processed = bytes_processed;
+                    stats.meta_blocks_processed = meta_blocks_processed;
+                    stats.data_or_par_blocks_processed = data_or_par_blocks_processed;
+                }
+
+                to_reader.send(Some(buffer)).unwrap();
+            }
+
+            worker_shutdown!(to_reader, shutdown_barrier);
+        })
+    };
+
+    reader_thread.join().unwrap();
+    grouper_thread.join().unwrap();
+    writer_thread.join().unwrap();
+
+    if let Ok(err) = error_rx.try_recv() {
+        return Err(err);
+    }
+
+    // // now calculate the position to seek to with the final bytes processed count
+    // let RequiredLenAndSeekTo { seek_to, .. } =
+    //     misc_utils::calc_required_len_and_seek_to_from_byte_range(
+    //         param.from_pos,
+    //         param.to_pos,
+    //         param.force_misalign,
+    //         stats.lock().unwrap().bytes_processed,
+    //         PositionOrLength::Len(file_size),
+    //         None,
+    //     );
+
+    // // seek to calculated position
+    // reader.seek(SeekFrom::Start(seek_to))?;
+
+    // loop {
+    //     let mut stats = stats.lock().unwrap();
+
+    //     break_if_atomic_bool!(ctrlc_stop_flag);
+
+    //     break_if_reached_required_len!(stats.bytes_processed, required_len);
+
+    //     let lazy_read_res = block_utils::read_block_lazily(&mut block, &mut buffer, &mut reader)?;
+
+    //     stats.bytes_processed += lazy_read_res.len_read as u64;
+
+    //     break_if_eof_seen!(lazy_read_res);
+
+    //     if !lazy_read_res.usable {
+    //         continue;
+    //     }
+
+    //     // update stats
+    //     match block.block_type() {
+    //         BlockType::Meta => {
+    //             stats.meta_blocks_processed += 1;
+    //         }
+    //         BlockType::Data => {
+    //             stats.data_or_par_blocks_processed += 1;
+    //         }
+    //     }
+
+    //     // check if block matches required block type
+    //     if let Some(x) = param.only_pick_block {
+    //         if block.block_type() != x {
+    //             continue;
+    //         }
+    //     }
+
+    //     // check if block has the required UID
+    //     if let Some(x) = param.only_pick_uid {
+    //         if block.get_uid() != x {
+    //             continue;
+    //         }
+    //     }
+
+    //     // write block out
+    //     let uid_str = misc_utils::bytes_to_upper_hex_string(&block.get_uid());
+    //     let path = misc_utils::make_path(&[&param.out_dir, &uid_str]);
+    //     let mut writer = FileWriter::new(
+    //         &path,
+    //         FileWriterParam {
+    //             read: false,
+    //             append: true,
+    //             truncate: false,
+    //             buffered: false,
+    //         },
+    //     )?;
+
+    //     // use the original bytes which are still in the buffer
+    //     writer.write(sbx_block::slice_buf(block.get_version(), &buffer))?;
+
+    //     // check if there's any error in log handling
+    //     log_handler.pop_error()?;
+    // }
 
     reporter.stop();
     log_handler.stop();

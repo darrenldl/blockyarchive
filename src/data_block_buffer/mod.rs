@@ -23,9 +23,9 @@ use crate::misc_utils;
 mod buffer_tests;
 mod lot_tests;
 
-const DEFAULT_SINGLE_LOT_SIZE: usize = 10;
+const DEFAULT_SINGLE_LOT_SIZE: usize = 100;
 
-const LOT_COUNT_PER_CPU: usize = 10;
+const LOT_COUNT_PER_CPU: usize = 50;
 
 macro_rules! slice_slot_w_index {
     (
@@ -87,14 +87,24 @@ macro_rules! check_data_par_burst_consistent_with_rs_codec {
 
 enum GetSlotResult<'a> {
     None,
-    Some(&'a mut Block, &'a mut [u8], &'a mut Option<usize>),
-    LastSlot(&'a mut Block, &'a mut [u8], &'a mut Option<usize>),
+    Some(
+        &'a mut Block,
+        &'a mut [u8],
+        &'a mut Option<u64>,
+        &'a mut Option<usize>,
+    ),
+    LastSlot(
+        &'a mut Block,
+        &'a mut [u8],
+        &'a mut Option<u64>,
+        &'a mut Option<usize>,
+    ),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum InputType {
-    Block,
     Data,
+    Block(BlockArrangement),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -114,7 +124,16 @@ pub enum OutputType {
 pub struct Slot<'a> {
     pub block: &'a mut Block,
     pub slot: &'a mut [u8],
+    pub read_pos: &'a mut Option<u64>,
     pub content_len_exc_header: &'a mut Option<usize>,
+}
+
+pub struct SlotView<'a> {
+    pub block: &'a Block,
+    pub slot: &'a [u8],
+    pub read_pos: &'a Option<u64>,
+    pub write_pos: &'a Option<u64>,
+    pub content_len_exc_header: &'a Option<usize>,
 }
 
 struct Lot {
@@ -122,7 +141,6 @@ struct Lot {
     uid: [u8; SBX_FILE_UID_LEN],
     input_type: InputType,
     output_type: OutputType,
-    arrangement: BlockArrangement,
     data_par_burst: Option<(usize, usize, usize)>,
     meta_enabled: bool,
     block_size: usize,
@@ -135,6 +153,8 @@ struct Lot {
     data: Vec<u8>,
     check_block: Block,
     check_buffer: Vec<u8>,
+    slot_read_pos: Vec<Option<u64>>,
+    slot_write_pos_usable: bool,
     slot_write_pos: Vec<Option<u64>>,
     slot_content_len_exc_header: Vec<Option<usize>>,
     slot_is_padding: Vec<bool>,
@@ -156,7 +176,6 @@ impl Lot {
         uid: Option<&[u8; SBX_FILE_UID_LEN]>,
         input_type: InputType,
         output_type: OutputType,
-        arrangement: BlockArrangement,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
         skip_good: bool,
@@ -169,23 +188,18 @@ impl Lot {
 
         check_data_par_burst_consistent_with_rs_codec!(data_par_burst, rs_codec);
 
-        let lot_size = match data_par_burst {
-            None => default_lot_size,
-            Some((data, parity, _)) => data + parity,
+        let (lot_size, directly_writable_slots) = match input_type {
+            InputType::Data => match data_par_burst {
+                None => (default_lot_size, default_lot_size),
+                Some((data, parity, _)) => (data + parity, data),
+            },
+            InputType::Block(_) => (default_lot_size, default_lot_size),
         };
 
         let block_size = ver_to_block_size(version);
         let data_size = ver_to_data_size(version);
 
         let rs_codec = Arc::clone(rs_codec);
-
-        let directly_writable_slots = match input_type {
-            InputType::Block => lot_size,
-            InputType::Data => match data_par_burst {
-                None => lot_size,
-                Some((data, _, _)) => data,
-            },
-        };
 
         let uid = match uid {
             None => &[0; SBX_FILE_UID_LEN],
@@ -202,7 +216,6 @@ impl Lot {
             uid: *uid,
             input_type,
             output_type,
-            arrangement,
             data_par_burst,
             meta_enabled,
             block_size,
@@ -215,6 +228,8 @@ impl Lot {
             data: vec![0; block_size * lot_size],
             check_block: Block::dummy(),
             check_buffer: vec![0; SBX_LARGEST_BLOCK_SIZE],
+            slot_read_pos: vec![None; lot_size],
+            slot_write_pos_usable: false,
             slot_write_pos: vec![None; lot_size],
             slot_content_len_exc_header: vec![None; lot_size],
             slot_is_padding: vec![false; lot_size],
@@ -230,22 +245,40 @@ impl Lot {
             let slot = slice_slot_w_index!(mut => self, self.slots_used);
 
             let slot = match self.input_type {
-                InputType::Block => slot,
                 InputType::Data => sbx_block::slice_data_buf_mut(self.version, slot),
+                InputType::Block(_) => slot,
             };
+
+            let read_pos = &mut self.slot_read_pos[self.slots_used];
 
             let content_len = &mut self.slot_content_len_exc_header[self.slots_used];
 
             self.slots_used += 1;
 
             if lot_is_full!(self) {
-                GetSlotResult::LastSlot(block, slot, content_len)
+                GetSlotResult::LastSlot(block, slot, read_pos, content_len)
             } else {
-                GetSlotResult::Some(block, slot, content_len)
+                GetSlotResult::Some(block, slot, read_pos, content_len)
             }
         } else {
             GetSlotResult::None
         }
+    }
+
+    fn view_slots(&self) -> Vec<SlotView> {
+        let mut res = Vec::with_capacity(self.slots_used);
+
+        for i in 0..self.slots_used {
+            res.push(SlotView {
+                block: &self.blocks[i],
+                slot: slice_slot_w_index!(self, i),
+                read_pos: &self.slot_read_pos[i],
+                write_pos: &self.slot_write_pos[i],
+                content_len_exc_header: &self.slot_content_len_exc_header[i],
+            });
+        }
+
+        res
     }
 
     fn cancel_slot(&mut self) {
@@ -257,63 +290,6 @@ impl Lot {
         self.reset_slot(self.slots_used);
     }
 
-    fn fill_in_padding(&mut self) {
-        assert!(self.input_type == InputType::Data);
-        assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing);
-
-        if self.active() {
-            for i in 0..self.slots_used {
-                if let Some(len) = self.slot_content_len_exc_header[i] {
-                    assert!(len > 0);
-                    assert!(len <= self.data_size);
-
-                    let slot = slice_slot_w_index!(mut => self, i);
-
-                    if len < self.data_size {
-                        self.padding_byte_count_in_non_padding_blocks +=
-                            sbx_block::write_padding(self.version, len, slot);
-                    }
-                }
-            }
-
-            if let Some((data, _, _)) = self.data_par_burst {
-                assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing);
-                assert!(self.slots_used <= data);
-
-                for i in self.slots_used..data {
-                    let slot = slice_slot_w_index!(mut => self, i);
-
-                    sbx_block::write_padding(self.version, 0, slot);
-
-                    self.slot_is_padding[i] = true;
-                }
-
-                self.slots_used = data;
-            }
-        }
-    }
-
-    fn rs_encode(&mut self) {
-        assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing);
-
-        if self.active() {
-            if let Some(ref rs_codec) = *self.rs_codec {
-                assert!(self.slots_used == rs_codec.data_shard_count());
-
-                let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(self.lot_size);
-
-                // collect references to data segments
-                for slot in self.data.chunks_mut(self.block_size) {
-                    refs.push(sbx_block::slice_data_buf_mut(self.version, slot));
-                }
-
-                rs_codec.encode(&mut refs).unwrap();
-
-                self.slots_used = self.lot_size;
-            }
-        }
-    }
-
     // fn is_full(&self) -> bool {
     //     self.slots_used >= self.directly_writable_slots
     // }
@@ -321,18 +297,6 @@ impl Lot {
     fn active(&self) -> bool {
         self.slots_used > 0
     }
-
-    // fn sync_blocks_from_slots(&mut self) {
-    //     for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
-    //         if slot_index < self.slots_used {
-    //             self.blocks[slot_index]
-    //                 .sync_from_buffer(slot, None, None)
-    //                 .unwrap();
-    //         } else {
-    //             break;
-    //         }
-    //     }
-    // }
 
     fn calc_slot_write_pos(&mut self) {
         assert!(self.output_type != OutputType::Disabled);
@@ -362,10 +326,67 @@ impl Lot {
 
             self.slot_write_pos[slot_index] = write_pos;
         }
+
+        self.slot_write_pos_usable = true;
+    }
+
+    fn fill_in_padding(&mut self) {
+        assert!(self.input_type == InputType::Data);
+
+        if self.active() {
+            for i in 0..self.slots_used {
+                if let Some(len) = self.slot_content_len_exc_header[i] {
+                    assert!(len > 0);
+                    assert!(len <= self.data_size);
+
+                    let slot = slice_slot_w_index!(mut => self, i);
+
+                    if len < self.data_size {
+                        self.padding_byte_count_in_non_padding_blocks +=
+                            sbx_block::write_padding(self.version, len, slot);
+                    }
+                }
+            }
+
+            if let Some((data, _, _)) = self.data_par_burst {
+                assert!(self.slots_used <= data);
+
+                for i in self.slots_used..data {
+                    let slot = slice_slot_w_index!(mut => self, i);
+
+                    sbx_block::write_padding(self.version, 0, slot);
+
+                    self.slot_is_padding[i] = true;
+                }
+
+                self.slots_used = data;
+            }
+        }
+    }
+
+    fn rs_encode(&mut self) {
+        assert!(self.input_type == InputType::Data);
+
+        if self.active() {
+            if let Some(ref rs_codec) = *self.rs_codec {
+                assert!(self.slots_used == rs_codec.data_shard_count());
+
+                let mut refs: SmallVec<[&mut [u8]; 32]> = SmallVec::with_capacity(self.lot_size);
+
+                // collect references to data segments
+                for slot in self.data.chunks_mut(self.block_size) {
+                    refs.push(sbx_block::slice_data_buf_mut(self.version, slot));
+                }
+
+                rs_codec.encode(&mut refs).unwrap();
+
+                self.slots_used = self.lot_size;
+            }
+        }
     }
 
     fn set_block_seq_num_based_on_lot_start_seq_num(&mut self, lot_start_seq_num: u32) {
-        assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing);
+        assert!(self.input_type == InputType::Data);
 
         for slot_index in 0..self.slots_used {
             if slot_index < self.slots_used {
@@ -392,7 +413,6 @@ impl Lot {
 
     fn encode(&mut self, lot_start_seq_num: u32) {
         assert!(self.input_type == InputType::Data);
-        assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing);
 
         self.fill_in_padding();
 
@@ -404,10 +424,13 @@ impl Lot {
     }
 
     fn hash(&self, ctx: &mut hash::Ctx) {
-        assert!(
-            self.arrangement == BlockArrangement::OrderedAndNoMissing
-                || self.arrangement == BlockArrangement::OrderedButSomeMayBeMissing
-        );
+        match self.input_type {
+            InputType::Data => {}
+            InputType::Block(arrangement) => assert!(
+                arrangement == BlockArrangement::OrderedAndNoMissing
+                    || arrangement == BlockArrangement::OrderedButSomeMayBeMissing
+            ),
+        }
 
         for (slot_index, slot) in self.data.chunks(self.block_size).enumerate() {
             if slot_index < self.slots_used {
@@ -442,6 +465,7 @@ impl Lot {
         block.set_uid(self.uid);
         block.set_seq_num(SBX_FIRST_DATA_SEQ_NUM);
 
+        self.slot_read_pos[slot_index] = None;
         self.slot_write_pos[slot_index] = None;
         self.slot_content_len_exc_header[slot_index] = None;
         self.slot_is_padding[slot_index] = false;
@@ -458,6 +482,12 @@ impl Lot {
             block.set_seq_num(SBX_FIRST_DATA_SEQ_NUM);
         }
 
+        for pos in self.slot_read_pos.iter_mut() {
+            *pos = None;
+        }
+
+        self.slot_write_pos_usable = false;
+
         for pos in self.slot_write_pos.iter_mut() {
             *pos = None;
         }
@@ -472,7 +502,12 @@ impl Lot {
     }
 
     fn data_padding_parity_block_count(&self) -> (usize, usize, usize) {
-        assert!(self.arrangement == BlockArrangement::OrderedAndNoMissing);
+        match self.input_type {
+            InputType::Data => {}
+            InputType::Block(arrangement) => {
+                assert!(arrangement == BlockArrangement::OrderedAndNoMissing)
+            }
+        }
 
         let data = match self.data_par_burst {
             None => self.slots_used,
@@ -506,8 +541,6 @@ impl Lot {
 
     fn write(&mut self, seek: bool, writer: &mut Writer) -> Result<(), Error> {
         assert!(self.output_type != OutputType::Disabled);
-
-        self.calc_slot_write_pos();
 
         for (slot_index, slot) in self.data.chunks_mut(self.block_size).enumerate() {
             if slot_index < self.slots_used {
@@ -588,7 +621,6 @@ impl DataBlockBuffer {
         uid: Option<&[u8; SBX_FILE_UID_LEN]>,
         input_type: InputType,
         output_type: OutputType,
-        arrangement: BlockArrangement,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
         skip_good: bool,
@@ -614,7 +646,6 @@ impl DataBlockBuffer {
                 uid,
                 input_type,
                 output_type,
-                arrangement,
                 data_par_burst,
                 meta_enabled,
                 skip_good,
@@ -645,7 +676,6 @@ impl DataBlockBuffer {
         uid: Option<&[u8; SBX_FILE_UID_LEN]>,
         input_type: InputType,
         output_type: OutputType,
-        arrangement: BlockArrangement,
         data_par_burst: Option<(usize, usize, usize)>,
         meta_enabled: bool,
         skip_good: bool,
@@ -659,7 +689,6 @@ impl DataBlockBuffer {
                 uid,
                 input_type,
                 output_type,
-                arrangement,
                 data_par_burst,
                 meta_enabled,
                 skip_good,
@@ -673,6 +702,10 @@ impl DataBlockBuffer {
 
     pub fn lot_count(&self) -> usize {
         self.lots.len()
+    }
+
+    pub fn total_slot_count(&self) -> usize {
+        self.lots[0].lot_size * self.lot_count()
     }
 
     pub fn is_full(&self) -> bool {
@@ -690,17 +723,19 @@ impl DataBlockBuffer {
             None
         } else {
             match self.lots[self.lots_used].get_slot() {
-                GetSlotResult::LastSlot(block, slot, content_len_exc_header) => {
+                GetSlotResult::LastSlot(block, slot, read_pos, content_len_exc_header) => {
                     self.lots_used += 1;
                     Some(Slot {
                         block,
                         slot,
+                        read_pos,
                         content_len_exc_header,
                     })
                 }
-                GetSlotResult::Some(block, slot, content_len_exc_header) => Some(Slot {
+                GetSlotResult::Some(block, slot, read_pos, content_len_exc_header) => Some(Slot {
                     block,
                     slot,
+                    read_pos,
                     content_len_exc_header,
                 }),
                 GetSlotResult::None => {
@@ -709,6 +744,18 @@ impl DataBlockBuffer {
                 }
             }
         }
+    }
+
+    pub fn view_slots(&self) -> Vec<SlotView> {
+        let mut res = Vec::with_capacity(self.total_slot_count());
+
+        for lot in self.lots.iter() {
+            for slot in lot.view_slots().into_iter() {
+                res.push(slot);
+            }
+        }
+
+        res
     }
 
     pub fn cancel_slot(&mut self) {
@@ -788,18 +835,18 @@ impl DataBlockBuffer {
         }
     }
 
-    // pub fn sync_blocks_from_slots(&mut self) {
-    //     for lot in self.lots.iter_mut() {
-    //         lot.sync_blocks_from_slots();
-    //     }
-    // }
+    pub fn calc_slot_write_pos(&mut self) {
+        self.lots.par_iter_mut().for_each(|lot| {
+            lot.calc_slot_write_pos();
+        })
+    }
 
     fn write_internal(&mut self, seek: bool, writer: &mut Writer) -> Result<(), Error> {
+        self.calc_slot_write_pos();
+
         for lot in self.lots.iter_mut() {
             lot.write(seek, writer)?;
         }
-
-        self.reset();
 
         Ok(())
     }
