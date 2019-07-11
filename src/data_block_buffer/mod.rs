@@ -188,26 +188,18 @@ impl Lot {
 
         check_data_par_burst_consistent_with_rs_codec!(data_par_burst, rs_codec);
 
-        let lot_size = match input_type {
+        let (lot_size, directly_writable_slots) = match input_type {
             InputType::Data => match data_par_burst {
-                None => default_lot_size,
-                Some((data, parity, _)) => data + parity,
+                None => (default_lot_size, default_lot_size),
+                Some((data, parity, _)) => (data + parity, data),
             },
-            InputType::Block(_) => default_lot_size,
+            InputType::Block(_) => (default_lot_size, default_lot_size),
         };
 
         let block_size = ver_to_block_size(version);
         let data_size = ver_to_data_size(version);
 
         let rs_codec = Arc::clone(rs_codec);
-
-        let directly_writable_slots = match input_type {
-            InputType::Data => match data_par_burst {
-                None => lot_size,
-                Some((data, _, _)) => data,
-            },
-            InputType::Block(_) => lot_size,
-        };
 
         let uid = match uid {
             None => &[0; SBX_FILE_UID_LEN],
