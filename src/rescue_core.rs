@@ -258,9 +258,9 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
             param.from_pos,
             param.to_pos,
             param.force_misalign,
-            0,
             // 0 is fine here as `bytes_so_far` doesn't affect calculation
             // of the required length
+            0,
             PositionOrLength::Len(file_size),
             None,
         );
