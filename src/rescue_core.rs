@@ -425,6 +425,7 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
 
         thread::spawn(move || {
             while let Some((send_to_writer, mut buffer)) = from_grouper.recv().unwrap() {
+                // check if there's any error in log handling
                 if let Err(e) = log_handler.pop_error() {
                     error_tx_writer.send(e).unwrap();
                     break;
@@ -465,81 +466,6 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
     if let Ok(err) = error_rx.try_recv() {
         return Err(err);
     }
-
-    // // now calculate the position to seek to with the final bytes processed count
-    // let RequiredLenAndSeekTo { seek_to, .. } =
-    //     misc_utils::calc_required_len_and_seek_to_from_byte_range(
-    //         param.from_pos,
-    //         param.to_pos,
-    //         param.force_misalign,
-    //         stats.lock().unwrap().bytes_processed,
-    //         PositionOrLength::Len(file_size),
-    //         None,
-    //     );
-
-    // // seek to calculated position
-    // reader.seek(SeekFrom::Start(seek_to))?;
-
-    // loop {
-    //     let mut stats = stats.lock().unwrap();
-
-    //     break_if_atomic_bool!(ctrlc_stop_flag);
-
-    //     break_if_reached_required_len!(stats.bytes_processed, required_len);
-
-    //     let lazy_read_res = block_utils::read_block_lazily(&mut block, &mut buffer, &mut reader)?;
-
-    //     stats.bytes_processed += lazy_read_res.len_read as u64;
-
-    //     break_if_eof_seen!(lazy_read_res);
-
-    //     if !lazy_read_res.usable {
-    //         continue;
-    //     }
-
-    //     // update stats
-    //     match block.block_type() {
-    //         BlockType::Meta => {
-    //             stats.meta_blocks_processed += 1;
-    //         }
-    //         BlockType::Data => {
-    //             stats.data_or_par_blocks_processed += 1;
-    //         }
-    //     }
-
-    //     // check if block matches required block type
-    //     if let Some(x) = param.only_pick_block {
-    //         if block.block_type() != x {
-    //             continue;
-    //         }
-    //     }
-
-    //     // check if block has the required UID
-    //     if let Some(x) = param.only_pick_uid {
-    //         if block.get_uid() != x {
-    //             continue;
-    //         }
-    //     }
-
-    //     // write block out
-    //     let uid_str = misc_utils::bytes_to_upper_hex_string(&block.get_uid());
-    //     let path = misc_utils::make_path(&[&param.out_dir, &uid_str]);
-    //     let mut writer = FileWriter::new(
-    //         &path,
-    //         FileWriterParam {
-    //             read: false,
-    //             append: true,
-    //             truncate: false,
-    //             buffered: false,
-    //         },
-    //     )?;
-
-    //     // use the original bytes which are still in the buffer
-    //     writer.write(sbx_block::slice_buf(block.get_version(), &buffer))?;
-
-    //     // check if there's any error in log handling
-    //     log_handler.pop_error()?;
-    // }
 
     reporter.stop();
     log_handler.stop();
