@@ -421,9 +421,15 @@ pub fn rescue_from_file(param: &Param) -> Result<Stats, Error> {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
         let stats = Arc::clone(&stats);
         let out_dir = param.out_dir.clone();
+        let log_handler = Arc::clone(&log_handler);
 
         thread::spawn(move || {
             while let Some((send_to_writer, mut buffer)) = from_grouper.recv().unwrap() {
+                if let Err(e) = log_handler.pop_error() {
+                    error_tx_writer.send(e).unwrap();
+                    break;
+                }
+
                 if let Err(e) = buffer.write(&out_dir) {
                     error_tx_writer.send(e).unwrap();
                     break;
