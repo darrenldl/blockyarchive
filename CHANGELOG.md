@@ -3,10 +3,15 @@
 ## 7.2.3
 
 - Updated input file size calculation to use the data bytes encoded directly instead of file calculation
-  
     - This mostly affects encoding and decoding of files 0 in length
   
     - This does, however, also make the recording of FSZ field to be more accurate in the event that the input file size changes during the encoding process, in which case the FSZ field will not match the actual number of bytes encoded
+
+- Added multithreading and operation pipelining to rescue and sort coreTL;DR
+  
+    - Rescue mode is 4x the performance (jumping from ~50MB/s to ~200MB/s) and sort mode is 2.75x the performance (jumping from ~80MB/s to ~220MB/s) on my laptop
+  
+    - See [issue #243](https://github.com/darrenldl/blockyarchive/issues/243) for details
 
 ## 7.2.2
 
@@ -61,16 +66,19 @@
   
     - 7.1.1 is yanked nonetheless to avoid other potential issues
 
-- Added multithreading and operation pipelining for `sbx_container_content::hash`
+- Added multithreading and operation pipelining to `sbx_container_content::hash`
   
     - This speeds up the hashing step of the following modes and usage
         - check mode `--hash`, `--hash-only`
       
         - update mode `--hash`
+      
+        - See [issue #222](https://github.com/darrenldl/blockyarchive/issues/222) for details
 
-- Added multithreading and operation pipelining for decode mode
+- Added multithreading and operation pipelining to decode core
   
     - This speeds up decoding in all scenarios
+    - See [issue #222](https://github.com/darrenldl/blockyarchive/issues/222) for details
 
 - Dependencies update
   
