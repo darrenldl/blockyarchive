@@ -14,7 +14,7 @@ exclude = [
     ".travis.yml",
 ]
 
-description   = "Archive with forward error correction and sector level recoverability"
+description   = "Multithreaded archiver offering bit rot protection and sector level recoverability"
 
 documentation = "https://github.com/darrenldl/blockyarchive/wiki"
 homepage      = "https://github.com/darrenldl/blockyarchive"
