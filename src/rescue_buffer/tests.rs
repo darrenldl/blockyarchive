@@ -179,4 +179,88 @@ quickcheck! {
 
         true
     }
+
+    fn qc_new_slots_are_initialized_correctly(size: usize) -> bool {
+        let size = 1 + size % 1000;
+
+        let mut buffer = RescueBuffer::new(size);
+
+        let mut res = true;
+
+        for _ in 0..size {
+            match buffer.get_slot() {
+                Some(Slot {block, slot: _}) => {
+                    res = res && block.get_version() == Version::V1;
+                    res = res && block.get_uid() == [0; SBX_FILE_UID_LEN];
+                    res = res && block.get_seq_num() == SBX_FIRST_DATA_SEQ_NUM;
+                },
+                None => {}
+            }
+        }
+
+        res
+    }
+
+    fn qc_slots_are_reset_correctly_after_lot_reset(size: usize,
+                                                    fill: usize) -> bool {
+        let size = 1 + size % 1000;
+        let fill = 1 + fill % 1000;
+
+        let fill = std::cmp::min(size, fill);
+
+        let mut buffer = RescueBuffer::new(size);
+
+        for _ in 0..fill {
+            match buffer.get_slot() {
+                Some(Slot {block, slot: _}) => {
+                    block.set_version(Version::V2);
+                    block.set_uid([0xFF; SBX_FILE_UID_LEN]);
+                    block.set_seq_num(2000);
+                },
+                None => panic!()
+            }
+        }
+
+        buffer.reset();
+
+        let mut res = true;
+
+        for _ in 0..size {
+            match buffer.get_slot() {
+                Some(Slot {block, slot: _}) => {
+                    res = res && block.get_version() == Version::V1;
+                    res = res && block.get_uid() == [0; SBX_FILE_UID_LEN];
+                    res = res && block.get_seq_num() == SBX_FIRST_DATA_SEQ_NUM;
+                },
+                None => {}
+            }
+        }
+
+        res
+    }
+
+    fn qc_stats_are_reset_correctly_after_lot_reset(size: usize,
+                                                    fill: usize) -> bool {
+        let size = 1 + size % 1000;
+        let fill = 1 + fill % 1000;
+
+        let fill = std::cmp::min(size, fill);
+
+        let mut buffer = RescueBuffer::new(size);
+
+        for _ in 0..fill {
+            match buffer.get_slot() {
+                Some(Slot {block, slot: _}) => {
+                    block.set_version(Version::V2);
+                    block.set_uid([0xFF; SBX_FILE_UID_LEN]);
+                    block.set_seq_num(2000);
+                },
+                None => panic!()
+            }
+        }
+
+        buffer.reset();
+
+        buffer.slots_used == 0
+    }
 }
