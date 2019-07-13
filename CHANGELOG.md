@@ -2,7 +2,8 @@
 
 ## 7.2.3
 
-- Updated input file size calculation to use the data bytes encoded directly instead of file calculation
+- Updated encode mode input file size calculation to use the data bytes encoded directly instead of file calculation
+  
     - This mostly affects encoding and decoding of files 0 in length
   
     - This does, however, also make the recording of FSZ field to be more accurate in the event that the input file size changes during the encoding process, in which case the FSZ field will not match the actual number of bytes encoded
