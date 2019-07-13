@@ -12,6 +12,8 @@ use crate::sbx_block::Block;
 
 use crate::file_writer::{FileWriter, FileWriterParam};
 
+mod tests;
+
 macro_rules! slice_slot_w_index {
     (
         full => $self:expr, $index:expr
@@ -68,6 +70,8 @@ pub struct RescueBuffer {
 
 impl RescueBuffer {
     pub fn new(size: usize) -> Self {
+        assert!(size > 0);
+
         let mut blocks = Vec::with_capacity(size);
 
         for _ in 0..size {
