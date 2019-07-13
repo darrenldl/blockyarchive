@@ -20,9 +20,6 @@ use crate::writer::Writer;
 
 use crate::misc_utils;
 
-mod buffer_tests;
-mod lot_tests;
-
 const DEFAULT_SINGLE_LOT_SIZE: usize = 100;
 
 const LOT_COUNT_PER_CPU: usize = 50;
@@ -84,6 +81,9 @@ macro_rules! check_data_par_burst_consistent_with_rs_codec {
         }
     }};
 }
+
+mod buffer_tests;
+mod lot_tests;
 
 enum GetSlotResult<'a> {
     None,

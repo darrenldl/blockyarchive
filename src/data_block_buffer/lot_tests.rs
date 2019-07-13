@@ -1288,4 +1288,67 @@ quickcheck! {
 
         true
     }
+
+    fn qc_lot_is_full_is_correct(
+        size: usize,
+        data: usize,
+        parity: usize,
+        burst: usize,
+        tries: usize
+    ) -> bool {
+        let size = 1 + size % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+        let tries = 2 + tries % 1000;
+
+        for lot_case in 0..2 {
+            let mut lot =
+                if lot_case == 0 {
+                    Lot::new(Version::V1,
+                             None,
+                             InputType::Block(BlockArrangement::OrderedAndNoMissing),
+                             OutputType::Block,
+                             None,
+                             true,
+                             false,
+                             size,
+                             &Arc::new(None),
+                    )
+                } else {
+                    Lot::new(Version::V17,
+                             None,
+                             InputType::Block(BlockArrangement::OrderedAndNoMissing),
+                             OutputType::Block,
+                             Some((data, parity, burst)),
+                             true,
+                             false,
+                             size,
+                             &Arc::new(Some(ReedSolomon::new(data, parity).unwrap())),
+                    )
+                };
+
+            for _ in 0..tries {
+                let mut res = true;
+
+                for _ in 0..size {
+                    res = res && !lot_is_full!(lot);
+
+                    let _ = lot.get_slot();
+                }
+
+                res = res && lot_is_full!(lot);
+
+                for _ in 0..size {
+                    lot.cancel_slot();
+
+                    res = res && !lot_is_full!(lot);
+                }
+
+                if !res { return false; }
+            }
+        }
+
+        true
+    }
 }
