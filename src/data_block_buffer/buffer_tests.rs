@@ -22,7 +22,7 @@ quickcheck! {
                                               total_buffer_count,
         );
 
-        let size = buffer.lots.len() * buffer.lot_size;
+        let size = buffer.total_slot_count();
 
         let cancels = std::cmp::min(size, cancels);
 
@@ -180,7 +180,7 @@ quickcheck! {
                     )
                 };
 
-            let size = buffer.lots.len() * buffer.lot_size;
+            let size = buffer.total_slot_count();
 
             let fill = std::cmp::min(size, fill);
 
@@ -191,6 +191,69 @@ quickcheck! {
             buffer.reset();
 
             let res = buffer.lots_used == 0;
+
+            if !res { return false; }
+        }
+
+        true
+    }
+
+    fn qc_is_full_is_correct(
+        buffer_index: usize,
+        total_buffer_count: usize,
+        data: usize,
+        parity: usize,
+        burst: usize
+    ) -> bool {
+        let buffer_index = 1 + buffer_index % 1000;
+        let total_buffer_count = 1 + total_buffer_count % 1000;
+        let data = 1 + data % 30;
+        let parity = 1 + parity % 30;
+        let burst = 1 + burst % 100;
+
+        for buffer_case in 0..2 {
+            let mut buffer =
+                if buffer_case == 0 {
+                    DataBlockBuffer::new(Version::V1,
+                                         None,
+                                         InputType::Block(BlockArrangement::Unordered),
+                                         OutputType::Block,
+                                         None,
+                                         true,
+                                         false,
+                                         buffer_index,
+                                         total_buffer_count,
+                    )
+                } else {
+                    DataBlockBuffer::new(Version::V17,
+                                         None,
+                                         InputType::Block(BlockArrangement::Unordered),
+                                         OutputType::Block,
+                                         Some((data, parity, burst)),
+                                         true,
+                                         false,
+                                         buffer_index,
+                                         total_buffer_count,
+                    )
+                };
+
+            let size = buffer.total_slot_count();
+
+            let mut res = true;
+
+            for _ in 0..size {
+                res = res && !buffer.is_full();
+
+                let _ = buffer.get_slot();
+            }
+
+            res = res && buffer.is_full();
+
+            for _ in 0..size {
+                buffer.cancel_slot();
+
+                res = res && !buffer.is_full();
+            }
 
             if !res { return false; }
         }

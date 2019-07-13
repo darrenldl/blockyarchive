@@ -701,7 +701,7 @@ impl DataBlockBuffer {
     }
 
     pub fn total_slot_count(&self) -> usize {
-        self.lots[0].lot_size * self.lot_count()
+        self.lot_size * self.lot_count()
     }
 
     pub fn is_full(&self) -> bool {
