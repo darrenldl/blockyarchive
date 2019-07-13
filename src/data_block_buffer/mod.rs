@@ -290,10 +290,6 @@ impl Lot {
         self.reset_slot(self.slots_used);
     }
 
-    // fn is_full(&self) -> bool {
-    //     self.slots_used >= self.directly_writable_slots
-    // }
-
     fn active(&self) -> bool {
         self.slots_used > 0
     }
