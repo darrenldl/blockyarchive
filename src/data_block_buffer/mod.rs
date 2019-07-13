@@ -20,9 +20,6 @@ use crate::writer::Writer;
 
 use crate::misc_utils;
 
-mod buffer_tests;
-mod lot_tests;
-
 const DEFAULT_SINGLE_LOT_SIZE: usize = 100;
 
 const LOT_COUNT_PER_CPU: usize = 50;
@@ -84,6 +81,9 @@ macro_rules! check_data_par_burst_consistent_with_rs_codec {
         }
     }};
 }
+
+mod buffer_tests;
+mod lot_tests;
 
 enum GetSlotResult<'a> {
     None,
@@ -289,10 +289,6 @@ impl Lot {
 
         self.reset_slot(self.slots_used);
     }
-
-    // fn is_full(&self) -> bool {
-    //     self.slots_used >= self.directly_writable_slots
-    // }
 
     fn active(&self) -> bool {
         self.slots_used > 0
@@ -705,7 +701,7 @@ impl DataBlockBuffer {
     }
 
     pub fn total_slot_count(&self) -> usize {
-        self.lots[0].lot_size * self.lot_count()
+        self.lot_count() * self.lot_size
     }
 
     pub fn is_full(&self) -> bool {
