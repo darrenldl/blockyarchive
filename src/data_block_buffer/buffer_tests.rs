@@ -203,13 +203,15 @@ quickcheck! {
         total_buffer_count: usize,
         data: usize,
         parity: usize,
-        burst: usize
+        burst: usize,
+        tries: usize
     ) -> bool {
         let buffer_index = 1 + buffer_index % 1000;
         let total_buffer_count = 1 + total_buffer_count % 1000;
         let data = 1 + data % 30;
         let parity = 1 + parity % 30;
         let burst = 1 + burst % 100;
+        let tries = 2 + tries % 10;
 
         for buffer_case in 0..2 {
             let mut buffer =
@@ -239,23 +241,25 @@ quickcheck! {
 
             let size = buffer.total_slot_count();
 
-            let mut res = true;
+            for _ in 0..tries {
+                let mut res = true;
 
-            for _ in 0..size {
-                res = res && !buffer.is_full();
+                for _ in 0..size {
+                    res = res && !buffer.is_full();
 
-                let _ = buffer.get_slot();
+                    let _ = buffer.get_slot();
+                }
+
+                res = res && buffer.is_full();
+
+                for _ in 0..size {
+                    buffer.cancel_slot();
+
+                    res = res && !buffer.is_full();
+                }
+
+                if !res { return false; }
             }
-
-            res = res && buffer.is_full();
-
-            for _ in 0..size {
-                buffer.cancel_slot();
-
-                res = res && !buffer.is_full();
-            }
-
-            if !res { return false; }
         }
 
         true

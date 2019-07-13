@@ -263,4 +263,36 @@ quickcheck! {
 
         buffer.slots_used == 0
     }
+
+    fn qc_is_full_is_correct(
+        size: usize,
+        tries: usize
+    ) -> bool {
+        let size = 1 + size % 1000;
+        let tries = 2 + tries % 1000;
+
+        let mut buffer = RescueBuffer::new(size);
+
+        for _ in 0..tries {
+            let mut res = true;
+
+            for _ in 0..size {
+                res = res && !buffer.is_full();
+
+                let _ = buffer.get_slot();
+            }
+
+            res = res && buffer.is_full();
+
+            for _ in 0..size {
+                buffer.cancel_slot();
+
+                res = res && !buffer.is_full();
+            }
+
+            if !res { return false; }
+        }
+
+        true
+    }
 }
