@@ -573,7 +573,7 @@ quickcheck! {
                         GetSlotResult::None => {},
                         GetSlotResult::Some(block, _data, write_pos, content_len_exc_header)
                             | GetSlotResult::LastSlot(block, _data, write_pos, content_len_exc_header) => {
-                                block.set_version(Version::V1);
+                                block.set_version(Version::V2);
                                 block.set_uid([0xFF; SBX_FILE_UID_LEN]);
                                 block.set_seq_num(2000);
 
