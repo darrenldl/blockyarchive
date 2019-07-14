@@ -6,9 +6,9 @@
   
     - This mostly affects encoding and decoding of files 0 in length
   
-    - This does, however, also make the recording of FSZ field to be more accurate in the event that the input file size changes during the encoding process, in which case the FSZ field will not match the actual number of bytes encoded
+    - This does, however, also make the recording of FSZ field more accurate in the event that the input file size changes during the encoding process, in which case the FSZ field will not match the actual number of bytes encoded
 
-- Added multithreading and operation pipelining to rescue and sort coreTL;DR
+- Added multithreading and operation pipelining to rescue and sort core
   
     - Rescue mode is 4x the performance (jumping from ~50MB/s to ~200MB/s) and sort mode is 2.75x the performance (jumping from ~80MB/s to ~220MB/s) on my laptop
   
