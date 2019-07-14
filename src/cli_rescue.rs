@@ -74,7 +74,7 @@ pub fn rescue<'a>(matches: &ArgMatches<'a>) -> i32 {
     let pr_verbosity_level = get_pr_verbosity_level!(matches, json_printer);
 
     let in_file = matches.value_of("in_file").unwrap();
-    exit_if_file!(not_exists in_file
+    exit_if_file!(does_not_exist in_file
                   => json_printer
                   => "File \"{}\" does not exist", in_file);
     let out_dir = matches.value_of("out_dir").unwrap();

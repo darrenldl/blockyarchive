@@ -1701,9 +1701,13 @@ pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
         match ref_block.get_FNM().unwrap() {
             None => None,
             Some(x) => match file_utils::get_file_name_part_of_path(&x) {
-                None => return Err(Error::with_msg("Original file name does not contain a file name component")),
-                Some(s) => Some(s)
-            }
+                None => {
+                    return Err(Error::with_msg(
+                        "Original file name does not contain a file name component",
+                    ))
+                }
+                Some(s) => Some(s),
+            },
         }
     };
 

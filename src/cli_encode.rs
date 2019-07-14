@@ -117,9 +117,9 @@ pub fn encode<'a>(matches: &ArgMatches<'a>) -> i32 {
                     exit_with_msg!(usr json_printer => "Explicit output file name is required when input is stdin");
                 }
 
-                let in_file = mtach file_utils::get_file_name_part_of_path(in_file) {
+                let in_file = match file_utils::get_file_name_part_of_path(in_file) {
                     Some(s) => s,
-                    None => exit_with_msg!(usr json_printer => "File name odes not contain")
+                    None => exit_with_msg!(usr json_printer => "File name odes not contain"),
                 };
                 misc_utils::make_path(&[x, &format!("{}.{}", in_file, out_extension)])
             } else {

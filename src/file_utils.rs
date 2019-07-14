@@ -36,6 +36,10 @@ pub fn check_if_file_exists(file: &str) -> bool {
     Path::new(file).exists()
 }
 
+pub fn check_if_file_is_file(file: &str) -> bool {
+    Path::new(file).is_file()
+}
+
 pub fn check_if_file_is_dir(file: &str) -> bool {
     Path::new(file).is_dir()
 }
