@@ -36,6 +36,10 @@ pub fn check_if_file_exists(file: &str) -> bool {
     Path::new(file).exists()
 }
 
+pub fn check_if_file_is_file(file: &str) -> bool {
+    Path::new(file).is_file()
+}
+
 pub fn check_if_file_is_dir(file: &str) -> bool {
     Path::new(file).is_dir()
 }
@@ -226,7 +230,10 @@ pub mod from_orig_file_size {
     }
 }
 
-pub fn get_file_name_part_of_path(path: &str) -> String {
+pub fn get_file_name_part_of_path(path: &str) -> Option<String> {
     let path = Path::new(path);
-    path.file_name().unwrap().to_string_lossy().to_string()
+    match path.file_name() {
+        Some(s) => Some(s.to_string_lossy().to_string()),
+        None => None,
+    }
 }

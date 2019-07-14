@@ -176,55 +176,12 @@ pub fn calc_required_len_and_seek_to_from_byte_range(
 }
 
 pub fn make_path(path_parts: &[&str]) -> String {
-    fn strip_slash_prefix(string: &str) -> &str {
-        let str_len = string.len();
-        match str_len {
-            0 => string,
-            1 => match &string[0..1] {
-                "/" => "",
-                _ => string,
-            },
-            _ => {
-                let char_1st = &string[0..1];
-                if char_1st == "/" || char_1st == "\\" {
-                    &string[1..]
-                } else {
-                    string
-                }
-            }
-        }
-    }
-    fn strip_slash_suffix(string: &str) -> &str {
-        let str_len = string.len();
-        match str_len {
-            0 => string,
-            1 => match &string[0..1] {
-                "/" => "",
-                _ => string,
-            },
-            _ => {
-                let char_last = &string[str_len - 1..];
-                let char_2nd_last = &string[str_len - 2..];
-                if (char_last == "/" || char_last == "\\") && char_2nd_last != "\\" {
-                    &string[0..str_len - 1]
-                } else {
-                    string
-                }
-            }
-        }
+    let mut path_buf = PathBuf::new();
+
+    for part in path_parts.into_iter() {
+        path_buf.push(part);
     }
 
-    let mut path_buf = PathBuf::new();
-    for i in 0..path_parts.len() {
-        if i == 0 {
-            path_buf.push(path_parts[i]);
-        } else {
-            let res = strip_slash_prefix(strip_slash_suffix(path_parts[i]));
-            if res.len() > 0 {
-                path_buf.push(res);
-            }
-        }
-    }
     path_buf.to_string_lossy().to_string()
 }
 

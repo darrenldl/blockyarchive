@@ -1700,7 +1700,14 @@ pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
     } else {
         match ref_block.get_FNM().unwrap() {
             None => None,
-            Some(x) => Some(file_utils::get_file_name_part_of_path(&x)),
+            Some(x) => match file_utils::get_file_name_part_of_path(&x) {
+                None => {
+                    return Err(Error::with_msg(
+                        "Original file name does not contain a file name component",
+                    ))
+                }
+                Some(s) => Some(s),
+            },
         }
     };
 
@@ -1710,7 +1717,7 @@ pub fn decode_file(param: &Param) -> Result<Option<Stats>, Error> {
             None => {
                 return Err(Error::with_msg("No original file name was found in SBX container and no output file name/path was provided"));
             }
-            Some(ref x) => Some(file_utils::get_file_name_part_of_path(x)),
+            Some(x) => Some(x),
         },
         Some(ref out) => {
             if file_utils::check_if_file_is_stdout(out) {

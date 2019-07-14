@@ -662,13 +662,13 @@ mod from_orig_file_size {
 
 #[test]
 fn test_get_file_name_part_of_path_simple_cases() {
-    assert_eq!("abcd", get_file_name_part_of_path("test/abcd"));
-    assert_eq!("test.sbx", get_file_name_part_of_path("test/test.sbx"));
-    assert_eq!("abcd", get_file_name_part_of_path("/root/test/abcd"));
+    assert_eq!("abcd", get_file_name_part_of_path("test/abcd").unwrap());
+    assert_eq!("test.sbx", get_file_name_part_of_path("test/test.sbx").unwrap());
+    assert_eq!("abcd", get_file_name_part_of_path("/root/test/abcd").unwrap());
     assert_eq!(
         "abcd_defg.sbx",
-        get_file_name_part_of_path("/root/test/abcd_defg.sbx")
+        get_file_name_part_of_path("/root/test/abcd_defg.sbx").unwrap()
     );
-    assert_eq!("abcd", get_file_name_part_of_path("abcd"));
-    assert_eq!("test", get_file_name_part_of_path("/test"));
+    assert_eq!("abcd", get_file_name_part_of_path("abcd").unwrap());
+    assert_eq!("test", get_file_name_part_of_path("/test").unwrap());
 }

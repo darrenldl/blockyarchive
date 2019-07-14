@@ -50,11 +50,12 @@ pub fn sort<'a>(matches: &ArgMatches<'a>) -> i32 {
     json_printer.print_open_bracket(None, BracketType::Curly);
 
     let in_file = get_in_file!(matches, json_printer);
+
     let out = match matches.value_of("out") {
         None => format!("{}.sorted", in_file),
         Some(x) => {
             if file_utils::check_if_file_is_dir(x) {
-                let in_file = file_utils::get_file_name_part_of_path(in_file);
+                let in_file = file_utils::get_file_name_part_of_path(in_file).unwrap();
                 misc_utils::make_path(&[x, &format!("{}.sorted", in_file)])
             } else {
                 String::from(x)

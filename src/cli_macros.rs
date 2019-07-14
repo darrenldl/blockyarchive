@@ -44,10 +44,34 @@ macro_rules! exit_if_file {
         }
     }};
     (
-        not_exists $file:expr => $json_printer:expr => $($x:expr),*
+        does_not_exist $file:expr => $json_printer:expr => $($x:expr),*
     ) => {{
         use crate::file_utils;
         if !file_utils::check_if_file_exists($file) {
+            exit_with_msg!(usr $json_printer => $($x),*);
+        }
+    }};
+    (
+        is_dir $file:expr => $json_printer:expr => $($x:expr),*
+    ) => {{
+        use crate::file_utils;
+        if file_utils::check_if_file_is_dir($file) {
+            exit_with_msg!(usr $json_printer => $($x),*);
+        }
+    }};
+    (
+        is_not_file $file:expr => $json_printer:expr => $($x:expr),*
+    ) => {{
+        use crate::file_utils;
+        if !file_utils::check_if_file_is_file($file) {
+            exit_with_msg!(usr $json_printer => $($x),*);
+        }
+    }};
+    (
+        has_no_file_name_part $file:expr => $json_printer:expr => $($x:expr),*
+    ) => {{
+        use crate::file_utils;
+        if let None = file_utils::get_file_name_part_of_path($file) {
             exit_with_msg!(usr $json_printer => $($x),*);
         }
     }}
@@ -173,9 +197,19 @@ macro_rules! get_in_file {
         $matches:expr, $json_printer:expr
     ) => {{
         let in_file  = $matches.value_of("in_file").unwrap();
-        exit_if_file!(not_exists in_file
+
+        exit_if_file!(does_not_exist in_file
                       => $json_printer
                       => "File \"{}\" does not exist", in_file);
+
+        exit_if_file!(has_no_file_name_part in_file
+                      => $json_printer
+                      => "File name \"{}\"does not have a file name component", in_file);
+
+        exit_if_file!(is_dir in_file
+                      => $json_printer
+                      => "File \"{}\" is a directory", in_file);
+
         in_file
     }};
     (
@@ -184,9 +218,17 @@ macro_rules! get_in_file {
         use crate::file_utils;
         let in_file  = $matches.value_of("in_file").unwrap();
         if !file_utils::check_if_file_is_stdin(in_file) {
-            exit_if_file!(not_exists in_file
+            exit_if_file!(does_not_exist in_file
                           => $json_printer
                           => "File \"{}\" does not exist", in_file);
+
+            exit_if_file!(has_no_file_name_part in_file
+                          => $json_printer
+                          => "File name \"{}\"does not have a file name component", in_file);
+
+            exit_if_file!(is_dir in_file
+                          => $json_printer
+                          => "File \"{}\" is a directory", in_file);
         }
         in_file
     }};

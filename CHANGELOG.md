@@ -2,7 +2,8 @@
 
 ## 7.2.3
 
-- Updated input file size calculation to use the data bytes encoded directly instead of file calculation
+- Updated encode mode input file size calculation to use the data bytes encoded directly instead of file calculation
+  
     - This mostly affects encoding and decoding of files 0 in length
   
     - This does, however, also make the recording of FSZ field to be more accurate in the event that the input file size changes during the encoding process, in which case the FSZ field will not match the actual number of bytes encoded
@@ -12,6 +13,12 @@
     - Rescue mode is 4x the performance (jumping from ~50MB/s to ~200MB/s) and sort mode is 2.75x the performance (jumping from ~80MB/s to ~220MB/s) on my laptop
   
     - See [issue #243](https://github.com/darrenldl/blockyarchive/issues/243) for details
+
+- Fixed input file name handling and recorded file name handling
+  
+    - Bug does not impact archive integrity
+  
+    - See issues [#249](https://github.com/darrenldl/blockyarchive/issues/249) and [#250](https://github.com/darrenldl/blockyarchive/issues/250) for details
 
 ## 7.2.2
 

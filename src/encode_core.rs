@@ -379,14 +379,14 @@ fn pack_metadata(
         match param.in_file {
             None => {}
             Some(ref f) => {
-                let file_name = file_utils::get_file_name_part_of_path(f);
+                let file_name = file_utils::get_file_name_part_of_path(f).unwrap();
                 metas.push(Metadata::FNM(file_name));
             }
         }
     }
     {
         // add SBX file name
-        let file_name = file_utils::get_file_name_part_of_path(&param.out_file);
+        let file_name = file_utils::get_file_name_part_of_path(&param.out_file).unwrap();
         metas.push(Metadata::SNM(file_name));
     }
     {
