@@ -52,10 +52,18 @@ macro_rules! exit_if_file {
         }
     }};
     (
+        is_dir $file:expr => $json_printer:expr => $($x:expr),*
+    ) => {{
+        use crate::file_utils;
+        if file_utils::check_if_file_is_dir($file) {
+            exit_with_msg!(usr $json_printer => $($x),*);
+        }
+    }};
+    (
         is_not_file $file:expr => $json_printer:expr => $($x:expr),*
     ) => {{
         use crate::file_utils;
-        if file_utils::check_if_file_is_file($file) {
+        if !file_utils::check_if_file_is_file($file) {
             exit_with_msg!(usr $json_printer => $($x),*);
         }
     }};
@@ -198,9 +206,9 @@ macro_rules! get_in_file {
                       => $json_printer
                       => "File name \"{}\"does not have a file name component", in_file);
 
-        exit_if_file!(is_not_file in_file
+        exit_if_file!(is_dir in_file
                       => $json_printer
-                      => "File \"{}\" is not a regular file", in_file);
+                      => "File \"{}\" is a directory", in_file);
 
         in_file
     }};
@@ -218,9 +226,9 @@ macro_rules! get_in_file {
                           => $json_printer
                           => "File name \"{}\"does not have a file name component", in_file);
 
-            exit_if_file!(is_not_file in_file
+            exit_if_file!(is_dir in_file
                           => $json_printer
-                          => "File \"{}\" is not a regular file", in_file);
+                          => "File \"{}\" is a directory", in_file);
         }
         in_file
     }};
