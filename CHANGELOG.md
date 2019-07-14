@@ -14,6 +14,12 @@
   
     - See [issue #243](https://github.com/darrenldl/blockyarchive/issues/243) for details
 
+- Fixed input file name handling and recorded file name handling
+  
+    - Bug does not impact archive integrity
+  
+    - See issues [#249](https://github.com/darrenldl/blockyarchive/issues/249) and [#250](https://github.com/darrenldl/blockyarchive/issues/250) for details
+
 ## 7.2.2
 
 - Updated encode core to terminate if an incomplete data chunk is read as well
