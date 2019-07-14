@@ -166,15 +166,13 @@ quickcheck! {
 fn test_make_path_simple_cases() {
     assert_eq!("abcd/efgh", make_path(&["abcd", "efgh"]));
     assert_eq!(
-        "/usb/folder1/test.sbx",
-        make_path(&["/usb/", "/folder1/", "/test.sbx/"])
+        "/usb/folder1/test.sbx/",
+        make_path(&["/usb/", "folder1/", "test.sbx/"])
     );
     assert_eq!("/abcd/efgh", make_path(&["/abcd/", "efgh"]));
-    assert_eq!("abcd/efgh", make_path(&["abcd/", "/efgh"]));
-    assert_eq!("/abcd/efgh", make_path(&["/abcd", "efgh/"]));
-    assert_eq!("/efgh", make_path(&["/", "efgh/"]));
-    assert_eq!("/efgh", make_path(&["/", "efgh/", "/"]));
-    assert_eq!("test", make_path(&["test", "/"]));
+    assert_eq!("/abcd/efgh/", make_path(&["/abcd", "efgh/"]));
+    assert_eq!("/efgh/", make_path(&["/", "efgh/"]));
+    assert_eq!("/test", make_path(&["/", "test"]));
 }
 
 #[test]
