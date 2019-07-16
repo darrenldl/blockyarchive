@@ -679,8 +679,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                             if let Some((data, parity, _)) = data_par_burst {
                                 let block_set_size = data + parity;
-                                // if current block is the last data block in the block set, then go through the parity block seq nums
                                 let block_index = block_for_seq_num_check.get_seq_num() - 1;
+
+                                // if current block is the last data block in the block set, then go through the parity block seq nums
                                 if block_index % block_set_size as u32 == (data - 1) as u32 {
                                     for _ in 0..parity {
                                         block_for_seq_num_check.add1_seq_num().unwrap();
