@@ -43,6 +43,8 @@ use crate::data_block_buffer::{DataBlockBuffer, InputType, OutputType, Slot};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 
+const SEQ_NUM_OVERFLOW_MSG: &str = "Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin";
+
 #[derive(Clone, Debug)]
 pub struct Stats {
     uid: [u8; SBX_FILE_UID_LEN],
@@ -631,6 +633,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         let hash_ctx = Arc::clone(&hash_ctx);
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
         let data_size = ver_to_data_size(version);
+        let data_par_burst = param.data_par_burst;
 
         thread::spawn(move || {
             let mut run = true;
@@ -671,7 +674,18 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                             }
 
                             if let Err(_) = block_for_seq_num_check.add1_seq_num() {
-                                stop_run_forward_error!(run => error_tx_reader => Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
+                                stop_run_forward_error!(run => error_tx_reader => Error::with_msg(SEQ_NUM_OVERFLOW_MSG));
+                            }
+
+                            if let Some((data, parity, _)) = data_par_burst {
+                                let block_set_size = data + parity;
+                                // if current block is the last data block in the block set, then go through the parity block seq nums
+                                let block_index = block_for_seq_num_check.get_seq_num() - 1;
+                                if block_index % block_set_size as u32 == (data - 1) as u32 {
+                                    for _ in 0..parity {
+                                        block_for_seq_num_check.add1_seq_num().unwrap();
+                                    }
+                                }
                             }
 
                             if let Some(ref mut hash_ctx) = *hash_ctx {
