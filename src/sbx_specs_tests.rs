@@ -125,6 +125,21 @@ quickcheck! {
 }
 
 #[test]
-fn ver_to_max_data_file_size() {
-    
+fn test_ver_to_max_data_file_size() {
+    {
+        assert_eq!(SBX_MAX_DATA_BLOCK_COUNT as u64 * ver_to_data_size(Version::V1) as u64, ver_to_max_data_file_size(Version::V1, None));
+        assert_eq!(SBX_MAX_DATA_BLOCK_COUNT as u64 * ver_to_data_size(Version::V2) as u64, ver_to_max_data_file_size(Version::V2, None));
+        assert_eq!(SBX_MAX_DATA_BLOCK_COUNT as u64 * ver_to_data_size(Version::V3) as u64, ver_to_max_data_file_size(Version::V3, None));
+    }
+    {
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * 10 * ver_to_data_size(Version::V17) as u64, ver_to_max_data_file_size(Version::V17, Some((10, 2, 1))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * 10 * ver_to_data_size(Version::V17) as u64, ver_to_max_data_file_size(Version::V17, Some((10, 2, 11))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * 10 * ver_to_data_size(Version::V17) as u64, ver_to_max_data_file_size(Version::V17, Some((10, 2, 111))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * 10 * ver_to_data_size(Version::V18) as u64, ver_to_max_data_file_size(Version::V18, Some((10, 2, 1))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * 10 * ver_to_data_size(Version::V18) as u64, ver_to_max_data_file_size(Version::V18, Some((10, 2, 11))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * 10 * ver_to_data_size(Version::V18) as u64, ver_to_max_data_file_size(Version::V18, Some((10, 2, 111))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * 10 * ver_to_data_size(Version::V19) as u64, ver_to_max_data_file_size(Version::V19, Some((10, 2, 1))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * 10 * ver_to_data_size(Version::V19) as u64, ver_to_max_data_file_size(Version::V19, Some((10, 2, 11))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * 10 * ver_to_data_size(Version::V19) as u64, ver_to_max_data_file_size(Version::V19, Some((10, 2, 111))) as u64);
+    }
 }
