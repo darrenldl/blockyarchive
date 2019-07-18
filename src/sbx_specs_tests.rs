@@ -143,3 +143,18 @@ fn test_ver_to_max_data_file_size() {
         assert_eq!((2u64.pow(32) - 1) / (10 + 2) * 10 * ver_to_data_size(Version::V19) as u64, ver_to_max_data_file_size(Version::V19, Some((10, 2, 111))) as u64);
     }
 }
+
+quickcheck! {
+    fn qc_ver_to_max_data_file_size(data: usize,
+                                    parity: usize,
+                                    burst: usize) -> bool {
+        let data = 1 + data % 128;
+        let parity = 1 + parity % 128;
+
+        let block_set_size = (data + parity) as u64;
+
+        (2u64.pow(32) - 1) / block_set_size * data as u64 * ver_to_data_size(Version::V17) as u64 == ver_to_max_data_file_size(Version::V17, Some((data, parity, burst))) as u64
+            && (2u64.pow(32) - 1) / block_set_size * data as u64 * ver_to_data_size(Version::V18) as u64 == ver_to_max_data_file_size(Version::V18, Some((data, parity, burst))) as u64
+            && (2u64.pow(32) - 1) / block_set_size * data as u64 * ver_to_data_size(Version::V19) as u64 == ver_to_max_data_file_size(Version::V19, Some((data, parity, burst))) as u64
+    }
+}
