@@ -55,3 +55,38 @@ fn test_ver_forces_meta_enabled() {
     assert!(ver_forces_meta_enabled(Version::V18));
     assert!(ver_forces_meta_enabled(Version::V19));
 }
+
+#[test]
+fn test_ver_to_max_block_set_count() {
+    {
+        assert_eq!(None, ver_to_max_block_set_count(Version::V1, None));
+        assert_eq!(None, ver_to_max_block_set_count(Version::V2, None));
+        assert_eq!(None, ver_to_max_block_set_count(Version::V3, None));
+    }
+    {
+        assert_eq!(None, ver_to_max_block_set_count(Version::V1, Some((10, 2, 1))));
+        assert_eq!(None, ver_to_max_block_set_count(Version::V2, Some((10, 2, 1))));
+        assert_eq!(None, ver_to_max_block_set_count(Version::V3, Some((10, 2, 1))));
+    }
+    {
+        assert_eq!(Some((2u64.pow(32) - 1) / (10 + 2)), ver_to_max_block_set_count(Version::V17, Some((10, 2, 1))).map(|x| x as u64));
+        assert_eq!(Some((2u64.pow(32) - 1) / (10 + 2)), ver_to_max_block_set_count(Version::V17, Some((10, 2, 11))).map(|x| x as u64));
+        assert_eq!(Some((2u64.pow(32) - 1) / (10 + 2)), ver_to_max_block_set_count(Version::V17, Some((10, 2, 111))).map(|x| x as u64));
+        assert_eq!(Some((2u64.pow(32) - 1) / (10 + 2)), ver_to_max_block_set_count(Version::V18, Some((10, 2, 1))).map(|x| x as u64));
+        assert_eq!(Some((2u64.pow(32) - 1) / (10 + 2)), ver_to_max_block_set_count(Version::V18, Some((10, 2, 11))).map(|x| x as u64));
+        assert_eq!(Some((2u64.pow(32) - 1) / (10 + 2)), ver_to_max_block_set_count(Version::V18, Some((10, 2, 111))).map(|x| x as u64));
+        assert_eq!(Some((2u64.pow(32) - 1) / (10 + 2)), ver_to_max_block_set_count(Version::V19, Some((10, 2, 1))).map(|x| x as u64));
+        assert_eq!(Some((2u64.pow(32) - 1) / (10 + 2)), ver_to_max_block_set_count(Version::V19, Some((10, 2, 11))).map(|x| x as u64));
+        assert_eq!(Some((2u64.pow(32) - 1) / (10 + 2)), ver_to_max_block_set_count(Version::V19, Some((10, 2, 111))).map(|x| x as u64));
+    }
+}
+
+#[test]
+fn test_ver_to_last_data_seq_num_exc_parity() {
+    
+}
+
+#[test]
+fn ver_to_max_data_file_size() {
+    
+}
