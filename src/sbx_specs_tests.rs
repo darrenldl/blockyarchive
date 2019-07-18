@@ -64,11 +64,6 @@ fn test_ver_to_max_block_set_count() {
         assert_eq!(None, ver_to_max_block_set_count(Version::V3, None));
     }
     {
-        assert_eq!(None, ver_to_max_block_set_count(Version::V1, Some((10, 2, 1))));
-        assert_eq!(None, ver_to_max_block_set_count(Version::V2, Some((10, 2, 1))));
-        assert_eq!(None, ver_to_max_block_set_count(Version::V3, Some((10, 2, 1))));
-    }
-    {
         assert_eq!(Some((2u64.pow(32) - 1) / (10 + 2)), ver_to_max_block_set_count(Version::V17, Some((10, 2, 1))).map(|x| x as u64));
         assert_eq!(Some((2u64.pow(32) - 1) / (10 + 2)), ver_to_max_block_set_count(Version::V17, Some((10, 2, 11))).map(|x| x as u64));
         assert_eq!(Some((2u64.pow(32) - 1) / (10 + 2)), ver_to_max_block_set_count(Version::V17, Some((10, 2, 111))).map(|x| x as u64));
@@ -96,7 +91,22 @@ quickcheck! {
 
 #[test]
 fn test_ver_to_last_data_seq_num_exc_parity() {
-    
+    {
+        assert_eq!(SBX_LAST_SEQ_NUM, ver_to_last_data_seq_num_exc_parity(Version::V1, None));
+        assert_eq!(SBX_LAST_SEQ_NUM, ver_to_last_data_seq_num_exc_parity(Version::V2, None));
+        assert_eq!(SBX_LAST_SEQ_NUM, ver_to_last_data_seq_num_exc_parity(Version::V3, None));
+    }
+    {
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * (10 + 2), ver_to_last_data_seq_num_exc_parity(Version::V17, Some((10, 2, 1))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * (10 + 2), ver_to_last_data_seq_num_exc_parity(Version::V17, Some((10, 2, 11))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * (10 + 2), ver_to_last_data_seq_num_exc_parity(Version::V17, Some((10, 2, 111))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * (10 + 2), ver_to_last_data_seq_num_exc_parity(Version::V18, Some((10, 2, 1))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * (10 + 2), ver_to_last_data_seq_num_exc_parity(Version::V18, Some((10, 2, 11))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * (10 + 2), ver_to_last_data_seq_num_exc_parity(Version::V18, Some((10, 2, 111))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * (10 + 2), ver_to_last_data_seq_num_exc_parity(Version::V19, Some((10, 2, 1))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * (10 + 2), ver_to_last_data_seq_num_exc_parity(Version::V19, Some((10, 2, 11))) as u64);
+        assert_eq!((2u64.pow(32) - 1) / (10 + 2) * (10 + 2), ver_to_last_data_seq_num_exc_parity(Version::V19, Some((10, 2, 111))) as u64);
+    }
 }
 
 #[test]
