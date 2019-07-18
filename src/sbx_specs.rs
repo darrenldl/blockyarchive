@@ -189,7 +189,8 @@ pub fn ver_to_max_data_file_size(
     if ver_uses_rs(version) {
         let (data, _, _) = data_par_burst.unwrap();
 
-        let max_block_set_count = ver_to_max_block_set_count(version, data_par_burst).unwrap() as u64;
+        let max_block_set_count =
+            ver_to_max_block_set_count(version, data_par_burst).unwrap() as u64;
 
         max_block_set_count * data as u64 * data_size
     } else {

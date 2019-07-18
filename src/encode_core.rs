@@ -33,9 +33,9 @@ use crate::sbx_block::{make_too_much_meta_err_string, Block, BlockType, Metadata
 
 use crate::sbx_block;
 use crate::sbx_specs::{
-    ver_forces_meta_enabled, ver_to_block_size, ver_to_data_size, ver_to_max_data_file_size,
-    ver_to_last_data_seq_num_exc_parity,
-    ver_to_usize, ver_uses_rs, SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE,
+    ver_forces_meta_enabled, ver_to_block_size, ver_to_data_size,
+    ver_to_last_data_seq_num_exc_parity, ver_to_max_data_file_size, ver_to_usize, ver_uses_rs,
+    SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE,
 };
 
 use crate::misc_utils::{PositionOrLength, RangeEnd};
@@ -635,7 +635,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
         let data_size = ver_to_data_size(version);
         let data_par_burst = param.data_par_burst;
-        let last_data_seq_num_exc_parity = ver_to_last_data_seq_num_exc_parity(version, data_par_burst);
+        let last_data_seq_num_exc_parity =
+            ver_to_last_data_seq_num_exc_parity(version, data_par_burst);
 
         thread::spawn(move || {
             let mut run = true;
@@ -689,7 +690,8 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 break;
                             }
 
-                            if block_for_seq_num_check.get_seq_num() == last_data_seq_num_exc_parity {
+                            if block_for_seq_num_check.get_seq_num() == last_data_seq_num_exc_parity
+                            {
                                 run = false;
                                 break;
                             }
