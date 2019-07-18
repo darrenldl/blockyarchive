@@ -34,6 +34,7 @@ use crate::sbx_block::{make_too_much_meta_err_string, Block, BlockType, Metadata
 use crate::sbx_block;
 use crate::sbx_specs::{
     ver_forces_meta_enabled, ver_to_block_size, ver_to_data_size, ver_to_max_data_file_size,
+    ver_to_last_data_seq_num_exc_parity,
     ver_to_usize, ver_uses_rs, SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE,
 };
 
@@ -634,6 +635,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
         let data_size = ver_to_data_size(version);
         let data_par_burst = param.data_par_burst;
+        let last_data_seq_num_exc_parity = ver_to_last_data_seq_num_exc_parity(version, data_par_burst);
 
         thread::spawn(move || {
             let mut run = true;
@@ -677,6 +679,21 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 stop_run_forward_error!(run => error_tx_reader => Error::with_msg(SEQ_NUM_OVERFLOW_MSG));
                             }
 
+                            if let Some(ref mut hash_ctx) = *hash_ctx {
+                                hash_ctx.update(&slot[..read_res.len_read]);
+                            }
+
+                            if read_res.len_read < data_size {
+                                *content_len_exc_header = Some(read_res.len_read);
+                                run = false;
+                                break;
+                            }
+
+                            if block_for_seq_num_check.get_seq_num() == last_data_seq_num_exc_parity {
+                                run = false;
+                                break;
+                            }
+
                             if let Some((data, parity, _)) = data_par_burst {
                                 let block_set_size = data + parity;
                                 let block_index = block_for_seq_num_check.get_seq_num() - 1;
@@ -687,16 +704,6 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                         block_for_seq_num_check.add1_seq_num().unwrap();
                                     }
                                 }
-                            }
-
-                            if let Some(ref mut hash_ctx) = *hash_ctx {
-                                hash_ctx.update(&slot[..read_res.len_read]);
-                            }
-
-                            if read_res.len_read < data_size {
-                                *content_len_exc_header = Some(read_res.len_read);
-                                run = false;
-                                break;
                             }
                         }
                         Err(e) => stop_run_forward_error!(run => error_tx_reader => e),
