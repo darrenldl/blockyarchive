@@ -156,6 +156,8 @@ pub fn ver_to_max_block_set_count(
 
         Some(SBX_MAX_DATA_BLOCK_COUNT / block_set_size)
     } else {
+        assert!(data_par_burst == None);
+
         None
     }
 }
@@ -172,6 +174,8 @@ pub fn ver_to_last_data_seq_num_exc_parity(
 
         max_block_set_count * block_set_size as u32
     } else {
+        assert!(data_par_burst == None);
+
         SBX_LAST_SEQ_NUM
     }
 }
@@ -189,6 +193,8 @@ pub fn ver_to_max_data_file_size(
 
         max_block_set_count * data as u64 * data_size
     } else {
+        assert!(data_par_burst == None);
+
         SBX_MAX_DATA_BLOCK_COUNT as u64 * data_size
     }
 }
