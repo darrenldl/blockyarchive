@@ -172,7 +172,7 @@ pub fn ver_to_last_data_seq_num_exc_parity(
         let block_set_size = data + parity;
         let max_block_set_count = ver_to_max_block_set_count(version, data_par_burst).unwrap();
 
-        max_block_set_count * block_set_size as u32
+        max_block_set_count * block_set_size as u32 - parity as u32
     } else {
         assert!(data_par_burst == None);
 
