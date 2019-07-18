@@ -81,6 +81,19 @@ fn test_ver_to_max_block_set_count() {
     }
 }
 
+quickcheck! {
+    fn qc_ver_to_max_block_set_count(data: usize,
+                                     parity: usize,
+                                     burst: usize) -> bool {
+        let data = 1 + data % 128;
+        let parity = 1 + parity % 128;
+
+        Some((2u64.pow(32) - 1) / (data + parity) as u64) == ver_to_max_block_set_count(Version::V17, Some((data, parity, burst))).map(|x| x as u64)
+            && Some((2u64.pow(32) - 1) / (data + parity) as u64) == ver_to_max_block_set_count(Version::V18, Some((data, parity, burst))).map(|x| x as u64)
+            && Some((2u64.pow(32) - 1) / (data + parity) as u64) == ver_to_max_block_set_count(Version::V19, Some((data, parity, burst))).map(|x| x as u64)
+    }
+}
+
 #[test]
 fn test_ver_to_last_data_seq_num_exc_parity() {
     
