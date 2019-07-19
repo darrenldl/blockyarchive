@@ -677,7 +677,9 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 break;
                             }
 
-                            if last_data_block_exc_parity_seen || block_for_seq_num_check.add1_seq_num().is_err() {
+                            if last_data_block_exc_parity_seen
+                                || block_for_seq_num_check.add1_seq_num().is_err()
+                            {
                                 stop_run_forward_error!(run => error_tx_reader => Error::with_msg(SEQ_NUM_OVERFLOW_MSG));
                             }
 
