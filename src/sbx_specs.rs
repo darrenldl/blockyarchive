@@ -15,7 +15,7 @@ pub const SBX_SIGNATURE: &[u8] = common_params::SIGNATURE;
 
 pub const SBX_HEADER_SIZE: usize = common_params::HEADER_SIZE;
 
-pub const SBX_MAX_DATA_BLOCK_COUNT: u32 = u32::max_value() - SBX_METADATA_BLOCK_COUNT as u32;
+pub const SBX_MAX_DATA_BLOCK_COUNT: u32 = u32::max_value();
 
 pub const SBX_MAX_BURST_ERR_RESISTANCE: usize = 1000;
 
@@ -145,6 +145,41 @@ pub fn ver_forces_meta_enabled(version: Version) -> bool {
     }
 }
 
+pub fn ver_to_max_block_set_count(
+    version: Version,
+    data_par_burst: Option<(usize, usize, usize)>,
+) -> Option<u32> {
+    if ver_uses_rs(version) {
+        let (data, parity, _) = data_par_burst.unwrap();
+
+        let block_set_size = (data + parity) as u32;
+
+        Some(SBX_MAX_DATA_BLOCK_COUNT / block_set_size)
+    } else {
+        assert!(data_par_burst == None);
+
+        None
+    }
+}
+
+pub fn ver_to_last_data_seq_num_exc_parity(
+    version: Version,
+    data_par_burst: Option<(usize, usize, usize)>,
+) -> u32 {
+    if ver_uses_rs(version) {
+        let (data, parity, _) = data_par_burst.unwrap();
+
+        let block_set_size = data + parity;
+        let max_block_set_count = ver_to_max_block_set_count(version, data_par_burst).unwrap();
+
+        max_block_set_count * block_set_size as u32 - parity as u32
+    } else {
+        assert!(data_par_burst == None);
+
+        SBX_LAST_SEQ_NUM
+    }
+}
+
 pub fn ver_to_max_data_file_size(
     version: Version,
     data_par_burst: Option<(usize, usize, usize)>,
@@ -152,13 +187,15 @@ pub fn ver_to_max_data_file_size(
     let data_size = ver_to_data_size(version) as u64;
 
     if ver_uses_rs(version) {
-        let (data, parity, _) = data_par_burst.unwrap();
+        let (data, _, _) = data_par_burst.unwrap();
 
-        let block_set_size = (data + parity) as u64;
-        let max_block_set_count = SBX_MAX_DATA_BLOCK_COUNT as u64 / block_set_size;
+        let max_block_set_count =
+            ver_to_max_block_set_count(version, data_par_burst).unwrap() as u64;
 
         max_block_set_count * data as u64 * data_size
     } else {
+        assert!(data_par_burst == None);
+
         SBX_MAX_DATA_BLOCK_COUNT as u64 * data_size
     }
 }

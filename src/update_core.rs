@@ -133,7 +133,7 @@ impl fmt::Display for Stats {
         write_maybe_json!(
             f,
             json_printer,
-            "SBX version                              : {}",
+            "SBX version                                : {}",
             ver_to_usize(self.version)
         )?;
         write_maybe_json!(
@@ -163,7 +163,7 @@ impl fmt::Display for Stats {
         write_maybe_json!(
             f,
             json_printer,
-            "Time elapsed                             : {:02}:{:02}:{:02}",
+            "Time elapsed                               : {:02}:{:02}:{:02}",
             hour,
             minute,
             second

@@ -33,8 +33,9 @@ use crate::sbx_block::{make_too_much_meta_err_string, Block, BlockType, Metadata
 
 use crate::sbx_block;
 use crate::sbx_specs::{
-    ver_forces_meta_enabled, ver_to_block_size, ver_to_data_size, ver_to_max_data_file_size,
-    ver_to_usize, ver_uses_rs, SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE,
+    ver_forces_meta_enabled, ver_to_block_size, ver_to_data_size,
+    ver_to_last_data_seq_num_exc_parity, ver_to_max_data_file_size, ver_to_usize, ver_uses_rs,
+    SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE,
 };
 
 use crate::misc_utils::{PositionOrLength, RangeEnd};
@@ -42,6 +43,8 @@ use crate::misc_utils::{PositionOrLength, RangeEnd};
 use crate::data_block_buffer::{DataBlockBuffer, InputType, OutputType, Slot};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
+
+const SEQ_NUM_OVERFLOW_MSG: &str = "Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin";
 
 #[derive(Clone, Debug)]
 pub struct Stats {
@@ -631,11 +634,15 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
         let hash_ctx = Arc::clone(&hash_ctx);
         let shutdown_barrier = Arc::clone(&worker_shutdown_barrier);
         let data_size = ver_to_data_size(version);
+        let data_par_burst = param.data_par_burst;
+        let last_data_seq_num_exc_parity =
+            ver_to_last_data_seq_num_exc_parity(version, data_par_burst);
 
         thread::spawn(move || {
             let mut run = true;
             let mut bytes_processed = 0;
             let mut hash_ctx = hash_ctx.lock().unwrap();
+            let mut last_data_block_exc_parity_seen = false;
 
             while let Some(mut buffer) = from_writer.recv().unwrap() {
                 if !run {
@@ -670,8 +677,10 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 break;
                             }
 
-                            if let Err(_) = block_for_seq_num_check.add1_seq_num() {
-                                stop_run_forward_error!(run => error_tx_reader => Error::with_msg("Block seq num already at max, addition causes overflow. This might be due to file size being changed during the encoding, or too much data from stdin"));
+                            if last_data_block_exc_parity_seen
+                                || block_for_seq_num_check.add1_seq_num().is_err()
+                            {
+                                stop_run_forward_error!(run => error_tx_reader => Error::with_msg(SEQ_NUM_OVERFLOW_MSG));
                             }
 
                             if let Some(ref mut hash_ctx) = *hash_ctx {
@@ -682,6 +691,23 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 *content_len_exc_header = Some(read_res.len_read);
                                 run = false;
                                 break;
+                            }
+
+                            if block_for_seq_num_check.get_seq_num() == last_data_seq_num_exc_parity
+                            {
+                                last_data_block_exc_parity_seen = true;
+                            }
+
+                            if let Some((data, parity, _)) = data_par_burst {
+                                let block_set_size = data + parity;
+                                let block_index = block_for_seq_num_check.get_seq_num() - 1;
+
+                                // if current block is the last data block in the block set, then go through the parity block seq nums
+                                if block_index % block_set_size as u32 == (data - 1) as u32 {
+                                    for _ in 0..parity {
+                                        block_for_seq_num_check.add1_seq_num().unwrap();
+                                    }
+                                }
                             }
                         }
                         Err(e) => stop_run_forward_error!(run => error_tx_reader => e),
