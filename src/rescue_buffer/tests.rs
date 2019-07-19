@@ -1,5 +1,6 @@
 #![cfg(test)]
 use super::*;
+use crate::rand_utils;
 
 #[test]
 #[should_panic]
@@ -294,5 +295,53 @@ quickcheck! {
         }
 
         true
+    }
+
+    fn qc_group_by_uid(
+        uid_count: usize,
+        picks: Vec<usize>
+    ) -> bool {
+        let uid_count = 1 + uid_count % 255;
+
+        let mut uids = Vec::with_capacity(uid_count);
+
+        let mut picks = picks;
+
+        picks.push(0);
+
+        for i in 0..uid_count {
+            let mut uid = [0; SBX_FILE_UID_LEN];
+
+            rand_utils::fill_random_bytes(&mut uid);
+
+            // change first byte to be sequential to ensure lack of collision
+            uid[0] = i as u8;
+
+            uids.push(uid);
+        }
+
+        let size = uid_count * 4;
+
+        let mut buffer = RescueBuffer::new(size);
+
+        for i in 0..size {
+            let Slot { block, slot: _ } = buffer.get_slot().unwrap();
+
+            let pick = picks[i % picks.len()] % uid_count;
+
+            block.set_uid(uids[pick]);
+        }
+
+        buffer.group_by_uid();
+
+        let mut res = true;
+
+        for i in 0..size {
+            let uid = buffer.blocks[i].get_uid();
+
+            res = res && buffer.uid_to_slot_indices.get_mut(&uid).unwrap().contains(&i);
+        }
+
+        res
     }
 }
