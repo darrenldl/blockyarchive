@@ -642,6 +642,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
             let mut run = true;
             let mut bytes_processed = 0;
             let mut hash_ctx = hash_ctx.lock().unwrap();
+            let mut last_data_block_exc_parity_seen = false;
 
             while let Some(mut buffer) = from_writer.recv().unwrap() {
                 if !run {
@@ -676,7 +677,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
                                 break;
                             }
 
-                            if let Err(_) = block_for_seq_num_check.add1_seq_num() {
+                            if last_data_block_exc_parity_seen || block_for_seq_num_check.add1_seq_num().is_err() {
                                 stop_run_forward_error!(run => error_tx_reader => Error::with_msg(SEQ_NUM_OVERFLOW_MSG));
                             }
 
@@ -692,8 +693,7 @@ pub fn encode_file(param: &Param) -> Result<Stats, Error> {
 
                             if block_for_seq_num_check.get_seq_num() == last_data_seq_num_exc_parity
                             {
-                                run = false;
-                                break;
+                                last_data_block_exc_parity_seen = true;
                             }
 
                             if let Some((data, parity, _)) = data_par_burst {
