@@ -1,5 +1,17 @@
 # Changelog
 
+## 7.2.4
+
+- Fixed input file size validation, encode mode seq num tracking and checking
+  
+    - Bug does not impact archive integrity
+      
+        - Blkar has another lower layer of seq num overflow check for cases where input file size changes when running, and would previously cause blkar to panic, this fix makes it terminate gracefully by fixing the upper layer to catch the condition properly
+      
+        - In other words, if blkar did not crash on you when creating the archive, then the archive was still valid
+  
+    - See [PR #256](https://github.com/darrenldl/blockyarchive/pull/256) for details
+
 ## 7.2.3
 
 - Updated encode mode input file size calculation to use the data bytes encoded directly instead of file calculation
@@ -19,16 +31,6 @@
     - Bug does not impact archive integrity
   
     - See issues [#249](https://github.com/darrenldl/blockyarchive/issues/249) and [#250](https://github.com/darrenldl/blockyarchive/issues/250) for details
-
-- Fixed input file size validation, encode mode seq num tracking and checking
-  
-    - Bug does not impact archive integrity
-      
-        - Blkar has another lower layer of seq num overflow check for cases where input file size changes when running, and would previously cause blkar to panic, this fix makes it terminate gracefully by fixing the upper layer to catch the condition properly
-      
-        - In other words, if blkar did not crash on you when creating the archive, then the archive was still valid
-  
-    - See [PR #256](https://github.com/darrenldl/blockyarchive/pull/256) for details
 
 ## 7.2.2
 
