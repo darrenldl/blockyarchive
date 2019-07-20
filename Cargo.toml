@@ -1,6 +1,6 @@
 [package]
 name    = "blkar"
-version = "7.2.3"
+version = "7.2.4"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 edition = "2018"
 build   = "build.rs"
