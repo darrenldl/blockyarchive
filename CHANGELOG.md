@@ -28,7 +28,7 @@
       
         - In other words, if blkar did not crash on you when creating the archive, then the archive was still valid
   
-    - See PR [#256](https://github.com/darrenldl/blockyarchive/pull/256) for details
+    - See [PR #256](https://github.com/darrenldl/blockyarchive/pull/256) for details
 
 ## 7.2.2
 
