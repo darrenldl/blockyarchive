@@ -6,13 +6,9 @@ use crate::sbx_specs::{
 };
 use reed_solomon_erasure::ReedSolomon;
 use smallvec::SmallVec;
-
 use std::sync::Arc;
-
 use std::fmt;
-
 use crate::json_printer::{BracketType, JSONPrinter};
-
 use super::RSCodecState;
 
 pub struct RSRepairer {

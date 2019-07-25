@@ -2,9 +2,7 @@ use super::BlockType;
 use crate::sbx_specs;
 use crate::sbx_specs::{Version, SBX_FILE_UID_LEN, SBX_FIRST_DATA_SEQ_NUM, SBX_SIGNATURE};
 use std;
-
 use super::crc::*;
-
 use super::Error;
 
 #[derive(Debug, Clone, PartialEq)]

@@ -6,14 +6,10 @@ use crate::sbx_block::Block;
 use crate::sbx_block::BlockType;
 use crate::sbx_specs::{Version, SBX_LARGEST_BLOCK_SIZE};
 use reed_solomon_erasure::ReedSolomon;
-
 use crate::json_printer::JSONPrinter;
 use std::sync::Arc;
-
 use crate::output_channel::OutputChannel;
-
 use rand;
-
 use crate::rand_utils::fill_random_bytes;
 
 macro_rules! make_random_block_buffers {

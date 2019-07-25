@@ -11,6 +11,7 @@ pub use self::metadata::make_distribution_string;
 pub use self::metadata::make_too_much_meta_err_string;
 pub use self::metadata::Metadata;
 pub use self::metadata::MetadataID;
+
 use smallvec::SmallVec;
 
 pub fn meta_to_meta_id(meta: &Metadata) -> MetadataID {
