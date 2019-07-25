@@ -1,38 +1,38 @@
 #![allow(dead_code)]
+use crate::block_utils;
+use crate::block_utils::RefBlockChoice;
+use crate::cli_utils::setup_ctrlc_handler;
+use crate::data_block_buffer::{BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot};
+use crate::file_reader::{FileReader, FileReaderParam};
 use crate::file_utils;
+use crate::file_writer::{FileWriter, FileWriterParam};
+use crate::general_error::Error;
+use crate::hash_stats::HashStats;
+use crate::json_printer::{BracketType, JSONPrinter};
 use crate::misc_utils;
+use crate::misc_utils::MultiPassType;
+use crate::misc_utils::RequiredLenAndSeekTo;
+use crate::misc_utils::{PositionOrLength, RangeEnd};
+use crate::multihash;
+use crate::multihash::*;
+use crate::progress_report::*;
+use crate::sbx_block;
+use crate::sbx_block::Block;
+use crate::sbx_specs::Version;
+use crate::sbx_specs::{
+    ver_to_block_size, ver_to_data_size, ver_to_usize, ver_uses_rs, SBX_FILE_UID_LEN,
+    SBX_LARGEST_BLOCK_SIZE,
+};
+use crate::time_utils;
+use crate::writer::{Writer, WriterType};
 use std::fmt;
 use std::io::SeekFrom;
+use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::sync_channel;
 use std::sync::Barrier;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use crate::data_block_buffer::{BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot};
-use crate::misc_utils::RequiredLenAndSeekTo;
-use crate::json_printer::{BracketType, JSONPrinter};
-use std::sync::atomic::AtomicBool;
-use crate::cli_utils::setup_ctrlc_handler;
-use crate::progress_report::*;
-use crate::file_reader::{FileReader, FileReaderParam};
-use crate::file_writer::{FileWriter, FileWriterParam};
-use crate::writer::{Writer, WriterType};
-use crate::misc_utils::{PositionOrLength, RangeEnd};
-use crate::multihash;
-use crate::multihash::*;
-use crate::general_error::Error;
-use crate::sbx_specs::Version;
-use crate::misc_utils::MultiPassType;
-use crate::sbx_block;
-use crate::sbx_block::Block;
-use crate::sbx_specs::{
-    ver_to_block_size, ver_to_data_size, ver_to_usize, ver_uses_rs, SBX_FILE_UID_LEN,
-    SBX_LARGEST_BLOCK_SIZE,
-};
-use crate::block_utils;
-use crate::time_utils;
-use crate::hash_stats::HashStats;
-use crate::block_utils::RefBlockChoice;
 
 const HASH_FILE_BUFFER_SIZE: usize = 4096 * 50;
 

@@ -2,10 +2,10 @@
 use super::*;
 use crate::multihash::hash;
 use crate::multihash::HashType;
+use crate::rand_utils::fill_random_bytes;
+use crate::sbx_block;
 use crate::sbx_specs::Version;
 use reed_solomon_erasure::ReedSolomon;
-use crate::sbx_block;
-use crate::rand_utils::fill_random_bytes;
 
 #[test]
 #[should_panic]

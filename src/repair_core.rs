@@ -1,24 +1,24 @@
-use crate::file_utils;
-use std::fmt;
-use std::io::SeekFrom;
-use std::sync::{Arc, Mutex};
-use crate::json_printer::{BracketType, JSONPrinter};
+use crate::block_utils::RefBlockChoice;
 use crate::cli_utils::setup_ctrlc_handler;
-use crate::progress_report::*;
 use crate::file_reader::{FileReader, FileReaderParam};
-use crate::reader::ReadResult;
+use crate::file_utils;
 use crate::general_error::Error;
-use crate::sbx_specs::Version;
+use crate::json_printer::{BracketType, JSONPrinter};
+use crate::progress_report::*;
+use crate::reader::ReadResult;
+use crate::rs_codec::RSCodecState;
+use crate::rs_codec::RSRepairer;
 use crate::sbx_block;
 use crate::sbx_block::Block;
+use crate::sbx_block::BlockType;
 use crate::sbx_block::Header;
+use crate::sbx_specs::Version;
 use crate::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
 use crate::sbx_specs::{ver_to_block_size, ver_to_usize};
 use crate::time_utils;
-use crate::rs_codec::RSCodecState;
-use crate::rs_codec::RSRepairer;
-use crate::block_utils::RefBlockChoice;
-use crate::sbx_block::BlockType;
+use std::fmt;
+use std::io::SeekFrom;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug)]
 pub struct Stats {

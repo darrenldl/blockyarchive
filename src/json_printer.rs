@@ -1,9 +1,9 @@
 use crate::json_utils::split_key_val_pair;
-use smallvec::SmallVec;
-use std::sync::Mutex;
 use crate::misc_utils::to_camelcase;
-use std::fmt;
 use crate::output_channel::OutputChannel;
+use smallvec::SmallVec;
+use std::fmt;
+use std::sync::Mutex;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum BracketType {

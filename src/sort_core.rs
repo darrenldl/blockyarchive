@@ -1,5 +1,25 @@
+use crate::block_utils::RefBlockChoice;
+use crate::cli_utils::setup_ctrlc_handler;
+use crate::data_block_buffer::{
+    BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot, SlotView,
+};
+use crate::file_reader::{FileReader, FileReaderParam};
 use crate::file_utils;
+use crate::file_writer::{FileWriter, FileWriterParam};
+use crate::general_error::Error;
+use crate::json_printer::{BracketType, JSONPrinter};
 use crate::misc_utils;
+use crate::misc_utils::MultiPassType;
+use crate::misc_utils::RequiredLenAndSeekTo;
+use crate::misc_utils::{PositionOrLength, RangeEnd};
+use crate::progress_report::*;
+use crate::sbx_block;
+use crate::sbx_block::{Block, Header};
+use crate::sbx_specs::Version;
+use crate::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
+use crate::sbx_specs::{ver_to_block_size, ver_to_usize, ver_uses_rs};
+use crate::time_utils;
+use crate::writer::{Writer, WriterType};
 use std::fmt;
 use std::io::SeekFrom;
 use std::sync::mpsc::channel;
@@ -7,26 +27,6 @@ use std::sync::mpsc::sync_channel;
 use std::sync::Barrier;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use crate::misc_utils::RequiredLenAndSeekTo;
-use crate::progress_report::*;
-use crate::json_printer::{BracketType, JSONPrinter};
-use crate::file_reader::{FileReader, FileReaderParam};
-use crate::file_writer::{FileWriter, FileWriterParam};
-use crate::writer::{Writer, WriterType};
-use crate::data_block_buffer::{
-    BlockArrangement, DataBlockBuffer, InputType, OutputType, Slot, SlotView,
-};
-use crate::general_error::Error;
-use crate::sbx_specs::Version;
-use crate::sbx_block;
-use crate::sbx_block::{Block, Header};
-use crate::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-use crate::sbx_specs::{ver_to_block_size, ver_to_usize, ver_uses_rs};
-use crate::cli_utils::setup_ctrlc_handler;
-use crate::time_utils;
-use crate::misc_utils::MultiPassType;
-use crate::block_utils::RefBlockChoice;
-use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;
 

@@ -1,10 +1,10 @@
+use crate::cli_utils::*;
 use crate::decode_core;
 use crate::decode_core::Param;
-use crate::json_printer::BracketType;
-use crate::cli_utils::*;
-use clap::*;
 use crate::file_utils;
+use crate::json_printer::BracketType;
 use crate::output_channel::OutputChannel;
+use clap::*;
 use std::sync::Arc;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {

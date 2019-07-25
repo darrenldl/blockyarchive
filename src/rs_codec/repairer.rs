@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+use super::RSCodecState;
+use crate::json_printer::{BracketType, JSONPrinter};
 use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_specs::{
@@ -6,10 +8,8 @@ use crate::sbx_specs::{
 };
 use reed_solomon_erasure::ReedSolomon;
 use smallvec::SmallVec;
-use std::sync::Arc;
 use std::fmt;
-use crate::json_printer::{BracketType, JSONPrinter};
-use super::RSCodecState;
+use std::sync::Arc;
 
 pub struct RSRepairer {
     index: usize,
