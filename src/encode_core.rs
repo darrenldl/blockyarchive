@@ -9,37 +9,26 @@ use std::sync::mpsc::sync_channel;
 use std::sync::Barrier;
 use std::sync::{Arc, Mutex};
 use std::thread;
-
 use crate::misc_utils::RequiredLenAndSeekTo;
-
 use crate::json_printer::{BracketType, JSONPrinter};
-
 use crate::progress_report::*;
-
 use crate::cli_utils::setup_ctrlc_handler;
 use std::time::UNIX_EPOCH;
-
 use crate::file_reader::{FileReader, FileReaderParam};
 use crate::file_writer::{FileWriter, FileWriterParam};
 use crate::reader::{Reader, ReaderType};
 use crate::writer::{Writer, WriterType};
-
 use crate::multihash;
-
 use crate::general_error::Error;
 use crate::sbx_specs::Version;
-
 use crate::sbx_block::{make_too_much_meta_err_string, Block, BlockType, Metadata};
-
 use crate::sbx_block;
 use crate::sbx_specs::{
     ver_forces_meta_enabled, ver_to_block_size, ver_to_data_size,
     ver_to_last_data_seq_num_exc_parity, ver_to_max_data_file_size, ver_to_usize, ver_uses_rs,
     SBX_FILE_UID_LEN, SBX_LARGEST_BLOCK_SIZE,
 };
-
 use crate::misc_utils::{PositionOrLength, RangeEnd};
-
 use crate::data_block_buffer::{DataBlockBuffer, InputType, OutputType, Slot};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;

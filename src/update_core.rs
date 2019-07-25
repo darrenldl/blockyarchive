@@ -1,34 +1,21 @@
 use std::fmt;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
-
 use crate::progress_report::*;
-
 use smallvec::SmallVec;
-
 use crate::sbx_specs::{ver_to_block_size, ver_to_usize, Version, SBX_LARGEST_BLOCK_SIZE};
-
 use crate::cli_utils::setup_ctrlc_handler;
-
 use std::io::SeekFrom;
-
 use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_block::{Metadata, MetadataID};
-
 use crate::json_printer::{BracketType, JSONPrinter};
-
 use crate::file_reader::{FileReader, FileReaderParam};
-
 use crate::general_error::Error;
-
 use crate::block_utils::RefBlockChoice;
 use crate::sbx_block::BlockType;
-
 use crate::multihash;
-
 use crate::sbx_container_content;
-
 use crate::time_utils;
 
 pub struct Param {

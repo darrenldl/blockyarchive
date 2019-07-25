@@ -3,16 +3,12 @@ use crate::file_reader::{FileReader, FileReaderParam};
 use crate::file_writer::{FileWriter, FileWriterParam};
 use crate::general_error::Error;
 use std::fmt;
-
 use std::time::Duration;
-
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::sync::Barrier;
-
 use std::sync::Arc;
 use std::sync::Mutex;
-
 use std::thread;
 
 const LOG_MAX_SIZE: usize = 1024;

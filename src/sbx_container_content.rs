@@ -8,7 +8,6 @@ use crate::progress_report::{PRVerbosityLevel, ProgressReporter};
 use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_specs::ver_to_data_size;
-
 use std::io::SeekFrom;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::channel;

@@ -4,9 +4,7 @@ use clap::*;
 use ctrlc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-
 use crate::sbx_specs::ver_to_usize;
-
 use crate::json_printer::{BracketType, JSONPrinter};
 
 pub fn in_file_arg<'a, 'b>() -> Arg<'a, 'b> {

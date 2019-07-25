@@ -1,9 +1,7 @@
 #![allow(dead_code)]
 use crate::integer_utils::IntegerUtils;
 use crate::sbx_specs::SBX_SCAN_BLOCK_SIZE;
-
 use std::path::PathBuf;
-
 use smallvec::SmallVec;
 
 #[derive(Clone, Copy, Debug, PartialEq)]

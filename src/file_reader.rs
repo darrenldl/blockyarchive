@@ -10,7 +10,6 @@ use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::Write;
-
 use crate::reader::ReadResult;
 
 pub const READ_RETRIES: usize = 5;

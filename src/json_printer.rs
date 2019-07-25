@@ -1,12 +1,8 @@
 use crate::json_utils::split_key_val_pair;
 use smallvec::SmallVec;
-
 use std::sync::Mutex;
-
 use crate::misc_utils::to_camelcase;
-
 use std::fmt;
-
 use crate::output_channel::OutputChannel;
 
 #[derive(Copy, Clone, PartialEq, Debug)]

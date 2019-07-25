@@ -5,31 +5,20 @@ use std::fmt;
 use std::io::SeekFrom;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
-
 use crate::misc_utils::RequiredLenAndSeekTo;
-
 use crate::json_printer::{BracketType, JSONPrinter};
-
 use crate::cli_utils::setup_ctrlc_handler;
-
 use crate::file_reader::{FileReader, FileReaderParam};
 use crate::sbx_block::{Block, BlockType};
-
 use crate::general_error::Error;
 use crate::sbx_specs::Version;
-
 use crate::multihash::*;
-
 use crate::sbx_block;
 use crate::sbx_specs::{ver_to_block_size, ver_to_usize, SBX_LARGEST_BLOCK_SIZE};
-
 use crate::time_utils;
-
 use crate::block_utils::RefBlockChoice;
 use crate::misc_utils::{PositionOrLength, RangeEnd};
-
 use crate::hash_stats::HashStats;
-
 use crate::sbx_container_content;
 
 pub enum HashAction {

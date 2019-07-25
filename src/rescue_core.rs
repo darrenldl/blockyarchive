@@ -5,33 +5,20 @@ use std::sync::mpsc::sync_channel;
 use std::sync::Barrier;
 use std::sync::{Arc, Mutex};
 use std::thread;
-
 use crate::file_utils;
-
 use crate::misc_utils;
 use crate::misc_utils::RequiredLenAndSeekTo;
-
 use crate::log::*;
 use crate::progress_report::*;
-
 use crate::cli_utils::setup_ctrlc_handler;
-
 use crate::file_reader::{FileReader, FileReaderParam};
-
 use crate::general_error::Error;
-
 use crate::sbx_specs::{SBX_FILE_UID_LEN, SBX_SCAN_BLOCK_SIZE};
-
 use crate::sbx_block::BlockType;
-
 use crate::block_utils;
-
 use crate::integer_utils::IntegerUtils;
-
 use crate::misc_utils::{PositionOrLength, RangeEnd};
-
 use crate::json_printer::{BracketType, JSONPrinter};
-
 use crate::rescue_buffer::{RescueBuffer, Slot};
 
 const PIPELINE_BUFFER_IN_ROTATION: usize = 9;

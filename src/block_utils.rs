@@ -1,34 +1,21 @@
 use std::sync::atomic::AtomicBool;
-
 use std::sync::{Arc, Mutex};
-
 use crate::file_reader::{FileReader, FileReaderParam};
 use crate::sbx_block::{Block, BlockType};
-
 use crate::file_utils;
-
 use crate::misc_utils;
-
 use crate::misc_utils::RequiredLenAndSeekTo;
 use std::io::SeekFrom;
-
 use smallvec::SmallVec;
-
 use crate::sbx_block;
-
 use crate::integer_utils::IntegerUtils;
-
 use std::collections::HashMap;
-
 use crate::sbx_specs::{
     ver_to_block_size, ver_uses_rs, SBX_LARGEST_BLOCK_SIZE, SBX_MAX_BURST_ERR_RESISTANCE,
     SBX_SCAN_BLOCK_SIZE,
 };
-
 use crate::progress_report::*;
-
 use crate::general_error::Error;
-
 use crate::misc_utils::{PositionOrLength, RangeEnd};
 
 #[derive(Clone, Copy, Debug, PartialEq)]

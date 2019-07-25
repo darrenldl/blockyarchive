@@ -1,14 +1,10 @@
 use crate::update_core;
 use crate::update_core::Param;
-
 use crate::cli_utils::*;
 use clap::*;
-
 use crate::sbx_block::Metadata;
 use crate::sbx_block::MetadataID;
-
 use crate::multihash;
-
 use crate::json_printer::BracketType;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
