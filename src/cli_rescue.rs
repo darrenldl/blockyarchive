@@ -1,13 +1,10 @@
+use crate::cli_utils::*;
+use crate::file_utils;
+use crate::json_printer::BracketType;
 use crate::rescue_core;
 use crate::rescue_core::Param;
-use crate::sbx_specs::SBX_FILE_UID_LEN;
-
-use crate::json_printer::BracketType;
 use crate::sbx_block::BlockType;
-
-use crate::file_utils;
-
-use crate::cli_utils::*;
+use crate::sbx_specs::SBX_FILE_UID_LEN;
 use clap::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {

@@ -1,15 +1,11 @@
-use crate::update_core;
-use crate::update_core::Param;
-
 use crate::cli_utils::*;
-use clap::*;
-
+use crate::json_printer::BracketType;
+use crate::multihash;
 use crate::sbx_block::Metadata;
 use crate::sbx_block::MetadataID;
-
-use crate::multihash;
-
-use crate::json_printer::BracketType;
+use crate::update_core;
+use crate::update_core::Param;
+use clap::*;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("update")

@@ -1,11 +1,10 @@
-use std;
-use std::fmt;
-
 use super::Error;
 use crate::misc_utils;
 use crate::multihash;
 use crate::sbx_specs::{ver_to_data_size, Version};
 use crate::time_utils;
+use std;
+use std::fmt;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Metadata {

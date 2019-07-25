@@ -1,5 +1,13 @@
 # Changelog
 
+## 7.2.5
+
+- Fixed encode core buffer handling
+
+    - Added missing `buffer.cancel_slot()` for case where seq num overflows
+
+    - Previously, encode mode panics if seq num overflows due to changed file size during encoding
+
 ## 7.2.4
 
 - Fixed input file size validation, encode mode seq num tracking and checking

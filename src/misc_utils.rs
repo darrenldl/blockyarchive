@@ -1,10 +1,8 @@
 #![allow(dead_code)]
 use crate::integer_utils::IntegerUtils;
 use crate::sbx_specs::SBX_SCAN_BLOCK_SIZE;
-
-use std::path::PathBuf;
-
 use smallvec::SmallVec;
+use std::path::PathBuf;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum RangeEnd<T> {

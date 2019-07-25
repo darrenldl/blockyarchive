@@ -1,20 +1,16 @@
 #![cfg(test)]
 use super::repairer::*;
 use super::*;
+use crate::json_printer::JSONPrinter;
+use crate::output_channel::OutputChannel;
+use crate::rand_utils::fill_random_bytes;
 use crate::sbx_block;
 use crate::sbx_block::Block;
 use crate::sbx_block::BlockType;
 use crate::sbx_specs::{Version, SBX_LARGEST_BLOCK_SIZE};
-use reed_solomon_erasure::ReedSolomon;
-
-use crate::json_printer::JSONPrinter;
-use std::sync::Arc;
-
-use crate::output_channel::OutputChannel;
-
 use rand;
-
-use crate::rand_utils::fill_random_bytes;
+use reed_solomon_erasure::ReedSolomon;
+use std::sync::Arc;
 
 macro_rules! make_random_block_buffers {
     ($per_shard:expr, $size:expr) => {{

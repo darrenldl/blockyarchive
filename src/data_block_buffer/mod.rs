@@ -1,24 +1,18 @@
+use crate::general_error::Error;
+use crate::misc_utils;
+use crate::multihash::hash;
+use crate::sbx_block;
+use crate::sbx_block::{calc_data_block_write_pos, calc_data_chunk_write_pos, Block, BlockType};
+use crate::sbx_specs::{ver_to_block_size, ver_to_data_size, SBX_FILE_UID_LEN};
+use crate::sbx_specs::{
+    ver_uses_rs, Version, SBX_FIRST_DATA_SEQ_NUM, SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM,
+};
+use crate::writer::Writer;
 use rayon::prelude::*;
 use reed_solomon_erasure::ReedSolomon;
 use smallvec::SmallVec;
 use std::io::SeekFrom;
 use std::sync::Arc;
-
-use crate::general_error::Error;
-use crate::sbx_specs::{
-    ver_uses_rs, Version, SBX_FIRST_DATA_SEQ_NUM, SBX_LARGEST_BLOCK_SIZE, SBX_LAST_SEQ_NUM,
-};
-
-use crate::sbx_block::{calc_data_block_write_pos, calc_data_chunk_write_pos, Block, BlockType};
-
-use crate::sbx_block;
-
-use crate::sbx_specs::{ver_to_block_size, ver_to_data_size, SBX_FILE_UID_LEN};
-
-use crate::multihash::hash;
-use crate::writer::Writer;
-
-use crate::misc_utils;
 
 const DEFAULT_SINGLE_LOT_SIZE: usize = 100;
 

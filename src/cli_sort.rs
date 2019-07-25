@@ -1,13 +1,10 @@
-use crate::sort_core::Param;
-
+use crate::cli_utils::*;
 use crate::file_utils;
+use crate::json_printer::BracketType;
 use crate::misc_utils;
 use crate::sort_core;
-
-use crate::cli_utils::*;
+use crate::sort_core::Param;
 use clap::*;
-
-use crate::json_printer::BracketType;
 
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("sort")

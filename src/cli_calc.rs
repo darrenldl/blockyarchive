@@ -1,13 +1,10 @@
+use crate::cli_utils::*;
+use crate::file_utils;
+use crate::json_printer::BracketType;
 use crate::sbx_specs::{ver_to_block_size, ver_to_data_size, ver_to_usize, ver_uses_rs};
-
+use clap::*;
 use std::str::FromStr;
 
-use crate::file_utils;
-
-use crate::json_printer::BracketType;
-
-use crate::cli_utils::*;
-use clap::*;
 pub fn sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("calc")
         .about("Calculate and display detailed information given an encoding configuration")

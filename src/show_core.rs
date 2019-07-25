@@ -1,40 +1,27 @@
-use crate::file_utils;
-use crate::misc_utils;
-use crate::misc_utils::RequiredLenAndSeekTo;
-use std::fmt;
-use std::sync::{Arc, Mutex};
-
+use crate::block_utils;
+use crate::block_utils::RefBlockChoice;
 use crate::cli_utils::report_ref_block_info;
 use crate::cli_utils::setup_ctrlc_handler;
-
-use std::io::SeekFrom;
-
-use crate::json_printer::BracketType;
-
-use crate::progress_report::*;
-
-use crate::sbx_specs::SBX_FILE_UID_LEN;
-
 use crate::file_reader::{FileReader, FileReaderParam};
-
-use crate::multihash::*;
-
+use crate::file_utils;
 use crate::general_error::Error;
-
+use crate::json_printer::BracketType;
+use crate::json_printer::JSONPrinter;
+use crate::misc_utils;
+use crate::misc_utils::RequiredLenAndSeekTo;
+use crate::misc_utils::{PositionOrLength, RangeEnd};
+use crate::multihash::*;
+use crate::progress_report::*;
 use crate::sbx_block::Block;
+use crate::sbx_block::BlockType;
 use crate::sbx_specs::ver_to_usize;
 use crate::sbx_specs::ver_uses_rs;
+use crate::sbx_specs::SBX_FILE_UID_LEN;
 use crate::sbx_specs::SBX_LARGEST_BLOCK_SIZE;
-
-use crate::block_utils;
 use crate::time_utils;
-
-use crate::block_utils::RefBlockChoice;
-use crate::sbx_block::BlockType;
-
-use crate::misc_utils::{PositionOrLength, RangeEnd};
-
-use crate::json_printer::JSONPrinter;
+use std::fmt;
+use std::io::SeekFrom;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug)]
 pub struct Stats {

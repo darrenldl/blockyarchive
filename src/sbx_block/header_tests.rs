@@ -4,7 +4,6 @@ use super::super::rand_utils::fill_random_bytes;
 use super::super::sbx_specs::Version;
 use super::header::Header;
 use super::Error;
-
 use rand;
 
 #[test]
