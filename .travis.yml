@@ -99,6 +99,7 @@ before_cache:
   - rm -rfv target/{debug,release}/deps/{blkar,blkar_lib,libblkar_lib}-*
   - rm -rfv target/{debug,release}/incremental/{blkar,blkar_lib,libblkar_lib}-*
   - rm -rfv target/{debug,release}/.fingerprint/{blkar,blkar_lib,libblkar_lib}-*
+  - cargo clean -p blkar
 
 notifications:
   email:
