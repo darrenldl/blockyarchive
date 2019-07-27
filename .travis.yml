@@ -92,6 +92,13 @@ cache: cargo
 before_cache:
   # Travis can't cache files that are not readable by "others"
   - chmod -R a+r $HOME/.cargo
+  - rm -rfv target/cov/
+  - rm -rfv target/{debug,release}/blkar
+  - rm -rfv target/{debug,release}/{blkar,blkar_lib,libblkar_lib}.d
+  - rm -rfv target/{debug,release}/build/{blkar,blkar_lib,libblkar_lib}-*
+  - rm -rfv target/{debug,release}/deps/{blkar,blkar_lib,libblkar_lib}-*
+  - rm -rfv target/{debug,release}/incremental/
+  - rm -rfv target/{debug,release}/.fingerprint/
 
 notifications:
   email:
