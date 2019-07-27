@@ -6,7 +6,7 @@
 
     - Added missing `buffer.cancel_slot()` for case where seq num overflows
 
-    - Previously, encode mode panics if seq num overflows due to changed file size during encoding
+    - Previously, encode mode panics if seq num overflows due to file size change during encoding
 
 ## 7.2.4
 
