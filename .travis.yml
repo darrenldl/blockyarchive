@@ -97,8 +97,8 @@ before_cache:
   - rm -rfv target/{debug,release}/{blkar,blkar_lib,libblkar_lib}.d
   - rm -rfv target/{debug,release}/build/{blkar,blkar_lib,libblkar_lib}-*
   - rm -rfv target/{debug,release}/deps/{blkar,blkar_lib,libblkar_lib}-*
-  - rm -rfv target/{debug,release}/incremental/
-  - rm -rfv target/{debug,release}/.fingerprint/
+  - rm -rfv target/{debug,release}/incremental/{blkar,blkar_lib,libblkar_lib}-*
+  - rm -rfv target/{debug,release}/.fingerprint/{blkar,blkar_lib,libblkar_lib}-*
 
 notifications:
   email:
