@@ -1,5 +1,26 @@
 # Changelog
 
+## 7.2.6
+
+- Updated progress report text
+
+    - Previously, progress report text while running and when finished look as follows
+        - ```
+          [#############------------]   54%  cur :  56.18M bytes/s  used : 00:00:00  left : 00:00:00
+          ```
+        - ```
+          Time elapsed : 00:00:01  Average rate :  59.69M bytes/s
+          ```
+    - After the update, the units processed is present in the text as well
+        - ```
+          [#############------------]   54%   57.54M bytes  cur :  56.18M bytes/s  used : 00:00:00  left : 00:00:00
+          ```
+        - ```
+          Processed : 104.86M bytes  Time elapsed : 00:00:01  Average rate :  59.69M bytes/s
+          ```
+
+- Fixed avgRate in JSON progress report text
+
 ## 7.2.5
 
 - Fixed encode core buffer handling
