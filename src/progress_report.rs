@@ -404,13 +404,11 @@ fn make_message(
             UnitsProcessedShort => Some(format!(
                 "{}",
                 helper::make_readable_count(units_so_far, unit),
-            )
-            ),
+            )),
             UnitsProcessedLong => Some(format!(
                 "Processed : {}",
                 helper::make_readable_count(units_so_far, unit),
-            )
-            ),
+            )),
             TimeUsedShort => {
                 let (hour, minute, second) = time_utils::seconds_to_hms(time_used as i64);
                 Some(format!("used : {:02}:{:02}:{:02}", hour, minute, second))
