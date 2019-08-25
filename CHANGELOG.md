@@ -19,7 +19,7 @@
           Processed : 104.86M bytes  Time elapsed : 00:00:01  Average rate :  59.69M bytes/s
           ```
 
-- Fixed avgRate in JSON progress report text
+- Fixed `avgPerSec` in JSON progress report text
 
 ## 7.2.5
 
