@@ -25,6 +25,8 @@ pub enum ProgressElement {
     ProgressBar,
     CurrentRateShort,
     AverageRateShort,
+    BytesProcessedShort,
+    BytesProcessedLong,
     TimeUsedShort,
     TimeLeftShort,
     CurrentRateLong,
@@ -128,10 +130,11 @@ impl<T: 'static + ProgressReport + Send> ProgressReporter<T> {
                 ProgressBar,
                 Percentage,
                 CurrentRateShort,
+                BytesProcessedShort,
                 TimeUsedShort,
                 TimeLeftShort,
             ],
-            vec![TimeUsedLong, AverageRateLong],
+            vec![BytesProcessedLong, TimeUsedLong, AverageRateLong],
         )));
         let start_barrier = Arc::new(Barrier::new(2));
         let start_flag = Arc::new(AtomicBool::new(false));
@@ -367,6 +370,7 @@ fn make_message(
         cur_rate: f64,
         avg_rate: f64,
         unit: String,
+        units_so_far: u64,
         time_used: f64,
         time_left: Option<f64>,
         element: &ProgressElement,
@@ -397,6 +401,16 @@ fn make_message(
                 "Average rate : {}",
                 helper::make_readable_rate(avg_rate, unit)
             )),
+            BytesProcessedShort => Some(format!(
+                "Units processed : {}",
+                helper::make_readable_count(units_so_far, unit),
+            )
+            ),
+            BytesProcessedLong => Some(format!(
+                "done : {}",
+                helper::make_readable_count(units_so_far, unit),
+            )
+            ),
             TimeUsedShort => {
                 let (hour, minute, second) = time_utils::seconds_to_hms(time_used as i64);
                 Some(format!("used : {:02}:{:02}:{:02}", hour, minute, second))
@@ -512,6 +526,7 @@ fn make_message(
                 cur_rate,
                 avg_rate,
                 context.unit.clone(),
+                units_so_far,
                 time_used,
                 time_left,
                 e,
@@ -532,6 +547,26 @@ mod helper {
         } else {
             min(((100 * units_so_far) / total_units) as usize, 100)
         }
+    }
+
+    pub fn make_readable_count(count: u64, unit: String) -> String {
+        let count = count as f64;
+        let count_string: String = if count > 1_000_000_000_000. {
+            let adjusted_count = count / 1_000_000_000_000.;
+            format!("{:6.2}{}", adjusted_count, 'T')
+        } else if count > 1_000_000_000. {
+            let adjusted_count = count / 1_000_000_000.;
+            format!("{:6.2}{}", adjusted_count, 'G')
+        } else if count > 1_000_000. {
+            let adjusted_count = count / 1_000_000.;
+            format!("{:6.2}{}", adjusted_count, 'M')
+        } else if count > 1_000. {
+            let adjusted_count = count / 1_000.;
+            format!("{:6.0}{}", adjusted_count, 'K')
+        } else {
+            format!("{:7.0}", count)
+        };
+        format!("{} {}", count_string, unit)
     }
 
     pub fn make_readable_rate(rate: f64, unit: String) -> String {
