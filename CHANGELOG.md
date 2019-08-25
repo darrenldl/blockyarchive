@@ -21,6 +21,14 @@
 
 - Fixed `avgPerSec` in JSON progress report text
 
+- Optimised progress text output
+
+    - Previously, at the start, time left field in text carries a lot of digits as not enough stats is available and so a dummy small value is used for current rate, which causes time left to be a very large number initially.
+    
+        - This stretches the space used by the text needlessly
+        
+    - Now current rate and time left are displayed as "N/A" instead of using dummy values
+
 ## 7.2.5
 
 - Fixed encode core buffer handling
