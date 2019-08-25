@@ -427,14 +427,14 @@ fn make_message(
                 ))
             }
             TimeLeftShort => match time_left {
-                None => None,
+                None => Some("N/A".to_string()),
                 Some(time_left) => {
                     let (hour, minute, second) = time_utils::seconds_to_hms(time_left as i64);
                     Some(format!("left : {:02}:{:02}:{:02}", hour, minute, second))
                 }
             },
             TimeLeftLong => match time_left {
-                None => None,
+                None => Some("N/A".to_string()),
                 Some(time_left) => {
                     let (hour, minute, second) = time_utils::seconds_to_hms(time_left as i64);
                     Some(format!(
