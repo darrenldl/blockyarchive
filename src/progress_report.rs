@@ -367,7 +367,7 @@ fn make_message(
 ) -> String {
     fn make_string_for_element(
         percent: Option<usize>,
-        cur_rate: f64,
+        cur_rate: Option<f64>,
         avg_rate: f64,
         unit: String,
         units_so_far: u64,
@@ -387,11 +387,17 @@ fn make_message(
             },
             CurrentRateShort => Some(format!(
                 "cur : {}",
-                helper::make_readable_rate(cur_rate, unit)
+                match cur_rate {
+                    None => "N/A".to_string(),
+                    Some(cur_rate) => helper::make_readable_rate(cur_rate, unit),
+                }
             )),
             CurrentRateLong => Some(format!(
                 "Current rate : {}",
-                helper::make_readable_rate(cur_rate, unit)
+                match cur_rate {
+                    None => "N/A".to_string(),
+                    Some(cur_rate) => helper::make_readable_rate(cur_rate, unit),
+                }
             )),
             AverageRateShort => Some(format!(
                 "avg : {}",
@@ -442,11 +448,11 @@ fn make_message(
 
     let cur_time = time_utils::get_time_now(time_utils::TimeMode::UTC);
     let time_since_last_report = f64_max(cur_time - context.last_report_time, 0.1);
-    let cur_rate = (units_so_far - context.last_reported_units) as f64 / time_since_last_report;
-    let cur_rate = if cur_rate <= 0.001 {
-        0.000_000_001
+    let units_diff = units_so_far - context.last_reported_units;
+    let cur_rate = if units_diff == 0 {
+        None
     } else {
-        cur_rate
+        Some(units_diff as f64 / time_since_last_report)
     };
     let (percent, time_left) = match total_units {
         None => (None, None),
@@ -459,9 +465,12 @@ fn make_message(
                 0
             };
 
-            let time_left = units_remaining as f64 / cur_rate;
+            let time_left = match cur_rate {
+                None => None,
+                Some(cur_rate) => Some(units_remaining as f64 / cur_rate),
+            };
 
-            (Some(percent), Some(time_left))
+            (Some(percent), time_left)
         }
     };
     let time_used = match percent {
@@ -495,15 +504,17 @@ fn make_message(
                 total_units
             ))
         };
-        res.push_str(&format!(
-            ",\"{}\": {} ",
-            to_camelcase("cur per sec"),
-            cur_rate
-        ));
+        if let Some(cur_rate) = cur_rate {
+            res.push_str(&format!(
+                ",\"{}\": {} ",
+                to_camelcase("cur per sec"),
+                cur_rate
+            ));
+        }
         res.push_str(&format!(
             ",\"{}\": {} ",
             to_camelcase("avg per sec"),
-            cur_rate
+            avg_rate
         ));
         res.push_str(&format!(
             ",\"{}\": {} ",
