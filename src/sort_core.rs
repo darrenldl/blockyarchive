@@ -319,7 +319,7 @@ fn write_meta_blocks_writer(
     version: Version,
     data_par_burst: Option<(usize, usize, usize)>,
     multi_pass: Option<MultiPassType>,
-    header_pred: &Fn(&Header) -> bool,
+    header_pred: &dyn Fn(&Header) -> bool,
     meta_block: &[u8],
     writer: &mut Option<Writer>,
 ) -> Result<(), Error> {

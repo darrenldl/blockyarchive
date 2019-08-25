@@ -203,7 +203,7 @@ impl Param {
 
 fn update_rs_codec_and_stats(
     version: Version,
-    header_pred: &Fn(&Header) -> bool,
+    header_pred: &dyn Fn(&Header) -> bool,
     read_res: &ReadResult,
     block: &mut Block,
     cur_seq_num: u32,
