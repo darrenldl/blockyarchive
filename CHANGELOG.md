@@ -1,5 +1,34 @@
 # Changelog
 
+## 7.2.6
+
+- Updated progress report text
+
+    - Previously, progress report text while running and when finished look as follows
+        - ```
+          [#############------------]   54%  cur :  56.18M bytes/s  used : 00:00:00  left : 00:00:00
+          ```
+        - ```
+          Time elapsed : 00:00:01  Average rate :  59.69M bytes/s
+          ```
+    - After the update, the units processed is present in the text as well
+        - ```
+          [#############------------]   54%   57.54M bytes  cur :  56.18M bytes/s  used : 00:00:00  left : 00:00:00
+          ```
+        - ```
+          Processed : 104.86M bytes  Time elapsed : 00:00:01  Average rate :  59.69M bytes/s
+          ```
+
+- Fixed `avgPerSec` in JSON progress report text
+
+- Optimised progress text output
+
+    - Previously, at the start, time left field in text carries a lot of digits as not enough stats is available and so a dummy small value is used for current rate, which causes time left to be a very large number initially.
+    
+        - This stretches the space used by the text needlessly
+        
+    - Now current rate and time left are displayed as "N/A" instead of using dummy values
+
 ## 7.2.5
 
 - Fixed encode core buffer handling
