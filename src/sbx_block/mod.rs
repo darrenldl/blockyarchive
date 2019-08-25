@@ -805,8 +805,8 @@ impl Block {
     pub fn sync_from_buffer(
         &mut self,
         buffer: &[u8],
-        header_pred: Option<&Fn(&Header) -> bool>,
-        pred: Option<&Fn(&Block) -> bool>,
+        header_pred: Option<&dyn Fn(&Header) -> bool>,
+        pred: Option<&dyn Fn(&Block) -> bool>,
     ) -> Result<(), Error> {
         self.sync_from_buffer_header_only(buffer)?;
 
