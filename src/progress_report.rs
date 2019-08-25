@@ -25,8 +25,8 @@ pub enum ProgressElement {
     ProgressBar,
     CurrentRateShort,
     AverageRateShort,
-    BytesProcessedShort,
-    BytesProcessedLong,
+    UnitsProcessedShort,
+    UnitsProcessedLong,
     TimeUsedShort,
     TimeLeftShort,
     CurrentRateLong,
@@ -129,12 +129,12 @@ impl<T: 'static + ProgressReport + Send> ProgressReporter<T> {
             vec![
                 ProgressBar,
                 Percentage,
+                UnitsProcessedShort,
                 CurrentRateShort,
-                BytesProcessedShort,
                 TimeUsedShort,
                 TimeLeftShort,
             ],
-            vec![BytesProcessedLong, TimeUsedLong, AverageRateLong],
+            vec![UnitsProcessedLong, TimeUsedLong, AverageRateLong],
         )));
         let start_barrier = Arc::new(Barrier::new(2));
         let start_flag = Arc::new(AtomicBool::new(false));
@@ -401,13 +401,13 @@ fn make_message(
                 "Average rate : {}",
                 helper::make_readable_rate(avg_rate, unit)
             )),
-            BytesProcessedShort => Some(format!(
-                "Units processed : {}",
+            UnitsProcessedShort => Some(format!(
+                "{}",
                 helper::make_readable_count(units_so_far, unit),
             )
             ),
-            BytesProcessedLong => Some(format!(
-                "done : {}",
+            UnitsProcessedLong => Some(format!(
+                "Processed : {}",
                 helper::make_readable_count(units_so_far, unit),
             )
             ),
