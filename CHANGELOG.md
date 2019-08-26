@@ -29,6 +29,8 @@
         
     - Now current rate and time left are displayed as "N/A" instead of using dummy values
 
+- Updated `quickcheck` from `~0.8.2` to `~0.9.0`
+
 ## 7.2.5
 
 - Fixed encode core buffer handling
