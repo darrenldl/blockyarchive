@@ -27,7 +27,7 @@ for file in target/debug/blkar_lib-*; do
     fi
 
     mkdir -p $COV_DIR
-    travis_wait 30 kcov --exclude-pattern=/.cargo,/usr/lib --verify $COV_DIR "$file"
+    kcov --exclude-pattern=/.cargo,/usr/lib --verify $COV_DIR "$file"
 done
 
 echo ""

@@ -48,7 +48,7 @@ install:
   - source ~/.cargo/env || true
 
 script:
-  - bash ci/script.sh
+  - travis_wait 30 bash ci/script.sh
   - rm -rf target/cov
   - bash install_kcov.sh
   - bash tests/dev_tests.sh
