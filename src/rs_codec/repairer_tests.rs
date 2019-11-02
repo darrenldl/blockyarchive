@@ -9,7 +9,7 @@ use crate::sbx_block::Block;
 use crate::sbx_block::BlockType;
 use crate::sbx_specs::{Version, SBX_LARGEST_BLOCK_SIZE};
 use rand;
-use reed_solomon_erasure::ReedSolomon;
+use reed_solomon_erasure::galois_8::ReedSolomon;
 use std::sync::Arc;
 
 macro_rules! make_random_block_buffers {
