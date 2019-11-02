@@ -6,7 +6,7 @@ use crate::sbx_block::Block;
 use crate::sbx_specs::{
     ver_to_block_size, Version, SBX_FIRST_DATA_SEQ_NUM, SBX_LARGEST_BLOCK_SIZE,
 };
-use reed_solomon_erasure::ReedSolomon;
+use reed_solomon_erasure::galois_8::ReedSolomon;
 use smallvec::SmallVec;
 use std::fmt;
 use std::sync::Arc;
@@ -286,14 +286,14 @@ impl RSRepairer {
         let rs_codec = &self.rs_codec;
 
         let successful = {
-            let mut buf: SmallVec<[&mut [u8]; 32]> =
+            let mut buf: SmallVec<[(&mut [u8], bool); 32]> =
                 SmallVec::with_capacity(rs_codec.total_shard_count());
-            for s in self.buf.iter_mut() {
-                buf.push(sbx_block::slice_data_buf_mut(self.version, s));
+            for (s, &present) in self.buf.iter_mut().zip(&self.buf_present) {
+                buf.push((sbx_block::slice_data_buf_mut(self.version, s), present));
             }
 
             // reconstruct data portion
-            match rs_codec.reconstruct(&mut buf, &self.buf_present) {
+            match rs_codec.reconstruct(&mut buf) {
                 Ok(()) => true,
                 Err(_) => false,
             }
