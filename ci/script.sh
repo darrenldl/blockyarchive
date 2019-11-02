@@ -10,7 +10,7 @@ main() {
         return
     fi
 
-    cross test --target $TARGET
+    travis_wait 30 cross test --target $TARGET
 }
 
 # we don't run the "test phase" when doing deploys
