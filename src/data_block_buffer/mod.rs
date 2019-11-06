@@ -9,7 +9,7 @@ use crate::sbx_specs::{
 };
 use crate::writer::Writer;
 use rayon::prelude::*;
-use reed_solomon_erasure::ReedSolomon;
+use reed_solomon_erasure::galois_8::ReedSolomon;
 use smallvec::SmallVec;
 use std::io::SeekFrom;
 use std::sync::Arc;

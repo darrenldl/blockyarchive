@@ -1,6 +1,6 @@
 [package]
 name    = "blkar"
-version = "7.2.6"
+version = "7.2.7"
 authors = ["Darren Ldl <darrenldldev@gmail.com>"]
 edition = "2018"
 build   = "build.rs"
@@ -45,18 +45,18 @@ path = "src/lib.rs"
 doc  = false
 
 [dependencies]
-reed-solomon-erasure = { version = "~ 3.1.1", features = ["pure-rust"] }
-sha-1                = "~ 0.8.1"
-sha2                 = "~ 0.8.0"
-blake2               = "~ 0.8.0"
-rand                 = "~ 0.7.0"
-smallvec             = "~ 0.6.9"
-nom                  = "~ 5.0.0"
-chrono               = "~ 0.4.6"
-clap                 = "~ 2.33.0"
-ctrlc                = "~ 3.1.2"
-num_cpus             = "~ 1.10.1"
-rayon                = "~ 1.1.0"
+reed-solomon-erasure = "~4.0.1"
+sha-1                = "~0.8.1"
+sha2                 = "~0.8.0"
+blake2               = "~0.8.0"
+rand                 = "~0.7.0"
+smallvec             = "~0.6.9"
+nom                  = "~5.0.0"
+chrono               = "~0.4.6"
+clap                 = "~2.33.0"
+ctrlc                = "~3.1.2"
+num_cpus             = "~1.11.0"
+rayon                = "~1.2.0"
 
 [dev-dependencies]
 quickcheck = "~ 0.9.0"

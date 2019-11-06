@@ -30,8 +30,8 @@ matrix:
       os: osx
 
     # *BSD
-    - env: TARGET=i686-unknown-freebsd DISABLE_TESTS=1
-    - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
+    # - env: TARGET=i686-unknown-freebsd DISABLE_TESTS=1
+    # - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
 
     # Testing other channels
     - env: TARGET=x86_64-unknown-linux-gnu
@@ -48,7 +48,7 @@ install:
   - source ~/.cargo/env || true
 
 script:
-  - bash ci/script.sh
+  - travis_wait 40 bash ci/script.sh
   - rm -rf target/cov
   - bash install_kcov.sh
   - bash tests/dev_tests.sh

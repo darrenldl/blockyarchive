@@ -1,5 +1,15 @@
 # Changelog
 
+## 7.2.7
+
+- Dependencies update
+
+    - Updated `reed-solomon-erasure` from `~3.1.1` to `~4.0.1`
+
+    - Updated `num_cpus` from `~1.10.1` to `~1.11.1`
+
+    - Updated `rayon` from `~1.1.0` to `~1.2.0`
+
 ## 7.2.6
 
 - Updated progress report text

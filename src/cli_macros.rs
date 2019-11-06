@@ -338,7 +338,7 @@ macro_rules! check_data_parity_shards {
     (
         $data_shards:expr, $parity_shards:expr, $json_printer:expr
     ) => {{
-        use reed_solomon_erasure::ReedSolomon;
+        use reed_solomon_erasure::galois_8::ReedSolomon;
         use reed_solomon_erasure::Error;
 
         match ReedSolomon::new($data_shards, $parity_shards) {
