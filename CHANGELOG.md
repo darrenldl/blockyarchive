@@ -10,6 +10,8 @@
 
     - Updated `rayon` from `~1.1.0` to `~1.2.0`
 
+    - Updated `smallvec` from `~0.6.9` to `~1.0.0`
+
 ## 7.2.6
 
 - Updated progress report text
